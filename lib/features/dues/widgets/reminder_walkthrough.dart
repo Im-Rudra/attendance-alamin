@@ -9,7 +9,6 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
