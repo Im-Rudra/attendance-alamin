@@ -41,10 +41,22 @@ Future<CsvFile> _load(SeededFakes f, CsvKind kind, AppLocalizations l10n) => loa
       methodLabel: (PaymentMethod m) => paymentMethodLabel(l10n, m),
     );
 
+/// Lets the export's repository reads (real async) finish, then redraws.
 Future<void> _pumpMany(WidgetTester tester) async {
-  for (int i = 0; i < 12; i++) {
+  await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+  for (int i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
+}
+
+/// Presses a button by key.
+Future<void> _press(WidgetTester tester, String key) async {
+  final Finder f = find.byKey(ValueKey<String>(key));
+  expect(f, findsOneWidget);
+  final VoidCallback? onPressed = tester.widget<ButtonStyleButton>(f).onPressed;
+  expect(onPressed, isNotNull, reason: 'button is enabled');
+  onPressed!();
+  await tester.pump();
 }
 
 class _FakeFiles implements BackupFiles {
@@ -214,7 +226,7 @@ void main() {
         const Scaffold(body: CsvExportSheet(initialMonth: _nov)),
         overrides: <Override>[...seedFakes().overrides, backupFilesProvider.overrideWithValue(files)],
       );
-      await tester.tap(find.byKey(const ValueKey<String>('csv-save-students')));
+      await _press(tester, 'csv-save-students');
       await _pumpMany(tester);
       expect(find.text(bn.extraCsvFailed), findsNothing, reason: 'building the file failed');
       expect(files.calls, hasLength(1));
@@ -225,8 +237,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey<String>('csv-next-month')));
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const ValueKey<String>('csv-share-payments')));
-      await tester.tap(find.byKey(const ValueKey<String>('csv-share-payments')));
+      await _press(tester, 'csv-share-payments');
       await _pumpMany(tester);
       expect(files.calls, hasLength(2));
       expect(files.calls.last.$1, 'payments-2026-12.csv');
