@@ -314,8 +314,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(l10n.todayPickBatchTitle), findsOneWidget);
-      expect(find.text('ফিজিক্স এ'), findsOneWidget);
-      expect(find.text('কেমিস্ট্রি বি'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'ফিজিক্স এ'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'কেমিস্ট্রি বি'), findsOneWidget);
     });
 
     testWidgets('no batches: the setup card', (WidgetTester tester) async {
