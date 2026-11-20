@@ -1,11 +1,12 @@
-// BatchRollCallLauncher: STUB by M5-A (plan section 0). The body belongs to M7-A (attendance);
-// keep the constructor signature (routes are frozen).
+// BatchRollCallLauncher (route /batches/:batchId/rollcall/:date): roll call of a
+// batch on a chosen date, opened from the batch screen, the attendance history
+// or the date arrows. One class that day opens directly, 2+ show the chooser
+// sheet, none becomes an ad-hoc extra class (Product 3.6).
 
 import 'package:flutter/material.dart';
 
-import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/features/attendance/ui/roll_call_screen.dart';
 
 class BatchRollCallLauncher extends StatelessWidget {
   const BatchRollCallLauncher({super.key, required this.batchId, required this.date});
@@ -14,9 +15,5 @@ class BatchRollCallLauncher extends StatelessWidget {
   final LocalDate date;
 
   @override
-  Widget build(BuildContext context) => StubScreen(
-        name: context.l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
-        fullScreen: true,
-      );
+  Widget build(BuildContext context) => RollCallPage(batchId: batchId, date: date);
 }
