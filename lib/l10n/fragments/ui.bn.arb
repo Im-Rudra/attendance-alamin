@@ -1,0 +1,171 @@
+{
+  "@@locale": "bn",
+  "uiLevelUpcoming": "এখনো সময় আছে",
+  "@uiLevelUpcoming": {
+    "description": "Severity badge label: month not yet due."
+  },
+  "uiLevelJustDue": "নতুন বকেয়া",
+  "@uiLevelJustDue": {
+    "description": "Severity badge label: level 1, days 1-2 after the due date."
+  },
+  "uiLevelRemind": "মনে করান",
+  "@uiLevelRemind": {
+    "description": "Severity badge label: level 2, days 3-4."
+  },
+  "uiLevelFollowUp": "তাগাদা দিন",
+  "@uiLevelFollowUp": {
+    "description": "Severity badge label: level 3, days 5-6."
+  },
+  "uiLevelUrgent": "জরুরি",
+  "@uiLevelUrgent": {
+    "description": "Severity badge label: level 4, days 7-8."
+  },
+  "uiLevelFinalDays": "শেষ সময়",
+  "@uiLevelFinalDays": {
+    "description": "Severity badge label: level 5, days 9-10."
+  },
+  "uiLevelOverdue": "মেয়াদোত্তীর্ণ",
+  "@uiLevelOverdue": {
+    "description": "Severity badge label: more than 10 days after the due date."
+  },
+  "uiDayCount": "{days} দিন",
+  "@uiDayCount": {
+    "description": "Day count shown in a severity badge. days is a pre-formatted number.",
+    "placeholders": {
+      "days": {
+        "type": "String",
+        "example": "৭"
+      }
+    }
+  },
+  "uiMonthsDue": "{count} মাস বাকি",
+  "@uiMonthsDue": {
+    "description": "Severity badge suffix when several months are unpaid. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "uiPartialLeft": "আংশিক · {amount} বাকি",
+  "@uiPartialLeft": {
+    "description": "Badge text for a partly paid month. amount is pre-formatted money.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳৩০০"
+      }
+    }
+  },
+  "uiOverdueCount": "মেয়াদোত্তীর্ণ {count}",
+  "@uiOverdueCount": {
+    "description": "Solid overdue badge at the end of the escalation bar. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "uiStatePaid": "পরিশোধিত",
+  "@uiStatePaid": {
+    "description": "Month state label: paid in full."
+  },
+  "uiStateAdvance": "অগ্রিম পরিশোধিত",
+  "@uiStateAdvance": {
+    "description": "Month state label: paid before the month is due."
+  },
+  "uiStateWaived": "মওকুফ",
+  "@uiStateWaived": {
+    "description": "Month state label: fee waived."
+  },
+  "uiStateFree": "ফ্রি",
+  "@uiStateFree": {
+    "description": "Month state label: no fee for this month."
+  },
+  "uiAttPresent": "উপস্থিত",
+  "@uiAttPresent": {
+    "description": "Attendance status label."
+  },
+  "uiAttAbsent": "অনুপস্থিত",
+  "@uiAttAbsent": {
+    "description": "Attendance status label."
+  },
+  "uiAttLate": "দেরি",
+  "@uiAttLate": {
+    "description": "Attendance status label and the late toggle button."
+  },
+  "uiAttExcused": "ছুটি",
+  "@uiAttExcused": {
+    "description": "Attendance status label: excused leave."
+  },
+  "uiAttPresentShort": "উ",
+  "@uiAttPresentShort": {
+    "description": "One-letter attendance status (present)."
+  },
+  "uiAttAbsentShort": "অ",
+  "@uiAttAbsentShort": {
+    "description": "One-letter attendance status (absent)."
+  },
+  "uiAttLateShort": "দে",
+  "@uiAttLateShort": {
+    "description": "Short attendance status (late)."
+  },
+  "uiAttExcusedShort": "ছু",
+  "@uiAttExcusedShort": {
+    "description": "Short attendance status (excused)."
+  },
+  "uiClassNow": "এখন",
+  "@uiClassNow": {
+    "description": "Class state pill: the class is on now."
+  },
+  "uiClassMoved": "বদলেছে",
+  "@uiClassMoved": {
+    "description": "Class state pill: the class was rescheduled."
+  },
+  "uiClassCancelled": "বাতিল",
+  "@uiClassCancelled": {
+    "description": "Class state pill: the class was cancelled."
+  },
+  "uiClassExtra": "অতিরিক্ত",
+  "@uiClassExtra": {
+    "description": "Class state pill: an extra class."
+  },
+  "uiEscalationToday": "আজ {day} তারিখ",
+  "@uiEscalationToday": {
+    "description": "Caption under the escalation bar. day is a pre-formatted number 1 to 10.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "৫"
+      }
+    }
+  },
+  "uiEscalationBeyond": "১০ দিন পার হয়েছে",
+  "@uiEscalationBeyond": {
+    "description": "Screen-reader text of the escalation bar when the oldest due is beyond day 10."
+  },
+  "uiConflictTitle": "সময় মিলছে না",
+  "@uiConflictTitle": {
+    "description": "Heading of a schedule conflict card."
+  },
+  "uiConflictMore": "আরও {count}টি",
+  "@uiConflictMore": {
+    "description": "Conflict card: number of further clashing classes. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২"
+      }
+    }
+  },
+  "uiPaneResize": "প্যানের আকার বদলান",
+  "@uiPaneResize": {
+    "description": "Screen-reader label of the drag handle between the list and detail panes."
+  },
+  "uiMarkLate": "দেরি হিসেবে চিহ্নিত করুন",
+  "@uiMarkLate": {
+    "description": "Screen-reader label of the late toggle on a roll call row."
+  }
+}
