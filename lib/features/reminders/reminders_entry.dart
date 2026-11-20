@@ -87,6 +87,16 @@ Future<void> sendTestReminder(BuildContext context) async {
   messenger?.showSnackBar(SnackBar(content: Text(ok ? l10n.remindTestSent : l10n.remindTestFailed)));
 }
 
+/// Asks the running reminder service to replan now. Call it after the
+/// schedule changed in bulk outside the schedule screens (a backup import or
+/// a restore from a safety copy). Does nothing when the service is not running.
+void requestRemindersReplan(BuildContext context) {
+  final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
+  if (container.exists(reminderServiceProvider)) {
+    container.read(reminderServiceProvider).requestReplan();
+  }
+}
+
 /// Opens the Android "alarms & reminders" setting (exact alarms). The
 /// reminders are replanned when the app comes back (lifecycle resume).
 Future<void> requestExactAlarms(BuildContext context) async {
