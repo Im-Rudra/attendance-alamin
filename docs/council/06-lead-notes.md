@@ -25,6 +25,14 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - **Open risk for M5-A (bootstrap):** `openConnection` has no fallback if `WasmDatabase.open` throws (e.g. a browser that blocks SharedWorker/fetch). The bootstrap must catch DB-open failure and show a full-screen, localised "data storage couldn't start" error with a retry, never a blank/crashed app; and show the red "data won't be saved" banner when the storage report is in-memory.
 - Pre-migration safety snapshot is not implemented (v1 has no upgrade steps); required before schemaVersion 2.
 
+## Polish backlog (do before the Judge)
+- Batch schedule tab on wide windows: right column shorter than the left leaves blank space (user explicitly forbids eye-pinching blank areas) — M6-A, #19.
+- Week grid look at 1.3× Bangla text unverified (M6-B, #18).
+
+## From M6-A (schedule editing, #19)
+- `showReminderLeadSheet` returns `kReminderLeadUseDefault` (-1) for "use default", null for dismissed; save `storedLeadOf(result)`.
+- `SlotEditorField` reads `initial` once — build it after data loads. Embed the real `BatchScheduleTab` from schedule_entry.dart.
+
 ## From M5-A (shell, #16) and M5-B (providers + harness, #15)
 - Feature modules REPLACE THE BODIES of their stub screens and `*_entry.dart` files; never change routes, route params or entry signatures (router is frozen). Forms, slot editors, roll call, bulk-add and backup review open full-screen on the root navigator.
 - `/students/new` gets `initialBatchId` via GoRouter `extra` (no ids in query strings). `/` redirects to `/today`.
