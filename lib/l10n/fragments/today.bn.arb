@@ -1,0 +1,541 @@
+{
+  "@@locale": "bn",
+  "todayViewDay": "দিন",
+  "@todayViewDay": {
+    "description": "Label of the Day segment of the Today day/week toggle."
+  },
+  "todayViewWeek": "সপ্তাহ",
+  "@todayViewWeek": {
+    "description": "Label of the Week segment of the Today day/week toggle."
+  },
+  "todayViewLabel": "দেখার ধরন",
+  "@todayViewLabel": {
+    "description": "Accessibility label of the Today day/week toggle."
+  },
+  "todayRoutineToday": "আজকের রুটিন",
+  "@todayRoutineToday": {
+    "description": "Title of the timeline card when it shows today."
+  },
+  "todayRoutineOther": "রুটিন · {date}",
+  "@todayRoutineOther": {
+    "description": "Title of the timeline card for another date; date is short.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayAddExtra": "+ অতিরিক্ত ক্লাস",
+  "@todayAddExtra": {
+    "description": "Button that adds a one-off extra class."
+  },
+  "todayNoClassesDay": "এই দিনে কোনো ক্লাস নেই",
+  "@todayNoClassesDay": {
+    "description": "Empty state of the timeline."
+  },
+  "todayHeroNext": "পরের ক্লাস · {time}",
+  "@todayHeroNext": {
+    "description": "Hero status line before a class; when is a countdown like 40 minutes from now.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayHeroNow": "এখন চলছে · আর {left}",
+  "@todayHeroNow": {
+    "description": "Hero status line while a class runs; left is the remaining time.",
+    "placeholders": {
+      "left": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayHeroPending": "ক্লাস শেষ — হাজিরা বাকি",
+  "@todayHeroPending": {
+    "description": "Hero status line for a finished class without roll call."
+  },
+  "todayHeroDone": "আজকের সব ক্লাস শেষ",
+  "@todayHeroDone": {
+    "description": "Hero headline when every class has its attendance."
+  },
+  "todayHeroDoneSub": "{taken}/{total} হাজিরা নেওয়া হয়েছে",
+  "@todayHeroDoneSub": {
+    "description": "Hero second line with the attendance counts.",
+    "placeholders": {
+      "taken": {
+        "type": "String",
+        "example": "x"
+      },
+      "total": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayHeroRest": "আজ কোনো ক্লাস নেই — বিশ্রাম নিন",
+  "@todayHeroRest": {
+    "description": "Hero headline when nothing is scheduled today."
+  },
+  "todayHeroOtherDay": "{date} — {count}টি ক্লাস",
+  "@todayHeroOtherDay": {
+    "description": "Hero line for a picked day with classes.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      },
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayHeroOtherDayNone": "{date} — কোনো ক্লাস নেই",
+  "@todayHeroOtherDayNone": {
+    "description": "Hero line for a picked day without classes.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayTakeAttendance": "হাজিরা নিন",
+  "@todayTakeAttendance": {
+    "description": "Pill on the hero card that opens roll call."
+  },
+  "todayAddExtraLong": "অতিরিক্ত ক্লাস যোগ করুন",
+  "@todayAddExtraLong": {
+    "description": "Hero button when there is no class today."
+  },
+  "todayOtherBatchAttendance": "অন্য ব্যাচের হাজিরা নিন",
+  "@todayOtherBatchAttendance": {
+    "description": "Hero text button when there is no class today."
+  },
+  "todayPickBatchTitle": "কোন ব্যাচের হাজিরা?",
+  "@todayPickBatchTitle": {
+    "description": "Title of the batch picker sheet."
+  },
+  "todayInMinutes": "{min} মিনিট পর",
+  "@todayInMinutes": {
+    "description": "Countdown under an hour.",
+    "placeholders": {
+      "min": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayInHours": "{hours} ঘণ্টা পর",
+  "@todayInHours": {
+    "description": "Countdown of whole hours.",
+    "placeholders": {
+      "hours": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayInHoursMinutes": "{hours} ঘণ্টা {min} মিনিট পর",
+  "@todayInHoursMinutes": {
+    "description": "Countdown of hours and minutes.",
+    "placeholders": {
+      "hours": {
+        "type": "String",
+        "example": "x"
+      },
+      "min": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayLeftMinutes": "{min} মিনিট",
+  "@todayLeftMinutes": {
+    "description": "Time left under an hour.",
+    "placeholders": {
+      "min": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayLeftHoursMinutes": "{hours} ঘণ্টা {min} মিনিট",
+  "@todayLeftHoursMinutes": {
+    "description": "Time left, hours and minutes.",
+    "placeholders": {
+      "hours": {
+        "type": "String",
+        "example": "x"
+      },
+      "min": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todaySetupTitle": "শুরু করা যাক",
+  "@todaySetupTitle": {
+    "description": "Setup card title when there is no batch."
+  },
+  "todaySetupBody": "প্রথম ব্যাচ তৈরি করলে আজকের রুটিন, হাজিরা আর বেতনের হিসাব এখানে দেখা যাবে।",
+  "@todaySetupBody": {
+    "description": "Setup card body."
+  },
+  "todaySetupButton": "প্রথম ব্যাচ তৈরি করুন",
+  "@todaySetupButton": {
+    "description": "Setup card button."
+  },
+  "todayDuesTitle": "বেতন বকেয়া",
+  "@todayDuesTitle": {
+    "description": "Title of the dues card."
+  },
+  "todayDuesHeadline": "{unpaid} জন বাকি · {overdue} জন মেয়াদোত্তীর্ণ",
+  "@todayDuesHeadline": {
+    "description": "Dues card headline with counts.",
+    "placeholders": {
+      "unpaid": {
+        "type": "String",
+        "example": "x"
+      },
+      "overdue": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayDuesAllPaid": "সবাই বেতন দিয়েছে",
+  "@todayDuesAllPaid": {
+    "description": "Dues card when nobody owes."
+  },
+  "todayDuesAllPaidSub": "এই মাসে আদায় {amount}",
+  "@todayDuesAllPaidSub": {
+    "description": "Dues card second line when nobody owes.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayDuesOpen": "বকেয়া তালিকা খুলুন",
+  "@todayDuesOpen": {
+    "description": "Accessibility hint of the dues card."
+  },
+  "todayRollTaken": "হাজিরা {x}/{y}",
+  "@todayRollTaken": {
+    "description": "Timeline roll call state; x attended of y.",
+    "placeholders": {
+      "x": {
+        "type": "String",
+        "example": "x"
+      },
+      "y": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayRollPending": "হাজিরা বাকি",
+  "@todayRollPending": {
+    "description": "Timeline state of a past class without roll call."
+  },
+  "todayMovedFrom": "আগে {time}",
+  "@todayMovedFrom": {
+    "description": "Timeline note of a moved class.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayMovedAway": "{label} → {time}",
+  "@todayMovedAway": {
+    "description": "Timeline line of a class that moved to another time.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayClassOptions": "ক্লাসের অপশন",
+  "@todayClassOptions": {
+    "description": "Tooltip of the class row menu."
+  },
+  "todayCollectionTitle": "এই মাসের আদায়",
+  "@todayCollectionTitle": {
+    "description": "Title of the collection tile."
+  },
+  "todayCollectionOf": "প্রাপ্য {amount}-এর মধ্যে",
+  "@todayCollectionOf": {
+    "description": "Caption under the collected amount.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayCollectionNone": "এই মাসে এখনো কোনো আদায় নেই",
+  "@todayCollectionNone": {
+    "description": "Collection tile text without payments."
+  },
+  "todayCollectionProgress": "{percent} আদায় হয়েছে",
+  "@todayCollectionProgress": {
+    "description": "Accessibility text of the collection progress track.",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayAttendanceTitle": "আজকের হাজিরা",
+  "@todayAttendanceTitle": {
+    "description": "Title of the attendance tile."
+  },
+  "todayAttendanceRate": "উপস্থিতির হার",
+  "@todayAttendanceRate": {
+    "description": "Caption of the attendance percentage."
+  },
+  "todayAttendanceTaken": "{taken}/{total} ক্লাসের হাজিরা নেওয়া হয়েছে",
+  "@todayAttendanceTaken": {
+    "description": "Attendance tile counts.",
+    "placeholders": {
+      "taken": {
+        "type": "String",
+        "example": "x"
+      },
+      "total": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayAttendanceLowest": "সবচেয়ে কম: {batch} · {percent}",
+  "@todayAttendanceLowest": {
+    "description": "Attendance tile line naming the weakest batch.",
+    "placeholders": {
+      "batch": {
+        "type": "String",
+        "example": "x"
+      },
+      "percent": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayAttendanceNone": "আজ কোনো ক্লাস নেই",
+  "@todayAttendanceNone": {
+    "description": "Attendance tile empty state."
+  },
+  "todayAttendanceNotYet": "এখনো কোনো হাজিরা নেওয়া হয়নি",
+  "@todayAttendanceNotYet": {
+    "description": "Attendance tile when no class has attendance."
+  },
+  "todayAlertsTitle": "টানা অনুপস্থিত",
+  "@todayAlertsTitle": {
+    "description": "Title of the absence alerts tile."
+  },
+  "todayAlertLine": "{name} পরপর ৩ বার অনুপস্থিত",
+  "@todayAlertLine": {
+    "description": "Absence alert text.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayAlertDismiss": "বাদ দিন",
+  "@todayAlertDismiss": {
+    "description": "Tooltip of the dismiss button of an absence alert."
+  },
+  "todayAlertsEmpty": "সবাই নিয়মিত আসছে",
+  "@todayAlertsEmpty": {
+    "description": "Absence alerts empty state."
+  },
+  "todayAlertsMore": "আরও {count} জন",
+  "@todayAlertsMore": {
+    "description": "Overflow line of the absence alerts.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayBackupTitle": "ব্যাকআপ",
+  "@todayBackupTitle": {
+    "description": "Title of the backup tile."
+  },
+  "todayBackupNever": "এখনো ব্যাকআপ নেওয়া হয়নি",
+  "@todayBackupNever": {
+    "description": "Backup tile text when never exported."
+  },
+  "todayBackupAge": "শেষ ব্যাকআপ {days} দিন আগে",
+  "@todayBackupAge": {
+    "description": "Backup tile text with age in days.",
+    "placeholders": {
+      "days": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayBackupToday": "শেষ ব্যাকআপ আজ",
+  "@todayBackupToday": {
+    "description": "Backup tile text for a backup made today."
+  },
+  "todayBackupDueHint": "তথ্য হারানোর আগে একটি ব্যাকআপ রেখে দিন।",
+  "@todayBackupDueHint": {
+    "description": "Backup nudge hint."
+  },
+  "todayBackupOkHint": "আপনার তথ্য নিরাপদ আছে।",
+  "@todayBackupOkHint": {
+    "description": "Backup tile hint when a recent backup exists."
+  },
+  "todayBackupButton": "ব্যাকআপ তৈরি করুন",
+  "@todayBackupButton": {
+    "description": "Backup tile button."
+  },
+  "todayConflictTitle": "সময়ের সংঘাত",
+  "@todayConflictTitle": {
+    "description": "Title of the clash banner on Today."
+  },
+  "todayConflictLine": "{a} ও {b} — {time}",
+  "@todayConflictLine": {
+    "description": "One overlapping pair on the clash banner.",
+    "placeholders": {
+      "a": {
+        "type": "String",
+        "example": "x"
+      },
+      "b": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayConflictFix": "সময়সূচি ঠিক করুন",
+  "@todayConflictFix": {
+    "description": "Clash banner button."
+  },
+  "todayRemindersHint": "ক্লাসের রিমাইন্ডার আর {days} দিনের জন্য সেট করা আছে। অ্যাপ খুললে আবার বাড়ে।",
+  "@todayRemindersHint": {
+    "description": "Hint when the reminder window is short.",
+    "placeholders": {
+      "days": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayRemindersHintZero": "ক্লাসের রিমাইন্ডার শেষ হয়ে এসেছে। অ্যাপ খুললে আবার বাড়ে।",
+  "@todayRemindersHintZero": {
+    "description": "Hint when the reminder window is nearly over."
+  },
+  "todayQuickTitle": "দ্রুত কাজ",
+  "@todayQuickTitle": {
+    "description": "Title of the quick actions tile."
+  },
+  "todayQuickCollect": "টাকা নিন",
+  "@todayQuickCollect": {
+    "description": "Quick action."
+  },
+  "todayQuickAddStudent": "শিক্ষার্থী যোগ",
+  "@todayQuickAddStudent": {
+    "description": "Quick action."
+  },
+  "todayQuickExtra": "অতিরিক্ত ক্লাস",
+  "@todayQuickExtra": {
+    "description": "Quick action."
+  },
+  "todayQuickSearch": "খুঁজুন",
+  "@todayQuickSearch": {
+    "description": "Quick action."
+  },
+  "todayRecentTitle": "সাম্প্রতিক আদায়",
+  "@todayRecentTitle": {
+    "description": "Title of the recent payments tile."
+  },
+  "todayRecentEmpty": "এখনো কোনো আদায় নেই",
+  "@todayRecentEmpty": {
+    "description": "Recent payments empty state."
+  },
+  "todayRecentLine": "{amount} · {date}",
+  "@todayRecentLine": {
+    "description": "Recent payment second line.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "x"
+      },
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayRecentShare": "রসিদ পাঠান",
+  "@todayRecentShare": {
+    "description": "Tooltip of the receipt share button."
+  },
+  "todayWeekTitle": "এই সপ্তাহ",
+  "@todayWeekTitle": {
+    "description": "Title of the week at a glance tile."
+  },
+  "todayWeekDay": "{day}: {count}টি ক্লাস",
+  "@todayWeekDay": {
+    "description": "Accessibility label of a day column.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "x"
+      },
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayWeekCancelled": "বাতিল {count}",
+  "@todayWeekCancelled": {
+    "description": "Week tile marker.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayWeekExtra": "অতিরিক্ত {count}",
+  "@todayWeekExtra": {
+    "description": "Week tile marker.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayWeekOpen": "সপ্তাহের ছক খুলুন",
+  "@todayWeekOpen": {
+    "description": "Tooltip of the week tile."
+  }
+}
