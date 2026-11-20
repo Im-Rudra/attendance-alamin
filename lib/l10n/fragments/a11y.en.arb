@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "a11yStudentRollRow": "{name}, roll {roll}, {status}",
+  "a11yHintMarkAbsent": "Double-tap to mark absent",
+  "a11yHintMarkPresent": "Double-tap to mark present",
+  "a11yDueBadge": "{level}, {days} overdue, {amount}",
+  "a11yEscalationDay": "Day {day} of 10 since due",
+  "a11yLabelValue": "{label}, {value}",
+  "a11yPageOf": "{current} of {total}",
+  "a11yAvatarOf": "Photo of {name}",
+  "a11yCallPerson": "Call {name}",
+  "a11yMonthChip": "{month}, {state}",
+  "a11ySelected": "Selected",
+  "a11yNotSelected": "Not selected",
+  "a11yLoading": "Loading",
+  "a11yCloseSheet": "Close sheet",
+  "a11yLanguageSwitch": "Change language"
+}
