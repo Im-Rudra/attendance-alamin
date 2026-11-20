@@ -8,12 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
@@ -38,8 +38,8 @@ Future<String?> composeReminder(
   required String centerFallback,
 }) async {
   final LocalDate today = container.read(todayProvider);
-  final List<EnrollmentTerms> terms = await container.read(enrollmentTermsProvider.future);
-  final List<PaymentFact> facts = await container.read(paymentFactsProvider.future);
+  final List<EnrollmentTerms> terms = await container.read(enrollmentsRepositoryProvider).watchTerms().first;
+  final List<PaymentFact> facts = await container.read(paymentsRepositoryProvider).watchFacts().first;
   final DuesReport report = DuesEngine.report(today: today, terms: terms, payments: facts);
   final StudentDues? dues = duesOfStudent(report, studentId);
   if (dues == null || dues.openMonths.isEmpty) return null;

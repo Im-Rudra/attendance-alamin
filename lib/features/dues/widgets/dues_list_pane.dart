@@ -162,7 +162,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
       ),
     ];
     if (view.isEmpty) {
-      slivers.add(SliverFillRemaining(hasScrollBody: false, child: _noMatch()));
+      slivers.add(SliverToBoxAdapter(child: SizedBox(height: 320, child: _noMatch())));
     } else {
       for (final DueLevel level in kDuesGroupOrder) {
         final List<DuesRow> rows = view.ofLevel(level);

@@ -395,6 +395,7 @@ void main() {
       expect(next().onPressed, isNull);
       await tester.tap(find.byTooltip(l10n.collPrevMonth));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.text(l10n.collBillingBlock('অক্টোবর ২০২৬')), findsOneWidget);
       expect(find.text('৳২,৮০০'), findsOneWidget, reason: 'October expected');
       expect(next().onPressed, isNotNull);
