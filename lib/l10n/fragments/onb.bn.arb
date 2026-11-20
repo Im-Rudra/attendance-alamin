@@ -1,0 +1,321 @@
+{
+  "@@locale": "bn",
+  "onbStepOf": "ধাপ {n}, মোট {total}টি",
+  "@onbStepOf": {
+    "description": "Spoken progress label of the onboarding dots. n and total are pre-formatted.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "x"
+      },
+      "total": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbSkip": "এড়িয়ে যান",
+  "@onbSkip": {
+    "description": "Top-bar button that skips an optional onboarding step."
+  },
+  "onbPaneTitle": "চলুন, ২ মিনিটে সাজিয়ে নিই",
+  "@onbPaneTitle": {
+    "description": "Heading of the desktop side pane in onboarding."
+  },
+  "onbPaneBody": "যা দেবেন সবই পরে বদলানো যাবে। কিছু না জানা থাকলে এড়িয়ে যান।",
+  "@onbPaneBody": {
+    "description": "Reassurance under the side-pane heading."
+  },
+  "onbStepNameLang": "ভাষা ও নাম",
+  "@onbStepNameLang": {
+    "description": "Side-pane step 1 name."
+  },
+  "onbStepNameBatch": "প্রথম ব্যাচ",
+  "@onbStepNameBatch": {
+    "description": "Side-pane step 2 name."
+  },
+  "onbStepNameStudents": "শিক্ষার্থী",
+  "@onbStepNameStudents": {
+    "description": "Side-pane step 3 name."
+  },
+  "onbStepNameRemind": "রিমাইন্ডার",
+  "@onbStepNameRemind": {
+    "description": "Side-pane step 4 name."
+  },
+  "onbTipLang": "অ্যাপ আপনার ভাষায় চলবে। আজ-এর পাতায় ভাষা বদলের বোতাম সবসময় থাকবে।",
+  "@onbTipLang": {
+    "description": "Side-pane tip for step 1."
+  },
+  "onbTipBatch": "ব্যাচ মানে এক দল শিক্ষার্থী যারা একই সময়ে পড়ে। সময় দিলেই আজকের ক্লাস নিজে থেকে দেখা যাবে।",
+  "@onbTipBatch": {
+    "description": "Side-pane tip for step 2."
+  },
+  "onbTipStudents": "শুধু নাম আর অভিভাবকের ফোন লাগবে। রোল নম্বর নিজে থেকেই বসবে।",
+  "@onbTipStudents": {
+    "description": "Side-pane tip for step 3."
+  },
+  "onbTipRemind": "ক্লাসের আগে ফোনে একটি ছোট নোটিফিকেশন আসবে, চাপলেই হাজিরা খুলবে।",
+  "@onbTipRemind": {
+    "description": "Side-pane tip for step 4."
+  },
+  "onbWelcomeTitle": "স্বাগতম! ভাষা বেছে নিন",
+  "@onbWelcomeTitle": {
+    "description": "Step 1 heading."
+  },
+  "onbWelcomeBody": "পরে যেকোনো সময় বদলাতে পারবেন।",
+  "@onbWelcomeBody": {
+    "description": "Step 1 sub-heading."
+  },
+  "onbLangBn": "বাংলা",
+  "@onbLangBn": {
+    "description": "Big language card label (always Bangla)."
+  },
+  "onbLangBnHint": "অ্যাপ বাংলায় চলবে",
+  "@onbLangBnHint": {
+    "description": "Hint under the Bangla card (always Bangla)."
+  },
+  "onbLangEn": "English",
+  "@onbLangEn": {
+    "description": "Big language card label (always English)."
+  },
+  "onbLangEnHint": "Use the app in English",
+  "@onbLangEnHint": {
+    "description": "Hint under the English card (always English)."
+  },
+  "onbThemeTitle": "অ্যাপের রং",
+  "@onbThemeTitle": {
+    "description": "Theme row title."
+  },
+  "onbThemeSystem": "সিস্টেম",
+  "@onbThemeSystem": {
+    "description": "Theme choice: follow the phone."
+  },
+  "onbThemeLight": "লাইট",
+  "@onbThemeLight": {
+    "description": "Theme choice: light."
+  },
+  "onbThemeDark": "ডার্ক",
+  "@onbThemeDark": {
+    "description": "Theme choice: dark."
+  },
+  "onbCenterLabel": "কোচিং সেন্টারের নাম",
+  "@onbCenterLabel": {
+    "description": "Label of the optional center-name field."
+  },
+  "onbCenterHint": "যেমন: আলোকিত কোচিং",
+  "@onbCenterHint": {
+    "description": "Hint of the center-name field."
+  },
+  "onbCenterHelper": "রসিদ ও মেসেজে এই নাম আসবে। চাইলে পরে দিতে পারেন।",
+  "@onbCenterHelper": {
+    "description": "Helper text under the center-name field."
+  },
+  "onbBatchTitle": "আপনার প্রথম ব্যাচ তৈরি করুন",
+  "@onbBatchTitle": {
+    "description": "Step 2 heading."
+  },
+  "onbBatchBody": "একটি বিষয়, ব্যাচের নাম আর ক্লাসের সময় দিলেই হবে।",
+  "@onbBatchBody": {
+    "description": "Step 2 sub-heading."
+  },
+  "onbPreviewEmpty": "আপনার ব্যাচ এখানে দেখা যাবে",
+  "@onbPreviewEmpty": {
+    "description": "Live preview placeholder in step 2."
+  },
+  "onbPreviewLine": "{batch} · {fee}",
+  "@onbPreviewLine": {
+    "description": "Second line of the live batch preview. fee is pre-formatted like a monthly amount.",
+    "placeholders": {
+      "batch": {
+        "type": "String",
+        "example": "x"
+      },
+      "fee": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbClassPick": "শ্রেণি (চাইলে)",
+  "@onbClassPick": {
+    "description": "Label above the class chips."
+  },
+  "onbClass6": "ষষ্ঠ শ্রেণি",
+  "@onbClass6": {
+    "description": "Class chip for grade 6."
+  },
+  "onbClass7": "সপ্তম শ্রেণি",
+  "@onbClass7": {
+    "description": "Class chip for grade 7."
+  },
+  "onbClass8": "অষ্টম শ্রেণি",
+  "@onbClass8": {
+    "description": "Class chip for grade 8."
+  },
+  "onbClass9": "নবম শ্রেণি",
+  "@onbClass9": {
+    "description": "Class chip for grade 9."
+  },
+  "onbClass10": "দশম শ্রেণি",
+  "@onbClass10": {
+    "description": "Class chip for grade 10."
+  },
+  "onbClass11": "একাদশ শ্রেণি",
+  "@onbClass11": {
+    "description": "Class chip for grade 11."
+  },
+  "onbClass12": "দ্বাদশ শ্রেণি",
+  "@onbClass12": {
+    "description": "Class chip for grade 12."
+  },
+  "onbClassSsc": "SSC",
+  "@onbClassSsc": {
+    "description": "Class chip SSC."
+  },
+  "onbClassHsc": "HSC",
+  "@onbClassHsc": {
+    "description": "Class chip HSC."
+  },
+  "onbCreateBatch": "ব্যাচ তৈরি করুন",
+  "@onbCreateBatch": {
+    "description": "Primary button of step 2 before the batch exists."
+  },
+  "onbBatchDoneTitle": "ব্যাচ তৈরি হয়ে গেছে",
+  "@onbBatchDoneTitle": {
+    "description": "Heading of the card shown in step 2 after the batch was saved."
+  },
+  "onbBatchDoneLine": "{subject} · {batch}",
+  "@onbBatchDoneLine": {
+    "description": "Subject and batch name of the saved batch.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbBatchDoneHint": "নাম, ফি বা সময় বদলাতে চাইলে পরে ব্যাচ ট্যাবে যান।",
+  "@onbBatchDoneHint": {
+    "description": "Hint on the saved-batch card."
+  },
+  "onbStudentsTitle": "শিক্ষার্থী যোগ করুন",
+  "@onbStudentsTitle": {
+    "description": "Step 3 heading."
+  },
+  "onbStudentsBody": "নাম আর অভিভাবকের ফোন দিন। রোল নম্বর নিজে থেকেই বসে যাবে।",
+  "@onbStudentsBody": {
+    "description": "Step 3 sub-heading."
+  },
+  "onbStudentsIntoBatch": "{batch} ব্যাচে যোগ হচ্ছে",
+  "@onbStudentsIntoBatch": {
+    "description": "Shows which batch the new students join.",
+    "placeholders": {
+      "batch": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbStudentsNoBatch": "কোনো ব্যাচ বানানো হয়নি, তাই শিক্ষার্থীরা আলাদা থাকবে। পরে ব্যাচে যুক্ত করতে পারবেন।",
+  "@onbStudentsNoBatch": {
+    "description": "Note in step 3 when step 2 was skipped."
+  },
+  "onbStudentName": "শিক্ষার্থীর নাম",
+  "@onbStudentName": {
+    "description": "Name field of the quick-add loop."
+  },
+  "onbStudentPhone": "অভিভাবকের ফোন (ঐচ্ছিক)",
+  "@onbStudentPhone": {
+    "description": "Phone field of the quick-add loop."
+  },
+  "onbStudentSaveNext": "যোগ করুন, তারপর পরেরজন",
+  "@onbStudentSaveNext": {
+    "description": "Quick-add button; keeps the keyboard on the name field."
+  },
+  "onbStudentsEmpty": "এখনো কেউ নেই। প্রথম নামটি লিখুন।",
+  "@onbStudentsEmpty": {
+    "description": "Empty list note in step 3."
+  },
+  "onbStudentsAdded": "{count} জন যোগ হয়েছে",
+  "@onbStudentsAdded": {
+    "description": "Count of students added so far. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbStudentAddedNote": "{name} যোগ হয়েছে",
+  "@onbStudentAddedNote": {
+    "description": "Confirmation after one student was saved.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbStudentRow": "রোল {roll} · {name}",
+  "@onbStudentRow": {
+    "description": "One saved student in the list.",
+    "placeholders": {
+      "roll": {
+        "type": "String",
+        "example": "x"
+      },
+      "name": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "onbStudentsLater": "পরে যোগ করব",
+  "@onbStudentsLater": {
+    "description": "Skip button of step 3."
+  },
+  "onbRemindTitle": "ক্লাসের আগে মনে করিয়ে দেব",
+  "@onbRemindTitle": {
+    "description": "Step 4 heading."
+  },
+  "onbRemindPoint1": "প্রতিটি ক্লাসের আগে ফোনে একটি নোটিফিকেশন আসবে",
+  "@onbRemindPoint1": {
+    "description": "Step 4 bullet 1."
+  },
+  "onbRemindPoint2": "নোটিফিকেশনে চাপ দিলেই ওই ব্যাচের হাজিরা খুলবে",
+  "@onbRemindPoint2": {
+    "description": "Step 4 bullet 2."
+  },
+  "onbRemindPoint3": "সময় পরে বদলানো যাবে",
+  "@onbRemindPoint3": {
+    "description": "Step 4 bullet 3."
+  },
+  "onbRemindYes": "হ্যাঁ, চালু করুন",
+  "@onbRemindYes": {
+    "description": "Step 4 primary button."
+  },
+  "onbRemindNo": "এখন না",
+  "@onbRemindNo": {
+    "description": "Step 4 secondary button."
+  },
+  "onbFinishing": "শেষ হচ্ছে…",
+  "@onbFinishing": {
+    "description": "Shown on the final button while onboarding is saved."
+  },
+  "onbCoachText": "আজকের ক্লাসে চাপ দিলেই হাজিরা নেওয়া শুরু হবে",
+  "@onbCoachText": {
+    "description": "One-time coach mark text on the Today screen."
+  },
+  "onbCoachGotIt": "বুঝেছি",
+  "@onbCoachGotIt": {
+    "description": "Coach mark dismiss button."
+  },
+  "onbCoachSemantics": "টিপ: হাজিরা নেওয়ার বোতাম",
+  "@onbCoachSemantics": {
+    "description": "Spoken label of the coach mark."
+  }
+}
