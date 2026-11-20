@@ -1,0 +1,23 @@
+{
+  "@@locale": "bn",
+  "navToday": "আজ",
+  "@navToday": {
+    "description": "Navigation label: Today tab."
+  },
+  "navBatches": "ব্যাচ",
+  "@navBatches": {
+    "description": "Navigation label: Batches tab."
+  },
+  "navStudents": "শিক্ষার্থী",
+  "@navStudents": {
+    "description": "Navigation label: Students tab."
+  },
+  "navFees": "বেতন",
+  "@navFees": {
+    "description": "Navigation label: fees and dues tab."
+  },
+  "navMore": "আরও",
+  "@navMore": {
+    "description": "Navigation label: More tab (settings, backup)."
+  }
+}

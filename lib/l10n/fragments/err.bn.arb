@@ -1,0 +1,103 @@
+{
+  "@@locale": "bn",
+  "errNameRequired": "নাম লিখুন",
+  "@errNameRequired": {
+    "description": "Validation: a name is required."
+  },
+  "errNameTooLong": "নামটি একটু বেশি বড় হয়ে গেছে, ছোট করুন",
+  "@errNameTooLong": {
+    "description": "Validation: name over the length limit."
+  },
+  "errPhoneInvalid": "ফোন নম্বরটি ঠিক নয়। ০১৭১২৩৪৫৬৭৮ এভাবে লিখুন",
+  "@errPhoneInvalid": {
+    "description": "Validation: Bangladeshi mobile number is malformed."
+  },
+  "errAmountInvalid": "টাকার অঙ্ক ঠিক নয়, শুধু সংখ্যা লিখুন",
+  "@errAmountInvalid": {
+    "description": "Validation: amount is not a whole number of taka."
+  },
+  "errAmountTooLarge": "টাকার অঙ্ক অনেক বেশি হয়ে গেছে। ১০,০০,০০০ টাকার মধ্যে লিখুন",
+  "@errAmountTooLarge": {
+    "description": "Validation: amount over the 1,000,000 taka maximum."
+  },
+  "errDateInvalid": "তারিখটি ঠিক নয়",
+  "@errDateInvalid": {
+    "description": "Validation: unparseable or impossible date."
+  },
+  "errDateInFuture": "আগামী তারিখ দেওয়া যাবে না",
+  "@errDateInFuture": {
+    "description": "Validation: date must not be after today."
+  },
+  "errFeeMonthBeforeStart": "এই মাসের আগে বেতন শুরু হয়নি",
+  "@errFeeMonthBeforeStart": {
+    "description": "Validation: fee month is before the enrolment or fee start."
+  },
+  "errSlotTimeInvalid": "শুরুর সময় শেষের সময়ের আগে হতে হবে",
+  "@errSlotTimeInvalid": {
+    "description": "Validation: class slot start is not before end."
+  },
+  "errSlotsEmpty": "অন্তত একটি সাপ্তাহিক ক্লাস দিন",
+  "@errSlotsEmpty": {
+    "description": "Validation: a batch needs at least one weekly slot."
+  },
+  "errScheduleClash": "এই সময়ে আরেকটি ক্লাস আছে",
+  "@errScheduleClash": {
+    "description": "Schedule time clash. Never say conflict or overlap in Bangla."
+  },
+  "errAllocationExceedsRemaining": "এই মাসের বাকি টাকার চেয়ে বেশি দেওয়া হয়েছে",
+  "@errAllocationExceedsRemaining": {
+    "description": "Payment allocation is larger than the remaining due of a month."
+  },
+  "errAllocationBeyondHorizon": "এত দূরের মাসে অগ্রিম নেওয়া যায় না",
+  "@errAllocationBeyondHorizon": {
+    "description": "Payment allocation targets a month beyond the allowed advance horizon."
+  },
+  "errDuplicateOpenEnrollment": "এই শিক্ষার্থী ইতিমধ্যে এই ব্যাচে আছেন",
+  "@errDuplicateOpenEnrollment": {
+    "description": "Student is already enrolled in this batch."
+  },
+  "errNotFound": "এটি খুঁজে পাওয়া যায়নি, হয়তো মুছে ফেলা হয়েছে",
+  "@errNotFound": {
+    "description": "A record no longer exists."
+  },
+  "errRollCallFutureDate": "আগামী দিনের হাজিরা নেওয়া যাবে না",
+  "@errRollCallFutureDate": {
+    "description": "Roll call attempted for a date after today."
+  },
+  "errBatchArchived": "ব্যাচটি আর্কাইভ করা আছে, আগে চালু করুন",
+  "@errBatchArchived": {
+    "description": "Action on an archived batch."
+  },
+  "errPhotoTooLarge": "ছবিটি অনেক বড়, ছোট ছবি দিন",
+  "@errPhotoTooLarge": {
+    "description": "Student photo over the size limit."
+  },
+  "errImportNotBackup": "এটি হাজিরা খাতার ব্যাকআপ ফাইল নয়",
+  "@errImportNotBackup": {
+    "description": "Import: file is not a backup of this app."
+  },
+  "errImportNewerSchema": "ব্যাকআপটি নতুন সংস্করণের অ্যাপ থেকে করা। আগে অ্যাপ আপডেট করুন",
+  "@errImportNewerSchema": {
+    "description": "Import: backup schema is newer than this app."
+  },
+  "errImportChecksum": "ব্যাকআপ ফাইলটি নষ্ট বা বদলে গেছে, তাই যোগ করা যায়নি",
+  "@errImportChecksum": {
+    "description": "Import: checksum mismatch."
+  },
+  "errImportCorrupt": "ব্যাকআপ ফাইলটি পড়া যায়নি",
+  "@errImportCorrupt": {
+    "description": "Import: file is unreadable or malformed."
+  },
+  "errImportMissingParent": "ব্যাকআপে কিছু তথ্য অনুপস্থিত, তাই যোগ করা যায়নি",
+  "@errImportMissingParent": {
+    "description": "Import: a record refers to a parent that is not in the file."
+  },
+  "errStorageFailed": "সংরক্ষণ করা যায়নি। ফোনে জায়গা আছে কি না দেখুন",
+  "@errStorageFailed": {
+    "description": "Storage write failed."
+  },
+  "errUnknown": "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন",
+  "@errUnknown": {
+    "description": "Fallback for any unexpected error."
+  }
+}

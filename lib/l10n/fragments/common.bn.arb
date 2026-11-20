@@ -13,5 +13,105 @@
         "example": "হাজিরা খাতা"
       }
     }
+  },
+  "commonSave": "সংরক্ষণ",
+  "@commonSave": {
+    "description": "Button: save the current form."
+  },
+  "commonCancel": "বাতিল",
+  "@commonCancel": {
+    "description": "Button: dismiss without saving."
+  },
+  "commonDelete": "মুছুন",
+  "@commonDelete": {
+    "description": "Button: delete an item."
+  },
+  "commonEdit": "এডিট",
+  "@commonEdit": {
+    "description": "Button: edit an item."
+  },
+  "commonUndo": "ফিরিয়ে নিন",
+  "@commonUndo": {
+    "description": "Snackbar action: undo the last change."
+  },
+  "commonRetry": "আবার চেষ্টা করুন",
+  "@commonRetry": {
+    "description": "Button: retry a failed action."
+  },
+  "commonClose": "বন্ধ করুন",
+  "@commonClose": {
+    "description": "Button and tooltip: close a sheet or dialog."
+  },
+  "commonBack": "পেছনে",
+  "@commonBack": {
+    "description": "Tooltip: go back."
+  },
+  "commonNext": "পরবর্তী",
+  "@commonNext": {
+    "description": "Button: go to the next step."
+  },
+  "commonDone": "শেষ",
+  "@commonDone": {
+    "description": "Button: finish a step or flow."
+  },
+  "commonYes": "হ্যাঁ",
+  "@commonYes": {
+    "description": "Dialog answer: yes."
+  },
+  "commonNo": "না",
+  "@commonNo": {
+    "description": "Dialog answer: no."
+  },
+  "commonOk": "ঠিক আছে",
+  "@commonOk": {
+    "description": "Dialog button: acknowledge."
+  },
+  "commonSearch": "খুঁজুন",
+  "@commonSearch": {
+    "description": "Search button, field label and tooltip."
+  },
+  "commonMore": "আরও",
+  "@commonMore": {
+    "description": "Overflow menu tooltip and expander label."
+  },
+  "commonCall": "কল করুন",
+  "@commonCall": {
+    "description": "Button: call a phone number."
+  },
+  "commonCopyNumber": "নম্বর কপি করুন",
+  "@commonCopyNumber": {
+    "description": "Button: copy a phone number to the clipboard."
+  },
+  "commonCopied": "কপি হয়েছে",
+  "@commonCopied": {
+    "description": "Snackbar after copying to the clipboard."
+  },
+  "commonShare": "শেয়ার করুন",
+  "@commonShare": {
+    "description": "Button: open the OS share sheet."
+  },
+  "commonDetails": "বিস্তারিত",
+  "@commonDetails": {
+    "description": "Link or button: show details."
+  },
+  "commonOptional": "ঐচ্ছিক",
+  "@commonOptional": {
+    "description": "Hint on optional form fields."
+  },
+  "commonToday": "আজ",
+  "@commonToday": {
+    "description": "Label for the current date."
+  },
+  "commonAll": "সব",
+  "@commonAll": {
+    "description": "Filter chip: show everything."
+  },
+  "commonNotes": "নোট",
+  "@commonNotes": {
+    "description": "Label for free-text notes fields."
+  },
+  "commonLoadingFailed": "লোড করা যায়নি",
+  "@commonLoadingFailed": {
+    "description": "Message when a screen's data failed to load; shown with a retry button."
   }
 }

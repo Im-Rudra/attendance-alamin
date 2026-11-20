@@ -1,0 +1,139 @@
+{
+  "@@locale": "bn",
+  "a11yStudentRollRow": "{name}, রোল {roll}, {status}",
+  "@a11yStudentRollRow": {
+    "description": "Merged screen-reader label of a roll call row. status is the localized attendance state.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      },
+      "roll": {
+        "type": "String",
+        "example": "১"
+      },
+      "status": {
+        "type": "String",
+        "example": "উপস্থিত"
+      }
+    }
+  },
+  "a11yHintMarkAbsent": "অনুপস্থিত করতে দুবার ট্যাপ করুন",
+  "@a11yHintMarkAbsent": {
+    "description": "Screen-reader hint on a present roll call row."
+  },
+  "a11yHintMarkPresent": "উপস্থিত করতে দুবার ট্যাপ করুন",
+  "@a11yHintMarkPresent": {
+    "description": "Screen-reader hint on an absent roll call row."
+  },
+  "a11yDueBadge": "{level}, {days} বকেয়া, {amount}",
+  "@a11yDueBadge": {
+    "description": "Screen-reader label of a due severity badge. days and amount are pre-formatted, e.g. 7 দিন and money.",
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "example": "জরুরি"
+      },
+      "days": {
+        "type": "String",
+        "example": "৭ দিন"
+      },
+      "amount": {
+        "type": "String",
+        "example": "৳১,৬০০"
+      }
+    }
+  },
+  "a11yEscalationDay": "বকেয়ার {day} নম্বর দিন, ১০ দিনের মধ্যে",
+  "@a11yEscalationDay": {
+    "description": "Screen-reader label of the escalation bar. day is a pre-formatted number.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "৫"
+      }
+    }
+  },
+  "a11yLabelValue": "{label}, {value}",
+  "@a11yLabelValue": {
+    "description": "Generic merged label for a stat tile or counter: label then value.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "আজ উপস্থিত"
+      },
+      "value": {
+        "type": "String",
+        "example": "১২"
+      }
+    }
+  },
+  "a11yPageOf": "{total}টির মধ্যে {current}",
+  "@a11yPageOf": {
+    "description": "Position in a list or stepper. Both numbers are pre-formatted.",
+    "placeholders": {
+      "current": {
+        "type": "String",
+        "example": "২"
+      },
+      "total": {
+        "type": "String",
+        "example": "৫"
+      }
+    }
+  },
+  "a11yAvatarOf": "{name}-এর ছবি",
+  "@a11yAvatarOf": {
+    "description": "Screen-reader label for a student avatar.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "a11yCallPerson": "{name}-কে কল করুন",
+  "@a11yCallPerson": {
+    "description": "Screen-reader label for a call button next to a person.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "a11yMonthChip": "{month}, {state}",
+  "@a11yMonthChip": {
+    "description": "Screen-reader label of a month chip on the payment month strip. state is paid, partial, unpaid and so on.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর"
+      },
+      "state": {
+        "type": "String",
+        "example": "পরিশোধিত"
+      }
+    }
+  },
+  "a11ySelected": "নির্বাচিত",
+  "@a11ySelected": {
+    "description": "Screen-reader state word for a selected item."
+  },
+  "a11yNotSelected": "নির্বাচিত নয়",
+  "@a11yNotSelected": {
+    "description": "Screen-reader state word for an unselected item."
+  },
+  "a11yLoading": "লোড হচ্ছে",
+  "@a11yLoading": {
+    "description": "Screen-reader label for progress indicators."
+  },
+  "a11yCloseSheet": "শিট বন্ধ করুন",
+  "@a11yCloseSheet": {
+    "description": "Screen-reader label for the close control of a bottom sheet or panel."
+  },
+  "a11yLanguageSwitch": "ভাষা বদলান",
+  "@a11yLanguageSwitch": {
+    "description": "Screen-reader label for the language toggle."
+  }
+}
