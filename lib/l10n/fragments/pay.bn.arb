@@ -1,0 +1,431 @@
+{
+  "@@locale": "bn",
+  "payTitle": "টাকা নিন",
+  "@payTitle": {
+    "description": "Title of the collect-payment sheet."
+  },
+  "payTitleEdit": "পেমেন্ট এডিট",
+  "@payTitleEdit": {
+    "description": "Title of the edit-payment sheet."
+  },
+  "payBatchLabel": "কোন ব্যাচের?",
+  "@payBatchLabel": {
+    "description": "Label above the batch chooser when a student is in several batches."
+  },
+  "payBatchOwed": "{batch} · বাকি {amount}",
+  "@payBatchOwed": {
+    "description": "Batch chip; amount is money owed in that batch.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payBatchClear": "{batch} · সব জমা",
+  "@payBatchClear": {
+    "description": "Batch chip when nothing is owed in that batch.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "payMonthsLabel": "কোন মাসের?",
+  "@payMonthsLabel": {
+    "description": "Label of the line that names the months the payment covers."
+  },
+  "payMonthsNone": "কোনো মাস নেই",
+  "@payMonthsNone": {
+    "description": "Months line when nothing can be allocated."
+  },
+  "payAmountLabel": "পরিমাণ",
+  "@payAmountLabel": {
+    "description": "Label of the amount field."
+  },
+  "payAmountFromSplit": "মাস ভাগ অনুযায়ী",
+  "@payAmountFromSplit": {
+    "description": "Helper under the amount field when the split sets the total."
+  },
+  "payMethodLabel": "মাধ্যম",
+  "@payMethodLabel": {
+    "description": "Label above the payment-method pills."
+  },
+  "payDateLabel": "তারিখ",
+  "@payDateLabel": {
+    "description": "Label of the payment date row."
+  },
+  "payDateToday": "আজ, {date}",
+  "@payDateToday": {
+    "description": "Date row text when the date is today.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "payDateEdit": "তারিখ বদলান",
+  "@payDateEdit": {
+    "description": "Tooltip of the date edit button."
+  },
+  "payNoteLabel": "নোট (ঐচ্ছিক)",
+  "@payNoteLabel": {
+    "description": "Label of the note field."
+  },
+  "payNoteAdd": "নোট যোগ করুন",
+  "@payNoteAdd": {
+    "description": "Button that reveals the note field."
+  },
+  "paySplitTitle": "মাস ভাগ",
+  "@paySplitTitle": {
+    "description": "Title of the expandable manual month-allocation section."
+  },
+  "paySplitHelp": "কোন মাসে কত দেবেন তা নিজে ঠিক করুন।",
+  "@paySplitHelp": {
+    "description": "Help text inside the split section."
+  },
+  "paySplitAuto": "নিজে ভাগ হোক",
+  "@paySplitAuto": {
+    "description": "Button that returns the split to automatic."
+  },
+  "paySplitOwed": "বাকি {amount}",
+  "@paySplitOwed": {
+    "description": "Month row status: unpaid month, amount is the remaining fee.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitUpcoming": "আগামী · {amount}",
+  "@paySplitUpcoming": {
+    "description": "Month row status: not yet due month.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitPartial": "আংশিক · {amount} বাকি",
+  "@paySplitPartial": {
+    "description": "Month row status: partly paid month.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitTooMuch": "সর্বোচ্চ {amount}",
+  "@paySplitTooMuch": {
+    "description": "Row error when a month gets more than its remaining amount.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySplitMonthField": "{month}-এর পরিমাণ",
+  "@paySplitMonthField": {
+    "description": "Accessibility label of one month's amount field.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payPartialNote": "আংশিক — {amount} বাকি থাকবে",
+  "@payPartialNote": {
+    "description": "Inline note when the payment does not cover a month fully.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payAdvanceNote": "{amount} অগ্রিম হিসেবে যাবে ({months})",
+  "@payAdvanceNote": {
+    "description": "Inline note when part of the payment reaches months that are not yet due.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "months": {
+        "type": "String"
+      }
+    }
+  },
+  "payButtonMonths": "{months} {amount} জমা করুন",
+  "@payButtonMonths": {
+    "description": "Main button. months is a pre-formatted month span (Bangla with the possessive ending).",
+    "placeholders": {
+      "months": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payButtonCount": "{count} মাসের {amount} জমা করুন",
+  "@payButtonCount": {
+    "description": "Main button when many separate months are covered.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payButtonAdvance": "{months} {amount} অগ্রিম জমা করুন",
+  "@payButtonAdvance": {
+    "description": "Main button when only not-yet-due months are covered.",
+    "placeholders": {
+      "months": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payButtonSaveEdit": "পরিবর্তন সংরক্ষণ করুন",
+  "@payButtonSaveEdit": {
+    "description": "Main button of the edit-payment sheet."
+  },
+  "payDisabledAmount": "পরিমাণ লিখুন",
+  "@payDisabledAmount": {
+    "description": "Reason shown under the disabled main button."
+  },
+  "payDisabledSplit": "মাস ভাগ ঠিক করুন",
+  "@payDisabledSplit": {
+    "description": "Reason shown under the disabled main button when the split is wrong."
+  },
+  "payDisabledOverflow": "পরিমাণ কমান",
+  "@payDisabledOverflow": {
+    "description": "Reason shown under the disabled main button when the amount is too large."
+  },
+  "payDisabledNoMonths": "নেওয়ার মতো মাস নেই",
+  "@payDisabledNoMonths": {
+    "description": "Reason shown when the enrollment has no open month."
+  },
+  "payErrOverflow": "১২ মাসের বেশি অগ্রিম নেওয়া যায় না। সর্বোচ্চ {amount} নিতে পারেন।",
+  "@payErrOverflow": {
+    "description": "Inline error when the amount cannot be placed within 12 future months.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payErrNothingOpen": "এই ভর্তিতে নেওয়ার মতো কোনো মাস নেই।",
+  "@payErrNothingOpen": {
+    "description": "Inline error when nothing can be allocated."
+  },
+  "payNoEnrollment": "এই শিক্ষার্থী এখনো কোনো ব্যাচে নেই।",
+  "@payNoEnrollment": {
+    "description": "Shown in the sheet when the student has no enrollment."
+  },
+  "payPaidToast": "{amount} জমা হয়েছে",
+  "@payPaidToast": {
+    "description": "Snackbar after saving a payment.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paySendReceipt": "রসিদ পাঠান",
+  "@paySendReceipt": {
+    "description": "Button that shares the receipt text."
+  },
+  "payUndone": "জমা বাতিল করা হয়েছে",
+  "@payUndone": {
+    "description": "Snackbar after undoing a payment."
+  },
+  "payEditedToast": "পেমেন্ট ঠিক করা হয়েছে",
+  "@payEditedToast": {
+    "description": "Snackbar after editing a payment."
+  },
+  "payDeletedToast": "পেমেন্ট মুছে ফেলা হয়েছে",
+  "@payDeletedToast": {
+    "description": "Snackbar after deleting a payment."
+  },
+  "payMenuTooltip": "আরও",
+  "@payMenuTooltip": {
+    "description": "Tooltip of the three-dot menu of the payment sheet."
+  },
+  "payWaiveMenu": "এই মাস মাফ করুন",
+  "@payWaiveMenu": {
+    "description": "Menu item that waives the oldest open month."
+  },
+  "payWaiveTitle": "{month} মাফ করবেন?",
+  "@payWaiveTitle": {
+    "description": "Title of the waive dialog.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payWaiveBody": "এই মাসের বেতন আর বাকি দেখাবে না। পরে চাইলে মাফ তুলে নিতে পারবেন।",
+  "@payWaiveBody": {
+    "description": "Body of the waive dialog."
+  },
+  "payWaiveReason": "কারণ (ঐচ্ছিক)",
+  "@payWaiveReason": {
+    "description": "Label of the optional reason field in the waive dialog."
+  },
+  "payWaiveConfirm": "মাফ করুন",
+  "@payWaiveConfirm": {
+    "description": "Confirm button of the waive dialog."
+  },
+  "payWaivedToast": "{month} মাফ করা হয়েছে",
+  "@payWaivedToast": {
+    "description": "Snackbar after waiving a month.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payUnwaive": "মাফ তুলে নিন",
+  "@payUnwaive": {
+    "description": "Button on a waived month in the history."
+  },
+  "payUnwaiveTitle": "{month}-এর মাফ তুলে নেবেন?",
+  "@payUnwaiveTitle": {
+    "description": "Title of the unwaive confirmation.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payUnwaiveBody": "মাসটি আবার বাকি দেখাবে।",
+  "@payUnwaiveBody": {
+    "description": "Body of the unwaive confirmation."
+  },
+  "payUnwaivedToast": "{month}-এর মাফ তুলে নেওয়া হয়েছে",
+  "@payUnwaivedToast": {
+    "description": "Snackbar after undoing a waiver.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payWaivedRow": "{month} · মাফ",
+  "@payWaivedRow": {
+    "description": "History row title of a waived month.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "payHistoryEmpty": "এখনো কোনো পেমেন্ট নেই",
+  "@payHistoryEmpty": {
+    "description": "Empty state of the payment history."
+  },
+  "payHistoryMore": "আরও দেখান",
+  "@payHistoryMore": {
+    "description": "Button that reveals older payments."
+  },
+  "payHistoryLess": "কম দেখান",
+  "@payHistoryLess": {
+    "description": "Button that collapses the payment history."
+  },
+  "payHistorySub": "{date} · {method}",
+  "@payHistorySub": {
+    "description": "History row subtitle: date and method.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "payHistorySubBatch": "{date} · {method} · {batch}",
+  "@payHistorySubBatch": {
+    "description": "History row subtitle when the student has several batches.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      },
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "payReceiptTitle": "রসিদ",
+  "@payReceiptTitle": {
+    "description": "Title of the receipt sheet."
+  },
+  "payReceiptRemaining": "বাকি: {amount}",
+  "@payReceiptRemaining": {
+    "description": "The remaining_line of the receipt when money is still due.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "payReceiptAllPaid": "সব বেতন পরিশোধিত ✓",
+  "@payReceiptAllPaid": {
+    "description": "The remaining_line of the receipt when nothing is due. The check mark is shown as an icon in the app."
+  },
+  "payReceiptLoading": "রসিদ তৈরি হচ্ছে…",
+  "@payReceiptLoading": {
+    "description": "Shown while the receipt text loads."
+  },
+  "payReceiptMissing": "রসিদটি পাওয়া যায়নি",
+  "@payReceiptMissing": {
+    "description": "Shown when the receipt no longer exists."
+  },
+  "payDeleteTitle": "এই পেমেন্ট ({amount}, {months}) মুছে ফেলবেন?",
+  "@payDeleteTitle": {
+    "description": "Title of the delete-payment confirmation.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "months": {
+        "type": "String"
+      }
+    }
+  },
+  "payDeleteBody": "মুছলে মাসটি আবার বাকি দেখাবে।",
+  "@payDeleteBody": {
+    "description": "Body of the delete-payment confirmation."
+  },
+  "payA11yMethod": "মাধ্যম: {method}",
+  "@payA11yMethod": {
+    "description": "Accessibility label of a method pill.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "payA11yReceipt": "রসিদ, {months}, {amount}",
+  "@payA11yReceipt": {
+    "description": "Accessibility label of a history row.",
+    "placeholders": {
+      "months": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
+}
