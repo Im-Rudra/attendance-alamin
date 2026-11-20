@@ -27,7 +27,9 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 
 ## Polish backlog (do before the Judge)
 - Batch schedule tab on wide windows: right column shorter than the left leaves blank space (user explicitly forbids eye-pinching blank areas) — M6-A, #19.
-- Week grid look at 1.3× Bangla text unverified (M6-B, #18).
+- Week grid look at 1.3× Bangla text unverified (M6-B, #18). The test matrix runs at 1.0× only — add a 1.3× pass before the Judge.
+- Any new SnackBar with an action must set `persist: false` (fixed for undo/cancel/payment snackbars in the polish PR).
+- Roll call per-student notes don't exist (only a per-class note); "+ new class" in the session chooser isn't built (extras come from the class sheet).
 
 ## From M6-E (settings, #17)
 - M7-B's payment form must offer `paymentMethodsConfigProvider.visible` (from settings_entry.dart); label methods with `paymentMethodLabel`. Templates: use the template helpers exported by settings_entry.dart.
