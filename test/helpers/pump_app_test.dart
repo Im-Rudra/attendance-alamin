@@ -60,14 +60,18 @@ void main() {
   });
 
   testWidgets('an overflowing widget fails a matrix case', (tester) async {
-    await expectLater(
-      runMatrixCase(
+    Object? failure;
+    try {
+      await runMatrixCase(
         tester,
         const MatrixCase(ThemeMode.light, Lang.en, TestViewport.phone),
         () => const _Overflowing(),
-      ),
-      throwsA(isA<TestFailure>()),
-    );
+      );
+    } on TestFailure catch (e) {
+      failure = e;
+    }
+    expect(failure, isA<TestFailure>());
+    expect('$failure', contains('overflowed'));
   });
 
   testWidgets('pumpApp applies theme, locale, viewport and clock', (tester) async {
