@@ -1,0 +1,151 @@
+{
+  "@@locale": "bn",
+  "collTitle": "মাসিক আদায়",
+  "@collTitle": {
+    "description": "Title of the monthly collection screen."
+  },
+  "collPrevMonth": "আগের মাস",
+  "@collPrevMonth": {
+    "description": "Tooltip of the previous-month arrow."
+  },
+  "collNextMonth": "পরের মাস",
+  "@collNextMonth": {
+    "description": "Tooltip of the next-month arrow."
+  },
+  "collBillingBlock": "{month}-এর বেতন",
+  "@collBillingBlock": {
+    "description": "Title of the billing-month block. month is a month name with year.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "collCashBlock": "{month} মাসে হাতে আসা টাকা",
+  "@collCashBlock": {
+    "description": "Title of the cash-in block. month is a month name with year.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "collExpected": "প্রাপ্য",
+  "@collExpected": {
+    "description": "Collection tile: fees expected for the month."
+  },
+  "collReceived": "আদায়",
+  "@collReceived": {
+    "description": "Collection tile: fees received for the month."
+  },
+  "collWaived": "মাফ",
+  "@collWaived": {
+    "description": "Collection tile: fees waived for the month."
+  },
+  "collOutstanding": "বাকি",
+  "@collOutstanding": {
+    "description": "Collection tile: fees still owed for the month."
+  },
+  "collWaivedCaption": "{count} টি মাস",
+  "@collWaivedCaption": {
+    "description": "Caption under the waived amount. count is a formatted number.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "collPaidStudents": "{paid} / {total} জন দিয়েছে",
+  "@collPaidStudents": {
+    "description": "How many students paid in full. Both are formatted numbers.",
+    "placeholders": {
+      "paid": {
+        "type": "String",
+        "example": "1"
+      },
+      "total": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "collSeeDues": "বাকির তালিকা দেখুন",
+  "@collSeeDues": {
+    "description": "Caption under the outstanding tile: opens the dues list for the month."
+  },
+  "collByBatch": "ব্যাচ অনুযায়ী",
+  "@collByBatch": {
+    "description": "Title of the per-batch list."
+  },
+  "collAllBatches": "সব ব্যাচ",
+  "@collAllBatches": {
+    "description": "Name of the total row of the per-batch list."
+  },
+  "collBatchSummary": "প্রাপ্য {expected} · আদায় {received} · বাকি {outstanding}",
+  "@collBatchSummary": {
+    "description": "One line per batch. All three are formatted money.",
+    "placeholders": {
+      "expected": {
+        "type": "String",
+        "example": "1"
+      },
+      "received": {
+        "type": "String",
+        "example": "1"
+      },
+      "outstanding": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "collByMethod": "মাধ্যম অনুযায়ী",
+  "@collByMethod": {
+    "description": "Title of the per-method list of cash in."
+  },
+  "collFeesTotal": "বেতন বাবদ",
+  "@collFeesTotal": {
+    "description": "Cash-in row: total of monthly fees."
+  },
+  "collOtherIncome": "অন্যান্য আয়",
+  "@collOtherIncome": {
+    "description": "Cash-in row: income that is not a monthly fee."
+  },
+  "collCashTotal": "মোট হাতে এসেছে",
+  "@collCashTotal": {
+    "description": "Cash-in row: grand total."
+  },
+  "collLog": "পেমেন্টের তালিকা",
+  "@collLog": {
+    "description": "Title of the list of receipts of the month."
+  },
+  "collLogEmpty": "এই মাসে এখনো কোনো আদায় নেই",
+  "@collLogEmpty": {
+    "description": "Empty state of the payments list."
+  },
+  "collShareReceipt": "রসিদ পাঠান",
+  "@collShareReceipt": {
+    "description": "Tooltip of the share button on a payment row."
+  },
+  "collNothingBilled": "এই মাসে কোনো বেতন ধরা নেই",
+  "@collNothingBilled": {
+    "description": "Shown in the billing block when nothing is expected."
+  },
+  "collProgressLabel": "আদায় {received}, প্রাপ্য {expected}",
+  "@collProgressLabel": {
+    "description": "Screen-reader label of the progress bar. Both are formatted money.",
+    "placeholders": {
+      "received": {
+        "type": "String",
+        "example": "1"
+      },
+      "expected": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  }
+}
