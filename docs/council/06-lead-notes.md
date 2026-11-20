@@ -2,6 +2,14 @@
 
 Builders of later modules must follow these (they are not all in 04-plan.md).
 
+## Bugs found by the Chair's live walk-through on Pages (2026-11-21, fix before the Judge)
+1. **Today doesn't reflect a saved roll call** (BUG): after saving attendance for today's class (before its start time), the hero still says "হাজিরা নিন" and the routine row shows no "✓ x/y", even after a full reload. The roll call itself IS persisted (reopening shows "✓ সংরক্ষিত"). Check how M8-A/M5-B derive the taken state (session summaries keyed by occ) — must show taken for any class with a saved session, started or not.
+2. **Roll call layout jump** (UX BUG): the "সবাই উপস্থিত ধরা হয়েছে…" info banner disappears on the first tap and the roster jumps up ~60px, so fast taps hit the wrong row. Keep the banner's space (or animate it out without shifting rows / move the hint into the counts bar).
+3. **Default class time** in the onboarding batch step (SlotEditorField initial) is "next full hour" → "ভোর ৫:০০" when used early morning. Default to a sensible coaching hour: next full hour clamped to 07:00–20:00, else বিকাল ৪:০০.
+4. **Dues card copy**: shows "সবাই বেতন দিয়েছে" when nobody owes yet only because billing hasn't started (no payments at all). Use "কোনো বকেয়া নেই" for the zero-dues state; keep "সবাই বেতন দিয়েছে" only when there were dues this month and all are paid.
+5. **Countdown liveness** to verify: the hero's "N মিনিট পর" did not visibly tick within ~30 s (changed only after reload). Confirm minuteTickProvider drives it on web.
+6. **Stale web cache**: browsers kept serving the previous build after a Pages deploy (needed a hard reload). Consider `--pwa-strategy=none` or a version check so the teacher always gets the latest build.
+
 ## From M3-B (theme, #2)
 - Severity/attendance colour APIs take theme-local enums. Map with `SeverityLevel.values[dueLevel.index]` and `AttendanceKind.values[status.index]` (M1-B locks the order). M4-D should add one small extension so features never repeat the index mapping.
 - Light hero violet radial peak alpha is 0.80 (contrast fix).
