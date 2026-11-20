@@ -1,0 +1,130 @@
+{
+  "@@locale": "bn",
+  "remindTitle": "{subject} · {batch}",
+  "@remindTitle": {
+    "description": "Class reminder notification title (Product 3.11): subject name, a middle dot, batch name.",
+    "placeholders": {
+      "subject": {"type": "String"},
+      "batch": {"type": "String"}
+    }
+  },
+  "remindBody": "{range} ক্লাস — {n} মিনিট পর",
+  "@remindBody": {
+    "description": "Class reminder notification body (Product 3.11). range = formatted start–end time, n = minutes before start.",
+    "placeholders": {
+      "range": {"type": "String"},
+      "n": {"type": "String"}
+    }
+  },
+  "remindBodyExtra": "{range} ক্লাস — {n} মিনিট পর (অতিরিক্ত ক্লাস)",
+  "@remindBodyExtra": {
+    "description": "Class reminder notification body for an extra (one-off) class.",
+    "placeholders": {
+      "range": {"type": "String"},
+      "n": {"type": "String"}
+    }
+  },
+  "remindBodyRescheduled": "{range} ক্লাস — {n} মিনিট পর (সময় বদলানো)",
+  "@remindBodyRescheduled": {
+    "description": "Class reminder notification body for a rescheduled class.",
+    "placeholders": {
+      "range": {"type": "String"},
+      "n": {"type": "String"}
+    }
+  },
+  "remindAction": "হাজিরা নিন",
+  "@remindAction": {
+    "description": "Button on a class reminder notification / in-app banner that opens the roll call."
+  },
+  "remindChannelName": "ক্লাস রিমাইন্ডার",
+  "@remindChannelName": {
+    "description": "Android notification channel name shown in the phone's notification settings."
+  },
+  "remindChannelDescription": "প্রতিটি ক্লাস শুরুর আগে মনে করিয়ে দেয়",
+  "@remindChannelDescription": {
+    "description": "Android notification channel description."
+  },
+  "remindTestTitle": "ক্লাস রিমাইন্ডার",
+  "@remindTestTitle": {
+    "description": "Title of the test notification sent from Settings."
+  },
+  "remindTestBody": "এটি একটি টেস্ট রিমাইন্ডার — সব ঠিক আছে",
+  "@remindTestBody": {
+    "description": "Body of the test notification sent from Settings."
+  },
+  "remindTestSent": "টেস্ট রিমাইন্ডার পাঠানো হয়েছে",
+  "@remindTestSent": {
+    "description": "Snackbar after the test reminder was sent."
+  },
+  "remindTestFailed": "টেস্ট রিমাইন্ডার পাঠানো গেল না — অনুমতি দেখুন",
+  "@remindTestFailed": {
+    "description": "Snackbar when the test reminder could not be shown (usually no permission)."
+  },
+  "remindCancelledNote": "এই ক্লাস বাতিল",
+  "@remindCancelledNote": {
+    "description": "Note shown when a reminder is tapped but its class was cancelled after the reminder fired."
+  },
+  "remindBannerDismiss": "ঠিক আছে",
+  "@remindBannerDismiss": {
+    "description": "Dismiss button of the in-app reminder banner (web, while the tab is open)."
+  },
+  "remindPrimingTitle": "ক্লাসের আগে মনে করিয়ে দেব",
+  "@remindPrimingTitle": {
+    "description": "Reminder permission priming screen title (UX 2h)."
+  },
+  "remindPrimingPoint1": "প্রতিটি ক্লাসের {n} মিনিট আগে ফোনে একটি নোটিফিকেশন আসবে",
+  "@remindPrimingPoint1": {
+    "description": "Priming screen bullet 1; n = default lead minutes.",
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "remindPrimingPoint2": "নোটিফিকেশনে চাপ দিলেই ওই ক্লাসের হাজিরা খুলবে",
+  "@remindPrimingPoint2": {
+    "description": "Priming screen bullet 2."
+  },
+  "remindPrimingPoint3": "সময় পরে বদলানো যাবে",
+  "@remindPrimingPoint3": {
+    "description": "Priming screen bullet 3."
+  },
+  "remindPrimingWhy": "এজন্য ফোন একবার অনুমতি চাইবে। তখন \"Allow\" বা \"অনুমতি দিন\" চাপুন।",
+  "@remindPrimingWhy": {
+    "description": "Priming screen: plain explanation of the system permission prompt that follows."
+  },
+  "remindPrimingYes": "হ্যাঁ, চালু করুন",
+  "@remindPrimingYes": {
+    "description": "Priming screen primary button: ask for the permission."
+  },
+  "remindPrimingNotNow": "এখন না",
+  "@remindPrimingNotNow": {
+    "description": "Priming screen secondary button: skip for now."
+  },
+  "remindPrimingExactTitle": "আরেকটি অনুমতি",
+  "@remindPrimingExactTitle": {
+    "description": "Priming screen second card title (exact alarms)."
+  },
+  "remindPrimingExactBody": "সময়মতো রিমাইন্ডারের জন্য আরেকটি অনুমতি লাগবে: \"অ্যালার্ম ও রিমাইন্ডার\" চালু করুন। না দিলে রিমাইন্ডার কয়েক মিনিট দেরিতে আসতে পারে।",
+  "@remindPrimingExactBody": {
+    "description": "Priming screen second card: why the exact alarm permission is needed."
+  },
+  "remindPrimingOpenSettings": "সেটিংস খুলুন",
+  "@remindPrimingOpenSettings": {
+    "description": "Priming screen: opens the Android alarms and reminders setting."
+  },
+  "remindPrimingAllSet": "সব ঠিক আছে",
+  "@remindPrimingAllSet": {
+    "description": "Priming screen: every permission is granted."
+  },
+  "remindPrimingAllSetBody": "ক্লাস শুরুর আগে নোটিফিকেশন আসবে।",
+  "@remindPrimingAllSetBody": {
+    "description": "Priming screen: line under 'all set'."
+  },
+  "remindPrimingDenied": "অনুমতি পাওয়া যায়নি — রিমাইন্ডার আসবে না। পরে \"আরও\" পাতা থেকে ঠিক করতে পারবেন।",
+  "@remindPrimingDenied": {
+    "description": "Priming screen: the permission was denied."
+  },
+  "remindPrimingContinue": "চালিয়ে যান",
+  "@remindPrimingContinue": {
+    "description": "Priming screen: leave the screen."
+  }
+}
