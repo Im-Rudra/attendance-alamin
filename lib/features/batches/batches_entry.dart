@@ -97,8 +97,7 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
     try {
       clashLines = await _clashLines(context, container, preview);
     } on Object catch (e, st) {
-      debugPrint('unarchive clash lines failed: $e
-$st');
+      debugPrint('unarchive clash lines failed: $e $st');
       return false;
     }
   }
