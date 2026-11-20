@@ -1,0 +1,565 @@
+{
+  "@@locale": "bn",
+  "batchNew": "নতুন ব্যাচ",
+  "@batchNew": {
+    "description": "FAB / button that opens the new-batch form."
+  },
+  "batchEmptyList": "এখনো কোনো ব্যাচ নেই। প্রথম ব্যাচ তৈরি করুন — ১ মিনিট লাগবে।",
+  "@batchEmptyList": {
+    "description": "Empty state of the Batches tab."
+  },
+  "batchGroupCount": "{count}টি ব্যাচ",
+  "@batchGroupCount": {
+    "description": "Subject group header count. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "batchStudentCount": "{count} জন শিক্ষার্থী",
+  "@batchStudentCount": {
+    "description": "Student count on a batch card. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২৮"
+      }
+    }
+  },
+  "batchNoSlots": "সময় দেওয়া নেই",
+  "@batchNoSlots": {
+    "description": "Batch card line when the batch has no weekly slots."
+  },
+  "batchTodayPercent": "আজ {percent} উপস্থিত",
+  "@batchTodayPercent": {
+    "description": "Batch card: today's attendance percentage. percent is pre-formatted.",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "৯০%"
+      }
+    }
+  },
+  "batchDuesCount": "{count} বাকি",
+  "@batchDuesCount": {
+    "description": "Batch card dues mini-badge. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৫"
+      }
+    }
+  },
+  "batchPillAdvance": "অগ্রিম",
+  "@batchPillAdvance": {
+    "description": "Short pill for a batch billed at the start of the month."
+  },
+  "batchPillAfter": "মাস শেষে",
+  "@batchPillAfter": {
+    "description": "Short pill for a batch billed after the month."
+  },
+  "batchMenuOpen": "খুলুন",
+  "@batchMenuOpen": {
+    "description": "Context-menu item: open the batch."
+  },
+  "batchMenuArchive": "আর্কাইভ করুন",
+  "@batchMenuArchive": {
+    "description": "Menu item: archive the batch."
+  },
+  "batchMenuUnarchive": "আর্কাইভ তুলুন",
+  "@batchMenuUnarchive": {
+    "description": "Menu item / button: bring an archived batch back."
+  },
+  "batchMenuDelete": "ব্যাচ মুছুন",
+  "@batchMenuDelete": {
+    "description": "Secondary-menu item: delete the batch."
+  },
+  "batchSubjectLabel": "বিষয়/শ্রেণি",
+  "@batchSubjectLabel": {
+    "description": "Form field label."
+  },
+  "batchSubjectHint": "যেমন: গণিত — দশম শ্রেণি",
+  "@batchSubjectHint": {
+    "description": "Form field hint for the subject."
+  },
+  "batchSubjectPick": "আগের বিষয় থেকে বাছুন",
+  "@batchSubjectPick": {
+    "description": "Caption above the chips of existing subjects."
+  },
+  "batchSubjectSuggest": "পরামর্শ",
+  "@batchSubjectSuggest": {
+    "description": "Caption above the suggested subject chips."
+  },
+  "batchSubjectNew": "নতুন বিষয় তৈরি হবে: {name}",
+  "@batchSubjectNew": {
+    "description": "Hint under the subject field when the typed name is new.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "গণিত"
+      }
+    }
+  },
+  "batchSubjectLocked": "বিষয় বদলানো যায় না",
+  "@batchSubjectLocked": {
+    "description": "Caption under the subject in the edit form."
+  },
+  "batchSuggestMath": "গণিত",
+  "@batchSuggestMath": {
+    "description": "Suggested subject chip."
+  },
+  "batchSuggestEnglish": "ইংরেজি",
+  "@batchSuggestEnglish": {
+    "description": "Suggested subject chip."
+  },
+  "batchSuggestPhysics": "পদার্থবিজ্ঞান",
+  "@batchSuggestPhysics": {
+    "description": "Suggested subject chip."
+  },
+  "batchSuggestChemistry": "রসায়ন",
+  "@batchSuggestChemistry": {
+    "description": "Suggested subject chip."
+  },
+  "batchSuggestBiology": "জীববিজ্ঞান",
+  "@batchSuggestBiology": {
+    "description": "Suggested subject chip."
+  },
+  "batchSuggestIct": "ICT",
+  "@batchSuggestIct": {
+    "description": "Suggested subject chip."
+  },
+  "batchNameLabel": "ব্যাচের নাম",
+  "@batchNameLabel": {
+    "description": "Form field label."
+  },
+  "batchDefaultName": "ব্যাচ {number}",
+  "@batchDefaultName": {
+    "description": "Pre-filled batch name. number is pre-formatted.",
+    "placeholders": {
+      "number": {
+        "type": "String",
+        "example": "১"
+      }
+    }
+  },
+  "batchScheduleLabel": "কোন দিন, কখন?",
+  "@batchScheduleLabel": {
+    "description": "Form section title above the slot editor."
+  },
+  "batchEditSchedule": "সময়সূচি বদলান",
+  "@batchEditSchedule": {
+    "description": "Edit form row that opens the weekly slot editor."
+  },
+  "batchFeeLabel": "মাসিক ফি",
+  "@batchFeeLabel": {
+    "description": "Form field label."
+  },
+  "batchFeePerMonth": "{amount} / মাস",
+  "@batchFeePerMonth": {
+    "description": "Fee in the batch header. amount is pre-formatted money.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳১,০০০"
+      }
+    }
+  },
+  "batchBillingTitle": "বেতন কখন দেয়?",
+  "@batchBillingTitle": {
+    "description": "Form section title above the two billing cards."
+  },
+  "batchBillingPrepaid": "মাসের শুরুতে (অগ্রিম)",
+  "@batchBillingPrepaid": {
+    "description": "Billing card title: prepaid."
+  },
+  "batchBillingPrepaidExample": "যেমন: জানুয়ারির বেতন ১ জানুয়ারিতে দেবে",
+  "@batchBillingPrepaidExample": {
+    "description": "Billing card example: prepaid."
+  },
+  "batchBillingPostpaid": "মাস শেষে (পরে)",
+  "@batchBillingPostpaid": {
+    "description": "Billing card title: postpaid."
+  },
+  "batchBillingPostpaidExample": "যেমন: জানুয়ারির বেতন ১ ফেব্রুয়ারিতে দেবে",
+  "@batchBillingPostpaidExample": {
+    "description": "Billing card example: postpaid."
+  },
+  "batchCreatedToast": "ব্যাচ তৈরি হয়েছে",
+  "@batchCreatedToast": {
+    "description": "Snackbar after creating a batch."
+  },
+  "batchSavedToast": "ব্যাচ সেভ হয়েছে",
+  "@batchSavedToast": {
+    "description": "Snackbar after editing a batch."
+  },
+  "batchReasonSubject": "বিষয়/শ্রেণি লিখুন",
+  "@batchReasonSubject": {
+    "description": "Reason shown under a disabled save button."
+  },
+  "batchReasonName": "ব্যাচের নাম লিখুন",
+  "@batchReasonName": {
+    "description": "Reason shown under a disabled save button."
+  },
+  "batchReasonFee": "মাসিক ফি লিখুন",
+  "@batchReasonFee": {
+    "description": "Reason shown under a disabled save button."
+  },
+  "batchReasonSlots": "ক্লাসের দিন ও সময় দিন",
+  "@batchReasonSlots": {
+    "description": "Reason shown under a disabled save button."
+  },
+  "batchReasonClash": "সময়ের সংঘাত ঠিক করুন",
+  "@batchReasonClash": {
+    "description": "Reason shown under a disabled save button."
+  },
+  "batchFeeFromTitle": "নতুন ফি কোন মাস থেকে?",
+  "@batchFeeFromTitle": {
+    "description": "Fee-change sheet title."
+  },
+  "batchFeeFromBody": "ফি {oldFee} থেকে {newFee} হবে। আগের মাসগুলোতে পুরোনো ফি-ই থাকবে।",
+  "@batchFeeFromBody": {
+    "description": "Fee-change sheet explanation. Both values are pre-formatted money.",
+    "placeholders": {
+      "oldFee": {
+        "type": "String",
+        "example": "৳১,০০০"
+      },
+      "newFee": {
+        "type": "String",
+        "example": "৳১,২০০"
+      }
+    }
+  },
+  "batchFeePartialWarn": "{count}টি মাস আংশিক হয়ে যাবে",
+  "@batchFeePartialWarn": {
+    "description": "Warning when a fee rise makes fully paid months partial. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "batchFeeNoPartial": "কোনো পরিশোধিত মাস আংশিক হবে না",
+  "@batchFeeNoPartial": {
+    "description": "Shown when the fee change leaves paid months paid."
+  },
+  "batchFeeConfirm": "ফি বদলান",
+  "@batchFeeConfirm": {
+    "description": "Fee-change sheet confirm button."
+  },
+  "batchTabStudents": "শিক্ষার্থী",
+  "@batchTabStudents": {
+    "description": "Batch detail tab."
+  },
+  "batchTabAttendance": "হাজিরা",
+  "@batchTabAttendance": {
+    "description": "Batch detail tab."
+  },
+  "batchTabFees": "বেতন",
+  "@batchTabFees": {
+    "description": "Batch detail tab."
+  },
+  "batchTabSchedule": "সময়সূচি",
+  "@batchTabSchedule": {
+    "description": "Batch detail tab."
+  },
+  "batchTakeAttendance": "হাজিরা নিন",
+  "@batchTakeAttendance": {
+    "description": "Button on the batch header that opens the roll call."
+  },
+  "batchAddStudent": "শিক্ষার্থী যোগ করুন",
+  "@batchAddStudent": {
+    "description": "FAB / button on the Students tab."
+  },
+  "batchStudentsEmpty": "এই ব্যাচে এখনো কেউ নেই। শিক্ষার্থী যোগ করুন।",
+  "@batchStudentsEmpty": {
+    "description": "Empty state of the Students tab."
+  },
+  "batchStatStudents": "শিক্ষার্থী",
+  "@batchStatStudents": {
+    "description": "Header stat tile label."
+  },
+  "batchStatToday": "আজকের হাজিরা",
+  "@batchStatToday": {
+    "description": "Header stat tile label."
+  },
+  "batchStatDues": "বকেয়া",
+  "@batchStatDues": {
+    "description": "Header stat tile label."
+  },
+  "batchStatNone": "—",
+  "@batchStatNone": {
+    "description": "Stat value when there is nothing to show yet."
+  },
+  "batchColRoll": "রোল",
+  "@batchColRoll": {
+    "description": "Students table column."
+  },
+  "batchColName": "নাম",
+  "@batchColName": {
+    "description": "Students table column."
+  },
+  "batchColPhone": "অভিভাবকের ফোন",
+  "@batchColPhone": {
+    "description": "Students table column."
+  },
+  "batchColAttendance": "হাজিরা",
+  "@batchColAttendance": {
+    "description": "Students table column."
+  },
+  "batchColDues": "বেতন",
+  "@batchColDues": {
+    "description": "Students table column."
+  },
+  "batchRoll": "রোল {roll}",
+  "@batchRoll": {
+    "description": "Roll number caption on a student row. roll is pre-formatted.",
+    "placeholders": {
+      "roll": {
+        "type": "String",
+        "example": "১"
+      }
+    }
+  },
+  "batchAllPaid": "বকেয়া নেই",
+  "@batchAllPaid": {
+    "description": "Student row: no dues."
+  },
+  "batchArchivedBanner": "এই ব্যাচ {date} তারিখে আর্কাইভ করা হয়েছে",
+  "@batchArchivedBanner": {
+    "description": "Banner on an archived batch. date is pre-formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "১৫ নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "batchArchiveTitle": "\"{name}\" আর্কাইভ করবেন?",
+  "@batchArchiveTitle": {
+    "description": "Archive dialog title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "ফিজিক্স এ"
+      }
+    }
+  },
+  "batchArchiveBody": "তথ্য মুছবে না, শুধু তালিকা থেকে সরে যাবে। রুটিন ও হাজিরায় আর আসবে না।",
+  "@batchArchiveBody": {
+    "description": "Archive dialog body."
+  },
+  "batchArchiveLbmLabel": "শেষ বেতনের মাস",
+  "@batchArchiveLbmLabel": {
+    "description": "Archive dialog: last billable month label."
+  },
+  "batchArchiveLbmHelp": "{month} পর্যন্ত বেতন ধরা হবে। এরপর নতুন বকেয়া হবে না; আগের বকেয়া থেকে যাবে।",
+  "@batchArchiveLbmHelp": {
+    "description": "Archive dialog explanation. month is pre-formatted.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "batchArchiveConfirm": "আর্কাইভ করুন",
+  "@batchArchiveConfirm": {
+    "description": "Archive dialog confirm button."
+  },
+  "batchArchivedToast": "ব্যাচ আর্কাইভ করা হয়েছে",
+  "@batchArchivedToast": {
+    "description": "Snackbar after archiving."
+  },
+  "batchUnarchiveTitle": "\"{name}\" আর্কাইভ থেকে তুলবেন?",
+  "@batchUnarchiveTitle": {
+    "description": "Unarchive dialog title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "ফিজিক্স এ"
+      }
+    }
+  },
+  "batchUnarchiveBody": "ব্যাচটি আবার রুটিন, হাজিরা ও বেতনের হিসাবে ফিরে আসবে।",
+  "@batchUnarchiveBody": {
+    "description": "Unarchive dialog body."
+  },
+  "batchUnarchiveClash": "এই ব্যাচের সময় এখন অন্য ক্লাসের সাথে মিলছে:",
+  "@batchUnarchiveClash": {
+    "description": "Unarchive dialog: intro to the list of clashes."
+  },
+  "batchUnarchiveClashHint": "তুলে নেওয়ার পর রুটিন ঠিক না করা পর্যন্ত “সময়ের সংঘাত” দেখাবে।",
+  "@batchUnarchiveClashHint": {
+    "description": "Unarchive dialog: what happens with clashes."
+  },
+  "batchUnarchiveConfirm": "আর্কাইভ তুলুন",
+  "@batchUnarchiveConfirm": {
+    "description": "Unarchive dialog confirm button."
+  },
+  "batchUnarchiveFix": "আর্কাইভ তুলুন ও রুটিন ঠিক করুন",
+  "@batchUnarchiveFix": {
+    "description": "Unarchive dialog confirm button when there are clashes."
+  },
+  "batchGapTitle": "মাঝের {count} মাস মাফ করবেন?",
+  "@batchGapTitle": {
+    "description": "Unarchive dialog switch title. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২"
+      }
+    }
+  },
+  "batchGapHint": "না করলে এই মাসগুলো বকেয়া হিসেবে থাকবে।",
+  "@batchGapHint": {
+    "description": "Unarchive dialog switch explanation."
+  },
+  "batchUnarchivedToast": "ব্যাচ আর্কাইভ থেকে তোলা হয়েছে",
+  "@batchUnarchivedToast": {
+    "description": "Snackbar after unarchiving."
+  },
+  "batchClashEvery": "প্রতি {day}",
+  "@batchClashEvery": {
+    "description": "Clash line: weekly clash. day is a weekday name.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "রবিবার"
+      }
+    }
+  },
+  "batchClashLine": "{subject} · {batch} · {when} · {time}",
+  "@batchClashLine": {
+    "description": "One clash line in the unarchive dialog.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "রসায়ন"
+      },
+      "batch": {
+        "type": "String",
+        "example": "কেমিস্ট্রি বি"
+      },
+      "when": {
+        "type": "String",
+        "example": "প্রতি রবিবার"
+      },
+      "time": {
+        "type": "String",
+        "example": "সকাল ১০:০০–১১:০০"
+      }
+    }
+  },
+  "batchDeleteTitle": "\"{name}\" মুছে ফেলবেন?",
+  "@batchDeleteTitle": {
+    "description": "Delete confirmation title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "ফিজিক্স এ"
+      }
+    }
+  },
+  "batchDeleteBody": "{students} জন শিক্ষার্থীর সংযোগ, {sessions}টি হাজিরা ও {payments}টি পেমেন্ট সহ মুছে যাবে। এটা ফেরানো যাবে না।",
+  "@batchDeleteBody": {
+    "description": "Delete confirmation body with impact numbers (pre-formatted).",
+    "placeholders": {
+      "students": {
+        "type": "String",
+        "example": "২৮"
+      },
+      "sessions": {
+        "type": "String",
+        "example": "১২০"
+      },
+      "payments": {
+        "type": "String",
+        "example": "৩০"
+      }
+    }
+  },
+  "batchDeleteHint": "মুছে ফেলার বদলে আর্কাইভ করলে কিছুই হারাবে না।",
+  "@batchDeleteHint": {
+    "description": "Delete confirmation hint."
+  },
+  "batchDeleteConfirm": "মুছে ফেলুন",
+  "@batchDeleteConfirm": {
+    "description": "Delete confirmation button."
+  },
+  "batchDeletedToast": "ব্যাচ মুছে ফেলা হয়েছে",
+  "@batchDeletedToast": {
+    "description": "Snackbar after deleting."
+  },
+  "batchArchivedEmpty": "কোনো আর্কাইভ করা ব্যাচ নেই",
+  "@batchArchivedEmpty": {
+    "description": "Empty state of the archived batches screen."
+  },
+  "batchArchivedOn": "আর্কাইভ: {date}",
+  "@batchArchivedOn": {
+    "description": "Archived batch row caption. date is pre-formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "১৫ নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "batchOverviewBatches": "ব্যাচ",
+  "@batchOverviewBatches": {
+    "description": "Overview tile label."
+  },
+  "batchOverviewStudents": "শিক্ষার্থী",
+  "@batchOverviewStudents": {
+    "description": "Overview tile label."
+  },
+  "batchOverviewClasses": "আজকের ক্লাস",
+  "@batchOverviewClasses": {
+    "description": "Overview tile label."
+  },
+  "batchOverviewDues": "মোট বকেয়া",
+  "@batchOverviewDues": {
+    "description": "Overview tile label."
+  },
+  "batchOverviewPick": "একটি ব্যাচ বাছুন — তার সব তথ্য এখানে দেখা যাবে।",
+  "@batchOverviewPick": {
+    "description": "Hint on the overview when no batch is selected."
+  },
+  "batchOverviewDuesByBatch": "ব্যাচ অনুযায়ী বকেয়া",
+  "@batchOverviewDuesByBatch": {
+    "description": "Overview section title."
+  },
+  "batchContextWeek": "সপ্তাহের ক্লাস",
+  "@batchContextWeek": {
+    "description": "Context pane section title."
+  },
+  "batchContextDues": "বকেয়া স্তর অনুযায়ী",
+  "@batchContextDues": {
+    "description": "Context pane section title."
+  },
+  "batchContextTrend": "গত ৮ সপ্তাহের হাজিরা",
+  "@batchContextTrend": {
+    "description": "Context pane section title."
+  },
+  "batchContextNoAttendance": "এখনো হাজিরা নেওয়া হয়নি",
+  "@batchContextNoAttendance": {
+    "description": "Context pane: no sessions."
+  },
+  "batchContextNoDues": "কোনো বকেয়া নেই",
+  "@batchContextNoDues": {
+    "description": "Context pane: no dues."
+  },
+  "batchContextStudentsOne": "{count} জন",
+  "@batchContextStudentsOne": {
+    "description": "Context pane: count of students at a level. count is pre-formatted.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২"
+      }
+    }
+  }
+}
