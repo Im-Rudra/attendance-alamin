@@ -66,6 +66,9 @@ void _showCancelSnack({
     ..showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 8),
+        // Auto-dismiss even though it has an action (Flutter 3.29+ keeps
+        // action snackbars until dismissed unless persist is false).
+        persist: false,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
