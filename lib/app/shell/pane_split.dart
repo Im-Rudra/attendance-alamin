@@ -19,6 +19,8 @@ class PaneSplit extends ConsumerStatefulWidget {
     required this.detail,
     this.contextPane,
     this.preferList = false,
+    this.listMax = 440,
+    this.detailMax = 720,
   });
 
   /// Stable screen id, e.g. `batches` (part of the stored key).
@@ -30,6 +32,13 @@ class PaneSplit extends ConsumerStatefulWidget {
   /// When the window is too narrow for two panes (e.g. 840–880 with the
   /// rail), show the list instead of the detail (nothing selected yet).
   final bool preferList;
+
+  /// Widest the list pane may grow (default 440). A data table can raise it so
+  /// it takes the space left beside a narrower [detailMax] detail pane.
+  final double listMax;
+
+  /// Widest the detail pane may grow before extra space goes elsewhere.
+  final double detailMax;
 
   @override
   ConsumerState<PaneSplit> createState() => _PaneSplitState();
@@ -84,6 +93,8 @@ class _PaneSplitState extends ConsumerState<PaneSplit> {
           width: c.maxWidth,
           hasContext: ctx != null,
           listWidth: _width,
+          listMax: widget.listMax,
+          detailMax: widget.detailMax,
         );
         // Too narrow for two panes: one full screen, with its own back arrow.
         if (w.list == 0) return widget.preferList ? widget.list : widget.detail;
@@ -93,6 +104,8 @@ class _PaneSplitState extends ConsumerState<PaneSplit> {
           contextPane: ctx == null ? null : PaneScope(child: ctx),
           listWidth: _width,
           onListWidthChanged: _changed,
+          listMax: widget.listMax,
+          detailMax: widget.detailMax,
         );
       },
     );
