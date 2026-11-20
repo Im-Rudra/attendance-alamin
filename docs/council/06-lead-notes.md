@@ -25,6 +25,18 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - **Open risk for M5-A (bootstrap):** `openConnection` has no fallback if `WasmDatabase.open` throws (e.g. a browser that blocks SharedWorker/fetch). The bootstrap must catch DB-open failure and show a full-screen, localised "data storage couldn't start" error with a retry, never a blank/crashed app; and show the red "data won't be saved" banner when the storage report is in-memory.
 - Pre-migration safety snapshot is not implemented (v1 has no upgrade steps); required before schemaVersion 2.
 
+## From M4-D (Aurora widgets, #11)
+- Import widgets via the barrel `package:attendance_alamin/app/widgets/widgets.dart`. Map enums with `dueLevel.severityLevel` / `status.kind` (theme_mapping.dart), never by hand.
+- `PaneLayout` is stateless: the parent stores `listWidth` in LocalMeta (pane-width key) and passes it back, or the drag won't persist.
+- `BentoGrid` placements are zero-based; it scrolls itself when tiles exceed the height (row unit = max(184, (H − 2·gutter)/3)).
+- Glass is blur only (no saturation boost).
+- Widget tests use the default test font; Bangla metrics at 1.3× text scale must be checked in the M5 screenshot matrix.
+
+## From M4-C (settings + backup data, #12)
+- M9-A must set `SettingKeys.lastExportAt` itself, only after `BackupFiles.save` returns true (a cancelled save is not a backup). On web `save` always returns true.
+- Call settings with the typed `SettingKeys.x` constants; iterating `SettingKeys.all` through the generic methods fails a runtime type check.
+- `restoreSafetyCopy` first saves the current data as a new safety copy (reason `restore`), so a restore is undoable. An empty summary returns `ApplyOutcome(applied: 0, safetyCopyId: '')`.
+
 ## From M2-D (snapshot codec + diff, #10)
 - `winners` can be non-empty while the summary `isEmpty` is true (unknown tombstones, deleted-only changes): the data layer applies the merge ONLY when `!isEmpty`, else reports "no changes".
 - Apply `winners` in their given order (deletions first, then table registry order) inside one transaction with foreign keys deferred (Arch §3.6).
