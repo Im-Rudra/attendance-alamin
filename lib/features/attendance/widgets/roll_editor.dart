@@ -355,6 +355,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         ..showSnackBar(
           SnackBar(
             duration: const Duration(seconds: 8),
+            // A snackbar with an action would otherwise never time out.
+            persist: false,
             content: Text(l10n.rollSavedSnack),
             action: occ == null
                 ? null
