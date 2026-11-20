@@ -17,6 +17,17 @@ class _Clock implements Clock {
   DateTime nowUtc() => now;
 }
 
+/// [start] plus the real time elapsed since construction.
+class _RunningClock implements Clock {
+  _RunningClock(this.start) : _watch = Stopwatch()..start();
+
+  final DateTime start;
+  final Stopwatch _watch;
+
+  @override
+  DateTime nowUtc() => start.add(_watch.elapsed);
+}
+
 ScheduledNotice _notice(int id, DateTime at) => ScheduledNotice(
       id: id,
       fireAtUtc: at,
@@ -29,44 +40,38 @@ ScheduledNotice _notice(int id, DateTime at) => ScheduledNotice(
 void main() {
   final DateTime t0 = DateTime.utc(2026, 11, 21, 4);
 
-  testWidgets('emits each reminder when due, in order, and skips past ones', (WidgetTester tester) async {
-    final _Clock clock = _Clock(t0);
+  // Real (short) timers against a clock that follows a stopwatch.
+  test('emits each reminder when due, in order, and skips past ones', () async {
+    final _RunningClock clock = _RunningClock(t0);
     final WebNotificationGateway g = WebNotificationGateway(clock);
+    addTearDown(g.dispose);
     final List<int> due = <int>[];
-    final sub = g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
+    g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
 
     await g.replaceAll(<ScheduledNotice>[
-      _notice(2, t0.add(const Duration(seconds: 3))),
-      _notice(1, t0.add(const Duration(seconds: 1))),
+      _notice(2, t0.add(const Duration(milliseconds: 600))),
+      _notice(1, t0.add(const Duration(milliseconds: 200))),
       _notice(9, t0.subtract(const Duration(seconds: 1))),
     ]);
     expect(g.ticker.pending.map((ScheduledNotice n) => n.id), <int>[1, 2]);
 
-    clock.now = t0.add(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(milliseconds: 400));
     expect(due, <int>[1]);
-
-    clock.now = t0.add(const Duration(seconds: 3));
-    await tester.pump(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     expect(due, <int>[1, 2]);
     expect(g.ticker.pending, isEmpty);
-
-    await sub.cancel();
-    g.dispose();
   });
 
-  testWidgets('replacing or cancelling drops what was pending', (WidgetTester tester) async {
-    final _Clock clock = _Clock(t0);
-    final WebNotificationGateway g = WebNotificationGateway(clock);
+  test('replacing or cancelling drops what was pending', () async {
+    final WebNotificationGateway g = WebNotificationGateway(_RunningClock(t0));
+    addTearDown(g.dispose);
     final List<int> due = <int>[];
-    final sub = g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
-    await g.replaceAll(<ScheduledNotice>[_notice(1, t0.add(const Duration(seconds: 1)))]);
+    g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
+    await g.replaceAll(<ScheduledNotice>[_notice(1, t0.add(const Duration(milliseconds: 100)))]);
     await g.cancelAll();
-    clock.now = t0.add(const Duration(seconds: 2));
-    await tester.pump(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     expect(due, isEmpty);
-    await sub.cancel();
-    g.dispose();
+    expect(g.ticker.pending, isEmpty);
   });
 
   test('web has no OS permission, launch payload or exact alarms', () async {
