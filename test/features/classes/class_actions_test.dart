@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
+import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/date_range.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -159,7 +160,7 @@ List<Override> engineOverrides(SeededFakes f) => <Override>[
     ];
 
 ScheduleException cancelOf(String slotId, String batchId, LocalDate date) => ScheduleException(
-      id: 'cancel-$slotId-${date.toIso()}',
+      id: Ids.exceptionForOcc(OccId.regular(slotId, date)),
       batchId: batchId,
       kind: ExceptionKind.cancel,
       slotId: slotId,
@@ -274,7 +275,12 @@ void main() {
     testScreenMatrix(
       'WeekGrid empty week',
       () => const WeekGrid(weekStart: LocalDate(2027, 3, 6)),
-      overrides: () => engineOverrides(seedFakes(withAttendance: false)),
+      overrides: () {
+        // Weekly slots repeat forever, so an empty week needs no slots at all.
+        final SeededFakes f = seedFakes();
+        f.store.slots.clear();
+        return engineOverrides(f);
+      },
       verify: (WidgetTester tester) async {
         expect(find.byType(EmptyState), findsOneWidget);
       },
