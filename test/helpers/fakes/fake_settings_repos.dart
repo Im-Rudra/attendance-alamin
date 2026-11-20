@@ -10,6 +10,22 @@ import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/data/repositories/settings_repository.dart';
 import 'package:attendance_alamin/domain/sync/sync_models.dart';
 
+/// Emits [read] on listen and again on every [changes] event that [matches].
+Stream<T> _follow<T>(Stream<Object?> changes, bool Function(Object? e) matches, T Function() read) {
+  StreamSubscription<Object?>? sub;
+  late final StreamController<T> controller;
+  controller = StreamController<T>(
+    onListen: () {
+      controller.add(read());
+      sub = changes.listen((e) {
+        if (matches(e)) controller.add(read());
+      });
+    },
+    onCancel: () => sub?.cancel(),
+  );
+  return controller.stream;
+}
+
 /// Settings kept as encoded JSON values by key id (scope is ignored).
 class FakeSettingsRepository implements SettingsRepository {
   FakeSettingsRepository([Map<String, Object?>? initialEncoded])
@@ -40,14 +56,8 @@ class FakeSettingsRepository implements SettingsRepository {
   }
 
   @override
-  Stream<T> watch<T>(SettingKey<T> key) => _watch(key).distinct();
-
-  Stream<T> _watch<T>(SettingKey<T> key) async* {
-    yield _read(key);
-    await for (final id in _changes.stream) {
-      if (id == key.id) yield _read(key);
-    }
-  }
+  Stream<T> watch<T>(SettingKey<T> key) =>
+      _follow<T>(_changes.stream, (id) => id == key.id, () => _read(key)).distinct();
 }
 
 class FakeLocalMetaRepository implements LocalMetaRepository {
@@ -75,14 +85,8 @@ class FakeLocalMetaRepository implements LocalMetaRepository {
   }
 
   @override
-  Stream<String?> watchRaw(String key) => _watch(key).distinct();
-
-  Stream<String?> _watch(String key) async* {
-    yield _values[key];
-    await for (final k in _changes.stream) {
-      if (k == key) yield _values[key];
-    }
-  }
+  Stream<String?> watchRaw(String key) =>
+      _follow<String?>(_changes.stream, (k) => k == key, () => _values[key]).distinct();
 }
 
 /// Scriptable backup repository: set the `next*` fields, inspect the calls.
@@ -137,12 +141,8 @@ class FakeBackupRepository implements BackupRepository {
   }
 
   @override
-  Stream<List<SafetyCopyInfo>> watchSafetyCopies() => _watchCopies();
-
-  Stream<List<SafetyCopyInfo>> _watchCopies() async* {
-    yield _safetyCopies;
-    yield* _copies.stream;
-  }
+  Stream<List<SafetyCopyInfo>> watchSafetyCopies() =>
+      _follow<List<SafetyCopyInfo>>(_copies.stream, (_) => true, () => _safetyCopies);
 
   @override
   Future<void> restoreSafetyCopy(String id) async => restored.add(id);
