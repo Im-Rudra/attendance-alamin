@@ -4,7 +4,7 @@ import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/mappers.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/infra_providers.dart';
-import 'package:drift/drift.dart' hide Batch;
+import 'package:drift/drift.dart' hide Batch, isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

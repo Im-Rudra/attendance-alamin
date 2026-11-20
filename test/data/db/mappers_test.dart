@@ -10,7 +10,7 @@ import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
-import 'package:drift/drift.dart' hide Batch;
+import 'package:drift/drift.dart' hide Batch, isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'db_fixtures.dart';

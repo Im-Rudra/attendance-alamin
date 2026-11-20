@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/mappers.dart';
 import 'package:attendance_alamin/domain/sync/synced_tables.dart';
-import 'package:drift/drift.dart' hide Batch;
+import 'package:drift/drift.dart' hide Batch, isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 

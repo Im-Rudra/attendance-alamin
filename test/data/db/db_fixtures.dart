@@ -15,7 +15,7 @@ import 'package:attendance_alamin/domain/models/payment.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
-import 'package:drift/drift.dart' hide Batch;
+import 'package:drift/drift.dart' hide Batch, isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
