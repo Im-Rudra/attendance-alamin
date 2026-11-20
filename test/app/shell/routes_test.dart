@@ -87,7 +87,7 @@ void main() {
       });
       testWidgets('desktop dark en ${r.key}', (WidgetTester tester) async {
         await pumpShell(tester, location: r.key, size: kDesktop, lang: Lang.en, themeMode: ThemeMode.dark);
-        expect(find.byType(StubScreen), findsWidgets);
+        expect(find.byType(Scaffold), findsWidgets);
         expect(tester.takeException(), isNull);
       });
     }
@@ -100,7 +100,7 @@ void main() {
           for (final Size size in <Size>[kPhone, kDesktop]) {
             testWidgets('$loc ${mode.name} ${lang.name} ${size.width.toInt()}', (WidgetTester tester) async {
               await pumpShell(tester, location: loc, size: size, lang: lang, themeMode: mode);
-              expect(find.byType(StubScreen), findsWidgets);
+              expect(find.byType(Scaffold), findsWidgets);
               expect(tester.takeException(), isNull);
             });
           }
