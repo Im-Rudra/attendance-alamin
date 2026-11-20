@@ -113,6 +113,7 @@ void main() {
     });
 
     testWidgets('generated once and cached', (WidgetTester tester) async {
+      GrainTile.debugReset();
       final ui.Image? first = await tester.runAsync(() => GrainTile.load().timeout(const Duration(seconds: 10)));
       final ui.Image? second = await tester.runAsync(() => GrainTile.load().timeout(const Duration(seconds: 10)));
       expect(first, isNotNull);

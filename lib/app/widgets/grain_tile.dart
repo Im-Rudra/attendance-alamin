@@ -24,6 +24,15 @@ abstract final class GrainTile {
   @visibleForTesting
   static int get debugGenerations => _generations;
 
+  /// Forgets the cached tile (tests only: a tile requested inside a fake-async
+  /// test zone never completes).
+  @visibleForTesting
+  static void debugReset() {
+    _future = null;
+    _image = null;
+    _generations = 0;
+  }
+
   /// Generates the tile on first call; later calls return the same future.
   static Future<ui.Image> load() {
     return _future ??= _generate();
