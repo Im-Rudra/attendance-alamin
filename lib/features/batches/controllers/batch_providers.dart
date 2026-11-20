@@ -86,6 +86,65 @@ final batchSlotEditorBuilderProvider = Provider<SlotEditorBuilder>(
       ),
 );
 
+/// What the batch form starts from.
+class BatchFormSeed {
+  const BatchFormSeed({
+    required this.billing,
+    required this.batchCount,
+    this.batch,
+    this.notFound = false,
+    this.subjectName = '',
+    this.fee,
+  });
+
+  /// The edited batch; null when creating (or [notFound]).
+  final Batch? batch;
+  final bool notFound;
+  final BillingType billing;
+
+  /// Live batches today (names the new one "ব্যাচ N+1").
+  final int batchCount;
+  final String subjectName;
+  final int? fee;
+}
+
+/// The form's starting data: last billing type and batch count to create,
+/// the batch with its subject and current fee to edit.
+final batchFormSeedProvider =
+    Provider.family<AsyncValue<BatchFormSeed>, String?>((ref, batchId) {
+  if (batchId == null) {
+    return combine2(
+      ref.watch(batchLastBillingProvider),
+      ref.watch(batchLiveBatchesProvider),
+      (BillingType last, List<Batch> live) =>
+          BatchFormSeed(billing: last, batchCount: live.length),
+    );
+  }
+  final month = ref.watch(todayProvider).yearMonth;
+  return combine3(
+    ref.watch(batchByIdProvider(batchId)),
+    ref.watch(batchSubjectsProvider),
+    ref.watch(batchFeesProvider(batchId)),
+    (Batch? b, List<Subject> subjects, List<FeePeriod> fees) {
+      if (b == null) {
+        return const BatchFormSeed(
+            billing: BillingType.prepaid, batchCount: 0, notFound: true);
+      }
+      var subjectName = '';
+      for (final s in subjects) {
+        if (s.id == b.subjectId) subjectName = s.name;
+      }
+      return BatchFormSeed(
+        billing: b.billingType,
+        batchCount: 0,
+        batch: b,
+        subjectName: subjectName,
+        fee: feeIn(fees, month),
+      );
+    },
+  );
+});
+
 /// One batch with what a card needs.
 class BatchCardData {
   const BatchCardData({

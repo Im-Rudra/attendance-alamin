@@ -24,7 +24,6 @@ import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
-import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
@@ -56,7 +55,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   int? _oldFee;
   bool _loaded = false;
   bool _notFound = false;
-  bool _failed = false;
+  bool _seeded = false;
   bool _saving = false;
   String? _error;
 
@@ -68,7 +67,6 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     for (final TextEditingController c in <TextEditingController>[_subject, _name, _fee]) {
       c.addListener(_changed);
     }
-    _load();
   }
 
   @override
@@ -96,63 +94,26 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     }
   }
 
-  Future<void> _load() async {
-    try {
-      await _loadInner();
-    } on Object {
-      if (mounted) {
-        setState(() {
-          _failed = true;
-          _loaded = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadInner() async {
-    final String? id = widget.batchId;
-    if (id == null) {
-      final BillingType last = await ref.read(batchLastBillingProvider.future);
-      if (!mounted) return;
-      final List<Batch> live = await ref.read(batchLiveBatchesProvider.future);
-      if (!mounted) return;
-      final String defaultName = context.l10n.batchDefaultName(context.fmt.number(live.length + 1));
-      _name.text = defaultName;
-      setState(() {
-        _billing = last;
-        _failed = false;
-        _loaded = true;
-      });
-      return;
-    }
-    final Batch? b = await ref.read(batchesRepositoryProvider).getById(id);
+  /// Copies the seed into the fields once, after the frame that first saw it.
+  void _applySeed(BatchFormSeed seed) {
     if (!mounted) return;
+    final Batch? b = seed.batch;
     if (b == null) {
-      setState(() {
-        _notFound = true;
-        _loaded = true;
-      });
-      return;
+      if (!seed.notFound) {
+        _name.text = context.l10n.batchDefaultName(context.fmt.number(seed.batchCount + 1));
+      }
+    } else {
+      _name.text = b.name;
+      _notes.text = b.notes ?? '';
+      final int? fee = seed.fee;
+      _fee.text = fee == null ? '' : context.fmt.digits(fee.toString());
+      _subject.text = seed.subjectName;
     }
-    final List<Subject> subjects = await ref.read(batchSubjectsProvider.future);
-    if (!mounted) return;
-    final List<FeePeriod> fees = await ref.read(batchFeesProvider(id).future);
-    if (!mounted) return;
-    final LocalDate today = ref.read(todayProvider);
-    final int? fee = feeIn(fees, today.yearMonth);
-    String subjectName = '';
-    for (final Subject s in subjects) {
-      if (s.id == b.subjectId) subjectName = s.name;
-    }
-    _name.text = b.name;
-    _notes.text = b.notes ?? '';
-    _fee.text = fee == null ? '' : context.fmt.digits(fee.toString());
-    _subject.text = subjectName;
     setState(() {
       _batch = b;
-      _billing = b.billingType;
-      _oldFee = fee;
-      _failed = false;
+      _notFound = seed.notFound;
+      _billing = seed.billing;
+      _oldFee = seed.fee;
       _loaded = true;
     });
   }
@@ -297,25 +258,32 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           child: Text(_editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: !_loaded
-            ? const Center(child: CircularProgressIndicator())
-            : _failed
-                ? EmptyState(
-                    icon: Icons.error_outline,
-                    message: l10n.commonLoadingFailed,
-                    actionLabel: l10n.commonRetry,
-                    onAction: () {
-                      setState(() => _loaded = false);
-                      _load();
-                    },
-                  )
-                : _notFound
-                    ? EmptyState(icon: Icons.search_off, message: l10n.errNotFound)
-                    : _form(context),
-      ),
+      body: SafeArea(top: false, child: _body(context)),
     );
+  }
+
+  Widget _body(BuildContext context) {
+    final l10n = context.l10n;
+    final AsyncValue<BatchFormSeed> seed = ref.watch(batchFormSeedProvider(widget.batchId));
+    if (!_seeded && seed.hasValue) {
+      _seeded = true;
+      final BatchFormSeed value = seed.requireValue;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _applySeed(value));
+    }
+    if (_loaded) {
+      return _notFound
+          ? EmptyState(icon: Icons.search_off, message: l10n.errNotFound)
+          : _form(context);
+    }
+    if (seed.hasError) {
+      return EmptyState(
+        icon: Icons.error_outline,
+        message: l10n.commonLoadingFailed,
+        actionLabel: l10n.commonRetry,
+        onAction: () => ref.invalidate(batchFormSeedProvider(widget.batchId)),
+      );
+    }
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _form(BuildContext context) {

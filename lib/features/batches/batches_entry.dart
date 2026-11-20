@@ -13,9 +13,7 @@ import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
-import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
-import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
@@ -63,9 +61,8 @@ Future<List<String>> _clashLines(
   final l10n = context.l10n;
   final AppFormat fmt = context.fmt;
   final BatchesRepository batches = container.read(batchesRepositoryProvider);
-  final SubjectsRepository subjects = container.read(subjectsRepositoryProvider);
   final Map<String, String> subjectNames = <String, String>{
-    for (final s in await subjects.watchAll().first) s.id: s.name,
+    for (final s in await container.read(batchSubjectsProvider.future)) s.id: s.name,
   };
   final List<String> lines = <String>[];
   for (final ClashGroup g in preview.groups) {
@@ -93,7 +90,7 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
 
   final SlotCheckResult preview = await repo.previewUnarchive(batchId);
   final List<Enrollment> enrollments =
-      await container.read(enrollmentsRepositoryProvider).watchForBatch(batchId).first;
+      await container.read(batchEnrollmentsProvider(batchId).future);
   if (!context.mounted) return false;
   final List<String> clashLines = preview.ok
       ? const <String>[]

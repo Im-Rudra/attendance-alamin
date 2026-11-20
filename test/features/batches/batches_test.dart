@@ -323,7 +323,7 @@ void main() {
   group('archive and unarchive', () {
     Future<void> openMenu(WidgetTester tester, String item) async {
       await tester.tap(find.byTooltip(bn.commonMore));
-      await settleSome(tester, 3);
+      await settleSome(tester, 8);
       await tester.tap(find.text(item));
       await settleSome(tester, 6);
     }
