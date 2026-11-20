@@ -18,7 +18,6 @@ import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_engine.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
-import 'package:drift/drift.dart' hide Batch;
 
 /// Placeholder occurrence id of a class that does not exist yet.
 const String _pendingOcc = 'x.pending';
@@ -51,12 +50,11 @@ class _Located {
 class DriftScheduleRepository implements ScheduleRepository {
   DriftScheduleRepository(
     this._db,
-    this._stamper, {
+    SyncStamper stamper, {
     CenterTime center = CenterTime.dhaka,
-  }) : _store = StructureStore(_db, _stamper, center);
+  }) : _store = StructureStore(_db, stamper, center);
 
   final AppDatabase _db;
-  final SyncStamper _stamper;
   final StructureStore _store;
 
   // ------------------------------------------------------------ reads
