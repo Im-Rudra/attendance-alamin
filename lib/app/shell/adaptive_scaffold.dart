@@ -14,16 +14,18 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
-class AdaptiveScaffold extends StatelessWidget {
+class AdaptiveScaffold extends ConsumerWidget {
   const AdaptiveScaffold({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
@@ -35,9 +37,11 @@ class AdaptiveScaffold extends StatelessWidget {
       navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final WindowClass wc = WindowClass.of(context);
-    final List<_Destination> dests = _Destination.all(context.l10n);
+    // The বেতন item carries the number of overdue students (UX 1).
+    final int overdue = ref.watch(duesReportProvider).value?.overdueStudents ?? 0;
+    final List<_Destination> dests = _Destination.all(context.l10n, feesBadge: overdue);
     final int index = navigationShell.currentIndex;
     final Widget scaffold;
     if (!wc.usesRail) {
@@ -72,19 +76,51 @@ class AdaptiveScaffold extends StatelessWidget {
 }
 
 class _Destination {
-  const _Destination(this.icon, this.selectedIcon, this.label);
+  const _Destination(this.icon, this.selectedIcon, this.label, {this.badge = 0});
 
   final IconData icon;
   final IconData selectedIcon;
   final String label;
 
-  static List<_Destination> all(AppLocalizations l10n) => <_Destination>[
+  /// Overdue count shown on the icon (0 = none).
+  final int badge;
+
+  static List<_Destination> all(AppLocalizations l10n, {int feesBadge = 0}) => <_Destination>[
         _Destination(Icons.today_outlined, Icons.today, l10n.navToday),
         _Destination(Icons.groups_outlined, Icons.groups, l10n.navBatches),
         _Destination(Icons.person_outline, Icons.person, l10n.navStudents),
-        _Destination(Icons.payments_outlined, Icons.payments, l10n.navFees),
+        _Destination(Icons.payments_outlined, Icons.payments, l10n.navFees, badge: feesBadge),
         _Destination(Icons.menu, Icons.menu, l10n.navMore),
       ];
+
+  /// What a screen reader says: the label plus "Overdue 3".
+  String semanticLabel(BuildContext context) => badge > 0
+      ? '$label, ${context.l10n.uiOverdueCount(context.fmt.number(badge))}'
+      : label;
+}
+
+/// A destination icon with the red overdue count on its corner.
+class _NavIcon extends StatelessWidget {
+  const _NavIcon({required this.icon, required this.size, required this.color, required this.count});
+
+  final IconData icon;
+  final double size;
+  final Color color;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget glyph = Icon(icon, size: size, color: color);
+    if (count <= 0) return glyph;
+    final sev = context.severity;
+    final String text = count > 99 ? '${context.fmt.number(99)}+' : context.fmt.number(count);
+    return Badge(
+      backgroundColor: sev.badgeFill(SeverityLevel.overdue),
+      textColor: sev.badgeText(SeverityLevel.overdue),
+      label: Text(text),
+      child: glyph,
+    );
+  }
 }
 
 /// Frosted navigation surface: glassNav + blur σ24, or the solid fallback in
@@ -192,7 +228,7 @@ class _PillItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: destination.label,
+      label: destination.semanticLabel(context),
       excludeSemantics: true,
       child: Material(
         type: MaterialType.transparency,
@@ -210,7 +246,12 @@ class _PillItem extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Icon(selected ? destination.selectedIcon : destination.icon, size: 22, color: fg),
+                _NavIcon(
+                  icon: selected ? destination.selectedIcon : destination.icon,
+                  size: 22,
+                  color: fg,
+                  count: destination.badge,
+                ),
                 const SizedBox(height: 1),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -371,7 +412,12 @@ class _RailItem extends StatelessWidget {
     final tokens = context.aurora;
     final Color fg = selected ? tokens.onAccentContainer : tokens.textSecondary;
     final TextTheme tt = Theme.of(context).textTheme;
-    final Widget icon = Icon(selected ? destination.selectedIcon : destination.icon, size: 24, color: fg);
+    final Widget icon = _NavIcon(
+      icon: selected ? destination.selectedIcon : destination.icon,
+      size: 24,
+      color: fg,
+      count: destination.badge,
+    );
     final Color fill = selected ? tokens.accentContainer : Colors.transparent;
 
     final Widget content;
@@ -428,7 +474,7 @@ class _RailItem extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: destination.label,
+      label: destination.semanticLabel(context),
       excludeSemantics: true,
       child: Material(
         type: MaterialType.transparency,

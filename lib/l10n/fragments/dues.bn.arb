@@ -1,0 +1,253 @@
+{
+  "@@locale": "bn",
+  "duesSegDues": "বকেয়া",
+  "@duesSegDues": {
+    "description": "Segment label of the Fees screen: the dues list."
+  },
+  "duesSegCollection": "আদায়",
+  "@duesSegCollection": {
+    "description": "Segment label of the Fees screen: the monthly collection summary."
+  },
+  "duesTotalLabel": "মোট বকেয়া",
+  "@duesTotalLabel": {
+    "description": "Caption above the total outstanding amount of active students."
+  },
+  "duesHeadline": "{unpaid} জন বাকি · {overdue} জন মেয়াদোত্তীর্ণ",
+  "@duesHeadline": {
+    "description": "Dues headline: how many students owe and how many are overdue. Both counts are pre-formatted numbers.",
+    "placeholders": {
+      "unpaid": {
+        "type": "String",
+        "example": "1"
+      },
+      "overdue": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesInactiveLine": "ছেড়ে যাওয়া / আর্কাইভে বাকি {amount}",
+  "@duesInactiveLine": {
+    "description": "Line under the dues headline: money still owed by students who left or batches that are archived. amount is formatted money.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesAllPaid": "সবাই বেতন দিয়েছে! এই মাসে কোনো বকেয়া নেই।",
+  "@duesAllPaid": {
+    "description": "Empty state of the dues list when nobody owes anything."
+  },
+  "duesNoMatch": "এই ফিল্টারে কেউ নেই",
+  "@duesNoMatch": {
+    "description": "Empty state when the chosen dues filter matches no student."
+  },
+  "duesShowAll": "সব দেখুন",
+  "@duesShowAll": {
+    "description": "Button that clears the dues filters."
+  },
+  "duesFilterAll": "সব",
+  "@duesFilterAll": {
+    "description": "Dues filter chip: everyone who owes."
+  },
+  "duesFilterOverdue": "মেয়াদোত্তীর্ণ",
+  "@duesFilterOverdue": {
+    "description": "Dues filter chip: only overdue students."
+  },
+  "duesFilterThisMonth": "এ মাসে",
+  "@duesFilterThisMonth": {
+    "description": "Dues filter chip: students whose fee for the current month is open."
+  },
+  "duesFilterBatch": "ব্যাচ",
+  "@duesFilterBatch": {
+    "description": "Dues filter chip: pick a batch."
+  },
+  "duesFilterMonth": "{month}-এর বাকি",
+  "@duesFilterMonth": {
+    "description": "Dues filter chip set from the collection summary: open fees of one billing month. month is a month name with year.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesFilterClearMonth": "মাসের ফিল্টার সরান",
+  "@duesFilterClearMonth": {
+    "description": "Tooltip of the close icon on the month filter chip."
+  },
+  "duesGroupCount": "{count} জন",
+  "@duesGroupCount": {
+    "description": "Student count shown next to a dues group title. count is a formatted number.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesInactiveGroup": "ছেড়ে যাওয়া / আর্কাইভ",
+  "@duesInactiveGroup": {
+    "description": "Title of the grey group of dues of students who left or archived batches."
+  },
+  "duesInactiveHint": "এদের বকেয়া আলাদা রাখা হয়েছে, কোনো সতর্কতা দেখানো হয় না।",
+  "@duesInactiveHint": {
+    "description": "Explains the grey group of dues."
+  },
+  "duesExpand": "দেখান",
+  "@duesExpand": {
+    "description": "Tooltip: expand the grey dues group."
+  },
+  "duesCollapse": "লুকান",
+  "@duesCollapse": {
+    "description": "Tooltip: collapse the grey dues group."
+  },
+  "duesReasonLeft": "ছেড়ে গেছে",
+  "@duesReasonLeft": {
+    "description": "Why a due is in the grey group: the student left."
+  },
+  "duesReasonArchived": "ব্যাচ আর্কাইভ",
+  "@duesReasonArchived": {
+    "description": "Why a due is in the grey group: the batch is archived."
+  },
+  "duesReasonEnded": "ভর্তি শেষ",
+  "@duesReasonEnded": {
+    "description": "Why a due is in the grey group: the enrolment ended."
+  },
+  "duesRemind": "মনে করান",
+  "@duesRemind": {
+    "description": "Button: share the dues reminder message with the guardian."
+  },
+  "duesRemindedToday": "আজ মনে করানো হয়েছে",
+  "@duesRemindedToday": {
+    "description": "Shown instead of the remind label after a reminder was shared today."
+  },
+  "duesCollect": "টাকা নিন",
+  "@duesCollect": {
+    "description": "Button: record a payment for this student."
+  },
+  "duesNoPhone": "ফোন নম্বর দেওয়া নেই",
+  "@duesNoPhone": {
+    "description": "Snackbar when the student has no phone number to call."
+  },
+  "duesNothingToRemind": "এই শিক্ষার্থীর কোনো বকেয়া নেই",
+  "@duesNothingToRemind": {
+    "description": "Snackbar when a reminder is asked for a student without dues."
+  },
+  "duesRemindAll": "সবাইকে মনে করিয়ে দিন",
+  "@duesRemindAll": {
+    "description": "Button that starts the one-by-one reminder walk-through."
+  },
+  "duesWalkTitle": "একে একে মনে করান",
+  "@duesWalkTitle": {
+    "description": "Title of the reminder walk-through sheet."
+  },
+  "duesWalkProgress": "{current} / {total}",
+  "@duesWalkProgress": {
+    "description": "Progress of the reminder walk-through. Both are formatted numbers.",
+    "placeholders": {
+      "current": {
+        "type": "String",
+        "example": "1"
+      },
+      "total": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesWalkSend": "পাঠান",
+  "@duesWalkSend": {
+    "description": "Walk-through button: share this reminder and go to the next student."
+  },
+  "duesWalkSkip": "বাদ দিন",
+  "@duesWalkSkip": {
+    "description": "Walk-through button: skip this student."
+  },
+  "duesWalkDone": "শেষ। {count} জনকে মনে করানো হয়েছে।",
+  "@duesWalkDone": {
+    "description": "Walk-through end message. count is a formatted number.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesWalkNobody": "আজ সবাইকে মনে করানো হয়ে গেছে।",
+  "@duesWalkNobody": {
+    "description": "Snackbar when nobody is left to remind today."
+  },
+  "duesWalkMessage": "বার্তা",
+  "@duesWalkMessage": {
+    "description": "Label above the message preview in the walk-through."
+  },
+  "duesColName": "নাম",
+  "@duesColName": {
+    "description": "Dues table column: student name."
+  },
+  "duesColBatch": "ব্যাচ",
+  "@duesColBatch": {
+    "description": "Dues table column: batch names."
+  },
+  "duesColMonths": "মাস",
+  "@duesColMonths": {
+    "description": "Dues table column: open months."
+  },
+  "duesColAmount": "পরিমাণ",
+  "@duesColAmount": {
+    "description": "Dues table column: amount owed."
+  },
+  "duesColStatus": "অবস্থা",
+  "@duesColStatus": {
+    "description": "Dues table column: severity badge."
+  },
+  "duesColReminded": "মনে করানো",
+  "@duesColReminded": {
+    "description": "Dues table column: reminded today."
+  },
+  "duesColActions": "কাজ",
+  "@duesColActions": {
+    "description": "Dues table column: row actions."
+  },
+  "duesMenuWaive": "মওকুফ",
+  "@duesMenuWaive": {
+    "description": "Right-click menu item on a dues row: waive the open month."
+  },
+  "duesOpenProfile": "প্রোফাইল খুলুন",
+  "@duesOpenProfile": {
+    "description": "Right-click menu item and tooltip: open the student profile."
+  },
+  "duesOverviewTitle": "বেতনের সারসংক্ষেপ",
+  "@duesOverviewTitle": {
+    "description": "Title of the overview pane shown when no student is selected."
+  },
+  "duesOverviewMonth": "{month}-এর আদায়",
+  "@duesOverviewMonth": {
+    "description": "Title of this month's collection tiles in the overview. month is a month name with year.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "duesOpenCollection": "মাসিক আদায় দেখুন",
+  "@duesOpenCollection": {
+    "description": "Button: go to the monthly collection summary."
+  },
+  "duesFeesEmpty": "এই মাসে এই ব্যাচে কোনো বেতন ধরা নেই",
+  "@duesFeesEmpty": {
+    "description": "Empty state of the batch fees tab."
+  },
+  "duesCenterFallback": "আপনার কোচিং",
+  "@duesCenterFallback": {
+    "description": "Center name used in a reminder when none is set in Settings."
+  },
+  "duesReminderFailed": "বার্তা তৈরি করা যায়নি",
+  "@duesReminderFailed": {
+    "description": "Snackbar when the reminder text could not be built."
+  }
+}
