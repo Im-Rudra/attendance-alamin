@@ -591,6 +591,7 @@ class ReviewActionBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Center(
+          heightFactor: 1,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(

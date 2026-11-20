@@ -185,7 +185,7 @@ void main() {
       expect(find.text(_bn.backupRestoreTitle), findsOneWidget);
       expect(repo.restored, isEmpty, reason: 'nothing before the confirmation');
 
-      await tester.tap(find.text(_bn.backupRestoreConfirm));
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(_bn.backupRestoreConfirm)));
       await tester.pumpAndSettle();
       expect(repo.restored, <String>['s2']);
       expect(find.text(_bn.backupRestoreDone), findsOneWidget);
