@@ -17,7 +17,7 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
-import 'package:attendance_alamin/data/infra_providers.dart';
+import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/attendance.dart';
@@ -153,6 +153,16 @@ SeededFakes _bannersAndNudges() {
   return f;
 }
 
+/// Today's date and minute of day for a test (the clock itself is fixed by
+/// the harness and cannot be overridden twice).
+List<Override> _clockAt(String date, String time) {
+  final List<String> hm = time.split(':');
+  return <Override>[
+    todayProvider.overrideWithValue(LocalDate.parse(date)),
+    nowMinutesProvider.overrideWithValue(int.parse(hm[0]) * 60 + int.parse(hm[1])),
+  ];
+}
+
 // ---- helpers -----------------------------------------------------------------
 
 /// The 8 matrix cases for one state: the screen is pumped with the clock of
@@ -174,7 +184,7 @@ void testStateMatrix(
         viewport: c.viewport,
         overrides: <Override>[
           ...f.overrides,
-          clockProvider.overrideWithValue(at(date, time)),
+          ..._clockAt(date, time),
         ],
       );
       await _settle(tester);
@@ -205,7 +215,7 @@ Future<SeededFakes> _pumpPhone(
     tester,
     const TodayScreen(),
     lang: lang,
-    overrides: <Override>[...f.overrides, clockProvider.overrideWithValue(at(date, time))],
+    overrides: <Override>[...f.overrides, ..._clockAt(date, time)],
   );
   // Tall enough to build every card of the phone page.
   tester.view.physicalSize = Size(360, height);
@@ -227,7 +237,7 @@ Future<SeededFakes> _pumpDesktop(
     const TodayScreen(),
     lang: lang,
     viewport: TestViewport.desktop,
-    overrides: <Override>[...f.overrides, clockProvider.overrideWithValue(at(date, time))],
+    overrides: <Override>[...f.overrides, ..._clockAt(date, time)],
   );
   tester.view.physicalSize = size;
   await _settle(tester);
