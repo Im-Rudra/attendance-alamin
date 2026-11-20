@@ -1,0 +1,253 @@
+{
+  "@@locale": "bn",
+  "shellStubMessage": "এই অংশটি তৈরি হচ্ছে — খুব শিগগিরই এখানে কাজ করা যাবে।",
+  "@shellStubMessage": {
+    "description": "Empty-state sentence on a screen whose feature is not built yet."
+  },
+  "shellStubToday": "আজকের ক্লাস, হাজিরা আর বকেয়ার হিসাব এখানে এক নজরে দেখা যাবে — শিগগিরই।",
+  "@shellStubToday": {
+    "description": "Placeholder sentence on the Today tab before it is built."
+  },
+  "shellStubBatches": "আপনার সব ব্যাচ বিষয় অনুযায়ী এখানে সাজানো থাকবে — শিগগিরই।",
+  "@shellStubBatches": {
+    "description": "Placeholder sentence on the Batches tab before it is built."
+  },
+  "shellStubStudents": "সব শিক্ষার্থীকে এখানে সহজে খুঁজে পাবেন — শিগগিরই।",
+  "@shellStubStudents": {
+    "description": "Placeholder sentence on the Students tab before it is built."
+  },
+  "shellStubFees": "কার বেতন বাকি আর কে দিয়েছে — সব এখানে দেখা যাবে, শিগগিরই।",
+  "@shellStubFees": {
+    "description": "Placeholder sentence on the Fees tab before it is built."
+  },
+  "shellStubOverview": "কিছু বাছাই না করলে এখানে সারসংক্ষেপ দেখা যাবে — শিগগিরই।",
+  "@shellStubOverview": {
+    "description": "Placeholder for the detail pane of a wide window when nothing is selected."
+  },
+  "shellTitleOverview": "সারসংক্ষেপ",
+  "@shellTitleOverview": {
+    "description": "Title of the detail pane when nothing is selected."
+  },
+  "shellNotFoundTitle": "পাতাটি পাওয়া যায়নি",
+  "@shellNotFoundTitle": {
+    "description": "Title of the screen for an unknown or broken link."
+  },
+  "shellNotFoundMessage": "এই লিংকে কোনো পাতা নেই। আজকের পাতায় ফিরে যান।",
+  "@shellNotFoundMessage": {
+    "description": "Body of the screen for an unknown or broken link."
+  },
+  "shellGoToToday": "আজ-এ ফিরে যান",
+  "@shellGoToToday": {
+    "description": "Button that returns to the Today tab."
+  },
+  "shellStorageInMemory": "এই ব্রাউজারে ডেটা সংরক্ষণ হবে না",
+  "@shellStorageInMemory": {
+    "description": "Permanent red banner when the web database runs in memory only (data is lost on reload)."
+  },
+  "shellStartupErrorTitle": "তথ্য রাখার জায়গা চালু করা যায়নি",
+  "@shellStartupErrorTitle": {
+    "description": "Title of the full-screen error when the database cannot open at start-up."
+  },
+  "shellStartupErrorBody": "আবার চেষ্টা করুন। বারবার এমন হলে অ্যাপটি বন্ধ করে আবার খুলুন, অথবা অন্য একটি ব্রাউজার ব্যবহার করুন।",
+  "@shellStartupErrorBody": {
+    "description": "Body of the start-up database error screen."
+  },
+  "shellNumberCopied": "{phone} নম্বরটি কপি হয়েছে",
+  "@shellNumberCopied": {
+    "description": "Snackbar after a phone number was copied (no dialer on this device).",
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "০১৭১১২২৩৩৪৪"
+      }
+    }
+  },
+  "shellTextCopied": "লেখাটি কপি হয়েছে — যেকোনো অ্যাপে পেস্ট করুন",
+  "@shellTextCopied": {
+    "description": "Snackbar after a message was copied for sharing."
+  },
+  "shellRailCollapse": "মেনু ছোট করুন",
+  "@shellRailCollapse": {
+    "description": "Tooltip: collapse the side navigation rail."
+  },
+  "shellRailExpand": "মেনু বড় করুন",
+  "@shellRailExpand": {
+    "description": "Tooltip: expand the side navigation rail."
+  },
+  "shellShortcutsTitle": "কিবোর্ড শর্টকাট",
+  "@shellShortcutsTitle": {
+    "description": "Title of the keyboard shortcut list (opened with ?)."
+  },
+  "shellShortcutDestinations": "আজ · ব্যাচ · শিক্ষার্থী · বেতন · আরও",
+  "@shellShortcutDestinations": {
+    "description": "Shortcut list: what Ctrl+1 to Ctrl+5 open."
+  },
+  "shellShortcutSearch": "খুঁজুন",
+  "@shellShortcutSearch": {
+    "description": "Shortcut list: what Ctrl+F opens."
+  },
+  "shellShortcutHelp": "এই তালিকা দেখান",
+  "@shellShortcutHelp": {
+    "description": "Shortcut list: what the question-mark key does."
+  },
+  "shellKeysDestinations": "Ctrl+1 … Ctrl+5",
+  "@shellKeysDestinations": {
+    "description": "Key names for switching tabs (keyboard labels, same in both languages)."
+  },
+  "shellKeysSearch": "Ctrl+F · Ctrl+K",
+  "@shellKeysSearch": {
+    "description": "Key names for search (keyboard labels)."
+  },
+  "shellKeysHelp": "?",
+  "@shellKeysHelp": {
+    "description": "Key name of the shortcut list key."
+  },
+  "shellTitleBatchNew": "নতুন ব্যাচ",
+  "@shellTitleBatchNew": {
+    "description": "Screen title: create a batch."
+  },
+  "shellTitleBatchEdit": "ব্যাচ সম্পাদনা",
+  "@shellTitleBatchEdit": {
+    "description": "Screen title: edit a batch."
+  },
+  "shellTitleBatchDetail": "ব্যাচের বিস্তারিত",
+  "@shellTitleBatchDetail": {
+    "description": "Screen title: one batch."
+  },
+  "shellTitleSlotEditor": "প্রতি সপ্তাহের সময়",
+  "@shellTitleSlotEditor": {
+    "description": "Screen title: recurring weekly slots of a batch."
+  },
+  "shellTitleRollCall": "হাজিরা",
+  "@shellTitleRollCall": {
+    "description": "Screen title: roll call."
+  },
+  "shellTitleBulkAdd": "একসাথে অনেক শিক্ষার্থী যোগ",
+  "@shellTitleBulkAdd": {
+    "description": "Screen title: bulk quick-add of students to a batch."
+  },
+  "shellTitleStudentNew": "নতুন শিক্ষার্থী",
+  "@shellTitleStudentNew": {
+    "description": "Screen title: add a student."
+  },
+  "shellTitleStudentEdit": "শিক্ষার্থীর তথ্য বদলান",
+  "@shellTitleStudentEdit": {
+    "description": "Screen title: edit a student."
+  },
+  "shellTitleStudentProfile": "শিক্ষার্থীর প্রোফাইল",
+  "@shellTitleStudentProfile": {
+    "description": "Screen title: one student."
+  },
+  "shellTitlePayment": "টাকা নিন",
+  "@shellTitlePayment": {
+    "description": "Title of the payment pane next to the dues list."
+  },
+  "shellTitleCollection": "আদায়",
+  "@shellTitleCollection": {
+    "description": "Screen title: monthly collection summary."
+  },
+  "shellTitleBackup": "ব্যাকআপ",
+  "@shellTitleBackup": {
+    "description": "Screen title: backup export/import."
+  },
+  "shellTitleBackupReview": "ব্যাকআপ মিলিয়ে দেখুন",
+  "@shellTitleBackupReview": {
+    "description": "Screen title: review the changes of a backup before applying it."
+  },
+  "shellTitleArchived": "আর্কাইভ করা ব্যাচ",
+  "@shellTitleArchived": {
+    "description": "Screen title: archived batches."
+  },
+  "shellTitleLeft": "ছেড়ে যাওয়া শিক্ষার্থী",
+  "@shellTitleLeft": {
+    "description": "Screen title: students who left."
+  },
+  "shellTitleTemplateReminder": "বকেয়া রিমাইন্ডার বার্তা",
+  "@shellTitleTemplateReminder": {
+    "description": "Screen title: edit the dues reminder template."
+  },
+  "shellTitleTemplateReceipt": "রসিদের বার্তা",
+  "@shellTitleTemplateReceipt": {
+    "description": "Screen title: edit the receipt template."
+  },
+  "shellTitleTemplate": "বার্তার নমুনা",
+  "@shellTitleTemplate": {
+    "description": "Screen title: edit a message template (unknown kind)."
+  },
+  "shellTitlePaymentMethods": "পেমেন্টের মাধ্যম",
+  "@shellTitlePaymentMethods": {
+    "description": "Screen title: payment methods."
+  },
+  "shellTitleHolidays": "ছুটির দিন",
+  "@shellTitleHolidays": {
+    "description": "Screen title: holiday closures."
+  },
+  "shellTitleDiagnostics": "ডায়াগনস্টিকস",
+  "@shellTitleDiagnostics": {
+    "description": "Screen title: technical information for support."
+  },
+  "shellTitleHelp": "সাহায্য",
+  "@shellTitleHelp": {
+    "description": "Screen title: help (how to)."
+  },
+  "shellTitleOnboarding": "শুরু করা যাক",
+  "@shellTitleOnboarding": {
+    "description": "Screen title: first-run setup."
+  },
+  "shellTitleReminderPriming": "ক্লাস রিমাইন্ডার",
+  "@shellTitleReminderPriming": {
+    "description": "Screen title: explain class reminders before asking permission."
+  },
+  "shellOnboardingContinue": "অ্যাপে যান",
+  "@shellOnboardingContinue": {
+    "description": "Button on the first-run placeholder that opens the app."
+  },
+  "shellAppearance": "চেহারা",
+  "@shellAppearance": {
+    "description": "Settings group: language and theme."
+  },
+  "shellLanguage": "ভাষা",
+  "@shellLanguage": {
+    "description": "Settings row: app language."
+  },
+  "shellTheme": "থিম",
+  "@shellTheme": {
+    "description": "Settings row: light/dark theme."
+  },
+  "shellThemeSystem": "সিস্টেম",
+  "@shellThemeSystem": {
+    "description": "Theme option: follow the device."
+  },
+  "shellThemeLight": "লাইট",
+  "@shellThemeLight": {
+    "description": "Theme option: light."
+  },
+  "shellThemeDark": "ডার্ক",
+  "@shellThemeDark": {
+    "description": "Theme option: dark."
+  },
+  "shellLangBangla": "বাংলা",
+  "@shellLangBangla": {
+    "description": "Language option: Bangla (endonym, same in both languages)."
+  },
+  "shellLangEnglish": "English",
+  "@shellLangEnglish": {
+    "description": "Language option: English (endonym, same in both languages)."
+  },
+  "shellLangChipBn": "বাং",
+  "@shellLangChipBn": {
+    "description": "Short Bangla label on the language chip."
+  },
+  "shellLangChipEn": "EN",
+  "@shellLangChipEn": {
+    "description": "Short English label on the language chip."
+  },
+  "shellArchiveGroup": "সংরক্ষণাগার",
+  "@shellArchiveGroup": {
+    "description": "More tab group: archived batches, students who left, help."
+  },
+  "shellSettingsGroup": "সেটিংস",
+  "@shellSettingsGroup": {
+    "description": "More tab group: other settings pages."
+  }
+}
