@@ -103,6 +103,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(_bn.backupKeptTotal(_f.number(1))), findsOneWidget, reason: "Rahim's newer data is kept");
+    tester.view.physicalSize = const Size(400, 3000);
+    await tester.pump();
     expect(find.text('Nila'), findsOneWidget);
     expect(find.byKey(const Key('review-clashes')), findsNothing);
     expect(repo.byId('students', 'nila'), isNull, reason: 'nothing changes before Apply');
