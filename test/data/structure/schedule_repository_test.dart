@@ -435,7 +435,7 @@ void main() {
       final phys = await h.batch(await h.subject('Physics'), 'Physics A',
           slots: [slot(fri, 480, 540), slot(fri, 1020, 1080)]);
       final res = ScheduleEngine.expand(
-          range: DateRange(d(2026, 12, 12), d(2026, 12, 12)),
+          range: DateRange(d(2026, 12, 11), d(2026, 12, 11)),
           batches: await h.loaded());
       final todays = res.occurrences.where((o) => o.batchId == phys).toList();
       expect(todays, hasLength(2));
@@ -445,7 +445,7 @@ void main() {
     test('an extra 17:00 saves, an extra overlapping the 08:00 class is '
         'refused', () async {
       final phys = await h.batch(await h.subject('Physics'), 'Physics A',
-          slots: [slot(fri, 480, 540)]);
+          slots: [slot(sat, 480, 540)]);
       final extra = await h.schedule.addExtra(
           batchId: phys, date: d(2026, 12, 12), startMin: 1020, endMin: 1080);
       expect(extra, startsWith('x.'));
