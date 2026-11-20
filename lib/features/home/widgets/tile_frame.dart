@@ -1,0 +1,160 @@
+// The shell of every Today tile: a glass card with an optional header. Inside
+// the bento (bounded height) the body fills the tile and scrolls instead of
+// overflowing; inside a scrolling page (unbounded height) it wraps its content.
+
+import 'package:flutter/material.dart';
+
+import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/widgets/widgets.dart';
+
+class TileFrame extends StatelessWidget {
+  const TileFrame({
+    super.key,
+    this.header,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(16),
+    this.scroll = true,
+  });
+
+  final Widget? header;
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  /// Wrap [child] in a scroll view that fills the tile (the child may then
+  /// centre itself or use `spaceBetween`). Pass false when [child] scrolls on
+  /// its own.
+  final bool scroll;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          final Widget? head = header;
+          final Widget body;
+          if (c.hasBoundedHeight) {
+            final Widget fill = scroll ? _FillScroll(child: child) : child;
+            body = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (head != null) ...<Widget>[head, const SizedBox(height: 8)],
+                Expanded(child: fill),
+              ],
+            );
+          } else {
+            body = Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (head != null) ...<Widget>[head, const SizedBox(height: 8)],
+                child,
+              ],
+            );
+          }
+          return Padding(padding: padding, child: body);
+        },
+      ),
+    );
+  }
+}
+
+class _FillScroll extends StatelessWidget {
+  const _FillScroll({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints c) => SingleChildScrollView(
+        primary: false,
+        physics: const ClampingScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: c.maxHeight),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Icon, title and an optional trailing widget on one line.
+class TileHeader extends StatelessWidget {
+  const TileHeader({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.aurora;
+    final TextTheme tt = Theme.of(context).textTheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 28),
+      child: Row(
+        children: <Widget>[
+          ExcludeSemantics(child: Icon(icon, size: 20, color: tokens.accent)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.titleSmall?.copyWith(
+                  color: tokens.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          if (trailing != null) ...<Widget>[const SizedBox(width: 8), trailing!],
+        ],
+      ),
+    );
+  }
+}
+
+/// A small centred message for an empty tile: icon over one sentence. Meant
+/// as the child of a [TileFrame] so it fills the tile.
+class TileMessage extends StatelessWidget {
+  const TileMessage({super.key, required this.icon, required this.message, this.action});
+
+  final IconData icon;
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.aurora;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          ExcludeSemantics(child: Icon(icon, size: 40, color: tokens.accent)),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: tokens.textPrimary),
+          ),
+          if (action != null) ...<Widget>[const SizedBox(height: 12), action!],
+        ],
+      ),
+    );
+  }
+}
