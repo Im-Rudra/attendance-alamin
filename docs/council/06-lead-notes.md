@@ -18,6 +18,12 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - Use `AttendanceStats.tallyWithin(..., from: joinDate, to: endDate)` so the denominator is bounded by enrollment dates.
 - Fire time ≤ now is skipped; default lead 0 and negative leads mean off.
 
+## From M2-D (snapshot codec + diff, #10)
+- `winners` can be non-empty while the summary `isEmpty` is true (unknown tombstones, deleted-only changes): the data layer applies the merge ONLY when `!isEmpty`, else reports "no changes".
+- Apply `winners` in their given order (deletions first, then table registry order) inside one transaction with foreign keys deferred (Arch §3.6).
+- Change-summary items are grouped teacher-visibly (fees under batch, photos under student, payment rows under receipt_id); samples carry `_table` and payments `_receipt_total`.
+- `decode` error codes: importNotBackup, importCorrupt, importNewerSchema (checked before checksum), importChecksum.
+
 ## From M2-A (dues engine, #8)
 - `autoAllocate` needs dues from `forEnrollment` computed with the same `today` and `aheadMonths ≥ 12`.
 - When editing a receipt, build the dues passed to `validateAllocations` WITHOUT that receipt's own allocation rows.
