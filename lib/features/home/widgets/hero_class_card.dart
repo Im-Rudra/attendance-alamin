@@ -14,6 +14,7 @@ import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
+import 'package:attendance_alamin/features/onboarding/onboarding_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
@@ -122,9 +123,11 @@ class HeroClassCard extends ConsumerWidget {
             ));
         }
         if (focus != null) {
-          actions.add(HeroPillButton(
-            label: l10n.todayTakeAttendance,
-            onPressed: () => openRollCall(context, focus.occ),
+          actions.add(CoachMarkAnchor(
+            child: HeroPillButton(
+              label: l10n.todayTakeAttendance,
+              onPressed: () => openRollCall(context, focus.occ),
+            ),
           ));
         }
       case HeroKind.current:
@@ -139,9 +142,11 @@ class HeroClassCard extends ConsumerWidget {
             ..add(t(l10n.clsClassLabel(focus.subjectName, focus.batch.name), title))
             ..add(const SizedBox(height: 2))
             ..add(t(fmt.timeRange(focus.startMin, focus.endMin), line, maxLines: 1));
-          actions.add(HeroPillButton(
-            label: l10n.todayTakeAttendance,
-            onPressed: () => openRollCall(context, focus.occ),
+          actions.add(CoachMarkAnchor(
+            child: HeroPillButton(
+              label: l10n.todayTakeAttendance,
+              onPressed: () => openRollCall(context, focus.occ),
+            ),
           ));
         }
     }
