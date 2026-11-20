@@ -145,11 +145,12 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
     }
     if (!_resolved) {
       _decide(choices);
+      // Behind the chooser sheet nothing spins.
       return StubScreen(
         name: l10n.shellTitleRollCall,
         icon: Icons.fact_check_outlined,
         fullScreen: true,
-        body: const Center(child: CircularProgressIndicator()),
+        body: choices.length > 1 ? const SizedBox.shrink() : const Center(child: CircularProgressIndicator()),
       );
     }
     return RollEditor(
