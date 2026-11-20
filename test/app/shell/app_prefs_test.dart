@@ -132,11 +132,15 @@ void main() {
     Brightness brightness() => Theme.of(tester.element(find.byType(SegmentedChoice<ThemeMode>))).brightness;
     expect(brightness(), Brightness.light);
 
+    await tester.ensureVisible(find.text(l10nOf(Lang.bn).shellThemeDark));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10nOf(Lang.bn).shellThemeDark));
     await tester.pumpAndSettle();
     expect(brightness(), Brightness.dark);
     expect(await h.settings.get(SettingKeys.themeMode), 'dark');
 
+    await tester.ensureVisible(find.text(l10nOf(Lang.bn).shellLangEnglish));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(l10nOf(Lang.bn).shellLangEnglish));
     await tester.pumpAndSettle();
     expect(find.text(l10nOf(Lang.en).shellAppearance), findsOneWidget);

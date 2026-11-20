@@ -1,129 +1,159 @@
-// MoreScreen: STUB by M5-A (plan section 0). The body belongs to M6-E
-// (settings); keep the constructor signature (routes are frozen).
-//
-// Until M6-E lands, this placeholder already offers the two appearance
-// settings (language, theme: both switch instantly) and links to every page
-// under আরও, so the whole shell can be explored.
+// More tab = Settings (Product 3.12, UX 3a). One scrolling list of groups on
+// phones; on wide windows a group index (240) next to the selected group's
+// cards (two columns when there is room), so no area is left blank.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/shell/stub_screen.dart';
+import 'package:attendance_alamin/app/shell/pane_split.dart';
+import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
-import 'package:attendance_alamin/core/format/lang.dart';
+import 'package:attendance_alamin/features/settings/widgets/settings_groups.dart';
+import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart';
 
-class MoreScreen extends ConsumerWidget {
+/// Window width (of the content area) from which the index ‖ content layout is used.
+const double kMoreSplitMinWidth = 720;
+
+/// Width of the group index in the split layout.
+const double kMoreIndexWidth = 240;
+
+/// Content width from which a group's cards sit in two columns.
+const double kMoreTwoUpMinWidth = 640;
+
+class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextStyle? rowLabel = Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens.textSecondary);
-    final Lang lang = ref.watch(langProvider);
-    final ThemeMode mode = ref.watch(themeModeProvider);
+  ConsumerState<MoreScreen> createState() => _MoreScreenState();
+}
 
-    return StubScreen(
-      name: l10n.navMore,
-      icon: Icons.menu,
-      showSearch: true,
-      body: ListView(
-        padding: EdgeInsets.zero,
+class _MoreScreenState extends ConsumerState<MoreScreen> {
+  // The split layout always opens on the first group (UX 3b).
+  SettingsGroup _selected = SettingsGroup.values.first;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final double g = WindowClass.of(context).gutter;
+    final bool embedded = PaneScope.isEmbedded(context);
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
+        title: Semantics(header: true, child: Text(l10n.navMore)),
+        actions: <Widget>[
+          IconButton(
+            tooltip: l10n.commonSearch,
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push(Routes.search),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints c) {
+            if (c.maxWidth >= kMoreSplitMinWidth) return _split(context, c, g);
+            return _list(context, g);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _list(BuildContext context, double g) {
+    final l10n = context.l10n;
+    return ListView(
+      padding: EdgeInsets.fromLTRB(g, 4, g, g),
+      children: <Widget>[
+        for (final SettingsGroup group in SettingsGroup.values) ...<Widget>[
+          SettingsHeader(group.title(l10n)),
+          SettingsGroupBody(group: group),
+        ],
+      ],
+    );
+  }
+
+  Widget _split(BuildContext context, BoxConstraints c, double g) {
+    final l10n = context.l10n;
+    final double contentWidth = c.maxWidth - 2 * g - kMoreIndexWidth - g;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(g, 4, g, g),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          StubSectionTitle(l10n.shellAppearance),
-          GlassCard(
-            dense: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(l10n.shellLanguage, style: rowLabel),
-                const SizedBox(height: 8),
-                SegmentedChoice<Lang>(
-                  key: const Key('more-language'),
-                  options: Lang.values,
-                  selected: lang,
-                  onChanged: (Lang v) => ref.read(langProvider.notifier).set(v),
-                  labelOf: (Lang v) => v == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish,
-                ),
-                const SizedBox(height: 16),
-                Text(l10n.shellTheme, style: rowLabel),
-                const SizedBox(height: 8),
-                SegmentedChoice<ThemeMode>(
-                  key: const Key('more-theme'),
-                  options: const <ThemeMode>[ThemeMode.system, ThemeMode.light, ThemeMode.dark],
-                  selected: mode,
-                  onChanged: (ThemeMode v) => ref.read(themeModeProvider.notifier).set(v),
-                  labelOf: (ThemeMode v) => switch (v) {
-                    ThemeMode.system => l10n.shellThemeSystem,
-                    ThemeMode.light => l10n.shellThemeLight,
-                    ThemeMode.dark => l10n.shellThemeDark,
-                  },
-                ),
-              ],
+          SizedBox(
+            width: kMoreIndexWidth,
+            child: _Index(
+              selected: _selected,
+              onSelect: (SettingsGroup v) => setState(() => _selected = v),
             ),
           ),
-          const SizedBox(height: 12),
-          StubSectionTitle(l10n.shellArchiveGroup),
-          _LinkCard(links: <_Link>[
-            _Link(Icons.inventory_2_outlined, l10n.shellTitleArchived, Routes.moreArchived),
-            _Link(Icons.person_off_outlined, l10n.shellTitleLeft, Routes.moreLeft),
-            _Link(Icons.help_outline, l10n.shellTitleHelp, Routes.moreHelp),
-          ]),
-          const SizedBox(height: 12),
-          StubSectionTitle(l10n.shellSettingsGroup),
-          _LinkCard(links: <_Link>[
-            _Link(Icons.save_alt_outlined, l10n.shellTitleBackup, Routes.moreBackup),
-            _Link(Icons.account_balance_wallet_outlined, l10n.shellTitlePaymentMethods, Routes.morePaymentMethods),
-            _Link(Icons.edit_note, l10n.shellTitleTemplateReminder, Routes.moreTemplate('reminder')),
-            _Link(Icons.edit_note, l10n.shellTitleTemplateReceipt, Routes.moreTemplate('receipt')),
-            _Link(Icons.beach_access_outlined, l10n.shellTitleHolidays, Routes.moreHolidays),
-            _Link(Icons.monitor_heart_outlined, l10n.shellTitleDiagnostics, Routes.moreDiagnostics),
-          ]),
-          const SizedBox(height: 8),
+          SizedBox(width: g),
+          Expanded(
+            child: SingleChildScrollView(
+              key: ValueKey<SettingsGroup>(_selected),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SettingsHeader(_selected.title(l10n)),
+                  SettingsGroupBody(
+                    group: _selected,
+                    twoUp: contentWidth >= kMoreTwoUpMinWidth,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _Link {
-  const _Link(this.icon, this.label, this.route);
+class _Index extends StatelessWidget {
+  const _Index({required this.selected, required this.onSelect});
 
-  final IconData icon;
-  final String label;
-  final String route;
-}
-
-class _LinkCard extends StatelessWidget {
-  const _LinkCard({required this.links});
-
-  final List<_Link> links;
+  final SettingsGroup selected;
+  final ValueChanged<SettingsGroup> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final tokens = context.aurora;
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        type: MaterialType.transparency,
-        child: Column(
-          children: <Widget>[
-            for (int i = 0; i < links.length; i++) ...<Widget>[
-              if (i > 0) Divider(indent: 56, color: tokens.track),
-              ListTile(
-                leading: Icon(links[i].icon, color: tokens.accent),
-                title: Text(links[i].label),
-                trailing: Icon(Icons.chevron_right, color: tokens.textSecondary),
-                onTap: () => context.go(links[i].route),
-              ),
-            ],
-          ],
+    return Semantics(
+      container: true,
+      label: l10n.setIndexLabel,
+      child: GlassCard(
+        dense: true,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: Material(
+          type: MaterialType.transparency,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final SettingsGroup group in SettingsGroup.values)
+                  ListTile(
+                    key: Key('more-index-${group.name}'),
+                    minTileHeight: 52,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
+                    ),
+                    selected: group == selected,
+                    selectedColor: tokens.onAccentContainer,
+                    selectedTileColor: tokens.accentContainer,
+                    leading: Icon(group.icon),
+                    title: Text(group.title(l10n)),
+                    onTap: () => onSelect(group),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

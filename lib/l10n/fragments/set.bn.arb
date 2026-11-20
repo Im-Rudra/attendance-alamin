@@ -1,0 +1,659 @@
+{
+  "@@locale": "bn",
+  "setGroupArchive": "সংরক্ষণাগার",
+  "@setGroupArchive": {
+    "description": "Settings and More screens: group archive."
+  },
+  "setGroupCenter": "কোচিং সেন্টার",
+  "@setGroupCenter": {
+    "description": "Settings and More screens: group center."
+  },
+  "setGroupReminders": "ক্লাস রিমাইন্ডার",
+  "@setGroupReminders": {
+    "description": "Settings and More screens: group reminders."
+  },
+  "setGroupFees": "বেতন ও পেমেন্ট",
+  "@setGroupFees": {
+    "description": "Settings and More screens: group fees."
+  },
+  "setGroupBackup": "ব্যাকআপ",
+  "@setGroupBackup": {
+    "description": "Settings and More screens: group backup."
+  },
+  "setGroupAbout": "সম্পর্কে",
+  "@setGroupAbout": {
+    "description": "Settings and More screens: group about."
+  },
+  "setIndexLabel": "সেটিংসের তালিকা",
+  "@setIndexLabel": {
+    "description": "Settings and More screens: index label."
+  },
+  "setArchivedValue": "বন্ধ করা ব্যাচ দেখুন ও ফিরিয়ে আনুন",
+  "@setArchivedValue": {
+    "description": "Settings and More screens: archived value."
+  },
+  "setLeftValue": "যারা ব্যাচ ছেড়ে গেছে তাদের তালিকা",
+  "@setLeftValue": {
+    "description": "Settings and More screens: left value."
+  },
+  "setHolidaysValue": "ছুটির দিন যোগ করুন",
+  "@setHolidaysValue": {
+    "description": "Settings and More screens: holidays value."
+  },
+  "setHelpValue": "কীভাবে করবেন",
+  "@setHelpValue": {
+    "description": "Settings and More screens: help value."
+  },
+  "setWeekStart": "সপ্তাহ শুরু হয়",
+  "@setWeekStart": {
+    "description": "Settings and More screens: week start."
+  },
+  "setWeekStartHint": "সাপ্তাহিক দেখা ও তারিখ বাছাইয়ে কাজ করে",
+  "@setWeekStartHint": {
+    "description": "Settings and More screens: week start hint."
+  },
+  "setThemeHint": "বদলালেই সঙ্গে সঙ্গে কাজ করে",
+  "@setThemeHint": {
+    "description": "Settings and More screens: theme hint."
+  },
+  "setThemeCurrent": "এখন: {name}",
+  "@setThemeCurrent": {
+    "description": "Settings and More screens: theme current.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setLanguageCurrent": "এখন: {name}",
+  "@setLanguageCurrent": {
+    "description": "Settings and More screens: language current.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setReducedEffects": "কম ইফেক্ট",
+  "@setReducedEffects": {
+    "description": "Settings and More screens: reduced effects."
+  },
+  "setReducedEffectsAuto": "অটো — ধীর ডিভাইসে নিজে চালু হয়",
+  "@setReducedEffectsAuto": {
+    "description": "Settings and More screens: reduced effects auto."
+  },
+  "setReducedEffectsOn": "চালু — কম ঝাপসা ও কম অ্যানিমেশন",
+  "@setReducedEffectsOn": {
+    "description": "Settings and More screens: reduced effects on."
+  },
+  "setCenterName": "কোচিং বা শিক্ষকের নাম",
+  "@setCenterName": {
+    "description": "Settings and More screens: center name."
+  },
+  "setCenterNameHint": "রসিদ ও বার্তায় এই নাম দেখা যাবে",
+  "@setCenterNameHint": {
+    "description": "Settings and More screens: center name hint."
+  },
+  "setCenterPhone": "যোগাযোগের ফোন নম্বর",
+  "@setCenterPhone": {
+    "description": "Settings and More screens: center phone."
+  },
+  "setCenterPhoneHint": "যেমন ০১৭১২৩৪৫৬৭৮",
+  "@setCenterPhoneHint": {
+    "description": "Settings and More screens: center phone hint."
+  },
+  "setCenterAddress": "ঠিকানা (ঐচ্ছিক)",
+  "@setCenterAddress": {
+    "description": "Settings and More screens: center address."
+  },
+  "setCenterAddressHint": "রসিদের নিচে দেখা যাবে",
+  "@setCenterAddressHint": {
+    "description": "Settings and More screens: center address hint."
+  },
+  "setAutoSaved": "নিজে নিজেই সেভ হয়",
+  "@setAutoSaved": {
+    "description": "Settings and More screens: auto saved."
+  },
+  "setRemindersSwitch": "ক্লাসের আগে মনে করিয়ে দিন",
+  "@setRemindersSwitch": {
+    "description": "Settings and More screens: reminders switch."
+  },
+  "setRemindersOnValue": "চালু আছে",
+  "@setRemindersOnValue": {
+    "description": "Settings and More screens: reminders on value."
+  },
+  "setRemindersOffValue": "বন্ধ আছে",
+  "@setRemindersOffValue": {
+    "description": "Settings and More screens: reminders off value."
+  },
+  "setDefaultLead": "ডিফল্ট সময়",
+  "@setDefaultLead": {
+    "description": "Settings and More screens: default lead."
+  },
+  "setLeadValue": "{n} মিনিট আগে",
+  "@setLeadValue": {
+    "description": "Settings and More screens: lead value.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setLeadSheetTitle": "কত মিনিট আগে মনে করাব?",
+  "@setLeadSheetTitle": {
+    "description": "Settings and More screens: lead sheet title."
+  },
+  "setPermMissing": "অনুমতি নেই — রিমাইন্ডার আসবে না",
+  "@setPermMissing": {
+    "description": "Settings and More screens: perm missing."
+  },
+  "setPermExact": "রিমাইন্ডার কয়েক মিনিট দেরিতে আসতে পারে",
+  "@setPermExact": {
+    "description": "Settings and More screens: perm exact."
+  },
+  "setPermFix": "ঠিক করুন",
+  "@setPermFix": {
+    "description": "Settings and More screens: perm fix."
+  },
+  "setTestReminder": "একটি টেস্ট রিমাইন্ডার পাঠান",
+  "@setTestReminder": {
+    "description": "Settings and More screens: test reminder."
+  },
+  "setTestReminderValue": "এখনই একটি নমুনা নোটিফিকেশন আসবে",
+  "@setTestReminderValue": {
+    "description": "Settings and More screens: test reminder value."
+  },
+  "setRemindersWebNote": "রিমাইন্ডার শুধু অ্যান্ড্রয়েড ও উইন্ডোজ অ্যাপে কাজ করে",
+  "@setRemindersWebNote": {
+    "description": "Settings and More screens: reminders web note."
+  },
+  "setCustomOther": "অন্য সংখ্যা",
+  "@setCustomOther": {
+    "description": "Settings and More screens: custom other."
+  },
+  "setCustomRange": "{min} থেকে {max} এর মধ্যে লিখুন",
+  "@setCustomRange": {
+    "description": "Settings and More screens: custom range.",
+    "placeholders": {
+      "min": {
+        "type": "String",
+        "example": "1"
+      },
+      "max": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setCustomApply": "ঠিক আছে",
+  "@setCustomApply": {
+    "description": "Settings and More screens: custom apply."
+  },
+  "setCutoffDay": "নতুন ভর্তির বেতনের কাট-অফ দিন",
+  "@setCutoffDay": {
+    "description": "Settings and More screens: cutoff day."
+  },
+  "setCutoffValue": "মাসের {n} তারিখের পর ভর্তি হলে বেতন পরের মাস থেকে",
+  "@setCutoffValue": {
+    "description": "Settings and More screens: cutoff value.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setCutoffSheetTitle": "কোন তারিখের পর ভর্তি হলে পরের মাস থেকে বেতন?",
+  "@setCutoffSheetTitle": {
+    "description": "Settings and More screens: cutoff sheet title."
+  },
+  "setPaymentMethodsValue": "{n}টি চালু",
+  "@setPaymentMethodsValue": {
+    "description": "Settings and More screens: payment methods value.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setTemplateDefault": "ডিফল্ট বার্তা",
+  "@setTemplateDefault": {
+    "description": "Settings and More screens: template default."
+  },
+  "setTemplateCustom": "আপনার নিজের লেখা বার্তা",
+  "@setTemplateCustom": {
+    "description": "Settings and More screens: template custom."
+  },
+  "setBackupLast": "শেষ ব্যাকআপ",
+  "@setBackupLast": {
+    "description": "Settings and More screens: backup last."
+  },
+  "setBackupNever": "এখনো ব্যাকআপ নেওয়া হয়নি",
+  "@setBackupNever": {
+    "description": "Settings and More screens: backup never."
+  },
+  "setBackupToday": "আজ",
+  "@setBackupToday": {
+    "description": "Settings and More screens: backup today."
+  },
+  "setBackupAgo": "{n} দিন আগে",
+  "@setBackupAgo": {
+    "description": "Settings and More screens: backup ago.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setBackupOverdue": "ব্যাকআপ নেওয়ার সময় হয়েছে",
+  "@setBackupOverdue": {
+    "description": "Settings and More screens: backup overdue."
+  },
+  "setBackupNow": "ব্যাকআপ নিন",
+  "@setBackupNow": {
+    "description": "Settings and More screens: backup now."
+  },
+  "setBackupNowValue": "সব তথ্যের একটি ফাইল তৈরি হবে",
+  "@setBackupNowValue": {
+    "description": "Settings and More screens: backup now value."
+  },
+  "setRestore": "ব্যাকআপ থেকে ফিরিয়ে আনুন",
+  "@setRestore": {
+    "description": "Settings and More screens: restore."
+  },
+  "setRestoreValue": "ফাইল বেছে তথ্য মিলিয়ে নিন",
+  "@setRestoreValue": {
+    "description": "Settings and More screens: restore value."
+  },
+  "setSafetyCopy": "সেফটি কপি থেকে ফেরত আনুন",
+  "@setSafetyCopy": {
+    "description": "Settings and More screens: safety copy."
+  },
+  "setSafetyCopyValue": "ভুল ইমপোর্ট ফিরিয়ে নিন (শেষ ৩টি রাখা হয়)",
+  "@setSafetyCopyValue": {
+    "description": "Settings and More screens: safety copy value."
+  },
+  "setBackupReminder": "ব্যাকআপের রিমাইন্ডার",
+  "@setBackupReminder": {
+    "description": "Settings and More screens: backup reminder."
+  },
+  "setBackupReminderEvery": "প্রতি {n} দিনে",
+  "@setBackupReminderEvery": {
+    "description": "Settings and More screens: backup reminder every.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setBackupReminderOff": "বন্ধ",
+  "@setBackupReminderOff": {
+    "description": "Settings and More screens: backup reminder off."
+  },
+  "setBackupReminderSheetTitle": "কত দিন পর পর মনে করাব?",
+  "@setBackupReminderSheetTitle": {
+    "description": "Settings and More screens: backup reminder sheet title."
+  },
+  "setDeviceName": "এই ডিভাইসের নাম",
+  "@setDeviceName": {
+    "description": "Settings and More screens: device name."
+  },
+  "setDeviceNameHint": "যেমন: আমার ফোন",
+  "@setDeviceNameHint": {
+    "description": "Settings and More screens: device name hint."
+  },
+  "setDeviceNameHelper": "ব্যাকআপ ও পরিবর্তনের তালিকায় দেখা যাবে",
+  "@setDeviceNameHelper": {
+    "description": "Settings and More screens: device name helper."
+  },
+  "setVersion": "সংস্করণ",
+  "@setVersion": {
+    "description": "Settings and More screens: version."
+  },
+  "setVersionUnknown": "জানা যায়নি",
+  "@setVersionUnknown": {
+    "description": "Settings and More screens: version unknown."
+  },
+  "setFontCredit": "ফন্ট ও লাইসেন্স",
+  "@setFontCredit": {
+    "description": "Settings and More screens: font credit."
+  },
+  "setFontCreditValue": "হিন্দ শিলিগুড়ি · SIL Open Font License",
+  "@setFontCreditValue": {
+    "description": "Settings and More screens: font credit value."
+  },
+  "setFontCreditBody": "এই অ্যাপে হিন্দ শিলিগুড়ি (Hind Siliguri) ফন্ট ব্যবহার করা হয়েছে। ফন্টটি SIL Open Font License 1.1 অনুযায়ী বিনামূল্যে ব্যবহার করা যায়।",
+  "@setFontCreditBody": {
+    "description": "Settings and More screens: font credit body."
+  },
+  "setDiagnosticsValue": "তথ্য কোথায় জমা হচ্ছে ও ডিভাইসের অবস্থা",
+  "@setDiagnosticsValue": {
+    "description": "Settings and More screens: diagnostics value."
+  },
+  "setTplLanguage": "কোন ভাষার বার্তা",
+  "@setTplLanguage": {
+    "description": "Settings and More screens: tpl language."
+  },
+  "setTplEditor": "বার্তা",
+  "@setTplEditor": {
+    "description": "Settings and More screens: tpl editor."
+  },
+  "setTplChips": "নিচের বোতামে চাপলে সেই তথ্য বসে যাবে",
+  "@setTplChips": {
+    "description": "Settings and More screens: tpl chips."
+  },
+  "setTplPreview": "দেখতে এমন হবে",
+  "@setTplPreview": {
+    "description": "Settings and More screens: tpl preview."
+  },
+  "setTplSampleNote": "নমুনা তথ্য দিয়ে দেখানো হয়েছে",
+  "@setTplSampleNote": {
+    "description": "Settings and More screens: tpl sample note."
+  },
+  "setTplReset": "ডিফল্টে ফেরান",
+  "@setTplReset": {
+    "description": "Settings and More screens: tpl reset."
+  },
+  "setTplResetDone": "ডিফল্ট বার্তায় ফেরানো হয়েছে",
+  "@setTplResetDone": {
+    "description": "Settings and More screens: tpl reset done."
+  },
+  "setTplEmptyNote": "ফাঁকা রাখলে ডিফল্ট বার্তা যাবে",
+  "@setTplEmptyNote": {
+    "description": "Settings and More screens: tpl empty note."
+  },
+  "setTplUnknown": "অচেনা ঘর: {names} — এগুলো বদলে যাবে না",
+  "@setTplUnknown": {
+    "description": "Settings and More screens: tpl unknown.",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setPhStudent": "শিক্ষার্থীর নাম",
+  "@setPhStudent": {
+    "description": "Settings and More screens: ph student."
+  },
+  "setPhBatch": "ব্যাচ",
+  "@setPhBatch": {
+    "description": "Settings and More screens: ph batch."
+  },
+  "setPhMonths": "মাস",
+  "@setPhMonths": {
+    "description": "Settings and More screens: ph months."
+  },
+  "setPhAmount": "টাকা",
+  "@setPhAmount": {
+    "description": "Settings and More screens: ph amount."
+  },
+  "setPhCenter": "কোচিংয়ের নাম",
+  "@setPhCenter": {
+    "description": "Settings and More screens: ph center."
+  },
+  "setPhTeacherPhone": "আপনার ফোন",
+  "@setPhTeacherPhone": {
+    "description": "Settings and More screens: ph teacher phone."
+  },
+  "setPhId": "আইডি",
+  "@setPhId": {
+    "description": "Settings and More screens: ph id."
+  },
+  "setPhMethod": "পেমেন্ট মাধ্যম",
+  "@setPhMethod": {
+    "description": "Settings and More screens: ph method."
+  },
+  "setPhDate": "তারিখ",
+  "@setPhDate": {
+    "description": "Settings and More screens: ph date."
+  },
+  "setPhRemainingLine": "বাকির লাইন",
+  "@setPhRemainingLine": {
+    "description": "Settings and More screens: ph remaining line."
+  },
+  "setPmIntro": "যেগুলো ব্যবহার করেন না সেগুলো লুকিয়ে রাখলে বেতন নেওয়ার ফর্ম ছোট হবে।",
+  "@setPmIntro": {
+    "description": "Settings and More screens: pm intro."
+  },
+  "setPmBuiltIn": "সাধারণ মাধ্যম",
+  "@setPmBuiltIn": {
+    "description": "Settings and More screens: pm built in."
+  },
+  "setPmCash": "ক্যাশ",
+  "@setPmCash": {
+    "description": "Settings and More screens: pm cash."
+  },
+  "setPmBkash": "বিকাশ",
+  "@setPmBkash": {
+    "description": "Settings and More screens: pm bkash."
+  },
+  "setPmNagad": "নগদ",
+  "@setPmNagad": {
+    "description": "Settings and More screens: pm nagad."
+  },
+  "setPmRocket": "রকেট",
+  "@setPmRocket": {
+    "description": "Settings and More screens: pm rocket."
+  },
+  "setPmBank": "ব্যাংক",
+  "@setPmBank": {
+    "description": "Settings and More screens: pm bank."
+  },
+  "setPmOther": "অন্যান্য",
+  "@setPmOther": {
+    "description": "Settings and More screens: pm other."
+  },
+  "setPmCustom": "নিজের যোগ করা",
+  "@setPmCustom": {
+    "description": "Settings and More screens: pm custom."
+  },
+  "setPmCustomEmpty": "এখনো কিছু যোগ করা হয়নি",
+  "@setPmCustomEmpty": {
+    "description": "Settings and More screens: pm custom empty."
+  },
+  "setPmAddLabel": "নতুন মাধ্যমের নাম",
+  "@setPmAddLabel": {
+    "description": "Settings and More screens: pm add label."
+  },
+  "setPmAddHint": "যেমন: উপায়",
+  "@setPmAddHint": {
+    "description": "Settings and More screens: pm add hint."
+  },
+  "setPmAdd": "যোগ করুন",
+  "@setPmAdd": {
+    "description": "Settings and More screens: pm add."
+  },
+  "setPmErrEmpty": "নাম লিখুন",
+  "@setPmErrEmpty": {
+    "description": "Settings and More screens: pm err empty."
+  },
+  "setPmErrLong": "নাম {max} অক্ষরের মধ্যে রাখুন",
+  "@setPmErrLong": {
+    "description": "Settings and More screens: pm err long.",
+    "placeholders": {
+      "max": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setPmErrDuplicate": "এই নামে আগেই একটি মাধ্যম আছে",
+  "@setPmErrDuplicate": {
+    "description": "Settings and More screens: pm err duplicate."
+  },
+  "setPmKeepOne": "অন্তত একটি মাধ্যম চালু রাখতে হবে",
+  "@setPmKeepOne": {
+    "description": "Settings and More screens: pm keep one."
+  },
+  "setPmAdded": "“{name}” যোগ হয়েছে",
+  "@setPmAdded": {
+    "description": "Settings and More screens: pm added.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setPmRemove": "মুছুন",
+  "@setPmRemove": {
+    "description": "Settings and More screens: pm remove."
+  },
+  "setPmRemoveTitle": "“{name}” মুছবেন?",
+  "@setPmRemoveTitle": {
+    "description": "Settings and More screens: pm remove title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setPmRemoveBody": "আগের জমার হিসাব ঠিকই থাকবে।",
+  "@setPmRemoveBody": {
+    "description": "Settings and More screens: pm remove body."
+  },
+  "setPmShown": "দেখানো হচ্ছে",
+  "@setPmShown": {
+    "description": "Settings and More screens: pm shown."
+  },
+  "setPmHidden": "লুকানো আছে",
+  "@setPmHidden": {
+    "description": "Settings and More screens: pm hidden."
+  },
+  "setDiagStorage": "তথ্য কোথায় জমা হচ্ছে",
+  "@setDiagStorage": {
+    "description": "Settings and More screens: diag storage."
+  },
+  "setDiagStorageNative": "এই ডিভাইসের ফাইলে সংরক্ষিত হচ্ছে",
+  "@setDiagStorageNative": {
+    "description": "Settings and More screens: diag storage native."
+  },
+  "setDiagStorageWebOk": "এই ব্রাউজারে সংরক্ষিত হচ্ছে ({kind})",
+  "@setDiagStorageWebOk": {
+    "description": "Settings and More screens: diag storage web ok.",
+    "placeholders": {
+      "kind": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setDiagStorageWebMemory": "সংরক্ষিত হচ্ছে না — ব্রাউজার বন্ধ করলে সব মুছে যাবে",
+  "@setDiagStorageWebMemory": {
+    "description": "Settings and More screens: diag storage web memory."
+  },
+  "setDiagMissing": "ব্রাউজারে নেই: {list}",
+  "@setDiagMissing": {
+    "description": "Settings and More screens: diag missing.",
+    "placeholders": {
+      "list": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "setDiagPlatform": "প্ল্যাটফর্ম",
+  "@setDiagPlatform": {
+    "description": "Settings and More screens: diag platform."
+  },
+  "setPlatformWeb": "ওয়েব ব্রাউজার",
+  "@setPlatformWeb": {
+    "description": "Settings and More screens: platform web."
+  },
+  "setPlatformAndroid": "অ্যান্ড্রয়েড",
+  "@setPlatformAndroid": {
+    "description": "Settings and More screens: platform android."
+  },
+  "setPlatformWindows": "উইন্ডোজ",
+  "@setPlatformWindows": {
+    "description": "Settings and More screens: platform windows."
+  },
+  "setPlatformOther": "অন্যান্য",
+  "@setPlatformOther": {
+    "description": "Settings and More screens: platform other."
+  },
+  "setDiagDeviceName": "ডিভাইসের নাম",
+  "@setDiagDeviceName": {
+    "description": "Settings and More screens: diag device name."
+  },
+  "setDiagDeviceNameEmpty": "নাম দেওয়া হয়নি",
+  "@setDiagDeviceNameEmpty": {
+    "description": "Settings and More screens: diag device name empty."
+  },
+  "setDiagWarnTitle": "সাবধান: তথ্য মুছে যেতে পারে",
+  "@setDiagWarnTitle": {
+    "description": "Settings and More screens: diag warn title."
+  },
+  "setDiagUninstallBody": "অ্যান্ড্রয়েডে অ্যাপ আনইনস্টল করলে বা অ্যাপের ডেটা মুছলে সব তথ্য চলে যায়। আগে ব্যাকআপ নিয়ে রাখুন।",
+  "@setDiagUninstallBody": {
+    "description": "Settings and More screens: diag uninstall body."
+  },
+  "setDiagWebBody": "ব্রাউজারের সাইট ডেটা মুছলে সব তথ্য চলে যায়। আগে ব্যাকআপ নিয়ে রাখুন।",
+  "@setDiagWebBody": {
+    "description": "Settings and More screens: diag web body."
+  },
+  "setDiagDesktopBody": "অ্যাপ আনইনস্টল করলে বা ডেটার ফোল্ডার মুছলে সব তথ্য চলে যেতে পারে। আগে ব্যাকআপ নিয়ে রাখুন।",
+  "@setDiagDesktopBody": {
+    "description": "Settings and More screens: diag desktop body."
+  },
+  "setHelpIntro": "ছোট ছোট প্রশ্নের উত্তর — চাপলে খুলবে",
+  "@setHelpIntro": {
+    "description": "Settings and More screens: help intro."
+  },
+  "setHelpQ1": "আজকের হাজিরা কীভাবে নেব?",
+  "@setHelpQ1": {
+    "description": "Settings and More screens: help q1."
+  },
+  "setHelpA1": "আজ পাতায় ক্লাসের কার্ডে চাপুন। সবাই আগে থেকেই উপস্থিত ধরা থাকে, শুধু যারা আসেনি তাদের নামে চাপ দিন।",
+  "@setHelpA1": {
+    "description": "Settings and More screens: help a1."
+  },
+  "setHelpQ2": "বেতন কীভাবে নেব?",
+  "@setHelpQ2": {
+    "description": "Settings and More screens: help q2."
+  },
+  "setHelpA2": "বেতন ট্যাব থেকে শিক্ষার্থী বেছে নিয়ে টাকা নিন চাপুন। মাস ও টাকার অঙ্ক নিজে থেকেই বসে যাবে।",
+  "@setHelpA2": {
+    "description": "Settings and More screens: help a2."
+  },
+  "setHelpQ3": "শুধু একদিনের ক্লাস কীভাবে বদলাব?",
+  "@setHelpQ3": {
+    "description": "Settings and More screens: help q3."
+  },
+  "setHelpA3": "আজ বা সময়সূচি থেকে ক্লাসে চাপুন। শুধু ওই দিনের জন্য ক্লাস বাতিল, সময় বদল বা অতিরিক্ত ক্লাস করা যায়।",
+  "@setHelpA3": {
+    "description": "Settings and More screens: help a3."
+  },
+  "setHelpQ4": "ব্যাকআপ কেন দরকার?",
+  "@setHelpQ4": {
+    "description": "Settings and More screens: help q4."
+  },
+  "setHelpA4": "সব তথ্য এই ডিভাইসেই থাকে। ফোন হারালে বা বদলালে ব্যাকআপ ফাইলই তথ্য ফিরে পাওয়ার উপায়।",
+  "@setHelpA4": {
+    "description": "Settings and More screens: help a4."
+  },
+  "setHelpQ5": "রিমাইন্ডার আসছে না কেন?",
+  "@setHelpQ5": {
+    "description": "Settings and More screens: help q5."
+  },
+  "setHelpA5": "আরও পাতায় ক্লাস রিমাইন্ডারের সুইচ ও অনুমতি দেখুন, তারপর একটি টেস্ট রিমাইন্ডার পাঠিয়ে দেখুন।",
+  "@setHelpA5": {
+    "description": "Settings and More screens: help a5."
+  },
+  "setHelpQ6": "অভিভাবককে বার্তা কীভাবে পাঠাব?",
+  "@setHelpQ6": {
+    "description": "Settings and More screens: help q6."
+  },
+  "setHelpA6": "বেতনের তালিকা বা শিক্ষার্থীর পাতা থেকে মনে করিয়ে দিন চাপুন। বার্তার ভাষা আরও পাতার বার্তা অংশে বদলানো যায়।",
+  "@setHelpA6": {
+    "description": "Settings and More screens: help a6."
+  }
+}
