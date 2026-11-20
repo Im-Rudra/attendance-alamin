@@ -1,0 +1,489 @@
+{
+  "@@locale": "bn",
+  "extraBulkTitle": "একসাথে অনেক যোগ করুন",
+  "@extraBulkTitle": {
+    "description": "Title of the bulk quick-add screen."
+  },
+  "extraBulkIntoBatch": "{batch} ব্যাচে ভর্তি হবে",
+  "@extraBulkIntoBatch": {
+    "description": "Line under the title naming the batch the new students are enrolled in.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "extraBulkNameLabel": "শিক্ষার্থীর নাম",
+  "@extraBulkNameLabel": {
+    "description": "Label of the name field in the bulk-add mini form."
+  },
+  "extraBulkPhoneLabel": "অভিভাবকের ফোন (ঐচ্ছিক)",
+  "@extraBulkPhoneLabel": {
+    "description": "Label of the guardian phone field in the bulk-add mini form."
+  },
+  "extraBulkSaveNext": "সংরক্ষণ করে পরেরজন",
+  "@extraBulkSaveNext": {
+    "description": "Primary button of the bulk-add form; saves and clears the form for the next student."
+  },
+  "extraBulkSaveAnyway": "তবুও যোগ করুন",
+  "@extraBulkSaveAnyway": {
+    "description": "Button label after a duplicate phone warning."
+  },
+  "extraBulkDuplicate": "এই ফোন নম্বর {name}-এর নামে আছে। একই নম্বরে আরেকজন যোগ করবেন?",
+  "@extraBulkDuplicate": {
+    "description": "Duplicate phone warning; name is the existing student.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extraBulkDisabledName": "আগে নাম লিখুন",
+  "@extraBulkDisabledName": {
+    "description": "Reason shown while the save button is disabled."
+  },
+  "extraBulkHint": "নাম লিখে Tab চাপুন, ফোন লিখে Enter চাপুন — সংরক্ষণ হয়ে পরের জনের ঘর তৈরি হবে।",
+  "@extraBulkHint": {
+    "description": "Keyboard hint under the bulk-add form."
+  },
+  "extraBulkAddedCount": "এই বৈঠকে যোগ হয়েছে: {count} জন",
+  "@extraBulkAddedCount": {
+    "description": "Live counter of students added in this session; count is a localised number.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraBulkAddedTitle": "যোগ হওয়া শিক্ষার্থী",
+  "@extraBulkAddedTitle": {
+    "description": "Header of the list of students added in this session."
+  },
+  "extraBulkRoll": "রোল {roll}",
+  "@extraBulkRoll": {
+    "description": "Roll tag of an added student.",
+    "placeholders": {
+      "roll": {
+        "type": "String"
+      }
+    }
+  },
+  "extraBulkUndoLast": "শেষজনকে বাদ দিন",
+  "@extraBulkUndoLast": {
+    "description": "Button that removes the student added last (typing mistake)."
+  },
+  "extraBulkRemoved": "{name}-কে বাদ দেওয়া হয়েছে",
+  "@extraBulkRemoved": {
+    "description": "Confirmation after removing the last added student.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extraBulkFinish": "শেষ করুন",
+  "@extraBulkFinish": {
+    "description": "Button that closes the bulk-add screen."
+  },
+  "extraBulkBatchMissing": "ব্যাচটি পাওয়া যায়নি",
+  "@extraBulkBatchMissing": {
+    "description": "Shown when the batch id of the route does not exist."
+  },
+  "extraIncomeTitle": "অন্যান্য আয়",
+  "@extraIncomeTitle": {
+    "description": "Title of the other-income sheet."
+  },
+  "extraIncomeHelp": "ভর্তি, পরীক্ষা বা নোটের মতো এককালীন টাকা। এর কোনো বকেয়া হিসাব হয় না।",
+  "@extraIncomeHelp": {
+    "description": "Help line of the other-income sheet."
+  },
+  "extraIncomeLabelField": "কীসের টাকা",
+  "@extraIncomeLabelField": {
+    "description": "Label of the income label field."
+  },
+  "extraIncomeAdmission": "ভর্তি ফি",
+  "@extraIncomeAdmission": {
+    "description": "Quick label chip."
+  },
+  "extraIncomeExam": "পরীক্ষার ফি",
+  "@extraIncomeExam": {
+    "description": "Quick label chip."
+  },
+  "extraIncomeNotes": "নোট / বই",
+  "@extraIncomeNotes": {
+    "description": "Quick label chip."
+  },
+  "extraIncomeFromStudent": "শিক্ষার্থী: {name}",
+  "@extraIncomeFromStudent": {
+    "description": "Line naming the student the other income is linked to.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extraIncomeDisabledLabel": "কীসের টাকা তা লিখুন",
+  "@extraIncomeDisabledLabel": {
+    "description": "Reason shown while the save button is disabled."
+  },
+  "extraIncomeSaveSend": "সংরক্ষণ ও রসিদ পাঠান",
+  "@extraIncomeSaveSend": {
+    "description": "Secondary button that saves and shares a receipt."
+  },
+  "extraIncomeSaved": "{amount} জমা হয়েছে — {label}",
+  "@extraIncomeSaved": {
+    "description": "Snackbar after saving other income.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptTitle": "রসিদ — {label}",
+  "@extraReceiptTitle": {
+    "description": "First line of the other-income receipt text.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptAmount": "টাকা: {amount}",
+  "@extraReceiptAmount": {
+    "description": "Receipt line.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptDate": "তারিখ: {date}",
+  "@extraReceiptDate": {
+    "description": "Receipt line.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptMethod": "পদ্ধতি: {method}",
+  "@extraReceiptMethod": {
+    "description": "Receipt line.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptStudent": "শিক্ষার্থী: {name}",
+  "@extraReceiptStudent": {
+    "description": "Receipt line.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extraReceiptThanks": "ধন্যবাদ",
+  "@extraReceiptThanks": {
+    "description": "Last line of the receipt text."
+  },
+  "extraHolidayIntro": "ঈদ, পরীক্ষা বা হরতালে সব ব্যাচের ক্লাস এক ধাপে বাতিল করুন। পরে ফিরিয়েও আনা যায়।",
+  "@extraHolidayIntro": {
+    "description": "Intro of the holiday screen."
+  },
+  "extraHolidayModeCancel": "ছুটি ঘোষণা",
+  "@extraHolidayModeCancel": {
+    "description": "Segment label."
+  },
+  "extraHolidayModeRestore": "ছুটি তুলে নিন",
+  "@extraHolidayModeRestore": {
+    "description": "Segment label."
+  },
+  "extraHolidayFrom": "শুরুর তারিখ",
+  "@extraHolidayFrom": {
+    "description": "Label of the start date field."
+  },
+  "extraHolidayTo": "শেষ তারিখ",
+  "@extraHolidayTo": {
+    "description": "Label of the end date field."
+  },
+  "extraHolidayDays": "{count} দিন",
+  "@extraHolidayDays": {
+    "description": "Length of the chosen range; count is a localised number.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayReason": "কারণ (ঐচ্ছিক)",
+  "@extraHolidayReason": {
+    "description": "Label of the reason field."
+  },
+  "extraHolidayReasonEid": "ঈদের ছুটি",
+  "@extraHolidayReasonEid": {
+    "description": "Quick reason chip."
+  },
+  "extraHolidayReasonExam": "পরীক্ষা",
+  "@extraHolidayReasonExam": {
+    "description": "Quick reason chip."
+  },
+  "extraHolidayReasonHartal": "হরতাল",
+  "@extraHolidayReasonHartal": {
+    "description": "Quick reason chip."
+  },
+  "extraHolidayPreview": "{count}টি ক্লাস বাতিল হবে ({batches}টি ব্যাচ)",
+  "@extraHolidayPreview": {
+    "description": "Live preview of the holiday. Both are localised numbers.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "batches": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayPreviewNone": "এই সময়ে কোনো ক্লাস নেই",
+  "@extraHolidayPreviewNone": {
+    "description": "Preview when nothing would be cancelled."
+  },
+  "extraHolidayRestorePreview": "{count}টি বাতিল ক্লাস ফিরে আসবে",
+  "@extraHolidayRestorePreview": {
+    "description": "Live preview of the undo mode.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayRestoreNone": "এই সময়ে ফেরানোর মতো বাতিল ক্লাস নেই",
+  "@extraHolidayRestoreNone": {
+    "description": "Preview when nothing would be restored."
+  },
+  "extraHolidayRestoreWarn": "এই সময়ে আলাদা করে বাতিল করা ক্লাসও ফিরে আসবে।",
+  "@extraHolidayRestoreWarn": {
+    "description": "Warning in undo mode."
+  },
+  "extraHolidayRangeInvalid": "শেষ তারিখ শুরুর তারিখের আগে হতে পারে না",
+  "@extraHolidayRangeInvalid": {
+    "description": "Inline error for an inverted range."
+  },
+  "extraHolidayCancelButton": "{count}টি ক্লাস বাতিল করুন",
+  "@extraHolidayCancelButton": {
+    "description": "Primary button of the holiday screen.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayRestoreButton": "{count}টি ক্লাস ফিরিয়ে আনুন",
+  "@extraHolidayRestoreButton": {
+    "description": "Primary button in undo mode.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayConfirmTitle": "{days} দিনে {count}টি ক্লাস বাতিল করবেন?",
+  "@extraHolidayConfirmTitle": {
+    "description": "Confirm dialog title; both are localised numbers.",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayConfirmBody": "অভিভাবকদের আলাদা করে জানাতে হবে। এখনই ফিরিয়ে নিতে পারবেন।",
+  "@extraHolidayConfirmBody": {
+    "description": "Confirm dialog body."
+  },
+  "extraHolidayDone": "{count}টি ক্লাস বাতিল হয়েছে",
+  "@extraHolidayDone": {
+    "description": "Snackbar after the holiday was declared.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraHolidayRestored": "{count}টি ক্লাস ফিরে এসেছে",
+  "@extraHolidayRestored": {
+    "description": "Snackbar after classes were restored.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "extraCsvTitle": "এক্সেল ফাইল (CSV)",
+  "@extraCsvTitle": {
+    "description": "Title of the CSV export sheet."
+  },
+  "extraCsvMonthLine": "{month} মাসের তথ্য",
+  "@extraCsvMonthLine": {
+    "description": "Month line of the CSV export sheet.",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "extraCsvStudents": "শিক্ষার্থী তালিকা",
+  "@extraCsvStudents": {
+    "description": "CSV option."
+  },
+  "extraCsvStudentsHint": "সব শিক্ষার্থী, ফোন ও ব্যাচ",
+  "@extraCsvStudentsHint": {
+    "description": "CSV option hint."
+  },
+  "extraCsvPayments": "টাকা আদায়",
+  "@extraCsvPayments": {
+    "description": "CSV option."
+  },
+  "extraCsvPaymentsHint": "এই মাসে পাওয়া বেতন ও অন্যান্য আয়",
+  "@extraCsvPaymentsHint": {
+    "description": "CSV option hint."
+  },
+  "extraCsvAttendance": "হাজিরা",
+  "@extraCsvAttendance": {
+    "description": "CSV option."
+  },
+  "extraCsvAttendanceHint": "এই মাসের ক্লাসওয়ারি হাজিরা",
+  "@extraCsvAttendanceHint": {
+    "description": "CSV option hint."
+  },
+  "extraCsvSave": "সেভ করুন",
+  "@extraCsvSave": {
+    "description": "Button that saves one CSV file."
+  },
+  "extraCsvShare": "শেয়ার",
+  "@extraCsvShare": {
+    "description": "Button that shares one CSV file."
+  },
+  "extraCsvSaved": "ফাইল সেভ হয়েছে",
+  "@extraCsvSaved": {
+    "description": "Snackbar after saving a CSV."
+  },
+  "extraCsvFailed": "ফাইল তৈরি করা যায়নি",
+  "@extraCsvFailed": {
+    "description": "Snackbar when making the CSV failed."
+  },
+  "extraCsvPrivacy": "এই ফাইলে শিক্ষার্থীদের ফোন নম্বর থাকে — অন্য কাউকে দেবেন না।",
+  "@extraCsvPrivacy": {
+    "description": "Privacy note on the CSV export sheet."
+  },
+  "extraColName": "নাম",
+  "@extraColName": {
+    "description": "CSV column."
+  },
+  "extraColRoll": "রোল",
+  "@extraColRoll": {
+    "description": "CSV column."
+  },
+  "extraColPhone": "ফোন",
+  "@extraColPhone": {
+    "description": "CSV column."
+  },
+  "extraColGuardian": "অভিভাবক",
+  "@extraColGuardian": {
+    "description": "CSV column."
+  },
+  "extraColGuardianPhone": "অভিভাবকের ফোন",
+  "@extraColGuardianPhone": {
+    "description": "CSV column."
+  },
+  "extraColStatus": "অবস্থা",
+  "@extraColStatus": {
+    "description": "CSV column."
+  },
+  "extraColAdmission": "ভর্তির তারিখ",
+  "@extraColAdmission": {
+    "description": "CSV column."
+  },
+  "extraColBatches": "ব্যাচ",
+  "@extraColBatches": {
+    "description": "CSV column of the student list."
+  },
+  "extraColDate": "তারিখ",
+  "@extraColDate": {
+    "description": "CSV column."
+  },
+  "extraColReceipt": "রসিদ",
+  "@extraColReceipt": {
+    "description": "CSV column."
+  },
+  "extraColStudent": "শিক্ষার্থী",
+  "@extraColStudent": {
+    "description": "CSV column."
+  },
+  "extraColBatch": "ব্যাচ",
+  "@extraColBatch": {
+    "description": "CSV column."
+  },
+  "extraColForMonth": "যে মাসের",
+  "@extraColForMonth": {
+    "description": "CSV column: billing month, or the label of other income."
+  },
+  "extraColAmount": "টাকা",
+  "@extraColAmount": {
+    "description": "CSV column."
+  },
+  "extraColMethod": "পদ্ধতি",
+  "@extraColMethod": {
+    "description": "CSV column."
+  },
+  "extraColType": "ধরন",
+  "@extraColType": {
+    "description": "CSV column."
+  },
+  "extraColNote": "নোট",
+  "@extraColNote": {
+    "description": "CSV column."
+  },
+  "extraTypeFee": "বেতন",
+  "@extraTypeFee": {
+    "description": "CSV value of a fee payment."
+  },
+  "extraTypeWaived": "মাফ",
+  "@extraTypeWaived": {
+    "description": "CSV value of a waived month."
+  },
+  "extraTypeOther": "অন্যান্য",
+  "@extraTypeOther": {
+    "description": "CSV value of other income."
+  },
+  "extraStatusActive": "চলছে",
+  "@extraStatusActive": {
+    "description": "CSV student status."
+  },
+  "extraStatusLeft": "ছেড়ে গেছে",
+  "@extraStatusLeft": {
+    "description": "CSV student status."
+  },
+  "extraAttPresent": "উপস্থিত",
+  "@extraAttPresent": {
+    "description": "CSV attendance value."
+  },
+  "extraAttAbsent": "অনুপস্থিত",
+  "@extraAttAbsent": {
+    "description": "CSV attendance value."
+  },
+  "extraAttLate": "দেরি",
+  "@extraAttLate": {
+    "description": "CSV attendance value."
+  },
+  "extraAttLeave": "ছুটি",
+  "@extraAttLeave": {
+    "description": "CSV attendance value."
+  }
+}
