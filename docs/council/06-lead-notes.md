@@ -25,6 +25,15 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - **Open risk for M5-A (bootstrap):** `openConnection` has no fallback if `WasmDatabase.open` throws (e.g. a browser that blocks SharedWorker/fetch). The bootstrap must catch DB-open failure and show a full-screen, localised "data storage couldn't start" error with a retry, never a blank/crashed app; and show the red "data won't be saved" banner when the storage report is in-memory.
 - Pre-migration safety snapshot is not implemented (v1 has no upgrade steps); required before schemaVersion 2.
 
+## From M5-A (shell, #16) and M5-B (providers + harness, #15)
+- Feature modules REPLACE THE BODIES of their stub screens and `*_entry.dart` files; never change routes, route params or entry signatures (router is frozen). Forms, slot editors, roll call, bulk-add and backup review open full-screen on the root navigator.
+- `/students/new` gets `initialBatchId` via GoRouter `extra` (no ids in query strings). `/` redirects to `/today`.
+- For list‖detail use the shell's `pane_split.dart` (PaneSplit/PaneScope, width saved under LocalMeta `pane:<screen>`), not raw PaneLayout. Use `StubScreen`'s chrome only as a fallback.
+- Contact: `ContactActions.canCall/icon/label` (call on Android, copy number on Windows/web). Share via `share_service.dart`.
+- Data: use M5-B providers (`todayProvider`, day plans via `buildDayPlans`/schedule providers, `enrollmentDuesProvider` for per-month detail, `studentDuesProvider` is null when nothing is open, `attendanceTallyProvider`). `DayClass.state` precedence: cancelled > moved > extra > now.
+- Tests: every screen goes through `testScreenMatrix` (light/dark × bn/en × phone/desktop, fails on overflow) using `seedFakes(...)` fixtures from `test/helpers/fixtures.dart`; FixedClock default is 2026-11-21 10:00 Dhaka. Fonts are real Hind Siliguri in tests.
+- The Fees tab overdue badge is M7-C's job (needs dues providers).
+
 ## From M4-D (Aurora widgets, #11)
 - Import widgets via the barrel `package:attendance_alamin/app/widgets/widgets.dart`. Map enums with `dueLevel.severityLevel` / `status.kind` (theme_mapping.dart), never by hand.
 - `PaneLayout` is stateless: the parent stores `listWidth` in LocalMeta (pane-width key) and passes it back, or the drag won't persist.
