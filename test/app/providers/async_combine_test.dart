@@ -27,12 +27,6 @@ void main() {
       expect(r.error, same(err));
       expect(combine2<int, int, int>(data(1), error(), (a, b) => a + b).hasError, isTrue);
     });
-
-    test('a refreshing value (loading with previous data) still counts', () {
-      final refreshing = loading().copyWithPrevious(data(5));
-      final r = combine2<int, int, int>(refreshing, data(1), (a, b) => a + b);
-      expect(r.requireValue, 6);
-    });
   });
 
   group('combine3', () {

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
-import 'package:attendance_alamin/domain/models/enums.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
