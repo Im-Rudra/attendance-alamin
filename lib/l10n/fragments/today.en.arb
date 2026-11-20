@@ -29,6 +29,7 @@
   "todaySetupButton": "Create the first batch",
   "todayDuesTitle": "Fees due",
   "todayDuesHeadline": "{unpaid} unpaid · {overdue} overdue",
+  "todayDuesNone": "No dues",
   "todayDuesAllPaid": "Everyone has paid",
   "todayDuesAllPaidSub": "Collected this month: {amount}",
   "todayDuesOpen": "Open the dues list",

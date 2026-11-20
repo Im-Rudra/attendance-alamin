@@ -17,6 +17,7 @@ import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
 import 'package:attendance_alamin/features/schedule/widgets/effective_from_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/time_picker_sheet.dart';
+import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
 
 import '../../helpers/fakes/fake_structure_repos.dart';
 import '../../helpers/fixtures.dart';
@@ -450,6 +451,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Class reminder: 30 min before'), findsOneWidget);
       expect(find.text('Reset to default'), findsOneWidget);
+    });
+
+    testWidgets('wide window: both columns end on the same line (no blank area)',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: BatchScheduleTab(batchId: kBatPhysA),
+        ),
+        overrides: seedFakes().overrides,
+        viewport: TestViewport.desktop,
+      );
+      await tester.pumpAndSettle();
+      final double weekBottom = tester.getBottomLeft(find.byType(WeekOverview)).dy;
+      final double buttonBottom =
+          tester
+              .getBottomLeft(find.ancestor(
+                of: find.text('প্রতি সপ্তাহের সময় বদলান'),
+                matching: find.byWidgetPredicate((Widget w) => w is FilledButton),
+              ))
+              .dy;
+      expect(buttonBottom, closeTo(weekBottom, 1.0));
     });
 
     testScreenMatrix(

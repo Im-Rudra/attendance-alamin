@@ -128,6 +128,16 @@ SeededFakes _noBatches() {
   return f;
 }
 
+/// No enrollment owes anything and no money was received yet (billing has not
+/// started).
+SeededFakes _noDuesNoPayments() {
+  final SeededFakes f = seedFakes(withPayments: false);
+  f.enrollments.terms.clear();
+  return f;
+}
+
+/// Nothing owed while this month's payments are in (the seed has Sara's
+/// November payment).
 SeededFakes _nobodyOwes() {
   final SeededFakes f = seedFakes();
   f.enrollments.terms.clear();
@@ -303,6 +313,17 @@ void main() {
       expect(find.text(l10n.todayHeroDoneSub(fmt.number(1), fmt.number(1))), findsWidgets);
     });
 
+    testWidgets('a roll call saved before the class starts counts (hero and row)',
+        (WidgetTester tester) async {
+      // 10:00, the Physics class starts at 16:00 and already has its session.
+      await _pumpPhone(tester, fakes: _allDone());
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      final AppFormat fmt = AppFormat(Lang.bn);
+      expect(find.text(l10n.todayHeroDone), findsOneWidget);
+      expect(find.text(l10n.todayHeroDoneSub(fmt.number(1), fmt.number(1))), findsWidgets);
+      expect(find.text(l10n.todayRollPending), findsNothing);
+    });
+
     testWidgets('no class today: rest message and the two actions', (WidgetTester tester) async {
       await _pumpPhone(tester, date: '2026-11-20');
       final AppLocalizations l10n = _l10n(Lang.bn);
@@ -351,7 +372,16 @@ void main() {
       expect(find.byType(SeverityBadge), findsWidgets);
     });
 
-    testWidgets('nobody owes: the green "everyone paid" card, no bar', (WidgetTester tester) async {
+    testWidgets('nobody owes and nothing collected yet: "no dues", no bar', (WidgetTester tester) async {
+      await _pumpPhone(tester, fakes: _noDuesNoPayments());
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(l10n.todayDuesNone, 'কোনো বকেয়া নেই');
+      expect(find.text(l10n.todayDuesNone), findsOneWidget);
+      expect(find.text(l10n.todayDuesAllPaid), findsNothing);
+      expect(find.byType(EscalationBar), findsNothing);
+    });
+
+    testWidgets('nobody owes after payments this month: "everyone paid"', (WidgetTester tester) async {
       await _pumpPhone(tester, fakes: _nobodyOwes());
       expect(find.text(_l10n(Lang.bn).todayDuesAllPaid), findsOneWidget);
       expect(find.byType(EscalationBar), findsNothing);

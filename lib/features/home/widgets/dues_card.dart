@@ -183,16 +183,19 @@ class _AllPaid extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Text(
-                    l10n.todayDuesAllPaid,
+                    // "Everyone has paid" only when money came in this month;
+                    // with nothing collected nobody owed anything yet.
+                    collected > 0 ? l10n.todayDuesAllPaid : l10n.todayDuesNone,
                     style: tt.titleMedium?.copyWith(
                       color: tokens.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
-                    l10n.todayDuesAllPaidSub(fmt.money(collected)),
-                    style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                  ),
+                  if (collected > 0)
+                    Text(
+                      l10n.todayDuesAllPaidSub(fmt.money(collected)),
+                      style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                    ),
                 ],
               ),
             ),
