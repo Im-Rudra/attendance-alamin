@@ -425,6 +425,8 @@ void main() {
         bn.batchClashEvery(fmtBn.weekdayName(7)),
         fmtBn.timeRange(kChemStart, kChemEnd),
       );
+      // ignore: avoid_print
+      print('DIAG dialogs=${find.byType(AlertDialog).evaluate().length} texts=${find.byType(Text, skipOffstage: false).evaluate().map((e) => (e.widget as Text).data).toList()}');
       expect(find.text(bn.batchUnarchiveClash), findsOneWidget);
       expect(find.text(line), findsOneWidget);
       // The plain confirm is replaced by the fix-the-schedule one.
