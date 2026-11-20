@@ -1,0 +1,387 @@
+{
+  "@@locale": "bn",
+  "clsSheetTitle": "শুধু {date}",
+  "@clsSheetTitle": {
+    "description": "Title of the per-date class actions sheet; date is a weekday and date.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsSheetTitleAt": "শুধু {date} · {time}",
+  "@clsSheetTitleAt": {
+    "description": "Sheet title when the batch has 2+ classes that day, so the session is unambiguous.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsClassLabel": "{subject} · {batch}",
+  "@clsClassLabel": {
+    "description": "Subject and batch name joined, used wherever a class is named.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsActionReschedule": "সময় বদলান",
+  "@clsActionReschedule": {
+    "description": "Class action: move this one date's class to another time (this date only)."
+  },
+  "clsActionCancel": "এই দিনের ক্লাস বাতিল",
+  "@clsActionCancel": {
+    "description": "Class action: cancel the class of this date only."
+  },
+  "clsActionRemoveExtra": "এই অতিরিক্ত ক্লাস বাদ দিন",
+  "@clsActionRemoveExtra": {
+    "description": "Class action on an extra (one-off) class: remove it."
+  },
+  "clsActionRollCall": "হাজিরা নিন",
+  "@clsActionRollCall": {
+    "description": "Class action: open the roll call of this class."
+  },
+  "clsActionRestoreMoved": "আগের সময়ে ফেরত নিন",
+  "@clsActionRestoreMoved": {
+    "description": "Class action on a moved class: undo the move."
+  },
+  "clsActionRestoreCancelled": "বাতিল তুলে নিন",
+  "@clsActionRestoreCancelled": {
+    "description": "Class action on a cancelled class: bring it back."
+  },
+  "clsMovedFrom": "আগে {time}",
+  "@clsMovedFrom": {
+    "description": "Small note on a moved class with its original time.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsMovedAway": "→ {when}",
+  "@clsMovedAway": {
+    "description": "Ghost note at the old slot of a class that moved; when is the new date and time.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsCancelledSnack": "ক্লাস বাতিল হয়েছে",
+  "@clsCancelledSnack": {
+    "description": "Snackbar after cancelling a class (has Undo)."
+  },
+  "clsExtraRemovedSnack": "অতিরিক্ত ক্লাস বাদ দেওয়া হয়েছে",
+  "@clsExtraRemovedSnack": {
+    "description": "Snackbar after removing an extra class (has Undo)."
+  },
+  "clsRestoredSnack": "ক্লাস আগের অবস্থায় ফিরেছে",
+  "@clsRestoredSnack": {
+    "description": "Snackbar after restoring a class."
+  },
+  "clsNotifyGuardians": "অভিভাবকদের জানান",
+  "@clsNotifyGuardians": {
+    "description": "Snackbar button after a cancel: share the cancel message with guardians."
+  },
+  "clsCancelMessage": "সম্মানিত অভিভাবক, {when} {subject} ({batch}) ব্যাচের {time}-এর ক্লাসটি হচ্ছে না।{next} ধন্যবাদ",
+  "@clsCancelMessage": {
+    "description": "Message shared with guardians when a class is cancelled; next is the next-class sentence or empty.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "x"
+      },
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      },
+      "next": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsCancelNext": " পরবর্তী ক্লাস {next}।",
+  "@clsCancelNext": {
+    "description": "Sentence naming the next class; next is a date and time.",
+    "placeholders": {
+      "next": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsCancelWhenToday": "আজ {date}",
+  "@clsCancelWhenToday": {
+    "description": "Cancel message: the class is today; date is a weekday and date.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsCancelWhenOn": "{date}",
+  "@clsCancelWhenOn": {
+    "description": "Cancel message: the class is on another day.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsRescheduleTitle": "সময় বদলান",
+  "@clsRescheduleTitle": {
+    "description": "Title of the reschedule sheet."
+  },
+  "clsExtraTitle": "অতিরিক্ত ক্লাস",
+  "@clsExtraTitle": {
+    "description": "Title of the extra class sheet."
+  },
+  "clsFieldBatch": "ব্যাচ",
+  "@clsFieldBatch": {
+    "description": "Field label: batch."
+  },
+  "clsFieldDate": "তারিখ",
+  "@clsFieldDate": {
+    "description": "Field label: date."
+  },
+  "clsFieldTime": "সময়",
+  "@clsFieldTime": {
+    "description": "Field label: start and end time."
+  },
+  "clsFieldDuration": "সময়কাল",
+  "@clsFieldDuration": {
+    "description": "Field label: class length."
+  },
+  "clsEarlier": "১৫ মিনিট আগে",
+  "@clsEarlier": {
+    "description": "Tooltip of the button that moves the class 15 minutes earlier."
+  },
+  "clsLater": "১৫ মিনিট পরে",
+  "@clsLater": {
+    "description": "Tooltip of the button that moves the class 15 minutes later."
+  },
+  "clsPickTime": "সময় বাছুন",
+  "@clsPickTime": {
+    "description": "Title of the time picker opened from the class sheets."
+  },
+  "clsDurationMin": "{n} মিনিট",
+  "@clsDurationMin": {
+    "description": "Duration chip in minutes.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsDurationHours": "{n} ঘণ্টা",
+  "@clsDurationHours": {
+    "description": "Duration chip in whole hours.",
+    "placeholders": {
+      "n": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsDurationHm": "{h} ঘণ্টা {m} মিনিট",
+  "@clsDurationHm": {
+    "description": "Duration chip with hours and minutes.",
+    "placeholders": {
+      "h": {
+        "type": "String",
+        "example": "x"
+      },
+      "m": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsSaveReschedule": "সেভ করুন",
+  "@clsSaveReschedule": {
+    "description": "Button: save the rescheduled class."
+  },
+  "clsAddExtra": "যোগ করুন",
+  "@clsAddExtra": {
+    "description": "Button: add the extra class."
+  },
+  "clsSameDayNote": "এই দিনে এই ব্যাচের আরও {count}টি ক্লাস আছে: {times}",
+  "@clsSameDayNote": {
+    "description": "Note on the extra class sheet: the batch already has classes that day.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      },
+      "times": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsReasonNoBatch": "আগে ব্যাচ বাছুন",
+  "@clsReasonNoBatch": {
+    "description": "Why the add button is disabled: no batch chosen."
+  },
+  "clsReasonClash": "এই সময়ে আরেকটি ক্লাস আছে — সময় বদলান",
+  "@clsReasonClash": {
+    "description": "Why the save button is disabled: time clash."
+  },
+  "clsReasonUnchanged": "সময় বা তারিখ বদলালে সেভ করা যাবে",
+  "@clsReasonUnchanged": {
+    "description": "Why the save button is disabled: nothing changed yet."
+  },
+  "clsFixUse": "{time} নিন",
+  "@clsFixUse": {
+    "description": "Conflict fix button: take this free time.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsFixEarlier": "আগে: {time}",
+  "@clsFixEarlier": {
+    "description": "Conflict fix button: the nearest free time before.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsFixLater": "পরে: {time}",
+  "@clsFixLater": {
+    "description": "Conflict fix button: the nearest free time after.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsNoFreeTime": "এই দিনে একই দৈর্ঘ্যের খালি সময় নেই",
+  "@clsNoFreeTime": {
+    "description": "Shown when the clash has no free time suggestion."
+  },
+  "clsEveryWeekday": "প্রতি {weekday}",
+  "@clsEveryWeekday": {
+    "description": "Clash line for a weekly class; weekday is a day name.",
+    "placeholders": {
+      "weekday": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsClashLine": "{subject} · {batch} · {when} · {time}",
+  "@clsClashLine": {
+    "description": "One clashing class: subject, batch, date, time.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      },
+      "when": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsPrevWeek": "আগের সপ্তাহ",
+  "@clsPrevWeek": {
+    "description": "Button: previous week."
+  },
+  "clsNextWeek": "পরের সপ্তাহ",
+  "@clsNextWeek": {
+    "description": "Button: next week."
+  },
+  "clsDayChip": "{day}, {count}টি ক্লাস",
+  "@clsDayChip": {
+    "description": "Screen-reader label of a day chip with its class count.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "x"
+      },
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsWeekEmpty": "এই সপ্তাহে কোনো ক্লাস নেই",
+  "@clsWeekEmpty": {
+    "description": "Empty week message on the week grid."
+  },
+  "clsWeekEmptyAction": "ব্যাচের সময়সূচি দিন",
+  "@clsWeekEmptyAction": {
+    "description": "Button on the empty week grid: go to batches."
+  },
+  "clsEmptyCellAction": "+ এই সময়ে অতিরিক্ত ক্লাস",
+  "@clsEmptyCellAction": {
+    "description": "Menu item on an empty week-grid cell."
+  },
+  "clsBlockLabel": "{subject}, {batch}, {time}",
+  "@clsBlockLabel": {
+    "description": "Screen-reader label of a week-grid class block.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "clsNoBatches": "কোনো ব্যাচ নেই — আগে একটি ব্যাচ তৈরি করুন",
+  "@clsNoBatches": {
+    "description": "Extra class sheet when there is no batch to pick."
+  },
+  "clsAddExtraButton": "+ অতিরিক্ত ক্লাস",
+  "@clsAddExtraButton": {
+    "description": "Button that opens the extra class sheet."
+  }
+}
