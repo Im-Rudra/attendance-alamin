@@ -303,8 +303,11 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
-              child: ListView(
-                children: <Widget>[form, const SizedBox(height: 12), previewCard],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[form, const SizedBox(height: 12), previewCard],
+                ),
               ),
             ),
           ),

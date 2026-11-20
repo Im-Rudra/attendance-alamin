@@ -41,6 +41,12 @@ Future<CsvFile> _load(SeededFakes f, CsvKind kind, AppLocalizations l10n) => loa
       methodLabel: (PaymentMethod m) => paymentMethodLabel(l10n, m),
     );
 
+Future<void> _pumpMany(WidgetTester tester) async {
+  for (int i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 class _FakeFiles implements BackupFiles {
   final List<(String, Uint8List, bool)> calls = <(String, Uint8List, bool)>[];
 
@@ -209,8 +215,8 @@ void main() {
         overrides: <Override>[...seedFakes().overrides, backupFilesProvider.overrideWithValue(files)],
       );
       await tester.tap(find.byKey(const ValueKey<String>('csv-save-students')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await _pumpMany(tester);
+      expect(find.text(bn.extraCsvFailed), findsNothing, reason: 'building the file failed');
       expect(files.calls, hasLength(1));
       expect(files.calls.first.$1, 'students-2026-11.csv');
       expect(files.calls.first.$2.sublist(0, 3), <int>[0xEF, 0xBB, 0xBF]);
@@ -221,8 +227,7 @@ void main() {
       await tester.pump();
       await tester.ensureVisible(find.byKey(const ValueKey<String>('csv-share-payments')));
       await tester.tap(find.byKey(const ValueKey<String>('csv-share-payments')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await _pumpMany(tester);
       expect(files.calls, hasLength(2));
       expect(files.calls.last.$1, 'payments-2026-12.csv');
       expect(files.calls.last.$3, isTrue);
