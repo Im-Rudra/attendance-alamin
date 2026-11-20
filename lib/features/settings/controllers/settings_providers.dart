@@ -10,6 +10,7 @@ import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
+import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/features/settings/data/payment_methods_config.dart';
 
