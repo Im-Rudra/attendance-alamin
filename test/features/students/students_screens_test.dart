@@ -1,7 +1,6 @@
 // Every screen and sheet of the students feature in the 8-case screen matrix
 // (light/dark x bn/en x phone/desktop; fails on any exception incl. overflow).
 
-import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
