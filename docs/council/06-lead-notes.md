@@ -29,6 +29,11 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - Batch schedule tab on wide windows: right column shorter than the left leaves blank space (user explicitly forbids eye-pinching blank areas) — M6-A, #19.
 - Week grid look at 1.3× Bangla text unverified (M6-B, #18).
 
+## From M6-E (settings, #17)
+- M7-B's payment form must offer `paymentMethodsConfigProvider.visible` (from settings_entry.dart); label methods with `paymentMethodLabel`. Templates: use the template helpers exported by settings_entry.dart.
+- Features read the web storage report via `lib/app/providers/storage_report.dart` (never import data/db).
+- `test/app/shell/routes_test.dart` asserts `Scaffold` (not `StubScreen`) for real screens — later features keep that.
+
 ## From M6-A (schedule editing, #19)
 - `showReminderLeadSheet` returns `kReminderLeadUseDefault` (-1) for "use default", null for dismissed; save `storedLeadOf(result)`.
 - `SlotEditorField` reads `initial` once — build it after data loads. Embed the real `BatchScheduleTab` from schedule_entry.dart.
