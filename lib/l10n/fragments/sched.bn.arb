@@ -1,0 +1,315 @@
+{
+  "@@locale": "bn",
+  "schedPickTime": "সময় বাছুন",
+  "@schedPickTime": {
+    "description": "Title of the time picker when the caller gives none."
+  },
+  "schedPickStart": "শুরুর সময়",
+  "@schedPickStart": {
+    "description": "Time picker title for a class start."
+  },
+  "schedPickEnd": "শেষের সময়",
+  "@schedPickEnd": {
+    "description": "Time picker title for a class end."
+  },
+  "schedOtherMinute": "অন্য মিনিট",
+  "@schedOtherMinute": {
+    "description": "Button that reveals every 5-minute step in the time picker."
+  },
+  "schedTypeTime": "বা টাইপ করে লিখুন",
+  "@schedTypeTime": {
+    "description": "Label of the typed time field (desktop)."
+  },
+  "schedTypeHint": "যেমন: ৭:৩০ সন্ধ্যা",
+  "@schedTypeHint": {
+    "description": "Hint inside the typed time field."
+  },
+  "schedTypeError": "সময়টা বুঝতে পারিনি",
+  "@schedTypeError": {
+    "description": "Error under the typed time field."
+  },
+  "schedTypeEcho": "বুঝেছি: {time}",
+  "@schedTypeEcho": {
+    "description": "Echo of the parsed typed time. time is pre-formatted.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "schedSameAllDays": "সব দিনে একই সময়",
+  "@schedSameAllDays": {
+    "description": "Switch label in the weekly slot editor."
+  },
+  "schedPickDays": "কোন কোন দিন ক্লাস?",
+  "@schedPickDays": {
+    "description": "Heading above the weekday chips."
+  },
+  "schedClassTime": "ক্লাসের সময়",
+  "@schedClassTime": {
+    "description": "Heading above the shared class time."
+  },
+  "schedFrom": "শুরু",
+  "@schedFrom": {
+    "description": "Label of the start time button."
+  },
+  "schedTo": "শেষ",
+  "@schedTo": {
+    "description": "Label of the end time button."
+  },
+  "schedAddTime": "আরেকটি সময়",
+  "@schedAddTime": {
+    "description": "Button: add a second class time on the same day."
+  },
+  "schedAddDay": "আরেকটি দিন",
+  "@schedAddDay": {
+    "description": "Button: add a weekday to the schedule."
+  },
+  "schedRemoveTime": "এই সময় সরান",
+  "@schedRemoveTime": {
+    "description": "Tooltip of the remove-time button."
+  },
+  "schedEditTime": "সময় বদলান",
+  "@schedEditTime": {
+    "description": "Tooltip of the edit-time button."
+  },
+  "schedSentenceTitle": "সাপ্তাহিক রুটিন",
+  "@schedSentenceTitle": {
+    "description": "Heading of the live schedule sentence."
+  },
+  "schedSentenceEmpty": "এখনো কোনো দিন বাছা হয়নি",
+  "@schedSentenceEmpty": {
+    "description": "Live sentence when there are no slots."
+  },
+  "schedAnd": "ও",
+  "@schedAnd": {
+    "description": "Joins two class times of one day in the live sentence."
+  },
+  "schedEveryWeekday": "প্রতি {weekday}",
+  "@schedEveryWeekday": {
+    "description": "Clash line: a weekly class. weekday is the full weekday name.",
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
+  "schedClashLine": "{subject} · {batch} · {when} · {range}",
+  "@schedClashLine": {
+    "description": "One clashing class. when is a date or the every-week text; range is the time range.",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      },
+      "batch": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "schedClashSameBatch": "এই ব্যাচের আরেকটি ক্লাস আছে · {when} · {range}",
+  "@schedClashSameBatch": {
+    "description": "Clash line when the other class belongs to the same batch.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "schedFixTake": "{range} নিন",
+  "@schedFixTake": {
+    "description": "Primary fix button on the clash card.",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "schedFixEarlier": "আগে: {range}",
+  "@schedFixEarlier": {
+    "description": "Secondary fix button on the clash card.",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "schedNoFreeSlot": "এই দিনে একই দৈর্ঘ্যের খালি সময় নেই",
+  "@schedNoFreeSlot": {
+    "description": "Clash card note when no suggestion exists."
+  },
+  "schedReasonFixClash": "আগে সময়ের মিল ঠিক করুন",
+  "@schedReasonFixClash": {
+    "description": "Reason under the disabled save button: a clash."
+  },
+  "schedReasonNoDays": "অন্তত একটি দিন বেছে নিন",
+  "@schedReasonNoDays": {
+    "description": "Reason under the disabled save button: no slots."
+  },
+  "schedReasonBadTime": "শেষের সময় শুরুর পরে দিন",
+  "@schedReasonBadTime": {
+    "description": "Reason under the disabled save button: end is not after start."
+  },
+  "schedReasonChecking": "সময়ের মিল দেখা হচ্ছে…",
+  "@schedReasonChecking": {
+    "description": "Reason under the disabled save button while the live check runs."
+  },
+  "schedReasonNoChange": "কিছু বদলানো হয়নি",
+  "@schedReasonNoChange": {
+    "description": "Reason under the disabled save button: no edits yet."
+  },
+  "schedFromTitle": "কবে থেকে নতুন সময়?",
+  "@schedFromTitle": {
+    "description": "Title of the effective-from sheet shown on save."
+  },
+  "schedFromToday": "আজ থেকে",
+  "@schedFromToday": {
+    "description": "Option: effective today."
+  },
+  "schedFromPick": "তারিখ বাছুন",
+  "@schedFromPick": {
+    "description": "Option: choose another effective date."
+  },
+  "schedFromPicked": "{date} থেকে",
+  "@schedFromPicked": {
+    "description": "Option label once a date was picked. date is pre-formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "schedFromHint": "আগের ক্লাস আর হাজিরা যেমন আছে তেমনই থাকবে",
+  "@schedFromHint": {
+    "description": "Reassurance under the effective-from options."
+  },
+  "schedSaved": "সময়সূচি সংরক্ষণ হয়েছে",
+  "@schedSaved": {
+    "description": "Snackbar after saving the weekly schedule."
+  },
+  "schedDiscardTitle": "বদলগুলো ফেলে দেবেন?",
+  "@schedDiscardTitle": {
+    "description": "Title of the unsaved-changes dialog."
+  },
+  "schedDiscardBody": "সংরক্ষণ না করলে বদলগুলো হারিয়ে যাবে।",
+  "@schedDiscardBody": {
+    "description": "Body of the unsaved-changes dialog."
+  },
+  "schedDiscardConfirm": "ফেলে দিন",
+  "@schedDiscardConfirm": {
+    "description": "Confirm button of the unsaved-changes dialog."
+  },
+  "schedPreviewTitle": "সপ্তাহের চিত্র",
+  "@schedPreviewTitle": {
+    "description": "Heading of the seven-day overview card."
+  },
+  "schedNoClass": "ক্লাস নেই",
+  "@schedNoClass": {
+    "description": "A weekday with no class in the overview."
+  },
+  "schedArchivedReadOnly": "ব্যাচটি আর্কাইভ করা আছে, তাই সময় বদলানো যাবে না।",
+  "@schedArchivedReadOnly": {
+    "description": "Note on the schedule of an archived batch."
+  },
+  "schedChangeWeekly": "প্রতি সপ্তাহের সময় বদলান",
+  "@schedChangeWeekly": {
+    "description": "Button on the batch schedule tab."
+  },
+  "schedTabEmpty": "এই ব্যাচের ক্লাসের সময় এখনো দেওয়া হয়নি",
+  "@schedTabEmpty": {
+    "description": "Empty state of the batch schedule tab."
+  },
+  "schedTabAddFirst": "ক্লাসের সময় দিন",
+  "@schedTabAddFirst": {
+    "description": "Empty-state button of the batch schedule tab."
+  },
+  "schedMinutes": "{n} মিনিট",
+  "@schedMinutes": {
+    "description": "A number of minutes. n is pre-formatted.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "schedMinutesBefore": "{n} মিনিট আগে",
+  "@schedMinutesBefore": {
+    "description": "Reminder lead, e.g. 15 min before. n is pre-formatted.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "schedReminderRowDefault": "ক্লাস রিমাইন্ডার: ডিফল্ট ({lead})",
+  "@schedReminderRowDefault": {
+    "description": "Reminder row when the batch uses the default. lead is like '15 min before'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      }
+    }
+  },
+  "schedReminderRowCustom": "ক্লাস রিমাইন্ডার: {lead}",
+  "@schedReminderRowCustom": {
+    "description": "Reminder row with the batch's own lead.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      }
+    }
+  },
+  "schedReminderRowOff": "ক্লাস রিমাইন্ডার: এই ব্যাচের জন্য বন্ধ",
+  "@schedReminderRowOff": {
+    "description": "Reminder row when switched off for the batch."
+  },
+  "schedReminderMasterOff": "রিমাইন্ডার বন্ধ আছে — সেটিংস থেকে চালু করুন",
+  "@schedReminderMasterOff": {
+    "description": "Disabled reminder row while the global switch is off."
+  },
+  "schedLeadTitle": "ক্লাস রিমাইন্ডার",
+  "@schedLeadTitle": {
+    "description": "Title of the reminder lead sheet."
+  },
+  "schedLeadSubtitle": "ক্লাস শুরুর কতক্ষণ আগে মনে করিয়ে দেব?",
+  "@schedLeadSubtitle": {
+    "description": "Sub-title of the reminder lead sheet."
+  },
+  "schedLeadUseDefault": "ডিফল্ট ব্যবহার করুন ({lead})",
+  "@schedLeadUseDefault": {
+    "description": "Radio option: use the Settings default. lead is like '15 min'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      }
+    }
+  },
+  "schedLeadOther": "অন্য…",
+  "@schedLeadOther": {
+    "description": "Radio option: a custom number of minutes."
+  },
+  "schedLeadCustomLabel": "মিনিট (১ থেকে ১৮০)",
+  "@schedLeadCustomLabel": {
+    "description": "Label of the custom lead number field."
+  },
+  "schedLeadCustomError": "১ থেকে ১৮০ এর মধ্যে একটি সংখ্যা দিন",
+  "@schedLeadCustomError": {
+    "description": "Error of the custom lead number field."
+  },
+  "schedLeadOff": "এই ব্যাচের জন্য বন্ধ",
+  "@schedLeadOff": {
+    "description": "Radio option: no reminders for this batch."
+  },
+  "schedLeadReset": "ডিফল্টে ফেরান",
+  "@schedLeadReset": {
+    "description": "Link that clears the batch's own lead."
+  }
+}
