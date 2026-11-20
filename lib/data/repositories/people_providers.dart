@@ -1,4 +1,3 @@
-import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
 import 'package:attendance_alamin/data/repositories/drift/attendance_repository_drift.dart';
@@ -10,6 +9,7 @@ import 'package:attendance_alamin/data/repositories/enrollments_repository.dart'
 import 'package:attendance_alamin/data/repositories/other_income_repository.dart';
 import 'package:attendance_alamin/data/repositories/payments_repository.dart';
 import 'package:attendance_alamin/data/repositories/students_repository.dart';
+import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final studentsRepositoryProvider = Provider<StudentsRepository>((ref) =>
@@ -38,18 +38,7 @@ final otherIncomeRepositoryProvider = Provider<OtherIncomeRepository>((ref) =>
         ref.watch(appDatabaseProvider), ref.watch(syncStamperProvider)));
 
 /// How an ad-hoc roll call creates its extra class: M4-A's clash-checked
-/// `ScheduleRepository.addExtra`. Wire it once both modules are merged:
-/// `(ref) => ref.watch(scheduleRepositoryProvider).addExtra`. Until then an
-/// ad-hoc roll call throws [UnsupportedError]; every other attendance call
-/// works.
-final addExtraClassProvider = Provider<AddExtraClass>((ref) => _addExtraNotWired);
-
-Future<String> _addExtraNotWired({
-  required String batchId,
-  required LocalDate date,
-  required int startMin,
-  required int endMin,
-  String? note,
-}) async =>
-    throw UnsupportedError('addExtraClassProvider is not wired to '
-        'ScheduleRepository.addExtra');
+/// `ScheduleRepository.addExtra` (same database, so it joins the caller's
+/// transaction).
+final addExtraClassProvider = Provider<AddExtraClass>(
+    (ref) => ref.watch(scheduleRepositoryProvider).addExtra);
