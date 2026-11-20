@@ -4,7 +4,6 @@
 // (scenario 21).
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -59,7 +58,7 @@ Widget slotStub(
 
 /// Remembers the last billable month the archive dialog chose.
 class SpyBatches extends FakeBatchesRepository {
-  SpyBatches(FakeStructureStore store) : super(store);
+  SpyBatches(FakeStructureStore super.store);
 
   YearMonth? lastBillable;
   bool? acceptedClashes;
