@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance_alamin/app/widgets/conflict_card.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -55,9 +57,19 @@ class _ClashRepo extends FakeScheduleRepository {
   }
 }
 
+/// Every fake of [f], with the schedule repository replaced by the clashing
+/// one (a container refuses two overrides of the same provider).
 List<Override> _overrides(SeededFakes f) => <Override>[
-      ...f.overrides,
+      subjectsRepositoryProvider.overrideWithValue(f.subjects),
+      batchesRepositoryProvider.overrideWithValue(f.batches),
       scheduleRepositoryProvider.overrideWithValue(_ClashRepo(f.store)),
+      studentsRepositoryProvider.overrideWithValue(f.students),
+      enrollmentsRepositoryProvider.overrideWithValue(f.enrollments),
+      paymentsRepositoryProvider.overrideWithValue(f.payments),
+      attendanceRepositoryProvider.overrideWithValue(f.attendance),
+      otherIncomeRepositoryProvider.overrideWithValue(f.otherIncome),
+      settingsRepositoryProvider.overrideWithValue(f.settings),
+      localMetaRepositoryProvider.overrideWithValue(f.localMeta),
     ];
 
 FilledButton _saveButton(WidgetTester tester) => tester.widget<FilledButton>(

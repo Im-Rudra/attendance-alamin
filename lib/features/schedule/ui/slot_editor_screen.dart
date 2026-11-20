@@ -13,6 +13,7 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -132,26 +133,19 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AsyncValue<List<BatchSchedule>> async = ref.watch(schedulesProvider);
-    final Widget closeButton = IconButton(
-      tooltip: l10n.commonClose,
-      icon: const Icon(Icons.close),
-      onPressed: _close,
-    );
-
     BatchSchedule? schedule;
     for (final BatchSchedule s in async.value ?? const <BatchSchedule>[]) {
       if (s.batch.id == widget.batchId) schedule = s;
     }
 
     if (schedule == null) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: closeButton,
-          title: Semantics(header: true, child: Text(l10n.shellTitleSlotEditor)),
-        ),
-        body: async.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : EmptyState(icon: Icons.search_off, message: l10n.errNotFound),
+      // Loading, or no such batch: the shell's plain chrome.
+      return StubScreen(
+        name: l10n.shellTitleSlotEditor,
+        icon: Icons.schedule,
+        fullScreen: true,
+        message: async.isLoading ? null : l10n.errNotFound,
+        body: async.isLoading ? const Center(child: CircularProgressIndicator()) : null,
       );
     }
 
@@ -267,7 +261,11 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           },
           child: Scaffold(
             appBar: AppBar(
-              leading: closeButton,
+              leading: IconButton(
+                tooltip: l10n.commonClose,
+                icon: const Icon(Icons.close),
+                onPressed: _close,
+              ),
               title: Semantics(header: true, child: Text(l10n.shellTitleSlotEditor)),
             ),
             body: SafeArea(
