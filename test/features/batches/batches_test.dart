@@ -429,7 +429,10 @@ void main() {
       expect(find.text(bn.batchUnarchiveClash), findsOneWidget);
       expect(find.text(line), findsOneWidget);
       // The plain confirm is replaced by the fix-the-schedule one.
-      expect(find.text(bn.batchUnarchiveConfirm), findsNothing);
+      expect(
+        find.descendant(of: find.byType(AlertDialog), matching: find.text(bn.batchUnarchiveConfirm)),
+        findsNothing,
+      );
       await tester.tap(find.text(bn.batchUnarchiveFix));
       await settleSome(tester, 8);
 
