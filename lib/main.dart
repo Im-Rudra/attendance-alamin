@@ -5,11 +5,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:attendance_alamin/data/db/app_database.dart';
-import 'package:attendance_alamin/data/db/connection/open_connection.dart';
-import 'package:attendance_alamin/data/db/connection/storage_persist.dart';
-import 'package:attendance_alamin/data/db/connection/web_storage_report.dart';
-import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// Font check sample: Bangla digits, taka sign with lakh grouping, conjuncts.
@@ -17,23 +12,6 @@ const kFontSample = '০১২৩৪৫৬৭৮৯ ৳১,২০,০০০ ক�
 
 void main() {
   runApp(const HelloApp());
-  _probeDb();
-}
-
-// TEMPORARY M3-A probe (reverted before merge): compiles the conditional
-// connection on every platform build and opens the web DB once.
-Future<void> _probeDb() async {
-  try {
-    final db = AppDatabase(openConnection());
-    await requestPersistentStorage();
-    final deviceId = await ensureDeviceId(db);
-    final n = await db.customSelect('SELECT count(*) AS c FROM local_meta').getSingle();
-    // ignore: avoid_print
-    print('M3A_PROBE ok storage=${webStorageReport.value} device=$deviceId meta=${n.data}');
-  } catch (e) {
-    // ignore: avoid_print
-    print('M3A_PROBE error $e');
-  }
 }
 
 class HelloApp extends StatefulWidget {
