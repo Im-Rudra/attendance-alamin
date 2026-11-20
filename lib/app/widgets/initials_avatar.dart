@@ -2,7 +2,7 @@
 // first two words, so a Bangla conjunct or vowel sign is never split.
 // Colours are avatarBg / avatarText only, never a severity or attendance hue.
 
-import 'package:flutter/foundation.dart' show StringCharacters;
+import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 
 import 'package:attendance_alamin/app/theme/theme_x.dart';
