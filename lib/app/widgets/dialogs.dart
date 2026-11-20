@@ -67,6 +67,9 @@ void showUndoSnackBar(
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 8),
+        // Auto-dismiss even though it has an action (Flutter 3.29+ keeps
+        // action snackbars until dismissed unless persist is false).
+        persist: false,
         action: action,
       ),
     );
