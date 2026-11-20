@@ -125,18 +125,22 @@ class StartupErrorScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Theme(
                       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        title: Text(l10n.commonDetails, style: tt.labelLarge?.copyWith(color: tokens.textSecondary)),
-                        children: <Widget>[
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: SelectableText(
-                              error.toString(),
-                              style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                      // Own Material: the tile's ink must paint above the card fill.
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: Text(l10n.commonDetails, style: tt.labelLarge?.copyWith(color: tokens.textSecondary)),
+                          children: <Widget>[
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: SelectableText(
+                                error.toString(),
+                                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
