@@ -1,49 +1,28 @@
-// Public surface of the schedule feature (plan section 1 #32). STUB by M5-A;
-// bodies by M6-A. Signatures are frozen.
+// Public surface of the schedule feature (plan section 1 #32). Signatures are
+// the frozen M5-A ones; the bodies live in widgets/ (M6-A).
 
 import 'package:flutter/material.dart';
 
-import 'package:attendance_alamin/domain/models/drafts.dart';
-import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
+import 'package:attendance_alamin/features/schedule/widgets/time_picker_sheet.dart';
+
+export 'package:attendance_alamin/features/schedule/controllers/time_input_parser.dart'
+    show parseTimeInput;
+export 'package:attendance_alamin/features/schedule/widgets/batch_schedule_tab.dart'
+    show BatchScheduleTab;
+export 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart'
+    show kReminderLeadUseDefault, storedLeadOf;
+export 'package:attendance_alamin/features/schedule/widgets/slot_editor_field.dart'
+    show SlotEditorField;
 
 /// Period-first time picker; returns minutes of day, or null when dismissed.
-Future<int?> showTimePickerSheet(BuildContext context, {required int initialMin, String? title}) async =>
-    null;
+Future<int?> showTimePickerSheet(BuildContext context,
+        {required int initialMin, String? title}) =>
+    openTimePicker(context, initialMin: initialMin, title: title);
 
-/// Reminder lead sheet; returns null (dismissed), 0 (off) or 1..180 minutes.
-Future<int?> showReminderLeadSheet(BuildContext context, {required int? current, required int defaultLead}) async =>
-    null;
-
-/// Weekly slot editor used by the batch form and onboarding.
-class SlotEditorField extends StatefulWidget {
-  const SlotEditorField({
-    super.key,
-    required this.initial,
-    required this.onChanged,
-    this.batchId,
-    this.onCheck,
-  });
-
-  final List<SlotDraft> initial;
-  final ValueChanged<List<SlotDraft>> onChanged;
-  final String? batchId;
-  final ValueChanged<SlotCheckResult>? onCheck;
-
-  @override
-  State<SlotEditorField> createState() => _SlotEditorFieldState();
-}
-
-class _SlotEditorFieldState extends State<SlotEditorField> {
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
-/// Batch detail › সময়সূচি tab.
-class BatchScheduleTab extends StatelessWidget {
-  const BatchScheduleTab({super.key, required this.batchId});
-
-  final String batchId;
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
+/// Reminder lead sheet; returns null (dismissed), [kReminderLeadUseDefault]
+/// (-1: "use the default", the batch stores null), 0 (off) or 1..180 minutes.
+/// [storedLeadOf] maps a result to the value to store.
+Future<int?> showReminderLeadSheet(BuildContext context,
+        {required int? current, required int defaultLead}) =>
+    openReminderLeadSheet(context, current: current, defaultLead: defaultLead);
