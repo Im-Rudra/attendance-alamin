@@ -78,6 +78,9 @@ Future<void> _pumpHost(
 
 Future<void> _importFile(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('host-import')));
+  // Lets the controller's 3 s guard on the schedules read run out if the
+  // fake stream were silent.
+  await tester.pump(const Duration(seconds: 4));
   await tester.pumpAndSettle();
 }
 
@@ -91,7 +94,7 @@ void main() {
     await _importFile(tester);
 
     // Review: full screen, nothing changed yet.
-    expect(find.text(_bn.shellTitleBackupReview), findsOneWidget);
+    expect(find.text(_bn.shellTitleBackupReview), findsOneWidget, reason: allTexts(tester));
     expect(find.text(_bn.backupHeadline(_f.number(2))), findsOneWidget);
     expect(find.text(_bn.backupReviewDevice('Phone')), findsOneWidget);
     final Finder deletions = find.byKey(const Key('review-deletions'));

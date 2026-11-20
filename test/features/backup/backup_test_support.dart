@@ -6,7 +6,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Ref;
 import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/routes.dart';
@@ -305,4 +307,12 @@ List<Override> backupOverrides({
     <Override>[
       backupRepositoryProvider.overrideWithValue(repo),
       backupFilesProvider.overrideWithValue(files),
+      // The platform channel never answers in widget tests.
+      backupAppVersionProvider.overrideWith((Ref ref) async => '1.0.0+7'),
     ];
+
+/// Every text on screen, for failure messages.
+String allTexts(WidgetTester tester) => tester.allWidgets
+    .whereType<Text>()
+    .map((Text t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+    .join(' | ');

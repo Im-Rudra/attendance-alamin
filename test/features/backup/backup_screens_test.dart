@@ -109,7 +109,7 @@ void main() {
         fixedImport(richState().copyWith(phase: ImportPhase.applying)),
       ]),
       verify: (WidgetTester tester) async {
-        expect(find.text(_bn.backupApplying), findsOneWidget);
+        expect(find.byKey(const Key('review-apply')), findsOneWidget);
       },
     );
     testScreenMatrix(
@@ -172,6 +172,8 @@ void main() {
       final FakeBackupRepository repo = _repo();
       await pumpApp(tester, const BackupScreen(),
           overrides: _overrides(seedFakes(), repo, FakeBackupFiles()));
+      tester.view.physicalSize = const Size(400, 2400);
+      await tester.pump();
       expect(find.byKey(const Key('backup-restore-s1')), findsOneWidget);
       expect(find.byKey(const Key('backup-restore-s2')), findsOneWidget);
       expect(find.byKey(const Key('backup-restore-s3')), findsOneWidget);
@@ -192,7 +194,9 @@ void main() {
     testWidgets('no safety copies yet says so', (WidgetTester tester) async {
       await pumpApp(tester, const BackupScreen(),
           overrides: _overrides(seedFakes(), _repo(copies: false), FakeBackupFiles()));
-      expect(find.byKey(const Key('backup-safety-empty')), findsOneWidget);
+      tester.view.physicalSize = const Size(400, 2400);
+      await tester.pump();
+      expect(find.byKey(const Key('backup-safety-empty')), findsOneWidget, reason: allTexts(tester));
     });
 
     testWidgets('desktop: the three cards sit side by side and fill the height', (WidgetTester tester) async {
@@ -291,7 +295,7 @@ void main() {
       await tester.pump();
 
       // 1 batch + (5 added + 4 removed students) + 38 + 2 + 1 = 51 changes
-      expect(find.text(_bn.backupHeadline(_f.number(51))), findsOneWidget);
+      expect(find.text(_bn.backupHeadline(_f.number(51))), findsOneWidget, reason: allTexts(tester));
       expect(find.text(_bn.backupApplyN(_f.number(51))), findsOneWidget);
       expect(find.text(_bn.backupKeptTotal(_f.number(2))), findsOneWidget);
       expect(find.text(_bn.backupOlderBanner), findsOneWidget);
@@ -345,7 +349,7 @@ void main() {
           )),
         ],
       ));
-      expect(find.text(_bn.backupHeadlineNone), findsOneWidget);
+      expect(find.text(_bn.backupHeadlineNone), findsOneWidget, reason: allTexts(tester));
       final FilledButton apply = tester.widget<FilledButton>(find.byKey(const Key('review-apply')));
       expect(apply.onPressed, isNull);
       expect(find.text(_bn.backupApplyDisabledNone), findsOneWidget);
