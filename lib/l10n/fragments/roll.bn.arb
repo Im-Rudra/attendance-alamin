@@ -1,0 +1,439 @@
+{
+  "@@locale": "bn",
+  "rollSaveButton": "হাজিরা সেভ করুন ({count} জন)",
+  "@rollSaveButton": {
+    "description": "Label of the sticky save button of the roll call; count is the number of students.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollDone": "হয়ে গেছে",
+  "@rollDone": {
+    "description": "Label of the sticky button once the roll call is saved (it closes the screen)."
+  },
+  "rollHintAllPresent": "সবাই উপস্থিত ধরা হয়েছে। শুধু অনুপস্থিতদের নামে চাপুন।",
+  "@rollHintAllPresent": {
+    "description": "Hint above the roll call list before anything was changed."
+  },
+  "rollAllPresent": "সবাই উপস্থিত",
+  "@rollAllPresent": {
+    "description": "Header action that marks every student present."
+  },
+  "rollAllAbsent": "সবাই অনুপস্থিত",
+  "@rollAllAbsent": {
+    "description": "Header action that marks every student absent."
+  },
+  "rollSearchHint": "রোল/নাম",
+  "@rollSearchHint": {
+    "description": "Hint of the roll call search field."
+  },
+  "rollCounts": "উপস্থিত {present} · অনুপস্থিত {absent} · দেরি {late}",
+  "@rollCounts": {
+    "description": "Live counts line of the roll call; numbers are already localized.",
+    "placeholders": {
+      "present": {
+        "type": "String",
+        "example": "x"
+      },
+      "absent": {
+        "type": "String",
+        "example": "x"
+      },
+      "late": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollCountsWithLeave": "উপস্থিত {present} · অনুপস্থিত {absent} · দেরি {late} · ছুটি {leave}",
+  "@rollCountsWithLeave": {
+    "description": "Live counts line when at least one student is excused.",
+    "placeholders": {
+      "present": {
+        "type": "String",
+        "example": "x"
+      },
+      "absent": {
+        "type": "String",
+        "example": "x"
+      },
+      "late": {
+        "type": "String",
+        "example": "x"
+      },
+      "leave": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollStateSaved": "সংরক্ষিত",
+  "@rollStateSaved": {
+    "description": "Header state: the roll call is saved and further changes autosave."
+  },
+  "rollStateSaving": "সংরক্ষণ হচ্ছে…",
+  "@rollStateSaving": {
+    "description": "Header state while a save is running."
+  },
+  "rollStateUnsaved": "এখনো সেভ হয়নি",
+  "@rollStateUnsaved": {
+    "description": "Header state before the first save."
+  },
+  "rollSavedSnack": "হাজিরা সেভ হয়েছে",
+  "@rollSavedSnack": {
+    "description": "Snackbar after the first save of a roll call."
+  },
+  "rollLeaveTitle": "হাজিরা সেভ হয়নি। সেভ করবেন?",
+  "@rollLeaveTitle": {
+    "description": "Title of the leave guard dialog."
+  },
+  "rollLeaveSave": "সেভ করুন",
+  "@rollLeaveSave": {
+    "description": "Leave guard button: save and leave."
+  },
+  "rollLeaveDiscard": "বাদ দিন",
+  "@rollLeaveDiscard": {
+    "description": "Leave guard button: leave without saving (drops the draft)."
+  },
+  "rollBannerPast": "আপনি পুরোনো দিনের হাজিরা দেখছেন",
+  "@rollBannerPast": {
+    "description": "Banner shown when the roll call date is before today."
+  },
+  "rollBannerFuture": "ভবিষ্যতের তারিখে হাজিরা নেওয়া যায় না",
+  "@rollBannerFuture": {
+    "description": "Banner shown when the roll call date is after today."
+  },
+  "rollBannerCancelled": "এই ক্লাস বাতিল ছিল — হাজিরা নিলে বাতিল উঠে যাবে",
+  "@rollBannerCancelled": {
+    "description": "Note shown when the chosen class occurrence was cancelled."
+  },
+  "rollBannerAdHoc": "এই সময়ে রুটিনে ক্লাস নেই — অতিরিক্ত ক্লাস হিসেবে রাখা হবে",
+  "@rollBannerAdHoc": {
+    "description": "Note shown when the batch has no class on the chosen date."
+  },
+  "rollBannerArchived": "এই ব্যাচ আর্কাইভ করা — হাজিরা শুধু দেখা যাবে",
+  "@rollBannerArchived": {
+    "description": "Banner shown for an archived batch."
+  },
+  "rollBannerDraft": "আগের অসম্পূর্ণ হাজিরা ফিরিয়ে আনা হয়েছে",
+  "@rollBannerDraft": {
+    "description": "Shown when an unsaved draft was restored after the app was closed."
+  },
+  "rollEmptyBatch": "এই ব্যাচে কোনো শিক্ষার্থী নেই",
+  "@rollEmptyBatch": {
+    "description": "Empty state of the roll call."
+  },
+  "rollAddStudent": "শিক্ষার্থী যোগ করুন",
+  "@rollAddStudent": {
+    "description": "Button of the empty roll call state."
+  },
+  "rollNoMatch": "এই নামে কেউ নেই",
+  "@rollNoMatch": {
+    "description": "Shown when the roll call search has no result."
+  },
+  "rollPrevDay": "আগের দিন",
+  "@rollPrevDay": {
+    "description": "Tooltip of the previous day arrow."
+  },
+  "rollNextDay": "পরের দিন",
+  "@rollNextDay": {
+    "description": "Tooltip of the next day arrow."
+  },
+  "rollTitle": "{subject} — {batch}",
+  "@rollTitle": {
+    "description": "Roll call screen title; subject and batch name.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "x"
+      },
+      "batch": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollNotFound": "এই ক্লাস খুঁজে পাওয়া যায়নি",
+  "@rollNotFound": {
+    "description": "Shown when the occurrence of the roll call no longer exists."
+  },
+  "rollChooserTitle": "কোন ক্লাসের হাজিরা?",
+  "@rollChooserTitle": {
+    "description": "Title of the session chooser sheet."
+  },
+  "rollChooserTaken": "নেওয়া হয়েছে",
+  "@rollChooserTaken": {
+    "description": "Session card state: roll call already taken."
+  },
+  "rollChooserPending": "বাকি",
+  "@rollChooserPending": {
+    "description": "Session card state: roll call not taken yet."
+  },
+  "rollChooserCancelled": "বাতিল",
+  "@rollChooserCancelled": {
+    "description": "Session card state: class cancelled."
+  },
+  "rollChooserCount": "{present}/{total} উপস্থিত",
+  "@rollChooserCount": {
+    "description": "Count line of a taken session card.",
+    "placeholders": {
+      "present": {
+        "type": "String",
+        "example": "x"
+      },
+      "total": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollMenuNote": "ক্লাসের নোট",
+  "@rollMenuNote": {
+    "description": "Menu entry that edits the note of the class."
+  },
+  "rollMenuDelete": "ক্লাস হয়নি (হাজিরা মুছুন)",
+  "@rollMenuDelete": {
+    "description": "Menu entry that deletes the saved roll call."
+  },
+  "rollDeleteTitle": "এই ক্লাসের হাজিরা মুছে ফেলবেন?",
+  "@rollDeleteTitle": {
+    "description": "Title of the delete session dialog."
+  },
+  "rollDeleteBody": "ক্লাসটি হয়নি ধরা হবে, তাই শতাংশে গণনা হবে না।",
+  "@rollDeleteBody": {
+    "description": "Body of the delete session dialog."
+  },
+  "rollDeleteConfirm": "মুছুন",
+  "@rollDeleteConfirm": {
+    "description": "Confirm button of the delete session dialog."
+  },
+  "rollDeletedSnack": "হাজিরা মুছে ফেলা হয়েছে",
+  "@rollDeletedSnack": {
+    "description": "Snackbar after a roll call was deleted."
+  },
+  "rollNoteTitle": "ক্লাসের নোট",
+  "@rollNoteTitle": {
+    "description": "Title of the class note dialog."
+  },
+  "rollNoteHint": "যেমন: আজ পরীক্ষা ছিল",
+  "@rollNoteHint": {
+    "description": "Hint of the class note field."
+  },
+  "rollNoteLabel": "নোট: {note}",
+  "@rollNoteLabel": {
+    "description": "Line that shows the saved class note.",
+    "placeholders": {
+      "note": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollAdHocStart": "শুরু",
+  "@rollAdHocStart": {
+    "description": "Label of the start time of an extra class."
+  },
+  "rollAdHocEnd": "শেষ",
+  "@rollAdHocEnd": {
+    "description": "Label of the end time of an extra class."
+  },
+  "rollPickStart": "শুরুর সময়",
+  "@rollPickStart": {
+    "description": "Title of the start time picker."
+  },
+  "rollPickEnd": "শেষের সময়",
+  "@rollPickEnd": {
+    "description": "Title of the end time picker."
+  },
+  "rollClashLine": "{name} · {time}",
+  "@rollClashLine": {
+    "description": "One clashing class on the clash card: name and time.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollFixUse": "{range} নিন",
+  "@rollFixUse": {
+    "description": "Button that applies a free time suggestion.",
+    "placeholders": {
+      "range": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollReasonTime": "শেষের সময় শুরুর পরে হতে হবে",
+  "@rollReasonTime": {
+    "description": "Reason under the disabled save button."
+  },
+  "rollReasonClash": "আগে সময়ের মিল ঠিক করুন",
+  "@rollReasonClash": {
+    "description": "Reason under the disabled save button."
+  },
+  "rollReasonFuture": "ভবিষ্যতের হাজিরা নেওয়া যায় না",
+  "@rollReasonFuture": {
+    "description": "Reason under the disabled save button."
+  },
+  "rollReasonArchived": "আর্কাইভ করা ব্যাচ — শুধু দেখা যাবে",
+  "@rollReasonArchived": {
+    "description": "Reason under the disabled save button."
+  },
+  "rollReasonNoStudents": "আগে শিক্ষার্থী যোগ করুন",
+  "@rollReasonNoStudents": {
+    "description": "Reason under the disabled save button."
+  },
+  "rollReasonChecking": "সময় মিলিয়ে দেখা হচ্ছে…",
+  "@rollReasonChecking": {
+    "description": "Reason under the disabled save button while the clash check runs."
+  },
+  "rollShortcutsTitle": "কিবোর্ড শর্টকাট",
+  "@rollShortcutsTitle": {
+    "description": "Title of the collapsible shortcut legend."
+  },
+  "rollKeyMove": "J / K — পরের / আগের রোল",
+  "@rollKeyMove": {
+    "description": "Shortcut legend line."
+  },
+  "rollKeyToggle": "Space — উপস্থিত/অনুপস্থিত বদল",
+  "@rollKeyToggle": {
+    "description": "Shortcut legend line."
+  },
+  "rollKeyStatus": "P · A · L · E — উপস্থিত · অনুপস্থিত · দেরি · ছুটি",
+  "@rollKeyStatus": {
+    "description": "Shortcut legend line."
+  },
+  "rollKeyDigits": "সংখ্যা টিপলে সেই রোলে যায়",
+  "@rollKeyDigits": {
+    "description": "Shortcut legend line."
+  },
+  "rollKeySave": "Ctrl+S — সেভ, Ctrl+Z — পূর্বাবস্থা",
+  "@rollKeySave": {
+    "description": "Shortcut legend line."
+  },
+  "rollKeyDay": "Alt + বাম/ডান তীর — আগের/পরের দিন",
+  "@rollKeyDay": {
+    "description": "Shortcut legend line."
+  },
+  "rollA11yDate": "{date}, {time}",
+  "@rollA11yDate": {
+    "description": "Screen-reader label of the date and time header.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "x"
+      },
+      "time": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollTabMonthAvg": "এই মাসের গড় উপস্থিতি",
+  "@rollTabMonthAvg": {
+    "description": "Label of the batch attendance tab tile."
+  },
+  "rollTabMonthHeld": "এই মাসে ক্লাস হয়েছে",
+  "@rollTabMonthHeld": {
+    "description": "Label of the batch attendance tab tile."
+  },
+  "rollTabTake": "হাজিরা নিন",
+  "@rollTabTake": {
+    "description": "Button of the batch attendance tab."
+  },
+  "rollTabOtherDate": "অন্য তারিখ",
+  "@rollTabOtherDate": {
+    "description": "Button of the batch attendance tab that picks a date."
+  },
+  "rollTabRecent": "সাম্প্রতিক ক্লাস",
+  "@rollTabRecent": {
+    "description": "Section title of the batch attendance tab."
+  },
+  "rollTabEmpty": "এখনো কোনো হাজিরা নেওয়া হয়নি।",
+  "@rollTabEmpty": {
+    "description": "Empty state of the batch attendance tab."
+  },
+  "rollTabShowAll": "সব ক্লাস দেখান",
+  "@rollTabShowAll": {
+    "description": "Button that expands the recent classes list."
+  },
+  "rollTabShowLess": "কম দেখান",
+  "@rollTabShowLess": {
+    "description": "Button that collapses the recent classes list."
+  },
+  "rollTabSessionLine": "উপস্থিত {present}/{total}",
+  "@rollTabSessionLine": {
+    "description": "Count line of one class in the batch attendance tab.",
+    "placeholders": {
+      "present": {
+        "type": "String",
+        "example": "x"
+      },
+      "total": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollTabPercent": "{percent} হাজিরা",
+  "@rollTabPercent": {
+    "description": "Percent of one class in the batch attendance tab.",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollSummaryMonth": "এই মাস {percent}",
+  "@rollSummaryMonth": {
+    "description": "Attendance percent of this month on the student profile.",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollSummaryAll": "মোট {percent}",
+  "@rollSummaryAll": {
+    "description": "All-time attendance percent on the student profile.",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollSummaryNone": "এখনো হাজিরা নেওয়া হয়নি",
+  "@rollSummaryNone": {
+    "description": "Shown when an enrollment has no roll call yet."
+  },
+  "rollSummaryLast": "শেষ ক্লাসগুলো",
+  "@rollSummaryLast": {
+    "description": "Label above the latest marks on the student profile."
+  },
+  "rollStatusSheetTitle": "{name}",
+  "@rollStatusSheetTitle": {
+    "description": "Title of the status sheet of one student.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "rollRowMenu": "আরও বিকল্প",
+  "@rollRowMenu": {
+    "description": "Tooltip of the row options."
+  }
+}
