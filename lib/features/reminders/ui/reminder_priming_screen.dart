@@ -156,7 +156,6 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: GlassCard(
-                blur: true,
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                 child: switch (_stage) {
                   _Stage.intro => _intro(context),

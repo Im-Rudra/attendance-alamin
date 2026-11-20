@@ -36,18 +36,18 @@ void main() {
     final sub = g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
 
     await g.replaceAll(<ScheduledNotice>[
-      _notice(2, t0.add(const Duration(minutes: 3))),
-      _notice(1, t0.add(const Duration(minutes: 1))),
-      _notice(9, t0.subtract(const Duration(minutes: 1))),
+      _notice(2, t0.add(const Duration(seconds: 3))),
+      _notice(1, t0.add(const Duration(seconds: 1))),
+      _notice(9, t0.subtract(const Duration(seconds: 1))),
     ]);
     expect(g.ticker.pending.map((ScheduledNotice n) => n.id), <int>[1, 2]);
 
-    clock.now = t0.add(const Duration(minutes: 1));
-    await tester.pump(const Duration(minutes: 1));
+    clock.now = t0.add(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
     expect(due, <int>[1]);
 
-    clock.now = t0.add(const Duration(minutes: 3));
-    await tester.pump(const Duration(minutes: 2));
+    clock.now = t0.add(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 2));
     expect(due, <int>[1, 2]);
     expect(g.ticker.pending, isEmpty);
 
@@ -60,10 +60,10 @@ void main() {
     final WebNotificationGateway g = WebNotificationGateway(clock);
     final List<int> due = <int>[];
     final sub = g.dueNotices.listen((ScheduledNotice n) => due.add(n.id));
-    await g.replaceAll(<ScheduledNotice>[_notice(1, t0.add(const Duration(minutes: 1)))]);
+    await g.replaceAll(<ScheduledNotice>[_notice(1, t0.add(const Duration(seconds: 1)))]);
     await g.cancelAll();
-    clock.now = t0.add(const Duration(minutes: 2));
-    await tester.pump(const Duration(minutes: 2));
+    clock.now = t0.add(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
     expect(due, isEmpty);
     await sub.cancel();
     g.dispose();

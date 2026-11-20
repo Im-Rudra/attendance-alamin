@@ -21,11 +21,16 @@ class _Launcher extends StatelessWidget {
   final Future<void> Function(BuildContext context) action;
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: ElevatedButton(
-          key: const Key('launch'),
-          onPressed: () => action(context),
-          child: const Text('go'),
+  // A Scaffold so snackbars have somewhere to show.
+  Widget build(BuildContext context) => Scaffold(
+        body: Builder(
+          builder: (BuildContext inner) => Center(
+            child: ElevatedButton(
+              key: const Key('launch'),
+              onPressed: () => action(inner),
+              child: const Text('go'),
+            ),
+          ),
         ),
       );
 }
