@@ -190,13 +190,24 @@ _SIGNING_PREAMBLE = """\
 // (storeFile, storePassword, keyAlias, keyPassword) from repo secrets; without it, release
 // builds fall back to the debug key so `flutter build apk --release` still works.
 val keystorePropertiesFile = rootProject.file("key.properties")
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = Properties()
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 if (hasReleaseKeystore) {
-    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
 }
 
 """
+
+# In build.gradle.kts, a bare `java` resolves to the project's `java {}` extension,
+# so `java.util.Properties()` does not compile: import the classes at the top instead.
+_SIGNING_IMPORTS = "import java.io.FileInputStream\nimport java.util.Properties\n\n"
+_OLD_PREAMBLE_FIXES = (
+    ("val keystoreProperties = java.util.Properties()", "val keystoreProperties = Properties()"),
+    (
+        "keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }",
+        "FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }",
+    ),
+)
 
 _SIGNING_CONFIGS = """\
 signingConfigs {
@@ -229,6 +240,12 @@ def _insert_after_block_open(text: str, rel: str, block: str, line: str, done_re
 
 
 def patch_app_gradle(text: str, rel: str) -> str:
+    # 0. imports for the signing preamble (must precede `plugins {`).
+    for old, new in _OLD_PREAMBLE_FIXES:
+        text = text.replace(old, new)
+    if not re.search(r"^import java\.util\.Properties[ \t]*$", text, re.M):
+        text = _SIGNING_IMPORTS + text
+
     # 1. keystore preamble, top level, right before `android {`.
     if "val hasReleaseKeystore" not in text:
         m = _one(rel, text, r"^android\s*\{", "top-level `android {` block")
