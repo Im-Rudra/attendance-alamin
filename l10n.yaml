@@ -1,0 +1,10 @@
+# gen-l10n config (docs/council/02-architecture.md section 2).
+# lib/l10n/arb/*.arb is generated from lib/l10n/fragments/ by tool/merge_arb.py (gitignored).
+# Import the output as package:attendance_alamin/l10n/generated/app_localizations.dart
+arb-dir: lib/l10n/arb
+template-arb-file: app_bn.arb
+output-dir: lib/l10n/generated
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+required-resource-attributes: true

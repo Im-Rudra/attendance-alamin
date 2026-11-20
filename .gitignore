@@ -1,0 +1,59 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+__pycache__/
+
+# IntelliJ / VS Code (flutter create also writes .idea/ and *.iml; not committed)
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+# pubspec.lock IS committed (created by bootstrap.yml).
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+# Android Studio release builds
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Generated in CI, never committed
+lib/l10n/arb/
+lib/l10n/generated/
+**/*.g.dart
+
+# drift web assets: downloaded + checksum-verified by tool/fetch_web_assets.sh
+web/sqlite3.wasm
+web/drift_worker.js
+
+# Android signing secrets
+android/key.properties
+*.jks
+*.keystore
+
+# CI staging
+/site/

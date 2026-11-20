@@ -1,0 +1,305 @@
+name: CI
+
+# Every push and PR. workflow_dispatch is required too: pushes made with GITHUB_TOKEN
+# (bootstrap.yml, commit-generated.yml) never trigger `push` runs.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+
+jobs:
+  # Before bootstrap.yml has committed android/ windows/ web/ .metadata, every job is skipped
+  # (green run with a notice) instead of failing.
+  gate:
+    name: gate (bootstrapped?)
+    runs-on: ubuntu-latest
+    outputs:
+      bootstrapped: ${{ steps.probe.outputs.bootstrapped }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: probe
+        name: Look for platform folders
+        run: |
+          if [ -f .metadata ] && [ -d android ] && [ -d windows ] && [ -d web ]; then
+            echo "bootstrapped=true" >> "$GITHUB_OUTPUT"
+            echo "Platform folders present."
+          else
+            echo "bootstrapped=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Not bootstrapped yet::android/, windows/, web/ or .metadata is missing, so all CI jobs are skipped. Dispatch bootstrap.yml on main (it dispatches CI when done)."
+          fi
+
+  fast:
+    name: fast (core + domain unit tests)
+    needs: gate
+    if: needs.gate.outputs.bootstrapped == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Prepare (no build_runner)
+        run: bash tool/ci_prepare.sh --no-codegen
+      - name: Domain purity
+        run: bash tool/check_domain_purity.sh
+      - name: Unit tests (test/core, test/domain)
+        run: |
+          dirs=()
+          for d in test/core test/domain; do [ -d "$d" ] && dirs+=("$d"); done
+          if [ "${#dirs[@]}" -eq 0 ]; then
+            echo "::notice title=fast::No test/core or test/domain yet (arrives in M1)."
+            exit 0
+          fi
+          flutter test "${dirs[@]}"
+
+  check:
+    name: check (analyze + test)
+    needs: gate
+    if: needs.gate.outputs.bootstrapped == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Flutter version
+        run: flutter --version
+      - id: prepare
+        name: Prepare (merge ARB, pub get, gen-l10n, build_runner)
+        run: bash tool/ci_prepare.sh
+      - name: Domain purity
+        run: bash tool/check_domain_purity.sh
+      - name: Font checksums
+        run: sha256sum -c tool/fonts.sha256
+      - name: Platform patches are applied (apply.py --verify)
+        run: python3 tool/platform_patches/apply.py --verify
+      - name: Schema dump vs committed
+        run: bash tool/check_schema_dump.sh
+      - name: dart format (report only, not enforced)
+        continue-on-error: true
+        run: dart format --output=none lib test
+      - name: flutter analyze
+        run: flutter analyze --no-fatal-infos
+      - name: flutter test
+        run: flutter test --coverage --exclude-tags screenshot
+      - name: Upload generated sources
+        if: always() && steps.prepare.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-sources
+          path: |
+            lib/**/*.g.dart
+            lib/l10n/generated/
+            lib/l10n/arb/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  screens:
+    name: screens (golden matrix, non-blocking)
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true   # non-blocking until M9 (plan section 4)
+    steps:
+      - uses: actions/checkout@v7
+      - id: probe
+        name: Any screenshot-tagged tests?
+        run: |
+          if grep -rqE '(@Tags\(|tags:).*screenshot' test 2>/dev/null; then
+            echo "has=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=screens::No screenshot-tagged tests yet (arrive in M5)."
+          fi
+      - uses: subosito/flutter-action@v2
+        if: steps.probe.outputs.has == 'true'
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Prepare
+        if: steps.probe.outputs.has == 'true'
+        run: bash tool/ci_prepare.sh
+      - name: Render screenshots
+        if: steps.probe.outputs.has == 'true'
+        run: flutter test --tags screenshot --update-goldens
+      - name: Upload screens
+        if: always() && steps.probe.outputs.has == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-${{ github.sha }}
+          path: |
+            test/**/goldens/**
+            test/**/failures/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  web:
+    name: web build
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Prepare
+        run: bash tool/ci_prepare.sh
+      - name: Fetch drift web assets (sqlite3.wasm, drift_worker.js)
+        run: bash tool/fetch_web_assets.sh
+      - name: Build web
+        run: >
+          flutter build web --release --no-web-resources-cdn
+          --base-href /attendance-alamin/
+          --build-number=${{ github.run_number }}
+      - name: Stage site (404 fallback for deep links)
+        run: |
+          cp build/web/index.html build/web/404.html
+          rm -rf site
+          mkdir -p site
+          cp -r build/web site/attendance-alamin
+          # View locally: unzip the artifact, run from the unzip root:
+          #   python -c "import http.server as h; h.SimpleHTTPRequestHandler.extensions_map['.wasm']='application/wasm'; h.test(h.SimpleHTTPRequestHandler, port=8080)"
+          # then open http://localhost:8080/attendance-alamin/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-${{ github.sha }}
+          path: site/
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    name: android apk
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Android SDK platform 37 (compileSdk 37, Arch 4B)
+        run: |
+          set +o pipefail   # `yes` dies of SIGPIPE when sdkmanager exits
+          SDKM="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          if [ -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/platforms/android-37" ]; then
+            echo "platforms;android-37 already installed"
+          elif yes | "$SDKM" --install "platforms;android-37" > /dev/null; then
+            echo "Installed platforms;android-37"
+          else
+            echo "::warning title=Android SDK::sdkmanager could not install platforms;android-37; Gradle will try to auto-download it."
+          fi
+          yes | "$SDKM" --licenses > /dev/null || true
+      - name: Prepare
+        run: bash tool/ci_prepare.sh
+      - id: signing
+        name: Release keystore (optional)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            umask 077
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/upload.jks
+            # android/app/build.gradle.kts (apply.py) reads these keys; storeFile is relative to android/app/.
+            {
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyPassword=$KEY_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "storeFile=upload.jks"
+            } > android/key.properties
+            echo "label=signed" >> "$GITHUB_OUTPUT"
+            echo "Release keystore configured."
+          else
+            echo "label=UNSIGNED-DEBUGKEY" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Android signing::No keystore secrets; APK is signed with this runner's DEBUG key. Never give it to the teacher (run keystore.yml first)."
+          fi
+      - name: Build APK
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/app/upload.jks android/key.properties
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-apk-${{ steps.signing.outputs.label }}-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: windows zip
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Keep LF line endings so bash can run tool/*.sh on the Windows runner.
+      - name: Disable CRLF conversion
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Prepare
+        run: bash tool/ci_prepare.sh
+      - name: Build Windows
+        run: flutter build windows --release --build-number=${{ github.run_number }}
+      - name: Bundle VC++ runtime DLLs
+        shell: pwsh
+        run: |
+          $dest = "build\windows\x64\runner\Release"
+          foreach ($dll in @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")) {
+            Copy-Item -Path (Join-Path $env:WINDIR "System32\$dll") -Destination $dest -Force
+          }
+          Get-ChildItem $dest
+      - id: zip
+        name: Zip
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*([0-9.]+)').Matches[0].Groups[1].Value
+          $name = "attendance-alamin-windows-$ver+${{ github.run_number }}.zip"
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $name -Force
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-${{ github.run_number }}
+          path: ${{ steps.zip.outputs.name }}
+          if-no-files-found: error
+          retention-days: 14

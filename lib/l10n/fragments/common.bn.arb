@@ -1,0 +1,17 @@
+{
+  "@@locale": "bn",
+  "commonAppTitle": "হাজিরা খাতা",
+  "@commonAppTitle": {
+    "description": "App display name, shown in the title bar, task switcher and app bar. Must equal kAppDisplayNameBn in lib/app/app_info.dart."
+  },
+  "commonHello": "{appName}-এ স্বাগতম",
+  "@commonHello": {
+    "description": "Bootstrap greeting on the hello screen. appName is the already-localized app title.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "example": "হাজিরা খাতা"
+      }
+    }
+  }
+}
