@@ -1,18 +1,391 @@
-// SearchScreen: STUB by M5-A (plan section 0). The body belongs to M8-B (search);
-// keep the constructor signature (routes are frozen).
+// SearchScreen (UX 3 "Search"): full-screen global find reached from the top
+// bar, Ctrl+F or Ctrl+K. Results appear as you type, grouped into students and
+// batches; the filter is pure in-memory work over the repository streams.
+// Phones: one list. Wide windows: results list || preview pane (the preview
+// always shows something, never a blank area). Tap/Enter opens the profile or
+// batch; the query is remembered in the recent list (LocalMeta search_recent).
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/shell/stub_screen.dart';
+import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/pane_split.dart';
+import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/features/search/controllers/search_engine.dart';
+import 'package:attendance_alamin/features/search/controllers/search_providers.dart';
+import 'package:attendance_alamin/features/search/widgets/search_tiles.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => StubScreen(
-        name: context.l10n.commonSearch,
-        icon: Icons.search,
-        fullScreen: true,
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final TextEditingController _text = TextEditingController();
+  final FocusNode _focus = FocusNode();
+
+  /// `s:<studentId>` or `b:<batchId>`; null = follow the first result.
+  String? _selected;
+
+  SearchIndex? _cachedIndex;
+  String _cachedQuery = '';
+  SearchResults _cachedResults = const SearchResults();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  SearchResults _results(SearchIndex index) {
+    final String q = _text.text;
+    if (!identical(index, _cachedIndex) || q != _cachedQuery) {
+      _cachedIndex = index;
+      _cachedQuery = q;
+      _cachedResults = runSearch(index, q);
+    }
+    return _cachedResults;
+  }
+
+  static List<String> _keys(SearchResults r) => <String>[
+        for (final StudentEntry e in r.students) 's:${e.id}',
+        for (final BatchEntry e in r.batches) 'b:${e.id}',
+      ];
+
+  String? _effective(SearchResults r) {
+    final List<String> keys = _keys(r);
+    if (keys.isEmpty) return null;
+    return keys.contains(_selected) ? _selected : keys.first;
+  }
+
+  void _move(SearchResults r, int delta) {
+    final List<String> keys = _keys(r);
+    if (keys.isEmpty) return;
+    final int i = keys.indexOf(_effective(r)!);
+    setState(() => _selected = keys[(i + delta).clamp(0, keys.length - 1)]);
+  }
+
+  void _setQuery(String q) {
+    _text.value = TextEditingValue(
+      text: q,
+      selection: TextSelection.collapsed(offset: q.length),
+    );
+    setState(() => _selected = null);
+    _focus.requestFocus();
+  }
+
+  void _close() {
+    final GoRouter? router = GoRouter.maybeOf(context);
+    if (router == null) return;
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go(Routes.today);
+    }
+  }
+
+  void _open(String key) {
+    final String q = _text.text.trim();
+    if (q.isNotEmpty) ref.read(recentSearchesProvider.notifier).add(q);
+    final String id = key.substring(2);
+    final String path = key.startsWith('s:') ? Routes.student(id) : Routes.batch(id);
+    GoRouter.maybeOf(context)?.go(path);
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event, SearchResults r) {
+    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      _move(r, 1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _move(r, -1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_text.text.isNotEmpty) {
+        _setQuery('');
+      } else {
+        _close();
+      }
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final WindowClass wc = WindowClass.of(context);
+    final bool wide = wc.isWide;
+    final double g = wc.gutter;
+    final AsyncValue<SearchIndex> async = ref.watch(searchIndexProvider);
+    final List<String> recent = ref.watch(recentSearchesProvider);
+
+    final SearchIndex? index = async.value;
+    final SearchResults results =
+        index == null ? const SearchResults() : _results(index);
+    final String? effective = _effective(results);
+    final bool hasQuery = _text.text.trim().isNotEmpty;
+
+    final Widget field = Focus(
+      onKeyEvent: (FocusNode n, KeyEvent e) => _onKey(n, e, results),
+      child: TextField(
+        key: const ValueKey<String>('search-field'),
+        controller: _text,
+        focusNode: _focus,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        onChanged: (String _) => setState(() => _selected = null),
+        onSubmitted: (String _) {
+          final String? key = wide ? effective : _keys(results).firstOrNull;
+          if (key != null) {
+            _open(key);
+          } else if (_text.text.trim().isNotEmpty) {
+            ref.read(recentSearchesProvider.notifier).add(_text.text);
+          }
+        },
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.search),
+          hintText: l10n.searchHint,
+          suffixIcon: _text.text.isEmpty
+              ? null
+              : IconButton(
+                  key: const ValueKey<String>('search-clear'),
+                  tooltip: l10n.searchClearField,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => _setQuery(''),
+                ),
+        ),
+      ),
+    );
+
+    Widget listPane;
+    if (async.hasError && index == null) {
+      listPane = EmptyState(
+          icon: Icons.error_outline, message: l10n.searchLoadFailed);
+    } else if (index == null) {
+      listPane = const Center(child: CircularProgressIndicator());
+    } else if (!hasQuery) {
+      listPane = recent.isEmpty
+          ? const _StartState()
+          : _RecentList(
+              recent: recent,
+              onPick: _setQuery,
+              onClear: () => ref.read(recentSearchesProvider.notifier).clear(),
+            );
+    } else if (results.isEmpty) {
+      listPane = EmptyState(
+        icon: Icons.person_search_outlined,
+        message: l10n.searchNoResult(_text.text.trim()),
+        actionLabel: l10n.searchAddStudent,
+        onAction: () => GoRouter.maybeOf(context)?.push(Routes.studentNew),
       );
+    } else {
+      listPane = _ResultList(
+        results: results,
+        query: _text.text,
+        selected: wide ? effective : null,
+        onTap: (String key) {
+          if (wide) {
+            setState(() => _selected = key);
+          } else {
+            _open(key);
+          }
+        },
+      );
+    }
+
+    Widget preview;
+    if (effective == null) {
+      preview = GlassCard(
+        dense: true,
+        padding: EdgeInsets.zero,
+        child: EmptyState(
+          icon: Icons.manage_search,
+          message: hasQuery && index != null
+              ? l10n.searchPreviewHint
+              : l10n.searchPreviewTyping,
+        ),
+      );
+    } else {
+      final String id = effective.substring(2);
+      StudentEntry? s;
+      BatchEntry? b;
+      if (effective.startsWith('s:')) {
+        s = results.students.firstWhere((StudentEntry e) => e.id == id);
+      } else {
+        b = results.batches.firstWhere((BatchEntry e) => e.id == id);
+      }
+      preview = SearchPreview(
+        key: ValueKey<String>('search-preview-$effective'),
+        student: s,
+        batch: b,
+        onOpen: () => _open(effective),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: l10n.commonClose,
+          icon: const Icon(Icons.close),
+          onPressed: _close,
+        ),
+        titleSpacing: 0,
+        title: field,
+        actions: const <Widget>[SizedBox(width: 12)],
+      ),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(g, 8, g, g),
+          child: wide
+              ? PaneSplit(
+                  screen: 'search',
+                  list: listPane,
+                  detail: preview,
+                  preferList: true,
+                  listMax: 520,
+                  detailMax: 900,
+                )
+              : listPane,
+        ),
+      ),
+    );
+  }
+}
+
+class _StartState extends StatelessWidget {
+  const _StartState();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return GlassCard(
+      dense: true,
+      padding: EdgeInsets.zero,
+      child: EmptyState(
+        icon: Icons.search,
+        message: '${l10n.searchStartTitle}\n${l10n.searchStartHelp}',
+      ),
+    );
+  }
+}
+
+class _RecentList extends StatelessWidget {
+  const _RecentList({
+    required this.recent,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final List<String> recent;
+  final ValueChanged<String> onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final tokens = context.aurora;
+    return GlassCard(
+      dense: true,
+      padding: EdgeInsets.zero,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 16),
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+            child: SectionHeader(
+              title: l10n.searchRecentTitle,
+              trailing: TextButton(
+                key: const ValueKey<String>('search-clear-recent'),
+                onPressed: onClear,
+                child: Text(l10n.searchClearRecent),
+              ),
+            ),
+          ),
+          for (final String r in recent)
+            ListTile(
+              key: ValueKey<String>('search-recent-$r'),
+              minVerticalPadding: 12,
+              leading: Icon(Icons.history, color: tokens.textSecondary),
+              title: Text(r, maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: Icon(Icons.north_west, size: 18, color: tokens.textSecondary),
+              onTap: () => onPick(r),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultList extends StatelessWidget {
+  const _ResultList({
+    required this.results,
+    required this.query,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SearchResults results;
+  final String query;
+  final String? selected;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final tokens = context.aurora;
+    final TextTheme tt = Theme.of(context).textTheme;
+
+    Widget header(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Semantics(
+            header: true,
+            child: Text(text,
+                style: tt.labelLarge?.copyWith(color: tokens.accent)),
+          ),
+        );
+
+    final List<Widget> children = <Widget>[
+      if (results.students.isNotEmpty) ...<Widget>[
+        header(l10n.searchGroupStudents),
+        for (final StudentEntry e in results.students)
+          SearchStudentTile(
+            key: ValueKey<String>('search-student-${e.id}'),
+            entry: e,
+            query: query,
+            selected: selected == 's:${e.id}',
+            onTap: () => onTap('s:${e.id}'),
+          ),
+      ],
+      if (results.batches.isNotEmpty) ...<Widget>[
+        header(l10n.searchGroupBatches),
+        for (final BatchEntry e in results.batches)
+          SearchBatchTile(
+            key: ValueKey<String>('search-batch-${e.id}'),
+            entry: e,
+            selected: selected == 'b:${e.id}',
+            onTap: () => onTap('b:${e.id}'),
+          ),
+      ],
+    ];
+    return GlassCard(
+      dense: true,
+      padding: EdgeInsets.zero,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 16),
+        children: children,
+      ),
+    );
+  }
 }
