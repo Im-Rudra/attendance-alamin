@@ -4,6 +4,7 @@ name: CI
 # (bootstrap.yml, commit-generated.yml) never trigger `push` runs.
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
