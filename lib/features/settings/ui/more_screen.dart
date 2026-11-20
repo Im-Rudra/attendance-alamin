@@ -67,14 +67,17 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
   Widget _list(BuildContext context, double g) {
     final l10n = context.l10n;
-    return ListView(
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(g, 4, g, g),
-      children: <Widget>[
-        for (final SettingsGroup group in SettingsGroup.values) ...<Widget>[
-          SettingsHeader(group.title(l10n)),
-          SettingsGroupBody(group: group),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final SettingsGroup group in SettingsGroup.values) ...<Widget>[
+            SettingsHeader(group.title(l10n)),
+            SettingsGroupBody(group: group),
+          ],
         ],
-      ],
+      ),
     );
   }
 

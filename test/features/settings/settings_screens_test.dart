@@ -208,6 +208,7 @@ void main() {
       await pumpApp(tester, const PaymentMethodsScreen(), overrides: _overrides(fakes));
       await tester.ensureVisible(find.byKey(const Key('pm-add-field')));
       await tester.enterText(find.byKey(const Key('pm-add-field')), '  Upay ');
+      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       await tester.pump();
@@ -222,21 +223,25 @@ void main() {
       await pumpApp(tester, const PaymentMethodsScreen(), overrides: _overrides(fakes));
       await tester.ensureVisible(find.byKey(const Key('pm-add-field')));
 
+      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       expect(find.text(_bn.setPmErrEmpty), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('pm-add-field')), 'a' * 25);
+      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       expect(find.text(_bn.setPmErrLong('২০')), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('pm-add-field')), 'UPAY');
+      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       expect(find.text(_bn.setPmErrDuplicate), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('pm-add-field')), _bn.setPmCash);
+      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       expect(find.text(_bn.setPmErrDuplicate), findsOneWidget);

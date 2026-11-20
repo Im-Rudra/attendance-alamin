@@ -166,9 +166,12 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                 ),
               );
             }
-            return ListView(
+            return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(g, 4, g, g),
-              children: <Widget>[editor, const SizedBox(height: 12), preview],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[editor, const SizedBox(height: 12), preview],
+              ),
             );
           },
         ),
