@@ -221,9 +221,9 @@ void main() {
         encodedSettings: <String, Object?>{'payment_methods': '{"hidden":[],"custom":["Upay"]}'},
       );
       await pumpApp(tester, const PaymentMethodsScreen(), overrides: _overrides(fakes));
-      await tester.ensureVisible(find.byKey(const Key('pm-add-field')));
+      await tester.drag(find.byType(ListView), const Offset(0, -2000));
+      await tester.pump();
 
-      await tester.ensureVisible(find.byKey(const Key('pm-add-button')));
       await tester.tap(find.byKey(const Key('pm-add-button')));
       await tester.pump();
       expect(find.text(_bn.setPmErrEmpty), findsOneWidget);
