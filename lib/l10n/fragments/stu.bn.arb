@@ -1,0 +1,561 @@
+{
+  "@@locale": "bn",
+  "stuAddTitle": "শিক্ষার্থী যোগ করুন",
+  "@stuAddTitle": {
+    "description": "Title of the add-student sheet."
+  },
+  "stuSearchFirstHint": "নাম বা ফোন লিখুন",
+  "@stuSearchFirstHint": {
+    "description": "Search-first field label in the add-student sheet."
+  },
+  "stuAddSearchHelp": "আগে থেকে থাকলে নামটি এখানে দেখা যাবে। তখন নতুন করে না খুলে তাকেই যোগ করুন।",
+  "@stuAddSearchHelp": {
+    "description": "Help text under the empty search field of the add-student sheet."
+  },
+  "stuAddToThisBatch": "এই ব্যাচে যোগ করুন",
+  "@stuAddToThisBatch": {
+    "description": "Button on an existing student found by the search."
+  },
+  "stuAlreadyInBatch": "এই ব্যাচে আছে",
+  "@stuAlreadyInBatch": {
+    "description": "Shown instead of the add button when the student is already enrolled."
+  },
+  "stuNewStudentNamed": "নতুন শিক্ষার্থী: ‘{name}’",
+  "@stuNewStudentNamed": {
+    "description": "Button that starts creating a new student from the typed text.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuNewStudent": "নতুন শিক্ষার্থী",
+  "@stuNewStudent": {
+    "description": "New-student button and section title."
+  },
+  "stuSave": "সেভ করুন",
+  "@stuSave": {
+    "description": "Primary save button of the student forms."
+  },
+  "stuSaved": "{name} সেভ হয়েছে",
+  "@stuSaved": {
+    "description": "Snackbar after saving a student.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuAddedToBatch": "{name}-কে ব্যাচে যোগ করা হয়েছে",
+  "@stuAddedToBatch": {
+    "description": "Snackbar after an existing student was reused by the duplicate guard.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuFieldName": "নাম",
+  "@stuFieldName": {
+    "description": "Student name field."
+  },
+  "stuFieldGuardianPhone": "অভিভাবকের ফোন",
+  "@stuFieldGuardianPhone": {
+    "description": "Guardian phone field."
+  },
+  "stuFieldStudentPhone": "শিক্ষার্থীর ফোন",
+  "@stuFieldStudentPhone": {
+    "description": "Student phone field."
+  },
+  "stuFieldGuardianName": "অভিভাবকের নাম",
+  "@stuFieldGuardianName": {
+    "description": "Guardian name field."
+  },
+  "stuFieldRoll": "রোল / আইডি",
+  "@stuFieldRoll": {
+    "description": "Roll number field."
+  },
+  "stuFieldAdmissionDate": "ভর্তির তারিখ",
+  "@stuFieldAdmissionDate": {
+    "description": "Admission date field."
+  },
+  "stuMoreInfo": "আরও তথ্য",
+  "@stuMoreInfo": {
+    "description": "Expander for the optional student fields."
+  },
+  "stuPhotoAdd": "ছবি দিন",
+  "@stuPhotoAdd": {
+    "description": "Photo button when there is no photo."
+  },
+  "stuPhotoChange": "ছবি বদলান",
+  "@stuPhotoChange": {
+    "description": "Photo button when a photo exists."
+  },
+  "stuPhotoRemove": "ছবি সরান",
+  "@stuPhotoRemove": {
+    "description": "Removes the student photo."
+  },
+  "stuPhotoFailed": "ছবিটি নেওয়া গেল না। আবার চেষ্টা করুন।",
+  "@stuPhotoFailed": {
+    "description": "Snackbar when the image picker fails."
+  },
+  "stuBillingStart": "বেতন শুরু",
+  "@stuBillingStart": {
+    "description": "First billable month field."
+  },
+  "stuBillingStartHint": "মাসের {day} তারিখ পর্যন্ত ভর্তি হলে সেই মাস থেকে, তার পরে হলে পরের মাস থেকে বেতন ধরা হয়। বদলাতে পারেন।",
+  "@stuBillingStartHint": {
+    "description": "Hint under the first billable month. day is the cutoff day, pre-formatted.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "১৫"
+      }
+    }
+  },
+  "stuFeeOverride": "আলাদা মাসিক ফি (ঐচ্ছিক)",
+  "@stuFeeOverride": {
+    "description": "Fee override field."
+  },
+  "stuFeeOverrideHint": "ফাঁকা রাখলে ব্যাচের ফি ধরা হবে",
+  "@stuFeeOverrideHint": {
+    "description": "Helper text of the fee override field."
+  },
+  "stuEnrollSection": "ব্যাচে ভর্তি (ঐচ্ছিক)",
+  "@stuEnrollSection": {
+    "description": "Section title on the new-student form."
+  },
+  "stuBatchOptional": "ব্যাচ",
+  "@stuBatchOptional": {
+    "description": "Batch dropdown label on the new-student form."
+  },
+  "stuNoBatch": "এখনই কোনো ব্যাচে নয়",
+  "@stuNoBatch": {
+    "description": "Dropdown choice meaning no batch."
+  },
+  "stuDuplicateTitle": "এই নম্বর আগে থেকে আছে",
+  "@stuDuplicateTitle": {
+    "description": "Duplicate guard dialog title."
+  },
+  "stuDuplicateBody": "এই নম্বরে আগে থেকে ‘{name}’ আছে। তাকেই এই ব্যাচে যোগ করবেন?",
+  "@stuDuplicateBody": {
+    "description": "Duplicate guard dialog body.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব হাসান"
+      }
+    }
+  },
+  "stuDuplicateUse": "হ্যাঁ, তাকেই যোগ করুন",
+  "@stuDuplicateUse": {
+    "description": "Use the existing student."
+  },
+  "stuDuplicateOpen": "হ্যাঁ, তার প্রোফাইল খুলুন",
+  "@stuDuplicateOpen": {
+    "description": "Use the existing student when no batch was chosen."
+  },
+  "stuDuplicateNew": "না, নতুন শিক্ষার্থী",
+  "@stuDuplicateNew": {
+    "description": "Create a new student anyway."
+  },
+  "stuEnrollTitle": "অন্য ব্যাচে ভর্তি",
+  "@stuEnrollTitle": {
+    "description": "Title of the enrol sheet and menu item."
+  },
+  "stuEnrollOther": "অন্য ব্যাচে ভর্তি",
+  "@stuEnrollOther": {
+    "description": "Button and menu item on the profile."
+  },
+  "stuEnrollConfirm": "যোগ করুন",
+  "@stuEnrollConfirm": {
+    "description": "Confirm button of the enrol sheet."
+  },
+  "stuBatchesOther": "অন্যান্য",
+  "@stuBatchesOther": {
+    "description": "Group title for batches without a subject."
+  },
+  "stuNoBatchesToJoin": "ভর্তি করার মতো কোনো ব্যাচ নেই। আগে একটি ব্যাচ তৈরি করুন।",
+  "@stuNoBatchesToJoin": {
+    "description": "Empty state of the enrol sheet."
+  },
+  "stuPickBatchFirst": "আগে একটি ব্যাচ বেছে নিন",
+  "@stuPickBatchFirst": {
+    "description": "Reason shown while the enrol button is disabled."
+  },
+  "stuSearchHint": "নাম, রোল বা ফোন দিয়ে খুঁজুন",
+  "@stuSearchHint": {
+    "description": "Search field of the students list."
+  },
+  "stuFilterBatch": "ব্যাচ",
+  "@stuFilterBatch": {
+    "description": "Batch filter chip."
+  },
+  "stuFilterDues": "বকেয়া আছে",
+  "@stuFilterDues": {
+    "description": "Filter chip for students with dues."
+  },
+  "stuFilterLeft": "চলে গেছে",
+  "@stuFilterLeft": {
+    "description": "Filter chip for students who left."
+  },
+  "stuEmptyAll": "এখনো কোনো শিক্ষার্থী নেই। প্রথম শিক্ষার্থী যোগ করুন।",
+  "@stuEmptyAll": {
+    "description": "Empty students list."
+  },
+  "stuNoMatch": "কেউ পাওয়া যায়নি ‘{query}’ — নতুন শিক্ষার্থী হিসেবে যোগ করবেন?",
+  "@stuNoMatch": {
+    "description": "Empty search result.",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuNoMatchFilters": "এই ফিল্টারে কেউ নেই",
+  "@stuNoMatchFilters": {
+    "description": "Empty filtered list."
+  },
+  "stuColRoll": "রোল",
+  "@stuColRoll": {
+    "description": "Table column."
+  },
+  "stuColName": "নাম",
+  "@stuColName": {
+    "description": "Table column."
+  },
+  "stuColBatch": "ব্যাচ",
+  "@stuColBatch": {
+    "description": "Table column."
+  },
+  "stuColGuardianPhone": "অভিভাবকের ফোন",
+  "@stuColGuardianPhone": {
+    "description": "Table column."
+  },
+  "stuColAttendance": "হাজিরা %",
+  "@stuColAttendance": {
+    "description": "Table column."
+  },
+  "stuColDues": "বকেয়া",
+  "@stuColDues": {
+    "description": "Table column."
+  },
+  "stuColLastPayment": "শেষ পেমেন্ট",
+  "@stuColLastPayment": {
+    "description": "Table column."
+  },
+  "stuDuesGrey": "বাকি {amount}",
+  "@stuDuesGrey": {
+    "description": "Grey outstanding amount of a student who left. amount is money.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳২,০০০"
+      }
+    }
+  },
+  "stuStatusLeft": "ছেড়ে গেছে",
+  "@stuStatusLeft": {
+    "description": "Status of a student who left."
+  },
+  "stuLeftOn": "{date}-এ ছেড়ে গেছে",
+  "@stuLeftOn": {
+    "description": "Status line with the leave date.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "৫ নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuMenuOpen": "প্রোফাইল খুলুন",
+  "@stuMenuOpen": {
+    "description": "Context menu item."
+  },
+  "stuMenuLeft": "চলে গেছে",
+  "@stuMenuLeft": {
+    "description": "Context menu / profile menu item."
+  },
+  "stuCollect": "টাকা নিন",
+  "@stuCollect": {
+    "description": "Collect payment button."
+  },
+  "stuStatActive": "সক্রিয়",
+  "@stuStatActive": {
+    "description": "Overview tile label."
+  },
+  "stuStatNew": "এই মাসে নতুন",
+  "@stuStatNew": {
+    "description": "Overview tile label."
+  },
+  "stuStatLeft": "চলে গেছে",
+  "@stuStatLeft": {
+    "description": "Overview tile label."
+  },
+  "stuTopDues": "সবচেয়ে বেশি বকেয়া",
+  "@stuTopDues": {
+    "description": "Overview section title."
+  },
+  "stuNoOneOwes": "কারও বকেয়া নেই ✓",
+  "@stuNoOneOwes": {
+    "description": "Overview empty state."
+  },
+  "stuNotFound": "শিক্ষার্থী পাওয়া যায়নি",
+  "@stuNotFound": {
+    "description": "Profile of a missing student."
+  },
+  "stuRoleGuardian": "অভিভাবক",
+  "@stuRoleGuardian": {
+    "description": "Role word on the call buttons."
+  },
+  "stuRoleStudent": "শিক্ষার্থী",
+  "@stuRoleStudent": {
+    "description": "Role word on the call buttons."
+  },
+  "stuContactButton": "{role} · {action}",
+  "@stuContactButton": {
+    "description": "Call button text. role = guardian or student, action = call or copy number.",
+    "placeholders": {
+      "role": {
+        "type": "String",
+        "example": "অভিভাবক"
+      },
+      "action": {
+        "type": "String",
+        "example": "কল"
+      }
+    }
+  },
+  "stuAddPhone": "ফোন নম্বর যোগ করুন",
+  "@stuAddPhone": {
+    "description": "Button when the student has no phone."
+  },
+  "stuRemind": "মনে করান",
+  "@stuRemind": {
+    "description": "Send a dues reminder."
+  },
+  "stuRollLine": "রোল {roll}",
+  "@stuRollLine": {
+    "description": "Roll line on the profile.",
+    "placeholders": {
+      "roll": {
+        "type": "String",
+        "example": "০৫"
+      }
+    }
+  },
+  "stuGuardianLine": "অভিভাবক: {name}",
+  "@stuGuardianLine": {
+    "description": "Guardian line on the profile.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "আব্দুল করিম"
+      }
+    }
+  },
+  "stuAdmittedOn": "ভর্তি: {date}",
+  "@stuAdmittedOn": {
+    "description": "Admission line on the profile.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "৫ সেপ্টেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuTotalOutstanding": "মোট বকেয়া",
+  "@stuTotalOutstanding": {
+    "description": "Combined dues of all batches."
+  },
+  "stuOutstanding": "বাকি {amount}",
+  "@stuOutstanding": {
+    "description": "Outstanding amount of one enrollment.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳১,০০০"
+      }
+    }
+  },
+  "stuMonthlyFee": "মাসিক ফি {amount}",
+  "@stuMonthlyFee": {
+    "description": "Fee line of an enrollment card.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳১,০০০"
+      }
+    }
+  },
+  "stuFeeNotSet": "ফি দেওয়া নেই",
+  "@stuFeeNotSet": {
+    "description": "Fee line when the batch has no fee."
+  },
+  "stuBillingStartLine": "বেতন শুরু: {month}",
+  "@stuBillingStartLine": {
+    "description": "First billable month on an enrollment card.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuChangeBillingStart": "বেতন শুরুর মাস বদলান",
+  "@stuChangeBillingStart": {
+    "description": "Menu item and dialog title."
+  },
+  "stuEnrollmentEnded": "{date}-এ সরেছে · {month} পর্যন্ত বেতন ধরা",
+  "@stuEnrollmentEnded": {
+    "description": "Ended enrollment line.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "৫ নভেম্বর ২০২৬"
+      },
+      "month": {
+        "type": "String",
+        "example": "অক্টোবর ২০২৬"
+      }
+    }
+  },
+  "stuNoEnrollments": "কোনো ব্যাচে ভর্তি নেই",
+  "@stuNoEnrollments": {
+    "description": "Profile without enrollments."
+  },
+  "stuPaymentHistory": "পেমেন্টের ইতিহাস",
+  "@stuPaymentHistory": {
+    "description": "Section title on the profile."
+  },
+  "stuRejoin": "আবার ভর্তি করুন",
+  "@stuRejoin": {
+    "description": "Rejoin button and menu item."
+  },
+  "stuRejoined": "{name} আবার ভর্তি হয়েছে",
+  "@stuRejoined": {
+    "description": "Snackbar after rejoining.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuRejoinTitle": "আবার ভর্তি",
+  "@stuRejoinTitle": {
+    "description": "Rejoin gap dialog title."
+  },
+  "stuRejoinGapBody": "মাঝের {count} মাস মাফ করবেন?",
+  "@stuRejoinGapBody": {
+    "description": "Rejoin gap question.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২"
+      }
+    }
+  },
+  "stuRejoinWaive": "হ্যাঁ, মাফ করুন",
+  "@stuRejoinWaive": {
+    "description": "Waive the gap months."
+  },
+  "stuRejoinKeepDues": "না, বকেয়া থাকবে",
+  "@stuRejoinKeepDues": {
+    "description": "Keep the gap months owed."
+  },
+  "stuDeleteTitle": "‘{name}’ মুছে ফেলবেন?",
+  "@stuDeleteTitle": {
+    "description": "Delete student dialog title.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuDeleteBody": "{attendance}টি হাজিরা ও {payments}টি পেমেন্ট সহ মুছে যাবে। ইতিহাস রাখতে চাইলে ‘চলে গেছে’ দিন।",
+  "@stuDeleteBody": {
+    "description": "Delete student dialog body with the impact counts.",
+    "placeholders": {
+      "attendance": {
+        "type": "String",
+        "example": "১২০"
+      },
+      "payments": {
+        "type": "String",
+        "example": "৩০"
+      }
+    }
+  },
+  "stuLeftTitle": "কোচিং ছেড়ে গেছে",
+  "@stuLeftTitle": {
+    "description": "Mark-left dialog title."
+  },
+  "stuLeftBody": "{name} কি কোচিং ছেড়ে দিয়েছে? তার পুরোনো হিসাব থেকে যাবে।",
+  "@stuLeftBody": {
+    "description": "Mark-left dialog body.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuLeftDate": "ছাড়ার তারিখ",
+  "@stuLeftDate": {
+    "description": "Date field of the mark-left dialog."
+  },
+  "stuLastBillable": "শেষ বেতনের মাস",
+  "@stuLastBillable": {
+    "description": "Last billable month field."
+  },
+  "stuLastBillableHint": "{month} পর্যন্ত বেতন ধরা হবে; তার পরের মাস আর বাকি দেখাবে না।",
+  "@stuLastBillableHint": {
+    "description": "Hint under the last billable month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "অক্টোবর ২০২৬"
+      }
+    }
+  },
+  "stuLeftNoOpenBatches": "কোনো চালু ব্যাচ নেই, শুধু অবস্থা বদলাবে।",
+  "@stuLeftNoOpenBatches": {
+    "description": "Mark-left dialog without open enrollments."
+  },
+  "stuLeftConfirm": "ছেড়ে গেছে",
+  "@stuLeftConfirm": {
+    "description": "Confirm button of the mark-left dialog."
+  },
+  "stuRemoveFromBatchTitle": "এই ব্যাচ ছাড়ুন",
+  "@stuRemoveFromBatchTitle": {
+    "description": "Menu item and dialog title."
+  },
+  "stuRemoveFromBatchBody": "{name} কি {batch} ছেড়ে দিয়েছে? অন্য ব্যাচে সে থাকবে।",
+  "@stuRemoveFromBatchBody": {
+    "description": "Remove-from-batch dialog body.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      },
+      "batch": {
+        "type": "String",
+        "example": "ফিজিক্স এ"
+      }
+    }
+  },
+  "stuRemoveConfirm": "ব্যাচ ছাড়ুন",
+  "@stuRemoveConfirm": {
+    "description": "Confirm button of the remove-from-batch dialog."
+  },
+  "stuLeftEmpty": "ছেড়ে যাওয়া কোনো শিক্ষার্থী নেই",
+  "@stuLeftEmpty": {
+    "description": "Empty list of students who left."
+  }
+}
