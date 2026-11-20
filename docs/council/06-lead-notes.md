@@ -18,6 +18,13 @@ Builders of later modules must follow these (they are not all in 04-plan.md).
 - Use `AttendanceStats.tallyWithin(..., from: joinDate, to: endDate)` so the denominator is bounded by enrollment dates.
 - Fire time ≤ now is skipped; default lead 0 and negative leads mean off.
 
+## From M3-A (drift database, #7)
+- `package:drift/drift.dart` exports `Batch` (clashes with domain `Batch`) and `isNull`/`isNotNull` (clash with flutter_test): import drift with `hide Batch` / `show ...` everywhere.
+- `enrollmentEnded` means `end_date != null`; a tombstoned subject's `subjectName` reads as `''`.
+- Extra CHECKs exist: session start < end, `waived = 0 OR amount = 0`, extras have no slot/original date, `student_photos.id` references students, jpeg ≤ 204800 bytes. Repositories validate these first and throw AppException (never surface raw SQLite errors).
+- **Open risk for M5-A (bootstrap):** `openConnection` has no fallback if `WasmDatabase.open` throws (e.g. a browser that blocks SharedWorker/fetch). The bootstrap must catch DB-open failure and show a full-screen, localised "data storage couldn't start" error with a retry, never a blank/crashed app; and show the red "data won't be saved" banner when the storage report is in-memory.
+- Pre-migration safety snapshot is not implemented (v1 has no upgrade steps); required before schemaVersion 2.
+
 ## From M2-D (snapshot codec + diff, #10)
 - `winners` can be non-empty while the summary `isEmpty` is true (unknown tombstones, deleted-only changes): the data layer applies the merge ONLY when `!isEmpty`, else reports "no changes".
 - Apply `winners` in their given order (deletions first, then table registry order) inside one transaction with foreign keys deferred (Arch §3.6).
