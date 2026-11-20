@@ -1,0 +1,127 @@
+{
+  "@@locale": "bn",
+  "searchHint": "নাম, রোল বা ফোন লিখুন",
+  "@searchHint": {
+    "description": "Hint of the search field."
+  },
+  "searchClearField": "লেখা মুছুন",
+  "@searchClearField": {
+    "description": "Tooltip of the clear button inside the search field."
+  },
+  "searchRecentTitle": "সাম্প্রতিক খোঁজ",
+  "@searchRecentTitle": {
+    "description": "Header of the recent searches list."
+  },
+  "searchClearRecent": "মুছে ফেলুন",
+  "@searchClearRecent": {
+    "description": "Button that clears the recent searches."
+  },
+  "searchGroupStudents": "শিক্ষার্থী",
+  "@searchGroupStudents": {
+    "description": "Group header of student results."
+  },
+  "searchGroupBatches": "ব্যাচ",
+  "@searchGroupBatches": {
+    "description": "Group header of batch results."
+  },
+  "searchResultCount": "{count}টি ফলাফল",
+  "@searchResultCount": {
+    "description": "Result count line under the search field. count is a localised number.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNoResult": "‘{query}’ পাওয়া যায়নি",
+  "@searchNoResult": {
+    "description": "No-result message; query is what the teacher typed.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNoResultHelp": "নামের একটি অংশ, রোল বা ফোন নম্বরের কয়েকটি সংখ্যা লিখে দেখুন।",
+  "@searchNoResultHelp": {
+    "description": "Help line under the no-result message."
+  },
+  "searchAddStudent": "নতুন শিক্ষার্থী যোগ করুন",
+  "@searchAddStudent": {
+    "description": "Button on the no-result state that opens the new-student form."
+  },
+  "searchStartTitle": "কাকে খুঁজছেন?",
+  "@searchStartTitle": {
+    "description": "Title of the empty state before anything is typed."
+  },
+  "searchStartHelp": "নাম, রোল, ফোন বা অভিভাবকের ফোন লিখুন। বাংলা বা ইংরেজি সংখ্যা, দুটোই চলবে।",
+  "@searchStartHelp": {
+    "description": "Help under the start title."
+  },
+  "searchPreviewHint": "বাঁ পাশ থেকে একটি ফলাফল বেছে নিন",
+  "@searchPreviewHint": {
+    "description": "Wide windows: preview pane when nothing is selected."
+  },
+  "searchPreviewTyping": "খুঁজতে লিখতে শুরু করুন",
+  "@searchPreviewTyping": {
+    "description": "Wide windows: preview pane before any query."
+  },
+  "searchOpenStudent": "প্রোফাইল খুলুন",
+  "@searchOpenStudent": {
+    "description": "Button in the preview pane of a student."
+  },
+  "searchOpenBatch": "ব্যাচ খুলুন",
+  "@searchOpenBatch": {
+    "description": "Button in the preview pane of a batch."
+  },
+  "searchRollLabel": "রোল {roll}",
+  "@searchRollLabel": {
+    "description": "Roll number chip; roll is a localised number.",
+    "placeholders": {
+      "roll": {
+        "type": "String"
+      }
+    }
+  },
+  "searchLeftTag": "চলে গেছে",
+  "@searchLeftTag": {
+    "description": "Tag on a student who left."
+  },
+  "searchNoBatch": "কোনো ব্যাচে নেই",
+  "@searchNoBatch": {
+    "description": "Shown when a student has no batch."
+  },
+  "searchStudentPhone": "শিক্ষার্থীর ফোন",
+  "@searchStudentPhone": {
+    "description": "Label in the student preview."
+  },
+  "searchGuardianPhone": "অভিভাবকের ফোন",
+  "@searchGuardianPhone": {
+    "description": "Label in the student preview."
+  },
+  "searchGuardianName": "অভিভাবক",
+  "@searchGuardianName": {
+    "description": "Label in the student preview."
+  },
+  "searchBatchesLabel": "ব্যাচ",
+  "@searchBatchesLabel": {
+    "description": "Label in the student preview."
+  },
+  "searchSubjectLabel": "বিষয়",
+  "@searchSubjectLabel": {
+    "description": "Label in the batch preview."
+  },
+  "searchBatchStudents": "{count} জন শিক্ষার্থী",
+  "@searchBatchStudents": {
+    "description": "Student count of a batch; count is a localised number.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "searchLoadFailed": "খোঁজার তথ্য লোড করা যায়নি",
+  "@searchLoadFailed": {
+    "description": "Shown when the search index fails to load."
+  }
+}
