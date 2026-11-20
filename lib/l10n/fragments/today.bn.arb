@@ -208,6 +208,10 @@
       }
     }
   },
+  "todayDuesNone": "কোনো বকেয়া নেই",
+  "@todayDuesNone": {
+    "description": "Dues card when nothing is owed and nothing was collected this month yet."
+  },
   "todayDuesAllPaid": "সবাই বেতন দিয়েছে",
   "@todayDuesAllPaid": {
     "description": "Dues card when nobody owes."

@@ -86,6 +86,10 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   String _digits = '';
   bool _leaving = false;
 
+  /// The "everyone is present" hint of a fresh roll call. Decided once on load
+  /// and kept for the whole visit, so the roster never jumps under a tap.
+  bool _showHint = false;
+
   @override
   void initState() {
     super.initState();
@@ -208,6 +212,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         _target = target;
         _rollOf = rolls;
         _c = controller;
+        _showHint = saved == null && !readOnly && roster.isNotEmpty;
       });
       if (target.adHoc && !readOnly) unawaited(_recheck());
     } on Object catch (e) {
@@ -711,7 +716,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       if (c.error != null) _gap(_errorCard(c)),
       if (c.note != null)
         _gap(RollBanner(icon: Icons.edit_note, text: l10n.rollNoteLabel(c.note!))),
-      if (!c.saved && !c.edited && !c.readOnly && c.students.isNotEmpty)
+      if (_showHint && !c.readOnly && c.students.isNotEmpty)
         _gap(RollBanner(icon: Icons.info_outline, text: l10n.rollHintAllPresent)),
       if (c.students.isNotEmpty && !c.readOnly) _gap(_actionsRow(c)),
     ];

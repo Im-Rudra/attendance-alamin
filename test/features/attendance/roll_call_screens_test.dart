@@ -155,9 +155,13 @@ void main() {
     expect(find.text('Save attendance (3)'), findsOneWidget);
     expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
 
+    final double rowTop = tester.getTopLeft(find.text('রহিম উদ্দিন')).dy;
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
     expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
+    // The hint stays: the roster does not shift under the finger.
+    expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('রহিম উদ্দিন')).dy, rowTop);
     expect(f.localMeta.values.keys, contains('rollcall_draft:$occ'));
 
     await tester.tap(find.text('Save attendance (3)'));

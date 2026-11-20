@@ -127,3 +127,11 @@ final onboardingServiceProvider = Provider<OnboardingService>((ref) => Onboardin
       settings: ref.watch(settingsRepositoryProvider),
       today: () => ref.read(todayProvider),
     ));
+
+/// Start of the first class slot a new center is offered: the next full hour
+/// after [nowMin] (minute of day), kept to the 07:00-20:00 coaching day;
+/// outside it the default is 16:00 (বিকাল ৪:০০). The slot is one hour long.
+int defaultSlotStartMin(int nowMin) {
+  final int next = (nowMin ~/ 60 + 1) * 60;
+  return (next >= 7 * 60 && next <= 20 * 60) ? next : 16 * 60;
+}

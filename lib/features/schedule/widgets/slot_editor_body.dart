@@ -93,19 +93,25 @@ class SlotEditorBody extends ConsumerWidget {
 
 /// "শনি, সোম — বিকাল ৪:০০–৫:০০" inside a dense card; announced when it changes.
 class SlotSentenceCard extends StatelessWidget {
-  const SlotSentenceCard({super.key, required this.slots, required this.weekStart});
+  const SlotSentenceCard({
+    super.key,
+    required this.slots,
+    required this.weekStart,
+    this.fill = false,
+  });
 
   final List<SlotDraft> slots;
   final int weekStart;
+
+  /// The card is stretched by its parent: centre the content vertically.
+  final bool fill;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.aurora;
     final TextTheme tt = Theme.of(context).textTheme;
     final l10n = context.l10n;
-    return GlassCard(
-      dense: true,
-      child: Row(
+    final Widget content = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ExcludeSemantics(
@@ -135,7 +141,10 @@ class SlotSentenceCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      );
+    return GlassCard(
+      dense: true,
+      child: fill ? Align(alignment: AlignmentDirectional.centerStart, child: content) : content,
     );
   }
 }

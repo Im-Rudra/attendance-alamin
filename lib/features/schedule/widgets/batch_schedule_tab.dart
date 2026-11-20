@@ -104,44 +104,52 @@ class _Content extends ConsumerWidget {
     }
 
     final Widget week = WeekOverview(slots: slots, weekStart: weekStart);
-    final Widget side = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (archived) ...<Widget>[
-          _Note(text: l10n.schedArchivedReadOnly),
+    // [fill]: wide windows put the two columns in one row of equal height; the
+    // sentence card then takes the height the week card has over the rest, so
+    // neither column leaves a blank area below it.
+    Widget buildSide({required bool fill}) {
+      final Widget sentence = SlotSentenceCard(slots: slots, weekStart: weekStart, fill: fill);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (archived) ...<Widget>[
+            _Note(text: l10n.schedArchivedReadOnly),
+            const SizedBox(height: 12),
+          ],
+          _ReminderRow(batch: batch, enabled: !archived),
           const SizedBox(height: 12),
+          if (fill) Expanded(child: sentence) else sentence,
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: archived ? null : openEditor,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            icon: const Icon(Icons.edit_calendar_outlined),
+            label: Text(l10n.schedChangeWeekly),
+          ),
         ],
-        _ReminderRow(batch: batch, enabled: !archived),
-        const SizedBox(height: 12),
-        SlotSentenceCard(slots: slots, weekStart: weekStart),
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          onPressed: archived ? null : openEditor,
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-          icon: const Icon(Icons.edit_calendar_outlined),
-          label: Text(l10n.schedChangeWeekly),
-        ),
-      ],
-    );
+      );
+    }
 
     return LayoutBuilder(
       builder: (BuildContext _, BoxConstraints box) {
         if (box.maxWidth >= 720) {
           return SingleChildScrollView(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(flex: 3, child: week),
-                const SizedBox(width: 16),
-                Expanded(flex: 2, child: side),
-              ],
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Expanded(flex: 3, child: week),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: buildSide(fill: true)),
+                ],
+              ),
             ),
           );
         }
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[side, const SizedBox(height: 12), week],
+            children: <Widget>[buildSide(fill: false), const SizedBox(height: 12), week],
           ),
         );
       },

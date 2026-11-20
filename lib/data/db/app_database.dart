@@ -49,7 +49,12 @@ class AppDatabase extends _$AppDatabase {
     Set<ResultSetImplementation<dynamic, dynamic>> tables,
     Future<T> Function() load,
   ) {
-    return customSelect('SELECT 1', readsFrom: tables)
+    // Drift shares one query stream per (sql, variables) key and keeps the
+    // table set of the FIRST registration. Composite streams over different
+    // tables must therefore carry their table names in the SQL, or they would
+    // never refresh after writes to their own tables.
+    final names = <String>[for (final t in tables) t.entityName]..sort();
+    return customSelect('SELECT 1 /* ${names.join(',')} */', readsFrom: tables)
         .watch()
         .asyncMap((_) => load());
   }

@@ -84,6 +84,28 @@ void main() {
       expect(seen.last, loads);
     });
 
+    test('streams over different tables refresh independently (no shared key)',
+        () async {
+      final subjectsSeen = <int>[];
+      final metaSeen = <int>[];
+      var a = 0, b = 0;
+      final s1 = db
+          .watchComposite({db.subjects}, () async => ++a)
+          .listen(subjectsSeen.add);
+      final s2 = db
+          .watchComposite({db.localMeta}, () async => ++b)
+          .listen(metaSeen.add);
+      addTearDown(s1.cancel);
+      addTearDown(s2.cancel);
+      await eventually(() => subjectsSeen.isNotEmpty && metaSeen.isNotEmpty,
+          reason: 'initial emissions');
+      final before = metaSeen.length;
+      await db.into(db.localMeta)
+          .insert(LocalMetaCompanion.insert(metaKey: 'k2', metaValue: 'v'));
+      await eventually(() => metaSeen.length > before,
+          reason: 'second stream refreshes after its own table changes');
+    });
+
     test('does not re-run for unrelated tables', () async {
       final seen = <int>[];
       var loads = 0;

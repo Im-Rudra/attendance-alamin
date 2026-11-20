@@ -74,11 +74,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    // Today's weekday at the next full hour, one hour long (UX 2a).
+    // Today's weekday at the next full hour (07:00-20:00, else 16:00), one hour
+    // long (UX 2a).
     final LocalDate today = ref.read(todayProvider);
     final int now = ref.read(nowMinutesProvider);
-    int start = (now ~/ 60 + 1) * 60;
-    if (start + 60 > 1440) start = 960;
+    final int start = defaultSlotStartMin(now);
     _slots = <SlotDraft>[SlotDraft(weekday: today.isoWeekday, startMin: start, endMin: start + 60)];
     for (final TextEditingController c in <TextEditingController>[_subject, _batchName, _fee]) {
       c.addListener(_formChanged);
