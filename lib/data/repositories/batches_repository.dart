@@ -1,3 +1,5 @@
+export 'package:attendance_alamin/data/repositories/delete_impact.dart';
+
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
@@ -6,18 +8,6 @@ import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 
-/// What disappears together with a batch (for the delete confirmation).
-/// [payments] counts receipts (payment records), [students] distinct enrolled
-/// students, [sessions] taken roll calls.
-class DeleteImpact {
-  const DeleteImpact({
-    required this.sessions,
-    required this.payments,
-    required this.students,
-  });
-
-  final int sessions, payments, students;
-}
 
 /// Batches and their fee history (Product F2, 3.1, 3.2).
 abstract interface class BatchesRepository {
