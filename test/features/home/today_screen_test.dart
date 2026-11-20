@@ -17,6 +17,7 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
@@ -153,6 +154,14 @@ SeededFakes _bannersAndNudges() {
   return f;
 }
 
+/// The language chip reads the saved preferences.
+Override _prefs(Lang lang) => initialPrefsProvider.overrideWithValue(AppPrefs(
+      lang: lang,
+      themeMode: ThemeMode.light,
+      reducedEffects: true,
+      onboardingDone: true,
+    ));
+
 /// Today's date and minute of day for a test (the clock itself is fixed by
 /// the harness and cannot be overridden twice).
 List<Override> _clockAt(String date, String time) {
@@ -184,6 +193,7 @@ void testStateMatrix(
         viewport: c.viewport,
         overrides: <Override>[
           ...f.overrides,
+          _prefs(c.lang),
           ..._clockAt(date, time),
         ],
       );
@@ -215,7 +225,7 @@ Future<SeededFakes> _pumpPhone(
     tester,
     const TodayScreen(),
     lang: lang,
-    overrides: <Override>[...f.overrides, ..._clockAt(date, time)],
+    overrides: <Override>[...f.overrides, _prefs(lang), ..._clockAt(date, time)],
   );
   // Tall enough to build every card of the phone page.
   tester.view.physicalSize = Size(360, height);
@@ -237,7 +247,7 @@ Future<SeededFakes> _pumpDesktop(
     const TodayScreen(),
     lang: lang,
     viewport: TestViewport.desktop,
-    overrides: <Override>[...f.overrides, ..._clockAt(date, time)],
+    overrides: <Override>[...f.overrides, _prefs(lang), ..._clockAt(date, time)],
   );
   tester.view.physicalSize = size;
   await _settle(tester);
@@ -698,7 +708,7 @@ void main() {
           ),
         ),
         viewport: v,
-        overrides: f.overrides,
+        overrides: <Override>[...f.overrides, _prefs(Lang.bn)],
       );
       await _settle(tester);
       expectNoException(tester, '1.3x ${v.name}');
