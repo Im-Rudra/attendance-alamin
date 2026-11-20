@@ -299,7 +299,9 @@ class _RecentList extends StatelessWidget {
     return GlassCard(
       dense: true,
       padding: EdgeInsets.zero,
-      child: ListView(
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
         padding: const EdgeInsets.only(bottom: 16),
         children: <Widget>[
           Padding(
@@ -323,6 +325,7 @@ class _RecentList extends StatelessWidget {
               onTap: () => onPick(r),
             ),
         ],
+      ),
       ),
     );
   }
