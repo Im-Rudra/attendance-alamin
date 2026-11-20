@@ -55,16 +55,9 @@ jobs:
         if: steps.probe.outputs.ok == 'true'
         run: bash tool/fetch_web_assets.sh
 
-      - name: Build web
+      - name: Build web (cache-busted, 404 fallback)
         if: steps.probe.outputs.ok == 'true'
-        run: >
-          flutter build web --release --no-web-resources-cdn
-          --base-href /attendance-alamin/
-          --build-number=${{ github.run_number }}
-
-      - name: 404 fallback for deep links
-        if: steps.probe.outputs.ok == 'true'
-        run: cp build/web/index.html build/web/404.html
+        run: bash tool/build_web.sh --build-number=${{ github.run_number }}
 
       - uses: actions/upload-pages-artifact@v5
         if: steps.probe.outputs.ok == 'true'
