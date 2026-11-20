@@ -1,0 +1,35 @@
+{
+    "name": "হাজিরা খাতা",
+    "short_name": "হাজিরা খাতা",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0A0C12",
+    "theme_color": "#0A0C12",
+    "description": "হাজিরা খাতা — কোচিং সেন্টারের হাজিরা, ক্লাস রুটিন ও বেতনের হিসাব",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
