@@ -3,12 +3,10 @@
 // (scenario 8), rejoin with the gap waiver.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
-import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
@@ -60,6 +58,23 @@ List<Enrollment> _open(SeededFakes f, String studentId, String batchId) => <Enro
       for (final Enrollment e in f.enrollments.enrollments)
         if (e.studentId == studentId && e.batchId == batchId && e.endDate == null) e,
     ];
+
+/// [f] with its students fake swapped for [students] (an override of the same
+/// provider twice in one scope is an error).
+SeededFakes _withStudents(SeededFakes f, FakeStudentsRepository students) =>
+    SeededFakes(
+      store: f.store,
+      subjects: f.subjects,
+      batches: f.batches,
+      schedule: f.schedule,
+      students: students,
+      enrollments: f.enrollments,
+      payments: f.payments,
+      attendance: f.attendance,
+      otherIncome: f.otherIncome,
+      settings: f.settings,
+      localMeta: f.localMeta,
+    );
 
 const String _rahimGuardianPhone = '01811223344';
 
@@ -391,10 +406,7 @@ void main() {
         _Launcher((BuildContext c) async {
           done = await showMarkLeftDialog(c, studentId: kStuRahim);
         }),
-        overrides: <Override>[
-          ...f.overrides,
-          studentsRepositoryProvider.overrideWithValue(students),
-        ],
+        overrides: _withStudents(f, students).overrides,
         today: const LocalDate(2026, 11, 5),
       );
       await tester.tap(find.text('open'));
@@ -423,10 +435,7 @@ void main() {
         _Launcher((BuildContext c) async {
           await showMarkLeftDialog(c, studentId: kStuRahim);
         }),
-        overrides: <Override>[
-          ...f.overrides,
-          studentsRepositoryProvider.overrideWithValue(students),
-        ],
+        overrides: _withStudents(f, students).overrides,
       );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();

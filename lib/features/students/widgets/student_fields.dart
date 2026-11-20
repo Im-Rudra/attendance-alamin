@@ -63,7 +63,11 @@ class StudentFieldsView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Theme(
+            // ListTile (inside ExpansionTile) paints on the nearest Material,
+            // so give it its own above the dense card behind it.
+            Material(
+              type: MaterialType.transparency,
+              child: Theme(
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
                 key: const ValueKey<String>('stu-more-info'),
@@ -113,6 +117,7 @@ class StudentFieldsView extends StatelessWidget {
                     decoration: InputDecoration(labelText: l10n.commonNotes),
                   ),
                 ],
+              ),
               ),
             ),
           ],

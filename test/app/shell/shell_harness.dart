@@ -9,10 +9,10 @@ import 'package:attendance_alamin/app/app.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
-import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 import '../../helpers/fakes/fake_settings_repos.dart';
+import '../../helpers/fixtures.dart';
 
 const Size kPhone = Size(360, 640);
 const Size kDesktop = Size(1280, 800);
@@ -44,13 +44,28 @@ Future<ShellHarness> pumpShell(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final ShellHarness h = ShellHarness(settings ?? FakeSettingsRepository(), meta ?? FakeLocalMetaRepository());
+  // Feature screens read the M4 repositories: back them with the seeded
+  // fakes, keeping the caller's settings / local meta.
+  final SeededFakes seed0 = seedFakes();
+  final ShellHarness h = ShellHarness(settings ?? seed0.settings, meta ?? seed0.localMeta);
+  final SeededFakes seed = SeededFakes(
+    store: seed0.store,
+    subjects: seed0.subjects,
+    batches: seed0.batches,
+    schedule: seed0.schedule,
+    students: seed0.students,
+    enrollments: seed0.enrollments,
+    payments: seed0.payments,
+    attendance: seed0.attendance,
+    otherIncome: seed0.otherIncome,
+    settings: h.settings,
+    localMeta: h.meta,
+  );
   await tester.pumpWidget(
     ProviderScope(
       retry: (int _, Object __) => null,
       overrides: [
-        settingsRepositoryProvider.overrideWithValue(h.settings),
-        localMetaRepositoryProvider.overrideWithValue(h.meta),
+        ...seed.overrides,
         initialPrefsProvider.overrideWithValue(AppPrefs(
           lang: lang,
           themeMode: themeMode,
