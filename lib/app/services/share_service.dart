@@ -1,0 +1,42 @@
+// Share plain text (dues reminders, receipts, cancel notices) through the
+// system share sheet (share_plus). Windows and web also copy the text and say
+// so, because a desktop share target is often missing; a desktop browser has
+// no share sheet at all (share_plus would open a mail client), so there the
+// copy is the whole action.
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+
+abstract final class ShareService {
+  static bool get _isMobilePlatform =>
+      defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// Copy as well as share (web and Windows).
+  static bool get _alsoCopy => kIsWeb || defaultTargetPlatform == TargetPlatform.windows;
+
+  /// Open the share sheet at all (not on desktop browsers).
+  static bool get _openSheet => !kIsWeb || _isMobilePlatform;
+
+  static Future<void> shareText(BuildContext context, String text) async {
+    if (text.trim().isEmpty) return;
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+    final String copiedMessage = context.l10n.shellTextCopied;
+
+    Future<void> copy() async {
+      await Clipboard.setData(ClipboardData(text: text));
+      messenger?.showSnackBar(SnackBar(content: Text(copiedMessage)));
+    }
+
+    if (_alsoCopy) await copy();
+    if (!_openSheet) return;
+    try {
+      await SharePlus.instance.share(ShareParams(text: text));
+    } catch (_) {
+      if (!_alsoCopy) await copy();
+    }
+  }
+}
