@@ -171,14 +171,16 @@ jobs:
         run: bash tool/ci_prepare.sh
       - name: Fetch drift web assets (sqlite3.wasm, drift_worker.js)
         run: bash tool/fetch_web_assets.sh
-      - name: Build web
-        run: >
-          flutter build web --release --no-web-resources-cdn
-          --base-href /attendance-alamin/
-          --build-number=${{ github.run_number }}
-      - name: Stage site (404 fallback for deep links)
+      - name: Build web (cache-busted, 404 fallback)
+        run: bash tool/build_web.sh --build-number=${{ github.run_number }}
+      - name: Verify cache-busting and drift assets
         run: |
-          cp build/web/index.html build/web/404.html
+          grep -q 'main.dart.js?v=' build/web/flutter_bootstrap.js
+          grep -q 'flutter_bootstrap.js?v=' build/web/index.html
+          grep -q 'unregister' build/web/flutter_service_worker.js
+          ls build/web/sqlite3.wasm build/web/drift_worker.js
+      - name: Stage site
+        run: |
           rm -rf site
           mkdir -p site
           cp -r build/web site/attendance-alamin
