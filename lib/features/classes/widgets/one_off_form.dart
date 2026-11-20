@@ -213,7 +213,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     final TextTheme tt = Theme.of(context).textTheme;
 
     // A schedule change (another save, an undo) re-runs the live check.
-    ref.listen<AsyncValue<List<BatchSchedule>>>(schedulesProvider, (_, __) => _recheck());
+    ref.listen<AsyncValue<List<BatchSchedule>>>(schedulesProvider, (_, _) => _recheck());
 
     final List<BatchSchedule> live = _liveBatches();
     String? batchId;
@@ -287,7 +287,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
       subtitle: _isExtra ? null : classLabel,
       footer: StickyActionBar(
         label: _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule,
-        onPressed: canSave ? () => _save(target!) : null,
+        onPressed: canSave ? () => _save(target) : null,
         disabledReason: reason,
       ),
       child: Column(

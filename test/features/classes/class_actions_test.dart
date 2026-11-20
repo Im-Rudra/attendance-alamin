@@ -37,7 +37,7 @@ import '../../helpers/pump_app.dart';
 /// The fake schedule repository with the REAL clash engine behind its checks
 /// and writes, and a `resolve` that sees cancelled / moved / extra classes.
 class EngineScheduleRepository extends FakeScheduleRepository {
-  EngineScheduleRepository(FakeStructureStore store) : super(store);
+  EngineScheduleRepository(super.store);
 
   SlotCheckResult _check(String batchId, LocalDate date, int start, int end, String? replacing) {
     return ScheduleEngine.checkSingle(
@@ -385,7 +385,7 @@ void main() {
       expect(f.store.exceptions.single.kind, ExceptionKind.extra);
 
       final ProviderContainer container = containerOf(tester);
-      container.listen(dayPlanProvider(kToday), (_, __) {});
+      container.listen(dayPlanProvider(kToday), (_, _) {});
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
       final DayPlan plan = container.read(dayPlanProvider(kToday)).requireValue;
@@ -486,8 +486,8 @@ void main() {
       expect(moved.newEndMin, 720);
 
       final ProviderContainer container = containerOf(tester);
-      container.listen(dayPlanProvider(const LocalDate(2026, 11, 24)), (_, __) {});
-      container.listen(dayPlanProvider(const LocalDate(2026, 11, 23)), (_, __) {});
+      container.listen(dayPlanProvider(const LocalDate(2026, 11, 24)), (_, _) {});
+      container.listen(dayPlanProvider(const LocalDate(2026, 11, 23)), (_, _) {});
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
       final DayPlan tue = container.read(dayPlanProvider(const LocalDate(2026, 11, 24))).requireValue;
