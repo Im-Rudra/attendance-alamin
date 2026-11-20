@@ -12,6 +12,7 @@ import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_overview.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
 import 'package:attendance_alamin/features/home/ui/today_screen.dart';
 import 'package:attendance_alamin/features/search/ui/search_screen.dart';
@@ -148,6 +149,7 @@ void main() {
     // 860 - 80 rail = 780 < 320 + 1 + 480: one pane only.
     await pumpShell(tester, location: Routes.batches, size: const Size(860, 700));
     expect(find.byType(PaneLayout), findsNothing);
-    expect(find.text(l10nOf(Lang.bn).shellStubBatches), findsOneWidget);
+    expect(find.byType(BatchesScreen), findsOneWidget);
+    expect(find.byType(BatchesOverview), findsNothing);
   });
 }
