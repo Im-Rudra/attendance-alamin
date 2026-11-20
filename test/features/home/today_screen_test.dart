@@ -7,7 +7,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,7 +45,6 @@ import '../../helpers/pump_app.dart';
 
 AppLocalizations _l10n(Lang lang) => lookupAppLocalizations(Locale(lang.code));
 
-const LocalDate _fri = LocalDate(2026, 11, 20);
 const LocalDate _mon = LocalDate(2026, 11, 23);
 const LocalDate _tue = LocalDate(2026, 11, 24);
 
