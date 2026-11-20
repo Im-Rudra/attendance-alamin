@@ -18,5 +18,7 @@ You are a Builder for ONE module of the plan in `docs/council/04-plan.md`. Bindi
 6. Stop after 6 red CI rounds on the same error and hand back with the exact error text instead of grinding.
 7. Do NOT merge. The Chair merges after the evaluation panel.
 
-## Handback (≤ 20 lines)
+## Handback (≤ 20 lines) — send it ONCE
+Wait for the whole PR CI run to finish (all jobs) before handing back; then hand back exactly once and stop. Never re-send or repeat a handback, and never poll in a loop after handing back.
+
 PR number + URL, final CI run id and status per job, file list, contract deviations (exact signature changes) or "none", anything the panel should look at, anything you could not verify.
