@@ -92,9 +92,16 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
   final List<Enrollment> enrollments =
       await container.read(batchEnrollmentsProvider(batchId).future);
   if (!context.mounted) return false;
-  final List<String> clashLines = preview.ok
-      ? const <String>[]
-      : await _clashLines(context, container, preview);
+  List<String> clashLines = const <String>[];
+  if (!preview.ok) {
+    try {
+      clashLines = await _clashLines(context, container, preview);
+    } on Object catch (e, st) {
+      debugPrint('unarchive clash lines failed: $e
+$st');
+      return false;
+    }
+  }
   if (!context.mounted) return false;
 
   final UnarchiveChoice? choice = await showDialog<UnarchiveChoice>(
