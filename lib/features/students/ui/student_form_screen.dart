@@ -295,7 +295,6 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
     final Widget saveButton = BhorButton(
       label: l10n.stuSave,
       expand: true,
-      loading: _busy,
       onPressed: _busy ? null : _save,
     );
 
