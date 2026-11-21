@@ -144,7 +144,7 @@ class _StudentRow extends ConsumerWidget {
         constraints: const BoxConstraints(minHeight: BhorSize.phoneRow),
         padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s8),
         decoration: BoxDecoration(
-          color: st.hovered || st.pressed ? th.colors.soft : const Color(0x00000000),
+          color: st.hovered || st.pressed ? th.colors.soft : th.colors.soft.withValues(alpha: 0),
           border: last ? null : Border(bottom: BorderSide(color: th.colors.line)),
         ),
         child: Row(

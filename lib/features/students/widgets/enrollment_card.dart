@@ -274,13 +274,14 @@ class _MonthStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color solid = context.bhor.colors.surface;
     // Scrolls sideways; the trailing edge fades so a clipped month never
     // looks cut by accident.
     return ShaderMask(
       blendMode: BlendMode.dstIn,
-      shaderCallback: (Rect r) => const LinearGradient(
-        colors: <Color>[Color(0xFFFFFFFF), Color(0xFFFFFFFF), Color(0x00FFFFFF)],
-        stops: <double>[0, 0.93, 1],
+      shaderCallback: (Rect r) => LinearGradient(
+        colors: <Color>[solid, solid, solid.withValues(alpha: 0)],
+        stops: const <double>[0, 0.93, 1],
       ).createShader(r),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

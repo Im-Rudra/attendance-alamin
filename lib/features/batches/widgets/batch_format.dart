@@ -113,7 +113,7 @@ class BatchMenuRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 44),
         padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
         decoration: BoxDecoration(
-          color: st.hovered || st.pressed ? b.colors.soft : const Color(0x00000000),
+          color: st.hovered || st.pressed ? b.colors.soft : b.colors.soft.withValues(alpha: 0),
           borderRadius: BorderRadius.circular(BhorRadius.control),
         ),
         child: Row(
