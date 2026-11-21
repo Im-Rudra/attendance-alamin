@@ -429,60 +429,66 @@ class _BhorTimePickerState extends State<BhorTimePicker> {
 }
 
 /// Opens a [BhorTimePicker] with a Done button; resolves with minutes
-/// after midnight (null when dismissed). Phone: a bottom sheet (title and ✕
-/// on one row). Desktop: a 3-column popover (period · hour · minute)
-/// anchored to [anchor] / the field that opened it, a centred dialog when
-/// there is nothing to anchor to.
+/// after midnight. The pick applies live: [onChanged] fires on every tap and
+/// Done only closes, so an outside click or Esc keeps the current selection
+/// (the future still resolves with it; null only when nothing was ever
+/// chosen). Phone: a bottom sheet (title and ✕ on one row). Desktop: a
+/// 3-column popover (period · hour · minute) anchored to [anchor] / the field
+/// that opened it, a centred dialog when there is nothing to anchor to. Done
+/// sits in a pinned footer, so it is visible even in a short window.
 /// [title] names the time being picked (default "সময় বেছে নিন").
 /// Usage: `final m = await showBhorTimePicker(context, initial: 960, title: 'শুরু')`.
-Future<int?> showBhorTimePicker(BuildContext context, {int? initial, String? title, BuildContext? anchor}) {
+Future<int?> showBhorTimePicker(
+  BuildContext context, {
+  int? initial,
+  String? title,
+  BuildContext? anchor,
+  ValueChanged<int>? onChanged,
+}) async {
   final String t = title ?? context.l10n.dsPickTime;
-  if (context.bhorIsWide) {
-    return showBhorPopover<int>(
-      context,
-      anchor: anchor,
-      title: t,
-      width: 460,
-      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, 0, BhorSpace.s12, BhorSpace.s12),
-      builder: (BuildContext ctx) => _TimeSheet(initial: initial, columns: true),
-    );
-  }
-  return showBhorSheet<int>(
-    context,
-    title: t,
-    builder: (BuildContext ctx) => _TimeSheet(initial: initial),
-  );
+  final ValueNotifier<int?> value = ValueNotifier<int?>(initial);
+  final bool wide = context.bhorIsWide;
+  Widget body(BuildContext ctx) => _TimeSheet(value: value, columns: wide, onChanged: onChanged);
+  Widget footer(BuildContext ctx) => ValueListenableBuilder<int?>(
+        valueListenable: value,
+        builder: (BuildContext c, int? v, Widget? _) => BhorButton(
+          label: c.l10n.commonDone,
+          expand: true,
+          onPressed: v == null ? null : () => Navigator.of(c).pop(v),
+        ),
+      );
+  // Not disposed: the exit animation still listens after the future resolves.
+  final int? popped = wide
+      ? await showBhorPopover<int>(
+          context,
+          anchor: anchor,
+          title: t,
+          width: 460,
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s12, 0, BhorSpace.s12, BhorSpace.s12),
+          builder: body,
+          footer: footer,
+        )
+      : await showBhorSheet<int>(context, title: t, builder: body, footer: footer);
+  return popped ?? value.value;
 }
 
-class _TimeSheet extends StatefulWidget {
-  const _TimeSheet({required this.initial, this.columns = false});
+class _TimeSheet extends StatelessWidget {
+  const _TimeSheet({required this.value, required this.onChanged, this.columns = false});
 
-  final int? initial;
+  final ValueNotifier<int?> value;
+  final ValueChanged<int>? onChanged;
   final bool columns;
 
   @override
-  State<_TimeSheet> createState() => _TimeSheetState();
-}
-
-class _TimeSheetState extends State<_TimeSheet> {
-  late int? _value = widget.initial;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          BhorTimePicker(value: _value, columns: widget.columns, onChanged: (int v) => setState(() => _value = v)),
-          const SizedBox(height: BhorSpace.s16),
-          BhorButton(
-            label: context.l10n.commonDone,
-            expand: true,
-            onPressed: _value == null ? null : () => Navigator.of(context).pop(_value),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ValueListenableBuilder<int?>(
+        valueListenable: value,
+        builder: (BuildContext c, int? v, Widget? _) => BhorTimePicker(
+          value: v,
+          columns: columns,
+          onChanged: (int m) {
+            value.value = m;
+            onChanged?.call(m);
+          },
+        ),
+      );
 }

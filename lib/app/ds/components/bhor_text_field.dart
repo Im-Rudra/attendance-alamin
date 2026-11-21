@@ -6,6 +6,9 @@
 // Built on EditableText (no Material InputDecorator).
 // Usage: `BhorTextField(label: 'নাম', controller: c, error: err, onChanged: f)`.
 
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -127,6 +130,28 @@ class _BhorTextFieldState extends State<BhorTextField>
     }
   }
 
+  /// A tap outside the field unfocuses it, but only once the tap has been
+  /// delivered: unfocusing on pointer-down closes the keyboard and shifts the
+  /// layout, which swallowed the first tap on a button (naive round 3).
+  /// A drag (scroll) outside keeps the focus.
+  void _tapOutside(PointerDownEvent down) {
+    final int pointer = down.pointer;
+    final Offset from = down.position;
+    final PointerRouter router = GestureBinding.instance.pointerRouter;
+    late PointerRoute route;
+    route = (PointerEvent e) {
+      if (e is! PointerUpEvent && e is! PointerCancelEvent) return;
+      router.removeRoute(pointer, route);
+      if (e is PointerUpEvent && (e.position - from).distance <= 18) {
+        // After the whole dispatch, so the tapped control's action has run.
+        scheduleMicrotask(() {
+          if (_focus.hasFocus) _focus.unfocus();
+        });
+      }
+    };
+    router.addRoute(pointer, route);
+  }
+
   void _onFocus() {
     if (mounted) setState(() {});
   }
@@ -175,6 +200,7 @@ class _BhorTextFieldState extends State<BhorTextField>
       minLines: widget.minLines,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
+      onTapOutside: _tapOutside,
       rendererIgnoresPointer: true,
       cursorWidth: 1.5,
       cursorRadius: const Radius.circular(1),

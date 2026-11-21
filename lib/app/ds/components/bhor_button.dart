@@ -177,7 +177,10 @@ class BhorButton extends StatelessWidget {
     final double iconSize = size == BhorButtonSize.sm ? BhorIconSize.chip - 2 : BhorIconSize.chip;
     final TextStyle style = size == BhorButtonSize.sm ? b.type.label : b.type.bodyStrong;
     final bool reduced = BhorMotion.reduced(context);
-    final String shownLabel = phase == BhorButtonState.success ? (doneLabel ?? context.l10n.dsDone) : label;
+    // An add icon already says "+": drop a leading "+ " from the label so the
+    // button never shows two plus signs.
+    final String cleanLabel = icon != null ? label.replaceFirst(RegExp(r'^\s*\+\s+'), '') : label;
+    final String shownLabel = phase == BhorButtonState.success ? (doneLabel ?? context.l10n.dsDone) : cleanLabel;
     Widget button = BhorPressable(
       onTap: enabled ? onPressed : null,
       semanticLabel: shownLabel,
@@ -203,9 +206,11 @@ class BhorButton extends StatelessWidget {
           final Widget text = Flexible(
             child: Text(
               shownLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: style.copyWith(color: fg),
+              // Never truncated: a long label wraps to a second line.
+              maxLines: 2,
+              softWrap: true,
+              textAlign: TextAlign.center,
+              style: style.copyWith(color: fg, height: 1.15),
             ),
           );
           final Widget row = switch (phase) {

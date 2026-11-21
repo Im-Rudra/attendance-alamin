@@ -187,6 +187,7 @@ Future<T?> showBhorSheet<T>(
 }) {
   final BhorThemeData theme = context.bhor;
   final String closeLabel = context.l10n.a11yCloseSheet;
+  BhorToast.dismissCurrent();
   return Navigator.of(context, rootNavigator: true).push<T>(_BhorSheetRoute<T>(
     builder: builder,
     footer: footer,
@@ -576,6 +577,7 @@ Future<T?> showBhorSidePanel<T>(
   bool scroll = true,
 }) {
   final BhorThemeData theme = context.bhor;
+  BhorToast.dismissCurrent();
   return Navigator.of(context, rootNavigator: true).push<T>(_BhorSidePanelRoute<T>(
     builder: builder,
     footer: footer,
@@ -861,6 +863,7 @@ Future<T?> showBhorDialog<T>(BuildContext context, {required WidgetBuilder build
   final bool reduced = BhorMotion.reduced(context);
   final BuildContext anchor = BhorToast.anchorOf(context);
   final double lift = BhorToastInset.of(context);
+  BhorToast.dismissCurrent();
   return showGeneralDialog<T>(
     context: context,
     useRootNavigator: true,
@@ -1226,6 +1229,7 @@ Future<T?> showBhorPopover<T>(
   BuildContext? anchor,
 }) {
   final Rect? rect = bhorAnchorRect(anchor ?? context);
+  BhorToast.dismissCurrent();
   if (rect == null) {
     return _showPanelDialog<T>(context,
         builder: builder, title: title, footer: footer, dismissible: dismissible, width: width + 60, scroll: scroll);
@@ -1348,11 +1352,15 @@ class BhorPopoverPlacement {
     final double w = math.min(width, area.width - 2 * margin);
     final double roomBelow = area.height - padding.bottom - anchor.bottom - gap - margin;
     final double roomAbove = anchor.top - padding.top - gap - margin;
-    final bool below = roomBelow >= 360 || roomBelow >= roomAbove;
-    final double maxH = math.max(120.0, below ? roomBelow : roomAbove);
+    final double fullH = math.max(120.0, area.height - padding.top - padding.bottom - 2 * margin);
+    // A short window (neither side has room for a useful card): use the
+    // whole window height, overlapping the anchor, so nothing is cut off.
+    final bool cramped = math.max(roomBelow, roomAbove) < 360 && fullH > math.max(roomBelow, roomAbove);
+    final bool below = cramped || roomBelow >= 360 || roomBelow >= roomAbove;
+    final double maxH = cramped ? fullH : math.max(120.0, below ? roomBelow : roomAbove);
     final bool alignStart = anchor.left + w <= area.width - margin;
     final double left = (alignStart ? anchor.left : anchor.right - w).clamp(margin, math.max(margin, area.width - w - margin));
-    final double top = below ? anchor.bottom + gap : anchor.top - gap - maxH;
+    final double top = cramped ? padding.top + margin : (below ? anchor.bottom + gap : anchor.top - gap - maxH);
     return BhorPopoverPlacement(rect: Rect.fromLTWH(left, top, w, maxH), below: below, alignStart: alignStart);
   }
 }
@@ -1679,6 +1687,10 @@ class _BhorBottomObstructionState extends State<BhorBottomObstruction> {
 /// or `actions: [BhorToastAction(label: 'রসিদ পাঠান', onPressed: send), BhorToastAction(...)]`.
 abstract final class BhorToast {
   static _ToastViewState? _current;
+
+  /// Closes the visible toast (if any). Sheets, panels, dialogs and popovers
+  /// call it as they open, so a toast never overlaps them.
+  static void dismissCurrent() => _current?.dismiss();
 
   /// Height (plus a gap) that the visible bottom toast takes above the
   /// chrome; 0 when none. Floating buttons lift by this much.
