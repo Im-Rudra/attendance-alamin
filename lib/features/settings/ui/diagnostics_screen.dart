@@ -3,15 +3,16 @@
 // uninstalling the app wipes its data.
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/providers/storage_report.dart';
 import 'package:attendance_alamin/features/backup/backup_entry.dart';
 import 'package:attendance_alamin/features/settings/controllers/settings_providers.dart';
@@ -38,14 +39,9 @@ class DiagnosticsScreen extends ConsumerWidget {
     final String deviceName = ref.watch(deviceNameProvider).value ?? '';
     final String version = ref.watch(appVersionProvider).value ?? l10n.setVersionUnknown;
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !embedded,
-        title: Semantics(header: true, child: Text(l10n.shellTitleDiagnostics)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
+    return BhorScaffold(
+      header: BhorHeader(title: l10n.shellTitleDiagnostics, showBack: embedded ? false : null),
+      body: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints c) {
             final bool wide = c.maxWidth >= WindowClass.expandedMin;
             return ListView(
@@ -98,7 +94,6 @@ class DiagnosticsScreen extends ConsumerWidget {
               ],
             );
           },
-        ),
       ),
     );
   }
@@ -144,43 +139,40 @@ class _WarningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return Container(
       key: const Key('diag-warning'),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(BhorSpace.s16),
       decoration: BoxDecoration(
-        color: tokens.errorContainer,
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusGlassCard),
+        color: c.dangerBg,
+        borderRadius: BorderRadius.circular(BhorRadius.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.warning_amber_rounded, color: tokens.onErrorContainer),
-              const SizedBox(width: 12),
+              Icon(Icons.warning_amber_rounded, color: c.danger),
+              const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text(
-                    l10n.setDiagWarnTitle,
-                    style: tt.titleMedium?.copyWith(color: tokens.onErrorContainer),
-                  ),
+                  child: Text(l10n.setDiagWarnTitle, style: b.type.heading.copyWith(color: c.danger)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(body, style: tt.bodyLarge?.copyWith(color: tokens.onErrorContainer)),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s8),
+          Text(body, style: b.type.body),
+          const SizedBox(height: BhorSpace.s12),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: FilledButton.icon(
+            child: BhorButton(
               key: const Key('diag-backup-now'),
+              icon: Icons.save_alt_outlined,
+              label: l10n.setBackupNow,
               onPressed: () => runExportBackup(context),
-              icon: const Icon(Icons.save_alt_outlined),
-              label: Text(l10n.setBackupNow),
             ),
           ),
         ],

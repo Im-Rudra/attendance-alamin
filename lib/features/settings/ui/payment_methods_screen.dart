@@ -2,15 +2,15 @@
 // teacher's own (stored as `custom:<label>`). Saved instantly in the synced
 // `payment_methods` setting.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/features/settings/controllers/settings_providers.dart';
@@ -66,9 +66,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
     final PaymentMethodsConfig next = config.withBuiltInShown(method, shown: shown);
     if (next == config) {
       if (!shown) {
-        ScaffoldMessenger.maybeOf(context)
-          ?..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(context.l10n.setPmKeepOne)));
+        BhorToast.show(context, message: context.l10n.setPmKeepOne);
       }
       return;
     }
@@ -93,17 +91,15 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
     setState(() => _check = CustomLabelCheck.ok);
     await _save(next);
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.setPmAdded(raw.trim()))));
+    BhorToast.show(context, message: l10n.setPmAdded(raw.trim()));
   }
 
   Future<void> _remove(PaymentMethodsConfig config, String label) async {
     final l10n = context.l10n;
-    final bool yes = await showConfirmDialog(
+    final bool yes = await showBhorConfirm(
       context,
       title: l10n.setPmRemoveTitle(label),
-      body: l10n.setPmRemoveBody,
+      message: l10n.setPmRemoveBody,
       confirmLabel: l10n.setPmRemove,
       destructive: true,
     );
@@ -120,8 +116,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final double g = WindowClass.of(context).gutter;
     final bool embedded = PaneScope.isEmbedded(context);
     final PaymentMethodsConfig config = ref.watch(paymentMethodsConfigProvider);
@@ -141,10 +136,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
       if (config.custom.isEmpty)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Text(
-            l10n.setPmCustomEmpty,
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-          ),
+          child: Text(l10n.setPmCustomEmpty, style: b.type.meta),
         ),
       for (final String label in config.custom)
         SettingRow(
@@ -152,9 +144,10 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
           icon: Icons.payments_outlined,
           title: label,
           value: l10n.setPmShown,
-          trailing: IconButton(
-            tooltip: l10n.setPmRemove,
-            icon: Icon(Icons.delete_outline, color: tokens.error),
+          trailing: BhorIconButton(
+            icon: Icons.delete_outline,
+            semanticLabel: l10n.setPmRemove,
+            color: b.colors.danger,
             onPressed: () => _remove(config, label),
           ),
         ),
@@ -164,22 +157,17 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: TextField(
+              child: BhorTextField(
                 key: const Key('pm-add-field'),
                 controller: _label,
                 textInputAction: TextInputAction.done,
-                inputFormatters: <TextInputFormatter>[
-                  LengthLimitingTextInputFormatter(PaymentMethod.maxCustomLabelLength + 10),
-                ],
-                decoration: InputDecoration(
-                  labelText: l10n.setPmAddLabel,
-                  hintText: l10n.setPmAddHint,
-                  errorText: customLabelErrorText(
-                    l10n,
-                    _check,
-                    (int n) => fmt.digits(n.toString()),
-                  ),
-                  errorMaxLines: 2,
+                maxLength: PaymentMethod.maxCustomLabelLength + 10,
+                label: l10n.setPmAddLabel,
+                hint: l10n.setPmAddHint,
+                error: customLabelErrorText(
+                  l10n,
+                  _check,
+                  (int n) => fmt.digits(n.toString()),
                 ),
                 onChanged: (_) {
                   if (_check != CustomLabelCheck.ok) {
@@ -191,12 +179,12 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
             ),
             const SizedBox(width: 12),
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: FilledButton.icon(
+              padding: const EdgeInsets.only(top: 22),
+              child: BhorButton(
                 key: const Key('pm-add-button'),
                 onPressed: () => _add(config),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.setPmAdd),
+                icon: Icons.add,
+                label: l10n.setPmAdd,
               ),
             ),
           ],
@@ -204,43 +192,34 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
       ),
     ]);
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !embedded,
-        title: Semantics(header: true, child: Text(l10n.shellTitlePaymentMethods)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints c) {
-            final bool wide = c.maxWidth >= WindowClass.expandedMin;
-            return ListView(
-              padding: EdgeInsets.fromLTRB(g, 4, g, g),
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-                  child: Text(
-                    l10n.setPmIntro,
-                    style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                  ),
-                ),
-                if (wide)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(child: _section(l10n.setPmBuiltIn, builtIn)),
-                      SizedBox(width: g),
-                      Expanded(child: _section(l10n.setPmCustom, custom)),
-                    ],
-                  )
-                else ...<Widget>[
-                  _section(l10n.setPmBuiltIn, builtIn),
-                  _section(l10n.setPmCustom, custom),
-                ],
+    return BhorScaffold(
+      header: BhorHeader(title: l10n.shellTitlePaymentMethods, showBack: embedded ? false : null),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          final bool wide = c.maxWidth >= WindowClass.expandedMin;
+          return ListView(
+            padding: EdgeInsets.fromLTRB(g, 4, g, g),
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                child: Text(l10n.setPmIntro, style: b.type.meta.copyWith(color: b.colors.text2)),
+              ),
+              if (wide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(child: _section(l10n.setPmBuiltIn, builtIn)),
+                    SizedBox(width: g),
+                    Expanded(child: _section(l10n.setPmCustom, custom)),
+                  ],
+                )
+              else ...<Widget>[
+                _section(l10n.setPmBuiltIn, builtIn),
+                _section(l10n.setPmCustom, custom),
               ],
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
     );
   }

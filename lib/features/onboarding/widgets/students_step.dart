@@ -2,11 +2,11 @@
 // add next" stores the student, clears the fields and keeps the cursor on the
 // name field so the whole class can be typed without touching the screen.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
 import 'package:attendance_alamin/features/onboarding/controllers/onboarding_service.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/onb_common.dart';
@@ -50,8 +50,8 @@ class StudentsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final String? batch = batchName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,14 +64,14 @@ class StudentsStep extends StatelessWidget {
             Icon(
               batch == null ? Icons.info_outline : Icons.groups_2_outlined,
               size: 20,
-              color: tokens.textSecondary,
+              color: c.text3,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 batch == null ? l10n.onbStudentsNoBatch : l10n.onbStudentsIntoBatch(batch),
                 key: const Key('onb-students-target'),
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.meta,
               ),
             ),
           ],
@@ -82,7 +82,7 @@ class StudentsStep extends StatelessWidget {
           child: Text(
             l10n.onbBillingStartNote(billingMonth),
             key: const Key('onb-students-billing-note'),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: b.type.meta,
           ),
         ),
         const SizedBox(height: 16),
@@ -90,33 +90,32 @@ class StudentsStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              TextField(
+              BhorTextField(
                 key: const Key('onb-student-name'),
                 controller: name,
                 focusNode: nameFocus,
                 autofocus: true,
-                textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: l10n.onbStudentName),
+                label: l10n.onbStudentName,
               ),
               const SizedBox(height: 12),
-              TextField(
+              BhorTextField(
                 key: const Key('onb-student-phone'),
                 controller: phone,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => onAdd(),
-                decoration: InputDecoration(
-                  labelText: l10n.onbStudentPhone,
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
+                label: l10n.onbStudentPhone,
+                prefix: const Icon(Icons.phone_outlined),
+                tabular: true,
               ),
               const SizedBox(height: 12),
-              FilledButton.tonal(
+              BhorButton(
                 key: const Key('onb-student-add'),
+                label: l10n.onbStudentSaveNext,
+                variant: BhorButtonVariant.secondary,
                 onPressed: busy ? null : onAdd,
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                child: Text(l10n.onbStudentSaveNext),
+                expand: true,
               ),
               const SizedBox(height: 8),
               CsvImportButton(onPressed: busy ? null : onImportCsv),
@@ -126,12 +125,12 @@ class StudentsStep extends StatelessWidget {
                   liveRegion: true,
                   child: Row(
                     children: <Widget>[
-                      Icon(Icons.check_circle, size: 18, color: tokens.accent),
+                      Icon(Icons.check_circle, size: 18, color: c.accent),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           l10n.onbStudentAddedNote(lastAdded!),
-                          style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
+                          style: b.type.body,
                         ),
                       ),
                     ],
@@ -150,7 +149,7 @@ class StudentsStep extends StatelessWidget {
           Text(
             l10n.onbStudentsEmpty,
             key: const Key('onb-students-empty'),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: b.type.meta,
           )
         else ...<Widget>[
           Semantics(
@@ -159,19 +158,18 @@ class StudentsStep extends StatelessWidget {
             child: Text(
               l10n.onbStudentsAdded(context.fmt.number(saved.length)),
               key: const Key('onb-students-count'),
-              style: tt.titleMedium?.copyWith(color: tokens.textPrimary, fontWeight: FontWeight.w600),
+              style: b.type.heading,
             ),
           ),
           const SizedBox(height: 8),
           for (final SavedStudent s in saved.reversed)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: GlassCard(
-                dense: true,
+              child: BhorCard(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: <Widget>[
-                    InitialsAvatar(name: s.name, size: 36),
+                    BhorAvatar(name: s.name, size: 36),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -179,13 +177,13 @@ class StudentsStep extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             l10n.onbStudentRow(context.fmt.digits(s.roll), s.name),
-                            style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                            style: b.type.body,
                           ),
                           if (s.guardianPhone != null)
                             Text(
                               context.fmt.digits(s.guardianPhone!),
                               key: Key('onb-added-phone-${s.id}'),
-                              style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                              style: b.type.meta,
                             ),
                         ],
                       ),

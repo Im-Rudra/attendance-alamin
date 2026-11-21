@@ -1,17 +1,17 @@
 // The groups of the More screen (Product 3.12 / UX 3a): each group is a list of
-// glass cards of two-line rows. Changes save instantly; no Save button.
+// cards of two-line rows. Changes save instantly; no Save button.
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons, ThemeMode;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -151,12 +151,14 @@ class SettingsGroupBody extends ConsumerWidget {
           title: l10n.shellLanguage,
           value: l10n.setLanguageCurrent(
               lang == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish),
-          child: SegmentedChoice<Lang>(
+          child: BhorSegmented<Lang>(
             key: const Key('more-language'),
-            options: Lang.values,
-            selected: lang,
+            segments: <BhorSegment<Lang>>[
+              for (final Lang v in Lang.values)
+                BhorSegment<Lang>(v, v == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish),
+            ],
+            value: lang,
             onChanged: (Lang v) => ref.read(langProvider.notifier).set(v),
-            labelOf: (Lang v) => v == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish,
           ),
         ),
         SettingControlRow(
@@ -170,12 +172,18 @@ class SettingsGroupBody extends ConsumerWidget {
                 onChanged: (ThemeMode v) => ref.read(themeModeProvider.notifier).set(v),
               ),
               const SizedBox(height: 10),
-              SegmentedChoice<ThemeMode>(
+              BhorSegmented<ThemeMode>(
                 key: const Key('more-theme'),
-                options: const <ThemeMode>[ThemeMode.system, ThemeMode.light, ThemeMode.dark],
-                selected: mode,
+                segments: <BhorSegment<ThemeMode>>[
+                  for (final ThemeMode v in const <ThemeMode>[
+                    ThemeMode.system,
+                    ThemeMode.light,
+                    ThemeMode.dark,
+                  ])
+                    BhorSegment<ThemeMode>(v, themeName(v)),
+                ],
+                value: mode,
                 onChanged: (ThemeMode v) => ref.read(themeModeProvider.notifier).set(v),
-                labelOf: themeName,
               ),
             ],
           ),
@@ -185,12 +193,13 @@ class SettingsGroupBody extends ConsumerWidget {
         SettingControlRow(
           title: l10n.setWeekStart,
           value: fmt.weekdayName(weekStart),
-          child: SegmentedChoice<int>(
+          child: BhorSegmented<int>(
             key: const Key('more-week-start'),
-            options: const <int>[6, 7, 1],
-            selected: weekStart,
+            segments: <BhorSegment<int>>[
+              for (final int v in const <int>[6, 7, 1]) BhorSegment<int>(v, fmt.weekdayShort(v)),
+            ],
+            value: weekStart,
             onChanged: (int v) => saveSetting<int>(context, ref, SettingKeys.weekStart, v),
-            labelOf: fmt.weekdayShort,
           ),
         ),
         SettingSwitchRow(
@@ -208,7 +217,7 @@ class SettingsGroupBody extends ConsumerWidget {
   // ---- center ----
   List<Widget> _center(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     Widget pad(Widget child) =>
         Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: child);
     return <Widget>[
@@ -240,16 +249,10 @@ class SettingsGroupBody extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.check_circle_outline, size: 18, color: tokens.textSecondary),
+              Icon(Icons.check_circle_outline, size: 18, color: b.colors.text3),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  l10n.setAutoSaved,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: tokens.textSecondary),
-                ),
+                child: Text(l10n.setAutoSaved, style: b.type.meta),
               ),
             ],
           ),
@@ -522,16 +525,16 @@ class SettingsGroupBody extends ConsumerWidget {
           icon: Icons.font_download_outlined,
           title: l10n.setFontCredit,
           value: l10n.setFontCreditValue,
-          onTap: () => showDialog<void>(
-            context: context,
-            builder: (BuildContext ctx) => AlertDialog(
-              title: Text(l10n.setFontCredit),
-              content: Text(l10n.setFontCreditBody),
+          onTap: () => showBhorDialog<void>(
+            context,
+            builder: (BuildContext ctx) => BhorDialog(
+              title: l10n.setFontCredit,
+              message: l10n.setFontCreditBody,
               actions: <Widget>[
-                TextButton(
+                BhorButton(
+                  label: l10n.commonClose,
+                  variant: BhorButtonVariant.ghost,
                   onPressed: () => Navigator.of(ctx).pop(),
-                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                  child: Text(l10n.commonClose),
                 ),
               ],
             ),

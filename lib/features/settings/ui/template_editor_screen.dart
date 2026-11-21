@@ -4,14 +4,14 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_repository.dart';
@@ -106,9 +106,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     _dirty = false;
     _repo.set<String>(templateKey(_kind, lang), '').catchError((Object _) {});
     setState(() {});
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(context.l10n.setTplResetDone)));
+    BhorToast.show(context, message: context.l10n.setTplResetDone);
   }
 
   @override
@@ -142,14 +140,9 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       TemplateKind.receipt => l10n.shellTitleTemplateReceipt,
     };
     final Lang lang = _lang ?? context.lang;
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !embedded,
-        title: Semantics(header: true, child: Text(title)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
+    return BhorScaffold(
+      header: BhorHeader(title: title, showBack: embedded ? false : null),
+      body: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints c) {
             final Widget editor = _editorCard(context, lang);
             final Widget preview = _previewCard(context, lang);
@@ -174,32 +167,32 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
               ),
             );
           },
-        ),
       ),
     );
   }
 
   Widget _editorCard(BuildContext context, Lang lang) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final List<String> unknown = unknownPlaceholders(_kind, _controller.text);
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(l10n.setTplLanguage, style: tt.bodyLarge),
-          const SizedBox(height: 8),
-          SegmentedChoice<Lang>(
+          Text(l10n.setTplLanguage, style: b.type.body),
+          const SizedBox(height: BhorSpace.s8),
+          BhorSegmented<Lang>(
             key: const Key('template-lang'),
-            options: Lang.values,
-            selected: lang,
+            segments: <BhorSegment<Lang>>[
+              for (final Lang v in Lang.values)
+                BhorSegment<Lang>(v, v == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish),
+            ],
+            value: lang,
             onChanged: _switchLang,
-            labelOf: (Lang v) => v == Lang.bn ? l10n.shellLangBangla : l10n.shellLangEnglish,
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: BhorSpace.s16),
+          BhorTextField(
             key: const Key('template-field'),
             controller: _controller,
             enabled: _loaded,
@@ -207,55 +200,50 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
             maxLines: 14,
             keyboardType: TextInputType.multiline,
             onChanged: _changed,
-            decoration: InputDecoration(
-              labelText: l10n.setTplEditor,
-              helperText: l10n.setTplEmptyNote,
-              helperMaxLines: 2,
-              alignLabelWithHint: true,
-            ),
+            label: l10n.setTplEditor,
+            helper: l10n.setTplEmptyNote,
           ),
           if (unknown.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: BhorSpace.s8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(Icons.info_outline, size: 18, color: tokens.info),
-                  const SizedBox(width: 8),
+                  Icon(Icons.info_outline, size: 18, color: c.accent),
+                  const SizedBox(width: BhorSpace.s8),
                   Expanded(
                     child: Text(
                       l10n.setTplUnknown(unknown.map((String n) => '{$n}').join(', ')),
-                      style: tt.bodyMedium?.copyWith(color: tokens.info),
+                      style: b.type.meta.copyWith(color: c.accent),
                     ),
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 16),
-          Text(l10n.setTplChips, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s16),
+          Text(l10n.setTplChips, style: b.type.meta),
+          const SizedBox(height: BhorSpace.s8),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: BhorSpace.s8,
             children: <Widget>[
               for (final String name in placeholdersOf(_kind))
-                ActionChip(
+                BhorChip(
                   key: Key('chip-$name'),
-                  label: Text(_phLabel(l10n, name)),
-                  tooltip: '{$name}',
-                  materialTapTargetSize: MaterialTapTargetSize.padded,
-                  onPressed: _loaded ? () => _insert(name) : null,
+                  label: _phLabel(l10n, name),
+                  selected: false,
+                  onSelected: _loaded ? (bool _) => _insert(name) : null,
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: BhorSpace.s16),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: OutlinedButton.icon(
+            child: BhorButton(
               key: const Key('template-reset'),
+              variant: BhorButtonVariant.secondary,
               onPressed: _loaded ? _reset : null,
-              icon: const Icon(Icons.restart_alt),
-              label: Text(l10n.setTplReset),
+              icon: Icons.restart_alt,
+              label: l10n.setTplReset,
             ),
           ),
         ],
@@ -265,28 +253,27 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
 
   Widget _previewCard(BuildContext context, Lang lang) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return GlassCard(
-      dense: true,
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Semantics(header: true, child: Text(l10n.setTplPreview, style: tt.titleMedium)),
-          const SizedBox(height: 4),
-          Text(l10n.setTplSampleNote, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-          const SizedBox(height: 12),
+          Semantics(header: true, child: Text(l10n.setTplPreview, style: b.type.heading)),
+          const SizedBox(height: BhorSpace.s4),
+          Text(l10n.setTplSampleNote, style: b.type.meta),
+          const SizedBox(height: BhorSpace.s12),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: tokens.accentContainer,
-              borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
+              color: c.accentTint,
+              borderRadius: BorderRadius.circular(BhorRadius.control),
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Text(
                 renderPreview(_kind, lang, _controller.text),
                 key: const Key('template-preview'),
-                style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                style: b.type.body,
               ),
             ),
           ),

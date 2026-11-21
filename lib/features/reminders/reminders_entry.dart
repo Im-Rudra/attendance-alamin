@@ -1,9 +1,11 @@
 // Public surface of the reminders feature (plan section 1 #32). Signatures
 // frozen by M5-A; bodies by M8-D.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show MaterialPageRoute;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/data/notifications/notification_providers.dart';
@@ -70,7 +72,6 @@ Future<void> sendTestReminder(BuildContext context) async {
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
   final NotificationGateway gateway = container.read(notificationGatewayProvider);
   final l10n = context.l10n;
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   bool ok;
   try {
     final ReminderPermission perm = await gateway.permission();
@@ -84,7 +85,8 @@ Future<void> sendTestReminder(BuildContext context) async {
   } on Object {
     ok = false;
   }
-  messenger?.showSnackBar(SnackBar(content: Text(ok ? l10n.remindTestSent : l10n.remindTestFailed)));
+  if (!context.mounted) return;
+  BhorToast.show(context, message: ok ? l10n.remindTestSent : l10n.remindTestFailed);
 }
 
 /// Asks the running reminder service to replan now. Call it after the

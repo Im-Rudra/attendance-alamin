@@ -5,17 +5,17 @@
 // always shows something, never a blank area). Tap/Enter opens the profile or
 // batch; the query is remembered in the recent list (LocalMeta search_recent).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/search/controllers/search_engine.dart';
 import 'package:attendance_alamin/features/search/controllers/search_providers.dart';
 import 'package:attendance_alamin/features/search/widgets/search_tiles.dart';
@@ -138,7 +138,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     final Widget field = Focus(
       onKeyEvent: (FocusNode n, KeyEvent e) => _onKey(n, e, results),
-      child: TextField(
+      child: BhorTextField(
         key: const ValueKey<String>('search-field'),
         controller: _text,
         focusNode: _focus,
@@ -153,27 +153,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ref.read(recentSearchesProvider.notifier).add(_text.text);
           }
         },
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search),
-          hintText: l10n.searchHint,
-          suffixIcon: _text.text.isEmpty
-              ? null
-              : IconButton(
-                  key: const ValueKey<String>('search-clear'),
-                  tooltip: l10n.searchClearField,
-                  icon: const Icon(Icons.close),
-                  onPressed: () => _setQuery(''),
+        prefix: const Icon(Icons.search),
+        hint: l10n.searchHint,
+        semanticLabel: l10n.searchHint,
+        suffix: _text.text.isEmpty
+            ? null
+            : BhorPressable(
+                key: const ValueKey<String>('search-clear'),
+                onTap: () => _setQuery(''),
+                semanticLabel: l10n.searchClearField,
+                excludeChildSemantics: true,
+                builder: (BuildContext context, BhorStates st) => const SizedBox.square(
+                  dimension: 28,
+                  child: Center(child: Icon(Icons.close)),
                 ),
-        ),
+              ),
       ),
     );
 
     Widget listPane;
     if (async.hasError && index == null) {
-      listPane = EmptyState(
-          icon: Icons.error_outline, message: l10n.searchLoadFailed);
+      listPane = _EmptyCard(
+        child: BhorEmptyState(icon: Icons.error_outline, title: l10n.searchLoadFailed),
+      );
     } else if (index == null) {
-      listPane = const Center(child: CircularProgressIndicator());
+      listPane = const Center(child: BhorSpinner(size: 28));
     } else if (!hasQuery) {
       listPane = recent.isEmpty
           ? const _StartState()
@@ -183,11 +187,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               onClear: () => ref.read(recentSearchesProvider.notifier).clear(),
             );
     } else if (results.isEmpty) {
-      listPane = EmptyState(
-        icon: Icons.person_search_outlined,
-        message: l10n.searchNoResult(_text.text.trim()),
-        actionLabel: l10n.searchAddStudent,
-        onAction: () => GoRouter.maybeOf(context)?.push(Routes.studentNew),
+      listPane = _EmptyCard(
+        child: BhorEmptyState(
+          icon: Icons.person_search_outlined,
+          title: l10n.searchNoResult(_text.text.trim()),
+          action: BhorButton(
+            label: l10n.searchAddStudent,
+            onPressed: () => GoRouter.maybeOf(context)?.push(Routes.studentNew),
+          ),
+        ),
       );
     } else {
       listPane = _ResultList(
@@ -206,12 +214,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     Widget preview;
     if (effective == null) {
-      preview = GlassCard(
-        dense: true,
-        padding: EdgeInsets.zero,
-        child: EmptyState(
+      preview = _EmptyCard(
+        child: BhorEmptyState(
           icon: Icons.manage_search,
-          message: hasQuery && index != null
+          title: hasQuery && index != null
               ? l10n.searchPreviewHint
               : l10n.searchPreviewTyping,
         ),
@@ -233,35 +239,50 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.commonClose,
-          icon: const Icon(Icons.close),
-          onPressed: _close,
+    return BhorScaffold(
+      header: Padding(
+        padding: EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s8, g, BhorSpace.s8),
+        child: Row(
+          children: <Widget>[
+            BhorIconButton(
+              icon: Icons.close,
+              semanticLabel: l10n.commonClose,
+              color: context.bhor.colors.text,
+              onPressed: _close,
+            ),
+            const SizedBox(width: BhorSpace.s4),
+            Expanded(child: field),
+          ],
         ),
-        titleSpacing: 0,
-        title: field,
-        actions: const <Widget>[SizedBox(width: 12)],
       ),
-      body: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(g, 8, g, g),
-          child: wide
-              ? PaneSplit(
-                  screen: 'search',
-                  list: listPane,
-                  detail: preview,
-                  preferList: true,
-                  listMax: 520,
-                  detailMax: 900,
-                )
-              : listPane,
-        ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(g, 0, g, g),
+        child: wide
+            ? PaneSplit(
+                screen: 'search',
+                list: listPane,
+                detail: preview,
+                preferList: true,
+                listMax: 520,
+                detailMax: 900,
+              )
+            : listPane,
       ),
     );
   }
+}
+
+/// A card that centres an empty / message state.
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => BhorCard(
+        padding: EdgeInsets.zero,
+        child: Center(child: SingleChildScrollView(child: child)),
+      );
 }
 
 class _StartState extends StatelessWidget {
@@ -270,12 +291,11 @@ class _StartState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return GlassCard(
-      dense: true,
-      padding: EdgeInsets.zero,
-      child: EmptyState(
+    return _EmptyCard(
+      child: BhorEmptyState(
         icon: Icons.search,
-        message: '${l10n.searchStartTitle}\n${l10n.searchStartHelp}',
+        title: l10n.searchStartTitle,
+        message: l10n.searchStartHelp,
       ),
     );
   }
@@ -295,37 +315,41 @@ class _RecentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    return GlassCard(
-      dense: true,
+    final BhorThemeData b = context.bhor;
+    return BhorCard(
       padding: EdgeInsets.zero,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-        padding: const EdgeInsets.only(bottom: 16),
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: BhorSpace.s16),
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-            child: SectionHeader(
-              title: l10n.searchRecentTitle,
-              trailing: TextButton(
-                key: const ValueKey<String>('search-clear-recent'),
-                onPressed: onClear,
-                child: Text(l10n.searchClearRecent),
-              ),
+            padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s8, BhorSpace.s8, 0),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(l10n.searchRecentTitle, style: b.type.heading),
+                  ),
+                ),
+                BhorButton(
+                  key: const ValueKey<String>('search-clear-recent'),
+                  label: l10n.searchClearRecent,
+                  variant: BhorButtonVariant.ghost,
+                  size: BhorButtonSize.sm,
+                  onPressed: onClear,
+                ),
+              ],
             ),
           ),
           for (final String r in recent)
-            ListTile(
+            BhorListRow(
               key: ValueKey<String>('search-recent-$r'),
-              minVerticalPadding: 12,
-              leading: Icon(Icons.history, color: tokens.textSecondary),
-              title: Text(r, maxLines: 1, overflow: TextOverflow.ellipsis),
-              trailing: Icon(Icons.north_west, size: 18, color: tokens.textSecondary),
+              leading: Icon(Icons.history, color: b.colors.text3),
+              title: r,
+              trailing: Icon(Icons.north_west, size: 18, color: b.colors.text3),
               onTap: () => onPick(r),
             ),
         ],
-      ),
       ),
     );
   }
@@ -347,15 +371,13 @@ class _ResultList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     Widget header(String text) => Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Semantics(
             header: true,
-            child: Text(text,
-                style: tt.labelLarge?.copyWith(color: tokens.accent)),
+            child: Text(text, style: b.type.label.copyWith(color: b.colors.accent)),
           ),
         );
 
@@ -382,11 +404,10 @@ class _ResultList extends StatelessWidget {
           ),
       ],
     ];
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       padding: EdgeInsets.zero,
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: BhorSpace.s16),
         children: children,
       ),
     );

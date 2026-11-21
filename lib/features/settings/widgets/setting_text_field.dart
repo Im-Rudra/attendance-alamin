@@ -4,10 +4,10 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
@@ -107,19 +107,15 @@ class _SettingTextFieldState extends ConsumerState<SettingTextField> {
       onFocusChange: (bool focused) {
         if (!focused) _commit();
       },
-      child: TextField(
+      child: BhorTextField(
         controller: _controller,
         keyboardType: widget.isPhone ? TextInputType.phone : TextInputType.text,
         textInputAction: TextInputAction.done,
-        inputFormatters: <TextInputFormatter>[LengthLimitingTextInputFormatter(widget.maxLength)],
-        decoration: InputDecoration(
-          labelText: widget.label,
-          hintText: widget.hint,
-          helperText: widget.helper,
-          helperMaxLines: 2,
-          errorText: _error == null ? null : errorText(l10n, _error!),
-          errorMaxLines: 2,
-        ),
+        maxLength: widget.maxLength,
+        label: widget.label,
+        hint: widget.hint,
+        helper: widget.helper,
+        error: _error == null ? null : errorText(l10n, _error!),
         onChanged: _changed,
         onSubmitted: (_) => _commit(),
       ),

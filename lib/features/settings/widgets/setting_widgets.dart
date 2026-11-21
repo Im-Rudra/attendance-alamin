@@ -2,12 +2,12 @@
 // two-line row (label + current value), a switch row, an info chip, a header
 // and a two-column arrangement for wide windows.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 
-/// Section title above a group (labelLarge in accent, UX 3a).
+/// Section title above a group (UX 3a).
 class SettingsHeader extends StatelessWidget {
   const SettingsHeader(this.text, {super.key});
 
@@ -15,18 +15,12 @@ class SettingsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
-        child: Semantics(
-          header: true,
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.aurora.accent),
-          ),
-        ),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s8, BhorSpace.s4, 0),
+        child: BhorSectionHeader(title: text),
       );
 }
 
-/// A dense glass card holding rows separated by hairline dividers.
+/// A dense card holding rows separated by hairline dividers.
 class SettingsCard extends StatelessWidget {
   const SettingsCard({super.key, required this.children});
 
@@ -34,28 +28,28 @@ class SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        type: MaterialType.transparency,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (int i = 0; i < children.length; i++) ...<Widget>[
-              if (i > 0) Divider(height: 1, indent: 16, endIndent: 16, color: tokens.track),
-              children[i],
-            ],
+    final BhorColors c = context.bhor.colors;
+    return BhorCard(
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int i = 0; i < children.length; i++) ...<Widget>[
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
+                child: SizedBox(height: 1, child: ColoredBox(color: c.line)),
+              ),
+            children[i],
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Two-line row: label, then the current value in textSecondary. Optional
+/// Two-line row: label, then the current value in text2. Optional
 /// leading icon, trailing widget (a chevron when it is tappable).
 class SettingRow extends StatelessWidget {
   const SettingRow({
@@ -77,49 +71,44 @@ class SettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final Widget? end = trailing ??
-        (onTap == null ? null : Icon(Icons.chevron_right, color: tokens.textSecondary));
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        (onTap == null ? null : Icon(Icons.chevron_right, color: c.text3));
+    Widget row(BhorStates s) => Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 10),
+          color: s.hovered || s.pressed ? c.surface2 : null,
           child: Row(
             children: <Widget>[
               if (icon != null) ...<Widget>[
-                Icon(icon, color: destructive ? tokens.error : tokens.accent),
-                const SizedBox(width: 16),
+                Icon(icon, color: destructive ? c.danger : c.accent),
+                const SizedBox(width: BhorSpace.s16),
               ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: tt.bodyLarge?.copyWith(
-                        color: destructive ? tokens.error : tokens.textPrimary,
-                      ),
-                    ),
+                    Text(title, style: b.type.body.copyWith(color: destructive ? c.danger : c.text)),
                     if (value != null && value!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          value!,
-                          style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                        ),
+                        child: Text(value!, style: b.type.meta),
                       ),
                   ],
                 ),
               ),
-              if (end != null) ...<Widget>[const SizedBox(width: 8), end],
+              if (end != null) ...<Widget>[const SizedBox(width: BhorSpace.s8), end],
             ],
           ),
-        ),
-      ),
+        );
+    if (onTap == null) return row(const BhorStates());
+    return BhorPressable(
+      onTap: onTap,
+      scaleOnPress: false,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => row(s),
     );
   }
 }
@@ -153,7 +142,7 @@ class SettingSwitchRow extends StatelessWidget {
             value: subtitle,
             icon: icon,
             onTap: () => onChanged(!value),
-            trailing: Switch(value: value, onChanged: onChanged),
+            trailing: BhorSwitch(value: value, onChanged: onChanged),
           ),
         ),
       );
@@ -169,21 +158,20 @@ class SettingControlRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s12, BhorSpace.s16, BhorSpace.s12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(title, style: tt.bodyLarge?.copyWith(color: tokens.textPrimary)),
+          Text(title, style: b.type.body),
           if (value != null && value!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(value!, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+              child: Text(value!, style: b.type.meta),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: BhorSpace.s12),
           child,
         ],
       ),
@@ -201,28 +189,26 @@ class SettingInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      margin: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s8),
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
       decoration: BoxDecoration(
-        color: tokens.infoContainer,
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusChip + 4),
+        color: c.accentTint,
+        borderRadius: BorderRadius.circular(BhorRadius.control),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.info_outline, size: 20, color: tokens.info),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message, style: tt.bodyMedium?.copyWith(color: tokens.info))),
+          Icon(Icons.info_outline, size: 20, color: c.accent),
+          const SizedBox(width: BhorSpace.s8),
+          Expanded(child: Text(message, style: b.type.meta.copyWith(color: c.text))),
           if (actionLabel != null && onAction != null)
-            TextButton(
+            BhorButton(
+              label: actionLabel!,
+              variant: BhorButtonVariant.ghost,
+              size: BhorButtonSize.sm,
               onPressed: onAction,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: tokens.info,
-              ),
-              child: Text(actionLabel!),
             ),
         ],
       ),
