@@ -14,6 +14,7 @@ import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_empty.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_filters.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_group_header.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
@@ -76,7 +77,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
       data: (DuesView view) {
         if (report == null) return const Center(child: CircularProgressIndicator());
         if (report.active.isEmpty && report.inactive.isEmpty) {
-          return EmptyState(icon: Icons.check_circle_outline, message: l10n.duesAllPaid);
+          return const DuesEmptyState();
         }
         return widget.table ? _buildTable(view, report, g) : _buildList(view, report, g);
       },

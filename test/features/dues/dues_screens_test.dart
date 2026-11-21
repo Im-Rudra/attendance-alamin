@@ -14,6 +14,7 @@ import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
@@ -21,6 +22,9 @@ import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/dues_entry.dart';
 import 'package:attendance_alamin/features/dues/ui/collection_screen.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_empty.dart';
+import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
+import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_table.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
@@ -80,6 +84,31 @@ SeededFakes _withReminded(SeededFakes f, Set<String> ids) => SeededFakes(
 SeededFakes _nobodyOwes() {
   final SeededFakes f = seedFakes();
   f.enrollments.terms.clear();
+  return f;
+}
+
+/// Students are enrolled but billing starts next month (nothing is owed yet).
+SeededFakes _billingNotStarted() {
+  final SeededFakes f = seedFakes(withPayments: false);
+  for (int i = 0; i < f.enrollments.terms.length; i++) {
+    final EnrollmentTerms t = f.enrollments.terms[i];
+    f.enrollments.terms[i] = EnrollmentTerms(
+      enrollmentId: t.enrollmentId,
+      studentId: t.studentId,
+      batchId: t.batchId,
+      studentName: t.studentName,
+      batchName: t.batchName,
+      subjectName: t.subjectName,
+      billing: t.billing,
+      start: const YearMonth(2026, 12),
+      end: t.end,
+      batchFees: t.batchFees,
+      overrides: t.overrides,
+      batchArchived: t.batchArchived,
+      studentLeft: t.studentLeft,
+      enrollmentEnded: t.enrollmentEnded,
+    );
+  }
   return f;
 }
 
@@ -274,9 +303,37 @@ void main() {
       );
     });
 
-    testWidgets('nobody owes: the everyone-paid empty state', (WidgetTester tester) async {
+    testWidgets('no students at all: "no dues", never "everyone paid"', (WidgetTester tester) async {
       await _pumpFeesPhone(tester, _nobodyOwes(), lang: Lang.en);
-      expect(find.text(_l10n(Lang.en).duesAllPaid), findsOneWidget);
+      expect(find.text(_l10n(Lang.en).duesNoneYet), findsOneWidget);
+      expect(find.text(_l10n(Lang.en).duesAllPaid), findsNothing);
+    });
+
+    testWidgets('billing has not started: says when it starts, never "everyone paid"',
+        (WidgetTester tester) async {
+      await _pumpFeesPhone(tester, _billingNotStarted());
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.text(l10n.duesNotStarted('ডিসেম্বর ২০২৬')), findsOneWidget);
+      expect(find.text(l10n.duesAllPaid), findsNothing);
+      expect(find.text(l10n.duesSeeStudents), findsOneWidget);
+    });
+
+    testWidgets('the everyone-paid message needs fees billed this month', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        Builder(
+          builder: (BuildContext c) => Column(
+            children: <Widget>[
+              Text(duesEmptyMessage(c, const BillingStatus(hasEnrollments: true, billedThisMonth: true))),
+              Text(duesEmptyMessage(c, const BillingStatus(hasEnrollments: true))),
+            ],
+          ),
+        ),
+        overrides: seedFakes().overrides,
+      );
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.text(l10n.duesAllPaid), findsOneWidget);
+      expect(find.text(l10n.duesNoneYet), findsOneWidget);
     });
 
     testWidgets('call and collect are on every row', (WidgetTester tester) async {
@@ -329,6 +386,43 @@ void main() {
   });
 
   // ---- desktop layout ----------------------------------------------------------
+  group('take money', () {
+    testWidgets('the Fees tab has a take-money button that opens the picker, then the collect sheet',
+        (WidgetTester tester) async {
+      await _pumpFeesPhone(tester, seedFakes());
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.byKey(const ValueKey<String>('fees-take-money')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey<String>('fees-take-money')));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.duesPickerTitle), findsOneWidget);
+      // Search by a Bangla-digit phone prefix.
+      await tester.enterText(find.byKey(const ValueKey<String>('picker-search')), '০১৭১১২');
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey<String>('picker-$kStuRahim')), findsOneWidget);
+      expect(find.byKey(ValueKey<String>('picker-$kStuNila')), findsNothing);
+      await tester.tap(find.byKey(ValueKey<String>('picker-$kStuRahim')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
+    });
+
+    test('picker search matches name, roll and phone in either digit style', () {
+      final Student rahim = kStudents.first;
+      expect(pickerMatches(rahim, '০১৭১১'), isTrue);
+      expect(pickerMatches(rahim, '01711'), isTrue);
+      expect(pickerMatches(rahim, 'রহিম'), isTrue);
+      expect(pickerMatches(rahim, '9'), isFalse);
+    });
+
+    testWidgets('the other-income action lives in a labelled menu', (WidgetTester tester) async {
+      await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.byIcon(Icons.add_card_outlined), findsNothing);
+      await tester.tap(find.byKey(const Key('coll-menu')));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.collOtherIncomeMenu), findsOneWidget);
+    });
+  });
+
   group('desktop', () {
     testWidgets('large window: dues table beside the payment panel', (WidgetTester tester) async {
       await pumpApp(

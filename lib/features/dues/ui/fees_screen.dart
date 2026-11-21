@@ -20,6 +20,7 @@ import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_selected_pane.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
+import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
 
 class FeesScreen extends ConsumerWidget {
   const FeesScreen({super.key, this.selectedStudentId});
@@ -103,6 +104,14 @@ class _FeesListScaffold extends StatelessWidget {
             automaticallyImplyLeading: !PaneScope.isEmbedded(context),
             title: Semantics(header: true, child: Text(l10n.navFees)),
             actions: <Widget>[
+              if (wc.usesRail)
+                FilledButton.icon(
+                  key: const ValueKey<String>('fees-take-money'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                  onPressed: () => showTakeMoneyPicker(context),
+                  icon: const Icon(Icons.payments_outlined),
+                  label: Text(l10n.payTitle),
+                ),
               IconButton(
                 tooltip: l10n.commonSearch,
                 icon: const Icon(Icons.manage_search),
@@ -111,6 +120,19 @@ class _FeesListScaffold extends StatelessWidget {
               const SizedBox(width: 8),
             ],
           ),
+          floatingActionButton: wc.usesRail
+              ? null
+              : Padding(
+                  // Lift the button above the floating nav pill.
+                  padding: const EdgeInsets.only(bottom: 84),
+                  child: FloatingActionButton.extended(
+                    key: const ValueKey<String>('fees-take-money'),
+                    heroTag: null,
+                    onPressed: () => showTakeMoneyPicker(context),
+                    icon: const Icon(Icons.payments_outlined),
+                    label: Text(l10n.payTitle),
+                  ),
+                ),
           body: SafeArea(
             top: false,
             child: Column(

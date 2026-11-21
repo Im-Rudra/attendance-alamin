@@ -27,6 +27,7 @@ Future<String?> openCollectPaymentSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     showDragHandle: true,
     constraints: const BoxConstraints(maxWidth: 560),
     builder: (BuildContext ctx) => Padding(
@@ -56,6 +57,7 @@ Future<bool> showEditPaymentSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     showDragHandle: true,
     constraints: const BoxConstraints(maxWidth: 560),
     builder: (BuildContext ctx) => Padding(

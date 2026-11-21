@@ -1,5 +1,6 @@
 import 'package:attendance_alamin/app/providers/async_combine.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
+import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
@@ -108,4 +109,72 @@ final batchDuesProvider =
     }
     return BatchDuesSummary(worst: worst, count: students.length, total: total);
   });
+});
+
+/// Where billing stands overall: used so an empty dues list never claims
+/// "everyone paid" when billing simply has not started yet.
+class BillingStatus {
+  const BillingStatus({
+    this.hasEnrollments = false,
+    this.firstUpcoming,
+    this.billedThisMonth = false,
+  });
+
+  /// At least one live enrollment (student not left, batch not archived).
+  final bool hasEnrollments;
+
+  /// Earliest billing month after the current one, when no live enrollment
+  /// bills in the current month yet.
+  final YearMonth? firstUpcoming;
+
+  /// Some live enrollment has a fee on record for the current month.
+  final bool billedThisMonth;
+
+  /// Students are enrolled but nobody is billed yet.
+  bool get notStarted => hasEnrollments && firstUpcoming != null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is BillingStatus &&
+      other.hasEnrollments == hasEnrollments &&
+      other.firstUpcoming == firstUpcoming &&
+      other.billedThisMonth == billedThisMonth;
+
+  @override
+  int get hashCode => Object.hash(hasEnrollments, firstUpcoming, billedThisMonth);
+}
+
+final billingStatusProvider = Provider<AsyncValue<BillingStatus>>((ref) {
+  final today = ref.watch(todayProvider);
+  return combine2(
+    ref.watch(enrollmentTermsProvider),
+    ref.watch(paymentFactsProvider),
+    (terms, facts) {
+      final current = today.yearMonth;
+      var has = false;
+      var started = false;
+      var billed = false;
+      YearMonth? upcoming;
+      for (final t in terms) {
+        if (t.studentLeft || t.batchArchived || t.enrollmentEnded) continue;
+        has = true;
+        if (t.start.isAfter(current)) {
+          if (upcoming == null || t.start.isBefore(upcoming)) upcoming = t.start;
+          continue;
+        }
+        started = true;
+        final dues = DuesEngine.forEnrollment(terms: t, payments: facts, today: today);
+        for (final m in dues.months) {
+          if (m.month == current && (m.fee > 0 || m.state == MonthState.waived)) {
+            billed = true;
+          }
+        }
+      }
+      return BillingStatus(
+        hasEnrollments: has,
+        firstUpcoming: started ? null : upcoming,
+        billedThisMonth: billed,
+      );
+    },
+  );
 });

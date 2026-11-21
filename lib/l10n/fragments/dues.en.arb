@@ -49,5 +49,12 @@
   "duesOpenCollection": "Open monthly collection",
   "duesFeesEmpty": "No fees are billed for this batch this month",
   "duesCenterFallback": "Your Coaching",
-  "duesReminderFailed": "Could not prepare the message"
+  "duesReminderFailed": "Could not prepare the message",
+  "duesNotStarted": "Nobody's billing has started yet — it starts from {month}",
+  "duesNoneYet": "No dues",
+  "duesSeeStudents": "See students",
+  "duesPickerTitle": "Whose payment?",
+  "duesPickerSearch": "Type a name, roll or phone number",
+  "duesPickerNone": "Nobody found",
+  "duesPickerOwes": "{amount} due"
 }

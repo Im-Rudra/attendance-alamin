@@ -427,5 +427,35 @@
         "type": "String"
       }
     }
+  },
+  "payMonthAdvance": "{months} অগ্রিম",
+  "@payMonthAdvance": {
+    "description": "Plain line naming what an advance payment is for, e.g. ডিসেম্বরের অগ্রিম.",
+    "placeholders": {
+      "months": {
+        "type": "String",
+        "example": "ডিসেম্বরের"
+      }
+    }
+  },
+  "payChipAdvance": "{month} · অগ্রিম",
+  "@payChipAdvance": {
+    "description": "Month chip of a month that is not due yet.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "ডিসেম্বর"
+      }
+    }
+  },
+  "payChipPartial": "{month} · আংশিক",
+  "@payChipPartial": {
+    "description": "Month chip of a partly paid month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর"
+      }
+    }
   }
 }

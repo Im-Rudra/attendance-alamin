@@ -5,8 +5,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/providers/dues_providers.dart';
+import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -18,7 +21,7 @@ import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 // ---- block 1: the billing month ---------------------------------------------
 
-class BillingBlock extends StatelessWidget {
+class BillingBlock extends ConsumerWidget {
   const BillingBlock({super.key, required this.summary, required this.onSeeDues});
 
   final CollectionSummary summary;
@@ -27,12 +30,13 @@ class BillingBlock extends StatelessWidget {
   final VoidCallback onSeeDues;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
     final tokens = context.aurora;
     final TextTheme tt = Theme.of(context).textTheme;
     final MonthTotals t = summary.totals;
+    final BillingStatus? status = ref.watch(billingStatusProvider).value;
     final bool nothing = t.expected == 0 && t.waivedCount == 0;
 
     final List<Widget> children = <Widget>[
@@ -42,10 +46,26 @@ class BillingBlock extends StatelessWidget {
       children.add(
         GlassCard(
           dense: true,
-          child: Text(
-            l10n.collNothingBilled,
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-          ),
+          child: status != null && status.notStarted
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      l10n.duesNotStarted(fmt.monthYear(status.firstUpcoming!)),
+                      key: const ValueKey<String>('coll-not-started'),
+                      style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                      onPressed: () => GoRouter.maybeOf(context)?.go(Routes.students),
+                      child: Text(l10n.duesSeeStudents),
+                    ),
+                  ],
+                )
+              : Text(
+                  l10n.collNothingBilled,
+                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                ),
         ),
       );
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);

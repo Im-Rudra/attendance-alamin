@@ -159,6 +159,10 @@ class _AllPaid extends ConsumerWidget {
     final sev = context.severity;
     final TextTheme tt = Theme.of(context).textTheme;
     final int collected = ref.watch(todayCollectionProvider).value?.collected ?? 0;
+    final BillingStatus? status = ref.watch(billingStatusProvider).value;
+    final bool notStarted = status != null && status.notStarted;
+    // "Everyone has paid" only when this month had fees and all are paid.
+    final bool allPaid = !notStarted && (collected > 0 || (status?.billedThisMonth ?? false));
     return TileFrame(
       onTap: () => goRoute(context, Routes.fees),
       header: TileHeader(
@@ -174,7 +178,7 @@ class _AllPaid extends ConsumerWidget {
               decoration: BoxDecoration(color: sev.paidFill, shape: BoxShape.circle),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Icon(Icons.check, size: 32, color: sev.paidText),
+                child: Icon(notStarted ? Icons.schedule : Icons.check, size: 32, color: sev.paidText),
               ),
             ),
             const SizedBox(width: 16),
@@ -186,13 +190,15 @@ class _AllPaid extends ConsumerWidget {
                   Text(
                     // "Everyone has paid" only when money came in this month;
                     // with nothing collected nobody owed anything yet.
-                    collected > 0 ? l10n.todayDuesAllPaid : l10n.todayDuesNone,
+                    notStarted
+                        ? l10n.duesNotStarted(fmt.monthYear(status.firstUpcoming!))
+                        : (allPaid ? l10n.todayDuesAllPaid : l10n.todayDuesNone),
                     style: tt.titleMedium?.copyWith(
                       color: tokens.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (collected > 0)
+                  if (allPaid && collected > 0)
                     Text(
                       l10n.todayDuesAllPaidSub(fmt.money(collected)),
                       style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),

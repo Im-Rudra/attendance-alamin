@@ -25,5 +25,6 @@
   "collNothingBilled": "No fees are billed this month",
   "collProgressLabel": "Received {received}, expected {expected}",
   "collAddOtherIncome": "Add other income",
-  "collExportCsv": "Export CSV"
+  "collExportCsv": "Export CSV",
+  "collOtherIncomeMenu": "Other income (admission/exam fee)"
 }

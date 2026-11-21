@@ -87,17 +87,40 @@ CollectPlan buildPlan({
   required LocalDate today,
   int? amount,
   Map<YearMonth, int>? split,
+  YearMonth? start,
 }) {
   final YearMonth horizon = today.yearMonth.addMonths(12);
   final List<MonthDue> open = <MonthDue>[
     for (final MonthDue md in dues.months)
       if (md.isOpen && !md.month.isAfter(horizon)) md,
   ];
+  // The month the teacher picked on the chips: the amount starts there.
+  final List<MonthDue> openFrom = start == null
+      ? open
+      : <MonthDue>[
+          for (final MonthDue md in open)
+            if (!md.month.isBefore(start)) md,
+        ];
+  final EnrollmentDues from = start == null
+      ? dues
+      : EnrollmentDues(
+          terms: dues.terms,
+          months: <MonthDue>[
+            for (final MonthDue md in dues.months)
+              if (!md.month.isBefore(start)) md,
+          ],
+          openDue: dues.openDue,
+          totalOutstanding: dues.totalOutstanding,
+          inactive: dues.inactive,
+          worst: dues.worst,
+          worstDay: dues.worstDay,
+          oldestOpenDue: dues.oldestOpenDue,
+        );
   final Map<YearMonth, MonthDue> byMonth = <YearMonth, MonthDue>{
     for (final MonthDue md in dues.months) md.month: md,
   };
-  final int prefill = open.isEmpty ? 0 : open.first.remaining;
-  final int maxPlaceable = open.fold<int>(0, (int s, MonthDue m) => s + m.remaining);
+  final int prefill = openFrom.isEmpty ? 0 : openFrom.first.remaining;
+  final int maxPlaceable = openFrom.fold<int>(0, (int s, MonthDue m) => s + m.remaining);
 
   CollectPlan rejected(PlanProblem p, int total, [List<Allocation> entered = const <Allocation>[]]) => CollectPlan(
         allocations: entered,
@@ -128,9 +151,9 @@ CollectPlan buildPlan({
   } else {
     final int wanted = amount ?? prefill;
     if (wanted <= 0) return rejected(PlanProblem.noAmount, 0);
-    if (open.isEmpty) return rejected(PlanProblem.nothingOpen, wanted);
+    if (openFrom.isEmpty) return rejected(PlanProblem.nothingOpen, wanted);
     try {
-      allocations = DuesEngine.autoAllocate(dues: dues, amount: wanted, today: today);
+      allocations = DuesEngine.autoAllocate(dues: from, amount: wanted, today: today);
     } on ValidationException catch (e) {
       return rejected(
         e.code == ErrorCodes.allocationBeyondHorizon ? PlanProblem.overflow : PlanProblem.noAmount,
@@ -211,6 +234,7 @@ class CollectInput {
     this.enrollmentId,
     this.amountText,
     this.split,
+    this.startMonth,
     this.method,
     this.paidOn,
     this.note = '',
@@ -237,6 +261,9 @@ class CollectInput {
 
   /// Manual split by month; null = automatic.
   final Map<YearMonth, int>? split;
+
+  /// The month chip the teacher tapped; null = the oldest open month.
+  final YearMonth? startMonth;
   final PaymentMethod? method;
   final LocalDate? paidOn;
   final String note;
@@ -258,6 +285,8 @@ class CollectInput {
     bool clearAmount = false,
     Map<YearMonth, int>? split,
     bool clearSplit = false,
+    YearMonth? startMonth,
+    bool clearStart = false,
     PaymentMethod? method,
     LocalDate? paidOn,
     String? note,
@@ -269,6 +298,7 @@ class CollectInput {
       enrollmentId: enrollmentId ?? this.enrollmentId,
       amountText: clearAmount ? null : (amountText ?? this.amountText),
       split: clearSplit ? null : (split ?? this.split),
+      startMonth: clearStart ? null : (startMonth ?? this.startMonth),
       method: method ?? this.method,
       paidOn: paidOn ?? this.paidOn,
       note: note ?? this.note,
@@ -324,6 +354,12 @@ class CollectPaymentController extends Notifier<CollectInput> {
     );
   }
 
+  /// A month chip was tapped: pay from [month] on (the amount and any split
+  /// start over).
+  void pickMonth(YearMonth month) {
+    state = state.copyWith(startMonth: month, clearAmount: true, clearSplit: true, clearError: true);
+  }
+
   /// [ascii] holds digits only. A typed amount drops a manual split.
   void setAmount(String ascii) {
     state = state.copyWith(amountText: ascii, clearSplit: true, clearError: true);
@@ -372,7 +408,13 @@ class CollectPaymentController extends Notifier<CollectInput> {
         ref.read(payDuesProvider((enrollmentId: enrollmentId, receiptId: args.receiptId))).value;
     if (dues == null) return null;
     final LocalDate today = ref.read(todayProvider);
-    final CollectPlan plan = buildPlan(dues: dues, today: today, amount: input.amount, split: input.split);
+    final CollectPlan plan = buildPlan(
+      dues: dues,
+      today: today,
+      amount: input.amount,
+      split: input.split,
+      start: input.startMonth,
+    );
     if (!plan.ok) return null;
 
     final List<PaymentMethod> visible = ref.read(paymentMethodsConfigProvider).visible;
