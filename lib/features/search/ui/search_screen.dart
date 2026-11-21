@@ -5,7 +5,6 @@
 // always shows something, never a blank area). Tap/Enter opens the profile or
 // batch; the query is remembered in the recent list (LocalMeta search_recent).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,7 +152,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ref.read(recentSearchesProvider.notifier).add(_text.text);
           }
         },
-        prefix: const Icon(Icons.search),
+        prefix: const Icon(BhorIcons.search),
         hint: l10n.searchHint,
         semanticLabel: l10n.searchHint,
         suffix: _text.text.isEmpty
@@ -165,7 +164,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 excludeChildSemantics: true,
                 builder: (BuildContext context, BhorStates st) => const SizedBox.square(
                   dimension: 28,
-                  child: Center(child: Icon(Icons.close)),
+                  child: Center(child: Icon(BhorIcons.close)),
                 ),
               ),
       ),
@@ -174,7 +173,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     Widget listPane;
     if (async.hasError && index == null) {
       listPane = _EmptyCard(
-        child: BhorEmptyState(icon: Icons.error_outline, title: l10n.searchLoadFailed),
+        child: BhorEmptyState(icon: BhorIcons.warning, title: l10n.searchLoadFailed),
       );
     } else if (index == null) {
       listPane = const Center(child: BhorSpinner(size: 28));
@@ -189,7 +188,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     } else if (results.isEmpty) {
       listPane = _EmptyCard(
         child: BhorEmptyState(
-          icon: Icons.person_search_outlined,
+          icon: BhorIcons.search,
           title: l10n.searchNoResult(_text.text.trim()),
           action: BhorButton(
             label: l10n.searchAddStudent,
@@ -216,7 +215,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (effective == null) {
       preview = _EmptyCard(
         child: BhorEmptyState(
-          icon: Icons.manage_search,
+          icon: BhorIcons.search,
           title: hasQuery && index != null
               ? l10n.searchPreviewHint
               : l10n.searchPreviewTyping,
@@ -239,34 +238,73 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    return BhorScaffold(
-      header: Padding(
-        padding: EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s8, g, BhorSpace.s8),
-        child: Row(
-          children: <Widget>[
-            BhorIconButton(
-              icon: Icons.close,
-              semanticLabel: l10n.commonClose,
-              color: context.bhor.colors.text,
-              onPressed: _close,
-            ),
-            const SizedBox(width: BhorSpace.s4),
-            Expanded(child: field),
-          ],
-        ),
+    final Widget header = Padding(
+      padding: EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s8, wide ? BhorSpace.s16 : g, BhorSpace.s8),
+      child: Row(
+        children: <Widget>[
+          BhorIconButton(
+            icon: BhorIcons.close,
+            semanticLabel: l10n.commonClose,
+            color: context.bhor.colors.text,
+            onPressed: _close,
+          ),
+          const SizedBox(width: BhorSpace.s4),
+          Expanded(child: field),
+        ],
       ),
-      body: Padding(
-        padding: EdgeInsets.fromLTRB(g, 0, g, g),
-        child: wide
-            ? PaneSplit(
-                screen: 'search',
-                list: listPane,
-                detail: preview,
-                preferList: true,
-                listMax: 520,
-                detailMax: 900,
-              )
-            : listPane,
+    );
+    final Widget body = wide
+        ? PaneSplit(
+            screen: 'search',
+            list: listPane,
+            detail: BhorPaneSwitcher(paneKey: effective, child: preview),
+            preferList: true,
+            listMax: 520,
+            detailMax: 900,
+          )
+        : listPane;
+
+    if (!wide) {
+      return BhorScaffold(
+        header: header,
+        body: Padding(padding: EdgeInsets.fromLTRB(g, 0, g, g), child: body),
+      );
+    }
+    // Desktop: a command palette floating over the page (Esc closes it,
+    // Up / Down move through the results, Enter opens).
+    final BhorColors c = context.bhor.colors;
+    return BhorScaffold(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(g, BhorSpace.s32, g, g),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1040),
+            child: DecoratedBox(
+              key: const Key('search-palette'),
+              decoration: BoxDecoration(
+                color: c.surface,
+                borderRadius: BorderRadius.circular(BhorRadius.hero),
+                border: Border.all(color: c.line),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(BhorRadius.hero),
+                child: Column(
+                  children: <Widget>[
+                    header,
+                    Container(height: 1, color: c.line),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(BhorSpace.s16),
+                        child: body,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -293,7 +331,7 @@ class _StartState extends StatelessWidget {
     final l10n = context.l10n;
     return _EmptyCard(
       child: BhorEmptyState(
-        icon: Icons.search,
+        icon: BhorIcons.search,
         title: l10n.searchStartTitle,
         message: l10n.searchStartHelp,
       ),
@@ -344,9 +382,9 @@ class _RecentList extends StatelessWidget {
           for (final String r in recent)
             BhorListRow(
               key: ValueKey<String>('search-recent-$r'),
-              leading: Icon(Icons.history, color: b.colors.text3),
+              leading: Icon(BhorIcons.clock, color: b.colors.text3),
               title: r,
-              trailing: Icon(Icons.north_west, size: 18, color: b.colors.text3),
+              trailing: Icon(BhorIcons.arrowRight, size: 18, color: b.colors.text3),
               onTap: () => onPick(r),
             ),
         ],
@@ -381,34 +419,43 @@ class _ResultList extends StatelessWidget {
           ),
         );
 
+    int i = 0;
     final List<Widget> children = <Widget>[
       if (results.students.isNotEmpty) ...<Widget>[
         header(l10n.searchGroupStudents),
         for (final StudentEntry e in results.students)
-          SearchStudentTile(
+          BhorStagger(
             key: ValueKey<String>('search-student-${e.id}'),
-            entry: e,
-            query: query,
-            selected: selected == 's:${e.id}',
-            onTap: () => onTap('s:${e.id}'),
+            index: i++,
+            child: SearchStudentTile(
+              entry: e,
+              query: query,
+              selected: selected == 's:${e.id}',
+              onTap: () => onTap('s:${e.id}'),
+            ),
           ),
       ],
       if (results.batches.isNotEmpty) ...<Widget>[
         header(l10n.searchGroupBatches),
         for (final BatchEntry e in results.batches)
-          SearchBatchTile(
+          BhorStagger(
             key: ValueKey<String>('search-batch-${e.id}'),
-            entry: e,
-            selected: selected == 'b:${e.id}',
-            onTap: () => onTap('b:${e.id}'),
+            index: i++,
+            child: SearchBatchTile(
+              entry: e,
+              selected: selected == 'b:${e.id}',
+              onTap: () => onTap('b:${e.id}'),
+            ),
           ),
       ],
     ];
-    return BhorCard(
-      padding: EdgeInsets.zero,
-      child: ListView(
-        padding: const EdgeInsets.only(bottom: BhorSpace.s16),
-        children: children,
+    return BhorStaggerScope(
+      child: BhorCard(
+        padding: EdgeInsets.zero,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: BhorSpace.s16),
+          children: children,
+        ),
       ),
     );
   }

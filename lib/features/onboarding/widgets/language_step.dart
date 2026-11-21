@@ -1,7 +1,7 @@
 // Step 1: two huge language cards, the theme row and the optional center name.
 // The language switches the whole app the moment a card is tapped.
 
-import 'package:flutter/material.dart' show Icons, ThemeMode;
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,9 +137,22 @@ class _LangCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Expanded(child: Text(title, style: b.type.title.copyWith(color: selected ? c.accent : c.text))),
-                Icon(
-                  selected ? Icons.check_circle : Icons.circle_outlined,
-                  color: selected ? c.accent : c.text3,
+                AnimatedSwitcher(
+                  duration: BhorMotion.base,
+                  switchInCurve: BhorMotion.spring,
+                  transitionBuilder: (Widget w, Animation<double> a) => ScaleTransition(scale: a, child: w),
+                  child: selected
+                      ? Icon(BhorIcons.checkCircleFill, key: const ValueKey<String>('on'), color: c.accent)
+                      : Container(
+                          key: const ValueKey<String>('off'),
+                          width: 22,
+                          height: 22,
+                          margin: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.text3, width: 1.5),
+                          ),
+                        ),
                 ),
               ],
             ),

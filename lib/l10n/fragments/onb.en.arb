@@ -66,5 +66,6 @@
   "onbCoachGotIt": "Got it",
   "onbCoachSemantics": "Tip: roll call button",
   "onbBillingStartNote": "Fees start: this month ({month})",
-  "onbBatchTimeName": "{time} batch"
+  "onbBatchTimeName": "{time} batch",
+  "onbAllSet": "All set!"
 }

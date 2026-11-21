@@ -7,7 +7,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +24,11 @@ import 'package:attendance_alamin/features/reminders/reminders_entry.dart';
 enum _Stage { intro, exact, allSet, denied }
 
 class ReminderPrimingScreen extends ConsumerStatefulWidget {
-  const ReminderPrimingScreen({super.key});
+  const ReminderPrimingScreen({super.key, this.embedded = false});
+
+  /// True inside the dialog / sheet of `showReminderPriming`: only the card
+  /// content is built (the container supplies the title and the close).
+  final bool embedded;
 
   @override
   ConsumerState<ReminderPrimingScreen> createState() => _ReminderPrimingScreenState();
@@ -137,16 +140,34 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
     }
   }
 
+  Widget _stageBody(BuildContext context) => BhorFadeThrough(
+        child: KeyedSubtree(
+          key: ValueKey<_Stage>(_stage),
+          child: switch (_stage) {
+            _Stage.intro => _intro(context),
+            _Stage.exact => _exact(context),
+            _Stage.allSet => _allSet(context),
+            _Stage.denied => _denied(context),
+          },
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    if (widget.embedded) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s8, BhorSpace.s20, BhorSpace.s20),
+        child: _stageBody(context),
+      );
+    }
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.shellTitleReminderPriming,
         showBack: false,
         actions: <Widget>[
           BhorIconButton(
-            icon: Icons.close,
+            icon: BhorIcons.close,
             semanticLabel: l10n.commonClose,
             color: context.bhor.colors.text,
             onPressed: () => _finish(_granted),
@@ -160,12 +181,7 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
             constraints: const BoxConstraints(maxWidth: 520),
             child: BhorCard(
               padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s24, BhorSpace.s20, BhorSpace.s20),
-              child: switch (_stage) {
-                _Stage.intro => _intro(context),
-                _Stage.exact => _exact(context),
-                _Stage.allSet => _allSet(context),
-                _Stage.denied => _denied(context),
-              },
+              child: _stageBody(context),
             ),
           ),
         ),
@@ -175,13 +191,21 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
 
   Widget _illustration(BuildContext context, IconData icon) {
     final BhorColors c = context.bhor.colors;
+    final Widget badge = Container(
+      width: 88,
+      height: 88,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
+      child: Icon(icon, size: 44, color: c.accent),
+    );
+    if (BhorMotion.reduced(context)) return ExcludeSemantics(child: badge);
     return ExcludeSemantics(
-      child: Container(
-        width: 88,
-        height: 88,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
-        child: Icon(icon, size: 44, color: c.accent),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: BhorMotion.slow,
+        curve: BhorMotion.spring,
+        builder: (BuildContext context, double t, Widget? child) => Transform.scale(scale: t, child: child),
+        child: badge,
       ),
     );
   }
@@ -243,13 +267,13 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Center(child: _illustration(context, Icons.notifications_active_outlined)),
+        Center(child: _illustration(context, BhorIcons.remind)),
         const SizedBox(height: 16),
         _heading(context, l10n.remindPrimingTitle),
         const SizedBox(height: 16),
-        _point(context, Icons.alarm, l10n.remindPrimingPoint1(context.fmt.number(lead))),
-        _point(context, Icons.touch_app_outlined, l10n.remindPrimingPoint2),
-        _point(context, Icons.tune, l10n.remindPrimingPoint3),
+        _point(context, BhorIcons.clock, l10n.remindPrimingPoint1(context.fmt.number(lead))),
+        _point(context, BhorIcons.sparkle, l10n.remindPrimingPoint2),
+        _point(context, BhorIcons.sliders, l10n.remindPrimingPoint3),
         const SizedBox(height: 12),
         _paragraph(context, l10n.remindPrimingWhy),
         const SizedBox(height: 20),
@@ -270,7 +294,7 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Center(child: _illustration(context, Icons.alarm_on_outlined)),
+        Center(child: _illustration(context, BhorIcons.clock)),
         const SizedBox(height: 16),
         _heading(context, l10n.remindPrimingExactTitle),
         const SizedBox(height: 12),
@@ -293,7 +317,7 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Center(child: _illustration(context, Icons.check_circle_outline)),
+        const Center(child: BhorSuccess(size: 88)),
         const SizedBox(height: 16),
         _heading(context, l10n.remindPrimingAllSet),
         const SizedBox(height: 12),
@@ -310,7 +334,7 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Center(child: _illustration(context, Icons.notifications_off_outlined)),
+        Center(child: _illustration(context, BhorIcons.bell)),
         const SizedBox(height: 16),
         _paragraph(context, l10n.remindPrimingDenied),
         const SizedBox(height: 20),

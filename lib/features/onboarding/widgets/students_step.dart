@@ -2,7 +2,6 @@
 // add next" stores the student, clears the fields and keeps the cursor on the
 // name field so the whole class can be typed without touching the screen.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -63,7 +62,7 @@ class StudentsStep extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Icon(
-              batch == null ? Icons.info_outline : Icons.groups_2_outlined,
+              batch == null ? BhorIcons.info : BhorIcons.batches,
               size: 20,
               color: c.text3,
             ),
@@ -108,7 +107,7 @@ class StudentsStep extends StatelessWidget {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => onAdd(),
                 label: l10n.onbStudentPhone,
-                prefix: const Icon(Icons.phone_outlined),
+                prefix: const Icon(BhorIcons.phone),
                 tabular: true,
               ),
               const SizedBox(height: 12),
@@ -127,7 +126,7 @@ class StudentsStep extends StatelessWidget {
                   liveRegion: true,
                   child: Row(
                     children: <Widget>[
-                      Icon(Icons.check_circle, size: 18, color: c.accent),
+                      Icon(BhorIcons.checkCircleFill, size: 18, color: c.accent),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -165,7 +164,10 @@ class StudentsStep extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (final SavedStudent s in saved.reversed)
-            Padding(
+            BhorStagger(
+              key: ValueKey<String>('onb-saved-${s.id}'),
+              index: 0,
+              child: Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: BhorCard(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -193,6 +195,7 @@ class StudentsStep extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
             ),
         ],
       ],

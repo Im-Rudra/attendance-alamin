@@ -56,11 +56,12 @@ Future<bool> showReminderPriming(BuildContext context) async {
     container.invalidate(reminderPermissionProvider);
     return granted;
   }
-  final bool? granted = await Navigator.of(context, rootNavigator: true).push<bool>(
-    BhorPageRoute<bool>(
-      fullscreenDialog: true,
-      builder: (BuildContext _) => const ReminderPrimingScreen(),
-    ),
+  // A sheet on phones, a centred dialog on desktop (12-ux-review section 3).
+  final bool? granted = await showBhorPanel<bool>(
+    context,
+    kind: BhorPanelKind.confirm,
+    title: context.l10n.shellTitleReminderPriming,
+    builder: (BuildContext _) => const ReminderPrimingScreen(embedded: true),
   );
   container.invalidate(reminderPermissionProvider);
   return granted ?? false;

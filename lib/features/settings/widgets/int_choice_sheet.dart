@@ -3,7 +3,6 @@
 // digits. Used for the default reminder lead, the billing cutoff day and the
 // backup reminder interval.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -112,7 +111,7 @@ class _IntChoiceSheetState extends State<IntChoiceSheet> {
               title: widget.labelOf(o),
               selected: o == widget.current,
               divider: false,
-              trailing: o == widget.current ? Icon(Icons.check, color: c.accent) : null,
+              trailing: o == widget.current ? Icon(BhorIcons.check, color: c.accent) : null,
               onTap: () => Navigator.of(context).pop(o),
             ),
           if (_hasCustom)

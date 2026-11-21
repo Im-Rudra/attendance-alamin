@@ -1,6 +1,5 @@
 // Help: short "how do I...?" answers in plain language. Questions open on tap.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -11,7 +10,10 @@ import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 class HelpScreen extends StatelessWidget {
-  const HelpScreen({super.key});
+  const HelpScreen({super.key, this.embedded = false});
+
+  /// True inside a desktop dialog: only the content, no page chrome.
+  final bool embedded;
 
   static List<(String, String)> _items(AppLocalizations l10n) => <(String, String)>[
         (l10n.setHelpQ1, l10n.setHelpA1),
@@ -27,24 +29,29 @@ class HelpScreen extends StatelessWidget {
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     final double g = WindowClass.of(context).gutter;
-    final bool embedded = PaneScope.isEmbedded(context);
+    final bool inPane = PaneScope.isEmbedded(context);
     final List<(String, String)> items = _items(l10n);
 
     Widget tile((String, String) qa) => _FaqTile(key: ValueKey<String>(qa.$1), question: qa.$1, answer: qa.$2);
 
+    if (embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(l10n.setHelpIntro, style: b.type.meta.copyWith(color: b.colors.text2)),
+          const SizedBox(height: 12),
+          SettingsCard(children: <Widget>[for (final qa in items) tile(qa)]),
+        ],
+      );
+    }
     return BhorScaffold(
-      header: BhorHeader(title: l10n.shellTitleHelp, showBack: embedded ? false : null),
+      header: BhorHeader(title: l10n.shellTitleHelp, showBack: inPane ? false : null),
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints c) {
-          final bool wide = c.maxWidth >= WindowClass.expandedMin;
-          final List<Widget> cards = wide
-              ? <Widget>[
-                  SettingsCard(children: <Widget>[for (final qa in items.sublist(0, 3)) tile(qa)]),
-                  SettingsCard(children: <Widget>[for (final qa in items.sublist(3)) tile(qa)]),
-                ]
-              : <Widget>[
-                  SettingsCard(children: <Widget>[for (final qa in items) tile(qa)]),
-                ];
+          final List<Widget> cards = <Widget>[
+            SettingsCard(children: <Widget>[for (final qa in items) tile(qa)]),
+          ];
           return ListView(
             padding: EdgeInsets.fromLTRB(g, 4, g, g),
             children: <Widget>[
@@ -52,7 +59,13 @@ class HelpScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
                 child: Text(l10n.setHelpIntro, style: b.type.meta.copyWith(color: b.colors.text2)),
               ),
-              SettingsColumns(twoUp: wide, children: cards),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: SettingsColumns(children: cards),
+                ),
+              ),
             ],
           );
         },
@@ -96,16 +109,34 @@ class _FaqTileState extends State<_FaqTile> {
               children: <Widget>[
                 Expanded(child: Text(widget.question, style: b.type.body)),
                 const SizedBox(width: BhorSpace.s8),
-                Icon(_open ? Icons.expand_less : Icons.expand_more, color: _open ? c.accent : c.text3),
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: BhorMotion.base,
+                  curve: BhorMotion.spring,
+                  child: Icon(BhorIcons.chevronDown, color: _open ? c.accent : c.text3),
+                ),
               ],
             ),
           ),
         ),
-        if (_open)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 0, BhorSpace.s16, 14),
-            child: Text(widget.answer, style: b.type.meta.copyWith(color: c.text2)),
-          ),
+        AnimatedSize(
+          duration: BhorMotion.base,
+          curve: BhorMotion.ease,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? TweenAnimationBuilder<double>(
+                  key: const ValueKey<String>('answer'),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: BhorMotion.base,
+                  curve: BhorMotion.ease,
+                  builder: (BuildContext context, double t, Widget? child) => Opacity(opacity: t, child: child),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 0, BhorSpace.s16, 14),
+                    child: Text(widget.answer, style: b.type.meta.copyWith(color: c.text2)),
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
       ],
     );
   }

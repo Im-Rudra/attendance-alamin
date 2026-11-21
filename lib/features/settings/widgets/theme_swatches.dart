@@ -1,6 +1,6 @@
-// Three mini previews of the app (system = half light, half dark) so the
-// teacher sees what each theme looks like before choosing. Decorative: the
-// segmented control next to it is the control and carries the semantics.
+// Three mini previews of the app (system = half light, half dark): the tiles
+// themselves are the theme selector (selected = accent ring + a check badge
+// that springs in), so the teacher sees each theme before choosing it.
 
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
@@ -8,40 +8,56 @@ import 'package:flutter/widgets.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 
 class ThemeSwatches extends StatelessWidget {
-  const ThemeSwatches({super.key, required this.selected, required this.onChanged});
+  const ThemeSwatches({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    this.labelOf,
+  });
 
   final ThemeMode selected;
   final ValueChanged<ThemeMode> onChanged;
 
+  /// Name shown under each tile (also its accessibility label).
+  final String Function(ThemeMode mode)? labelOf;
+
   @override
   Widget build(BuildContext context) {
-    return ExcludeSemantics(
-      child: Row(
-        children: <Widget>[
-          for (final ThemeMode m in const <ThemeMode>[
-            ThemeMode.system,
-            ThemeMode.light,
-            ThemeMode.dark,
-          ]) ...<Widget>[
-            if (m != ThemeMode.system) const SizedBox(width: 10),
-            Expanded(child: _Swatch(mode: m, selected: m == selected, onTap: () => onChanged(m))),
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        for (final ThemeMode m in const <ThemeMode>[
+          ThemeMode.system,
+          ThemeMode.light,
+          ThemeMode.dark,
+        ]) ...<Widget>[
+          if (m != ThemeMode.system) const SizedBox(width: 10),
+          Expanded(
+            child: _Swatch(
+              mode: m,
+              selected: m == selected,
+              label: labelOf?.call(m),
+              onTap: () => onChanged(m),
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 }
 
 class _Swatch extends StatelessWidget {
-  const _Swatch({required this.mode, required this.selected, required this.onTap});
+  const _Swatch({required this.mode, required this.selected, required this.label, required this.onTap});
 
   final ThemeMode mode;
   final bool selected;
+  final String? label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final BhorColors c = context.bhor.colors;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final BorderRadius br = BorderRadius.circular(BhorRadius.control);
     final Widget face = switch (mode) {
       ThemeMode.light => _Face(
@@ -77,23 +93,66 @@ class _Swatch extends StatelessWidget {
           ],
         ),
     };
-    return AspectRatio(
-      aspectRatio: 1.6,
-      child: BhorPressable(
-        key: ValueKey<String>('theme-swatch-${mode.name}'),
-        onTap: onTap,
-        isButton: false,
-        radius: BhorRadius.control,
-        builder: (BuildContext context, BhorStates s) => DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: br,
-            border: Border.all(
-              color: selected ? c.accent : c.line,
-              width: selected ? 2 : 1,
+    return BhorPressable(
+      key: ValueKey<String>('theme-swatch-${mode.name}'),
+      onTap: onTap,
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      semanticLabel: label,
+      excludeChildSemantics: label != null,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AspectRatio(
+            aspectRatio: 1.6,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                AnimatedContainer(
+                  duration: BhorMotion.fast,
+                  curve: BhorMotion.ease,
+                  decoration: BoxDecoration(
+                    borderRadius: br,
+                    border: Border.all(
+                      color: selected ? c.accent : (s.hovered ? c.accentLine : c.line),
+                      width: selected ? 2 : 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(BhorRadius.control - 1),
+                    child: face,
+                  ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: AnimatedScale(
+                    scale: selected ? 1 : 0,
+                    duration: BhorMotion.base,
+                    curve: BhorMotion.spring,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: c.accentFill, shape: BoxShape.circle),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: Icon(BhorIcons.check, size: 14, color: c.onAccentFill),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: ClipRRect(borderRadius: BorderRadius.circular(BhorRadius.control - 1), child: face),
-        ),
+          if (label != null) ...<Widget>[
+            const SizedBox(height: 6),
+            AnimatedDefaultTextStyle(
+              duration: BhorMotion.fast,
+              textAlign: TextAlign.center,
+              style: (selected ? b.type.bodyStrong : b.type.body).copyWith(color: selected ? c.accent : c.text2),
+              child: Text(label!, textAlign: TextAlign.center),
+            ),
+          ],
+        ],
       ),
     );
   }

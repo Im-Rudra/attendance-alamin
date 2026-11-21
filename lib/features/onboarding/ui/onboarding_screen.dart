@@ -8,9 +8,9 @@
 // The last step sets `onboardingDone`, shows the one-time coach mark and lands
 // on Today.
 
+import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +51,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const String _dash = ' — ';
 
   int _step = 0;
+
+  /// +1 when the last move went forward, -1 backward (the step slide direction).
+  int _dir = 1;
+
+  /// The "all set" success moment shown after the last step.
+  bool _celebrating = false;
 
   final TextEditingController _center = TextEditingController();
   final TextEditingController _subject = TextEditingController();
@@ -133,6 +139,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _setAutoBatchName();
     }
     setState(() {
+      _dir = step >= _step ? 1 : -1;
       _step = step;
       _error = null;
     });
@@ -366,14 +373,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
       await ref.read(onboardingServiceProvider).markDone();
       if (!mounted) return;
-      if (_batchId != null) await showRollCallCoach(context);
-      if (!mounted) return;
-      GoRouter.maybeOf(context)?.go(Routes.today);
+      // The success moment plays, then _leave opens Today (and the coach mark).
+      setState(() => _celebrating = true);
     } on Object catch (e) {
       if (mounted) setState(() => _error = errorText(l10n, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _leave() async {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    try {
+      if (_batchId != null) await showRollCallCoach(context);
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() {
+          _celebrating = false;
+          _error = errorText(l10n, e);
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    GoRouter.maybeOf(context)?.go(Routes.today);
   }
 
   // ---- build ------------------------------------------------------------
@@ -470,12 +494,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     child: BhorIconButton(
                       key: const Key('onb-back'),
                       semanticLabel: l10n.commonBack,
-                      icon: Icons.arrow_back,
+                      icon: BhorIcons.back,
                       onPressed: _busy ? null : _back,
                     ),
                   ),
           ),
-          Expanded(child: Center(child: OnbProgressDots(step: _step))),
+          Expanded(
+            child: Center(
+              // On wide windows the side pane already shows the steps.
+              child: WindowClass.of(context).isWide
+                  ? const SizedBox.shrink()
+                  : OnbProgressDots(step: _step),
+            ),
+          ),
           SizedBox(
             width: 112,
             child: canSkip
@@ -497,16 +528,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _scrollBody(double gutter) {
-    return Align(
+    final bool reduced = BhorMotion.reduced(context);
+    final int dir = _dir;
+    final Widget page = Align(
+      key: ValueKey<int>(_step),
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: SingleChildScrollView(
-          key: ValueKey<int>(_step),
           padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 24),
           child: _stepBody(),
         ),
       ),
+    );
+    // Shared-axis horizontal slide: forward steps enter from the right.
+    return AnimatedSwitcher(
+      duration: reduced ? BhorMotion.reducedFade : BhorMotion.base,
+      switchInCurve: BhorMotion.ease,
+      switchOutCurve: BhorMotion.ease,
+      layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: <Widget>[...previous, if (current != null) current],
+      ),
+      transitionBuilder: (Widget child, Animation<double> a) {
+        final bool entering = child.key == ValueKey<int>(_step);
+        if (reduced) return FadeTransition(opacity: a, child: child);
+        final double from = (entering ? 1 : -1) * dir * 0.06;
+        return FadeTransition(
+          opacity: a,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: Offset(from, 0), end: Offset.zero).animate(a),
+            child: child,
+          ),
+        );
+      },
+      child: page,
     );
   }
 
@@ -574,9 +630,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (!didPop) _back();
       },
       child: BhorScaffold(
-        body: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: content,
+        body: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+              child: content,
+            ),
+            if (_celebrating)
+              Positioned.fill(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: BhorMotion.base,
+                  curve: BhorMotion.ease,
+                  builder: (BuildContext context, double t, Widget? child) =>
+                      Opacity(opacity: t, child: child),
+                  child: ColoredBox(
+                    color: c.bg,
+                    child: Center(
+                      child: BhorSuccess(
+                        key: const Key('onb-success'),
+                        label: context.l10n.onbAllSet,
+                        onDone: () => unawaited(_leave()),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +18,10 @@ import 'package:attendance_alamin/features/settings/data/template_logic.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 class TemplateEditorScreen extends ConsumerStatefulWidget {
-  const TemplateEditorScreen({super.key, required this.kind});
+  const TemplateEditorScreen({super.key, required this.kind, this.embedded = false});
+
+  /// True inside a desktop side panel: only the content, no page chrome.
+  final bool embedded;
 
   /// `reminder` or `receipt`.
   final String kind;
@@ -140,6 +142,13 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       TemplateKind.receipt => l10n.shellTitleTemplateReceipt,
     };
     final Lang lang = _lang ?? context.lang;
+    if (widget.embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[_editorCard(context, lang), const SizedBox(height: 12), _previewCard(context, lang)],
+      );
+    }
     return BhorScaffold(
       header: BhorHeader(title: title, showBack: embedded ? false : null),
       body: LayoutBuilder(
@@ -209,7 +218,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(Icons.info_outline, size: 18, color: c.accent),
+                  Icon(BhorIcons.info, size: 18, color: c.accent),
                   const SizedBox(width: BhorSpace.s8),
                   Expanded(
                     child: Text(
@@ -242,7 +251,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
               key: const Key('template-reset'),
               variant: BhorButtonVariant.secondary,
               onPressed: _loaded ? _reset : null,
-              icon: Icons.restart_alt,
+              icon: BhorIcons.refresh,
               label: l10n.setTplReset,
             ),
           ),

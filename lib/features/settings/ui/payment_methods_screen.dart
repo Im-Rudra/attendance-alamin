@@ -2,7 +2,6 @@
 // teacher's own (stored as `custom:<label>`). Saved instantly in the synced
 // `payment_methods` setting.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +42,10 @@ String? customLabelErrorText(AppLocalizations l10n, CustomLabelCheck check, Stri
     };
 
 class PaymentMethodsScreen extends ConsumerStatefulWidget {
-  const PaymentMethodsScreen({super.key});
+  const PaymentMethodsScreen({super.key, this.embedded = false});
+
+  /// True inside a desktop side panel: only the content, no page chrome.
+  final bool embedded;
 
   @override
   ConsumerState<PaymentMethodsScreen> createState() => _PaymentMethodsScreenState();
@@ -126,7 +128,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
         SettingSwitchRow(
           key: Key('pm-${m.code}'),
           title: paymentMethodLabel(l10n, m),
-          subtitle: config.isHidden(m) ? l10n.setPmHidden : l10n.setPmShown,
+          subtitle: config.isHidden(m) ? l10n.setPmHidden : null,
           value: !config.isHidden(m),
           onChanged: (bool v) => _toggle(config, m, v),
         ),
@@ -141,11 +143,10 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
       for (final String label in config.custom)
         SettingRow(
           key: Key('pm-custom-$label'),
-          icon: Icons.payments_outlined,
+          icon: BhorIcons.money,
           title: label,
-          value: l10n.setPmShown,
           trailing: BhorIconButton(
-            icon: Icons.delete_outline,
+            icon: BhorIcons.delete,
             semanticLabel: l10n.setPmRemove,
             color: b.colors.danger,
             onPressed: () => _remove(config, label),
@@ -183,7 +184,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
               child: BhorButton(
                 key: const Key('pm-add-button'),
                 onPressed: () => _add(config),
-                icon: Icons.add,
+                icon: BhorIcons.add,
                 label: l10n.setPmAdd,
               ),
             ),
@@ -192,6 +193,18 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
       ),
     ]);
 
+    if (widget.embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(l10n.setPmIntro, style: b.type.meta.copyWith(color: b.colors.text2)),
+          const SizedBox(height: 8),
+          _section(l10n.setPmBuiltIn, builtIn),
+          _section(l10n.setPmCustom, custom),
+        ],
+      );
+    }
     return BhorScaffold(
       header: BhorHeader(title: l10n.shellTitlePaymentMethods, showBack: embedded ? false : null),
       body: LayoutBuilder(

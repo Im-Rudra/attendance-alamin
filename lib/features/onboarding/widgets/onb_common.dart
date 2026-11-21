@@ -1,7 +1,6 @@
 // Small shared pieces of the onboarding screens: heading, progress dots, the
 // section wrapper, the error box and the bottom action bar.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -37,7 +36,8 @@ class OnbHeading extends StatelessWidget {
   }
 }
 
-/// Four dots; the current one is a longer pill. Spoken as "Step 2 of 4".
+/// A thin 4-segment progress bar; every segment up to the current step fills
+/// from the left with a spring-ish ease. Spoken as "Step 2 of 4".
 class OnbProgressDots extends StatelessWidget {
   const OnbProgressDots({super.key, required this.step});
 
@@ -47,6 +47,7 @@ class OnbProgressDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BhorColors c = context.bhor.colors;
+    final bool reduced = BhorMotion.reduced(context);
     final String label = context.l10n.onbStepOf(
       context.fmt.number(step + 1),
       context.fmt.number(kOnbSteps),
@@ -54,23 +55,32 @@ class OnbProgressDots extends StatelessWidget {
     return Semantics(
       label: label,
       excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          for (int i = 0; i < kOnbSteps; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s4),
-              child: AnimatedContainer(
-                duration: BhorMotion.base,
-                width: i == step ? 28 : 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: i <= step ? c.accent : c.line,
-                  borderRadius: BorderRadius.circular(5),
+      child: SizedBox(
+        width: 176,
+        height: 6,
+        child: Row(
+          children: <Widget>[
+            for (int i = 0; i < kOnbSteps; i++) ...<Widget>[
+              if (i > 0) const SizedBox(width: BhorSpace.s4),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: ColoredBox(
+                    color: c.soft,
+                    child: AnimatedFractionallySizedBox(
+                      alignment: AlignmentDirectional.centerStart,
+                      duration: reduced ? BhorMotion.reducedFade : BhorMotion.slow,
+                      curve: reduced ? BhorMotion.ease : BhorMotion.countCurve,
+                      widthFactor: i <= step ? 1 : 0,
+                      heightFactor: 1,
+                      child: ColoredBox(color: c.accent),
+                    ),
+                  ),
                 ),
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -113,7 +123,7 @@ class OnbErrorBox extends StatelessWidget {
           padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: c.danger),
+              Icon(BhorIcons.warning, color: c.danger),
               const SizedBox(width: BhorSpace.s8),
               Expanded(child: Text(message, style: b.type.body)),
             ],
@@ -163,21 +173,47 @@ class OnbActionBar extends StatelessWidget {
                 Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
                 const SizedBox(height: BhorSpace.s8),
               ],
-              BhorButton(
-                key: const Key('onb-primary'),
-                label: label,
-                onPressed: onPressed,
-                expand: true,
-              ),
-              if (secondaryLabel != null) ...<Widget>[
-                const SizedBox(height: BhorSpace.s4),
+              if (WindowClass.of(context).isWide)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    if (secondaryLabel != null) ...<Widget>[
+                      BhorButton(
+                        key: const Key('onb-secondary'),
+                        label: secondaryLabel!,
+                        variant: BhorButtonVariant.ghost,
+                        onPressed: onSecondary,
+                      ),
+                      const SizedBox(width: BhorSpace.s12),
+                    ],
+                    SizedBox(
+                      width: 320,
+                      child: BhorButton(
+                        key: const Key('onb-primary'),
+                        label: label,
+                        onPressed: onPressed,
+                        expand: true,
+                      ),
+                    ),
+                  ],
+                )
+              else ...<Widget>[
                 BhorButton(
-                  key: const Key('onb-secondary'),
-                  label: secondaryLabel!,
-                  variant: BhorButtonVariant.ghost,
-                  onPressed: onSecondary,
+                  key: const Key('onb-primary'),
+                  label: label,
+                  onPressed: onPressed,
                   expand: true,
                 ),
+                if (secondaryLabel != null) ...<Widget>[
+                  const SizedBox(height: BhorSpace.s4),
+                  BhorButton(
+                    key: const Key('onb-secondary'),
+                    label: secondaryLabel!,
+                    variant: BhorButtonVariant.ghost,
+                    onPressed: onSecondary,
+                    expand: true,
+                  ),
+                ],
               ],
             ],
           ),

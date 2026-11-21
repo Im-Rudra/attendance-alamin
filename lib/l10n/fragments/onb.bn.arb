@@ -331,5 +331,9 @@
     "placeholders": {
       "time": {"type": "String", "example": "বিকাল ৪"}
     }
+  },
+  "onbAllSet": "সব তৈরি!",
+  "@onbAllSet": {
+    "description": "Success moment label shown for a second when onboarding is finished, before Today opens."
   }
 }
