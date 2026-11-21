@@ -46,7 +46,7 @@ class BhorScaffold extends StatelessWidget {
             child: body,
           ),
         ),
-        if (bottomNav != null) bottomNav!,
+        ?bottomNav,
       ],
     );
     return ColoredBox(

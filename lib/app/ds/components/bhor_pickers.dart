@@ -27,7 +27,6 @@ class _Cell extends StatelessWidget {
     required this.onTap,
     this.outlined = false,
     this.semanticLabel,
-    this.height = BhorSize.minTap,
   });
 
   final String label;
@@ -35,7 +34,6 @@ class _Cell extends StatelessWidget {
   final VoidCallback? onTap;
   final bool outlined;
   final String? semanticLabel;
-  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +47,7 @@ class _Cell extends StatelessWidget {
       radius: BhorRadius.chip,
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.fast,
-        height: height,
+        height: BhorSize.minTap,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? c.accent : (s.hovered ? c.surface2 : null),

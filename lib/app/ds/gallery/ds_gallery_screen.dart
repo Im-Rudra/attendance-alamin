@@ -4,7 +4,6 @@
 // Demo labels are sample content, not product copy.
 
 import 'package:flutter/material.dart' show Icons;
-import 'package:flutter/services.dart' show TextInputType;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
