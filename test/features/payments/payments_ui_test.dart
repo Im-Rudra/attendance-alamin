@@ -30,15 +30,27 @@ class _Launcher extends StatelessWidget {
 
   final Future<void> Function(BuildContext context) onTap;
 
+  // A Material Scaffold on purpose: ShareService (app/services) still reports
+  // through the ScaffoldMessenger until the services migrate.
   @override
-  Widget build(BuildContext context) => BhorScaffold(
+  Widget build(BuildContext context) => Scaffold(
         body: Center(
-          child: BhorButton(label: 'open', onPressed: () => onTap(context)),
+          child: ElevatedButton(onPressed: () => onTap(context), child: const Text('open')),
         ),
       );
 }
 
 Finder _key(String k) => find.byKey(ValueKey<String>(k));
+/// The dialog's cancel (secondary) and confirm (primary or danger) buttons; their
+/// order in the tree flips on narrow dialogs, so pick them by variant.
+Finder get _dialogCancel => find.descendant(
+      of: find.byType(BhorDialog),
+      matching: find.byWidgetPredicate((Widget w) => w is BhorButton && w.variant == BhorButtonVariant.secondary),
+    );
+Finder get _dialogConfirm => find.descendant(
+      of: find.byType(BhorDialog),
+      matching: find.byWidgetPredicate((Widget w) => w is BhorButton && w.variant != BhorButtonVariant.secondary),
+    );
 Finder _bar() => find.descendant(of: _key('pay-bar'), matching: find.byType(BhorButton));
 
 String _label(WidgetTester t) => t.widget<BhorButton>(_bar()).label;
@@ -544,12 +556,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('এই পেমেন্ট (৳ ১,০০০, অক্টোবর) মুছে ফেলবেন?'), findsOneWidget);
       // Cancel keeps it.
-      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).first);
+      await tester.tap(_dialogCancel);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isTrue);
       await tester.tap(_key('pay-receipt-delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
+      await tester.tap(_dialogConfirm);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isFalse);
       expect(find.text('পেমেন্ট মুছে ফেলা হয়েছে'), findsOneWidget);
@@ -631,7 +643,7 @@ void main() {
       await tester.tap(_key('pay-unwaive-${Ids.waiver(kEnrRahimPhys, _nov)}'));
       await tester.pumpAndSettle();
       expect(find.text('নভেম্বর ২০২৬-এর মাফ তুলে নেবেন?'), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
+      await tester.tap(_dialogConfirm);
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
       expect(find.text('নভেম্বর ২০২৬ · মাফ'), findsNothing);
@@ -645,7 +657,7 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).first);
+      await tester.tap(_dialogCancel);
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
     });

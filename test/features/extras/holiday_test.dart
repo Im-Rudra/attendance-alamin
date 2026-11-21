@@ -90,7 +90,10 @@ void main() {
 
       // The confirm dialog repeats the number.
       expect(find.text(bn.extraHolidayConfirmTitle('১', '১')), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
+      await tester.tap(find.descendant(
+        of: find.byType(BhorDialog),
+        matching: find.byWidgetPredicate((Widget w) => w is BhorButton && w.variant != BhorButtonVariant.secondary),
+      ));
       await _settle(tester);
       await tester.pump(const Duration(milliseconds: 400));
 
