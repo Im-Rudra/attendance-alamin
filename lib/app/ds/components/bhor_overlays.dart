@@ -1690,7 +1690,13 @@ abstract final class BhorToast {
 
   /// Closes the visible toast (if any). Sheets, panels, dialogs and popovers
   /// call it as they open, so a toast never overlaps them.
-  static void dismissCurrent() => _current?.dismiss();
+  static void dismissCurrent() {
+    _dismissedUpTo = _seq;
+    _current?.dismiss();
+  }
+
+  static int _seq = 0;
+  static int _dismissedUpTo = 0;
 
   /// Height (plus a gap) that the visible bottom toast takes above the
   /// chrome; 0 when none. Floating buttons lift by this much.
@@ -1749,6 +1755,7 @@ abstract final class BhorToast {
     _current?.dismiss();
     final double chrome = top ? 0 : _ToastViewState.chromeFor(context);
     final GlobalKey<_ToastViewState> key = GlobalKey<_ToastViewState>();
+    final int id = ++_seq;
     VoidCallback remove = () {};
     Widget build(BuildContext ctx) => BhorTheme(
           data: theme,
@@ -1776,6 +1783,10 @@ abstract final class BhorToast {
         if (entry.mounted) entry.remove();
       };
     }
+    // A sheet opened in the same frame (before this toast was built) closes it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (id <= _dismissedUpTo) key.currentState?.dismiss();
+    });
     return BhorToastHandle._(() => key.currentState?.dismiss());
   }
 }

@@ -137,18 +137,21 @@ void main() {
       tester.binding.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (MethodCall call) async => null);
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
-      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await pumpDs(
         tester,
         _opener('পাঠান', (BuildContext c) => ShareService.shareText(c, 'hello', hasPhone: false)),
       );
-      await tester.tap(find.text('পাঠান'));
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text('এই শিক্ষার্থীর ফোন নম্বর নেই'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text(dsL10n(Lang.bn).shellTextCopied), findsOneWidget);
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await tester.tap(find.text('পাঠান'));
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(find.text('এই শিক্ষার্থীর ফোন নম্বর নেই'), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 1500));
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(find.text(dsL10n(Lang.bn).shellTextCopied), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
       expect(dsL10n(Lang.bn).shellTextCopied, contains('WhatsApp'));
       await tester.pump(const Duration(seconds: 6));
       await tester.pumpAndSettle();
