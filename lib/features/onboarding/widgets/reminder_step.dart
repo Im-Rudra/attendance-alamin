@@ -1,11 +1,11 @@
 // Step 4: what class reminders do, in three plain lines. The buttons live in
 // the screen's action bar ("Yes, turn on" opens the real permission priming).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/onb_common.dart';
 
 class ReminderStep extends StatelessWidget {
@@ -16,17 +16,16 @@ class ReminderStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     Widget point(IconData icon, String text) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(icon, color: tokens.accent),
+              Icon(icon, color: b.colors.accent),
               const SizedBox(width: 12),
-              Expanded(child: Text(text, style: tt.bodyLarge?.copyWith(color: tokens.textPrimary))),
+              Expanded(child: Text(text, style: b.type.body)),
             ],
           ),
         );
@@ -35,13 +34,12 @@ class ReminderStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Center(
-          child: Icon(Icons.notifications_active_outlined, size: 56, color: tokens.accent),
+          child: Icon(Icons.notifications_active_outlined, size: 56, color: b.colors.accent),
         ),
         const SizedBox(height: 12),
         OnbHeading(title: l10n.onbRemindTitle),
         const SizedBox(height: 16),
-        GlassCard(
-          dense: true,
+        BhorCard(
           child: Column(
             children: <Widget>[
               point(Icons.notifications_outlined, l10n.onbRemindPoint1),

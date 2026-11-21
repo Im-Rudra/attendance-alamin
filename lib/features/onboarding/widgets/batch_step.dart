@@ -3,11 +3,12 @@
 // clash check, the monthly fee and the two billing cards in plain words.
 // Once the batch is saved the form is replaced by a calm "ready" card.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
@@ -96,8 +97,7 @@ class BatchStep extends StatelessWidget {
 
   Widget _form(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String typed = subject.text.trim();
     final List<String> suggestions = <String>[
       l10n.batchSuggestMath,
@@ -112,56 +112,54 @@ class BatchStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        TextField(
+        BhorTextField(
           key: const Key('onb-subject'),
           controller: subject,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            labelText: l10n.batchSubjectLabel,
-            hintText: l10n.batchSubjectHint,
-          ),
+          label: l10n.batchSubjectLabel,
+          hint: l10n.batchSubjectHint,
         ),
         const SizedBox(height: 8),
-        Text(l10n.batchSubjectSuggest, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+        Text(l10n.batchSubjectSuggest, style: b.type.meta),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
             for (final String s in suggestions)
-              ChoiceChip(
-                label: Text(s),
+              BhorChip(
+                label: s,
                 selected: typed.startsWith(s),
                 onSelected: (_) => onSubjectChip(s),
               ),
           ],
         ),
         const SizedBox(height: 12),
-        Text(l10n.onbClassPick, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+        Text(l10n.onbClassPick, style: b.type.meta),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
             for (final String c in classes)
-              ChoiceChip(
-                label: Text(c),
+              BhorChip(
+                label: c,
                 selected: classLabel == c,
                 onSelected: (_) => onClassChip(c),
               ),
           ],
         ),
         const SizedBox(height: 16),
-        TextField(
+        BhorTextField(
           key: const Key('onb-batch-name'),
           controller: name,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(labelText: l10n.batchNameLabel),
+          label: l10n.batchNameLabel,
         ),
         const SizedBox(height: 20),
         Semantics(
           header: true,
-          child: Text(l10n.batchScheduleLabel, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+          child: Text(l10n.batchScheduleLabel, style: b.type.heading),
         ),
         const SizedBox(height: 8),
         SlotEditorField(
@@ -171,35 +169,36 @@ class BatchStep extends StatelessWidget {
           onCheck: onCheck,
         ),
         const SizedBox(height: 20),
-        TextField(
+        BhorTextField(
           key: const Key('onb-fee'),
           controller: fee,
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            labelText: l10n.batchFeeLabel,
-            prefixText: '৳ ',
-            errorText: _feeError(context),
-          ),
+          label: l10n.batchFeeLabel,
+          prefix: Text('৳', style: b.type.body.copyWith(color: b.colors.text3)),
+          tabular: true,
+          error: _feeError(context),
         ),
         const SizedBox(height: 20),
         Semantics(
           header: true,
-          child: Text(l10n.batchBillingTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+          child: Text(l10n.batchBillingTitle, style: b.type.heading),
         ),
         const SizedBox(height: 8),
-        _BillingChoice(
+        BhorRadioCard<BillingType>(
+          value: BillingType.prepaid,
+          groupValue: billing,
+          onChanged: onBilling,
           title: l10n.batchBillingPrepaid,
-          example: l10n.batchBillingPrepaidExample,
-          selected: billing == BillingType.prepaid,
-          onTap: () => onBilling(BillingType.prepaid),
+          subtitle: l10n.batchBillingPrepaidExample,
         ),
         const SizedBox(height: 8),
-        _BillingChoice(
+        BhorRadioCard<BillingType>(
+          value: BillingType.postpaid,
+          groupValue: billing,
+          onChanged: onBilling,
           title: l10n.batchBillingPostpaid,
-          example: l10n.batchBillingPostpaidExample,
-          selected: billing == BillingType.postpaid,
-          onTap: () => onBilling(BillingType.postpaid),
+          subtitle: l10n.batchBillingPostpaidExample,
         ),
       ],
     );
@@ -227,8 +226,7 @@ class _Preview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String s = subject.text.trim();
     final String n = name.text.trim();
     String? feeText;
@@ -240,12 +238,11 @@ class _Preview extends StatelessWidget {
     final String line = n.isEmpty
         ? (feeText ?? '')
         : (feeText == null ? n : l10n.onbPreviewLine(n, feeText));
-    return GlassCard(
+    return BhorCard(
       key: const Key('onb-preview'),
-      dense: true,
       child: Row(
         children: <Widget>[
-          Icon(Icons.groups_2_outlined, color: tokens.accent, size: 32),
+          Icon(Icons.groups_2_outlined, color: b.colors.accent, size: 32),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -253,13 +250,9 @@ class _Preview extends StatelessWidget {
               children: <Widget>[
                 Text(
                   s.isEmpty ? l10n.onbPreviewEmpty : s,
-                  style: tt.titleMedium?.copyWith(
-                    color: s.isEmpty ? tokens.textSecondary : tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: b.type.heading.copyWith(color: s.isEmpty ? b.colors.text3 : b.colors.text),
                 ),
-                if (line.isNotEmpty)
-                  Text(line, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+                if (line.isNotEmpty) Text(line, style: b.type.meta),
               ],
             ),
           ),
@@ -278,15 +271,13 @@ class _CreatedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return GlassCard(
+    final BhorThemeData b = context.bhor;
+    return BhorCard(
       key: const Key('onb-batch-done'),
-      dense: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.check_circle, color: tokens.accent, size: 32),
+          Icon(Icons.check_circle, color: b.colors.accent, size: 32),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -294,100 +285,19 @@ class _CreatedCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   l10n.onbBatchDoneTitle,
-                  style: tt.titleMedium?.copyWith(color: tokens.textPrimary, fontWeight: FontWeight.w700),
+                  style: b.type.heading,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   l10n.onbBatchDoneLine(subject, batch),
-                  style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                  style: b.type.body,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  l10n.onbBatchDoneHint,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                ),
+                Text(l10n.onbBatchDoneHint, style: b.type.meta),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// "When do students pay?" radio card (plain words + a worked example).
-class _BillingChoice extends StatelessWidget {
-  const _BillingChoice({
-    required this.title,
-    required this.example,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String example;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final BorderRadius br = BorderRadius.circular(AuroraMetrics.radiusDenseList);
-    final Color fg = selected ? tokens.onAccentContainer : tokens.textPrimary;
-    return Semantics(
-      container: true,
-      button: true,
-      selected: selected,
-      inMutuallyExclusiveGroup: true,
-      label: '$title. $example',
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Material(
-        color: selected ? tokens.accentContainer : tokens.surfaceDense,
-        shape: RoundedRectangleBorder(
-          borderRadius: br,
-          side: BorderSide(color: selected ? tokens.accent : tokens.hairline, width: selected ? 2 : 1),
-        ),
-        child: InkWell(
-          customBorder: RoundedRectangleBorder(borderRadius: br),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 72),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                    color: selected ? tokens.onAccentContainer : tokens.textSecondary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          title,
-                          style: tt.titleMedium?.copyWith(
-                            color: fg,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          example,
-                          style: tt.bodyMedium?.copyWith(color: selected ? tokens.onAccentContainer : tokens.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -7,14 +7,14 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/data/notifications/notification_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
@@ -140,30 +140,32 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.commonClose,
-          icon: const Icon(Icons.close),
-          onPressed: () => _finish(_granted),
-        ),
-        title: Text(l10n.shellTitleReminderPriming),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: l10n.shellTitleReminderPriming,
+        showBack: false,
+        actions: <Widget>[
+          BhorIconButton(
+            icon: Icons.close,
+            semanticLabel: l10n.commonClose,
+            color: context.bhor.colors.text,
+            onPressed: () => _finish(_granted),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: GlassCard(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                child: switch (_stage) {
-                  _Stage.intro => _intro(context),
-                  _Stage.exact => _exact(context),
-                  _Stage.allSet => _allSet(context),
-                  _Stage.denied => _denied(context),
-                },
-              ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s8, BhorSpace.s16, BhorSpace.s24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: BhorCard(
+              padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s24, BhorSpace.s20, BhorSpace.s20),
+              child: switch (_stage) {
+                _Stage.intro => _intro(context),
+                _Stage.exact => _exact(context),
+                _Stage.allSet => _allSet(context),
+                _Stage.denied => _denied(context),
+              },
             ),
           ),
         ),
@@ -172,45 +174,37 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
   }
 
   Widget _illustration(BuildContext context, IconData icon) {
-    final tokens = context.aurora;
+    final BhorColors c = context.bhor.colors;
     return ExcludeSemantics(
       child: Container(
         width: 88,
         height: 88,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: tokens.accentContainer, shape: BoxShape.circle),
-        child: Icon(icon, size: 44, color: tokens.onAccentContainer),
+        decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
+        child: Icon(icon, size: 44, color: c.accent),
       ),
     );
   }
 
-  Widget _heading(BuildContext context, String text) => Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: context.aurora.textPrimary),
-      );
+  Widget _heading(BuildContext context, String text) =>
+      Text(text, textAlign: TextAlign.center, style: context.bhor.type.title);
 
   Widget _paragraph(BuildContext context, String text) => Text(
         text,
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: context.aurora.textSecondary),
+        style: context.bhor.type.body.copyWith(color: context.bhor.colors.text2),
       );
 
   Widget _point(BuildContext context, IconData icon, String text) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, size: 22, color: tokens.accent),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: tokens.textPrimary),
-            ),
-          ),
+          Icon(icon, size: 22, color: b.colors.accent),
+          const SizedBox(width: BhorSpace.s12),
+          Expanded(child: Text(text, style: b.type.body)),
         ],
       ),
     );
@@ -221,17 +215,20 @@ class _ReminderPrimingScreenState extends ConsumerState<ReminderPrimingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        FilledButton(
+        BhorButton(
           key: const Key('remind-priming-primary'),
+          label: primary,
           onPressed: _busy ? null : onPrimary,
-          child: Text(primary),
+          expand: true,
         ),
         if (secondary != null) ...<Widget>[
-          const SizedBox(height: 8),
-          TextButton(
+          const SizedBox(height: BhorSpace.s8),
+          BhorButton(
             key: const Key('remind-priming-secondary'),
+            label: secondary,
+            variant: BhorButtonVariant.ghost,
             onPressed: _busy ? null : onSecondary,
-            child: Text(secondary),
+            expand: true,
           ),
         ],
       ],

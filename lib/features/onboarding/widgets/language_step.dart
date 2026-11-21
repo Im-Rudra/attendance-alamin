@@ -1,13 +1,14 @@
 // Step 1: two huge language cards, the theme row and the optional center name.
 // The language switches the whole app the moment a card is tapped.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons, ThemeMode;
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/onb_common.dart';
 
@@ -20,8 +21,7 @@ class LanguageStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final Lang lang = ref.watch(langProvider);
     final ThemeMode mode = ref.watch(themeModeProvider);
 
@@ -63,31 +63,27 @@ class LanguageStep extends ConsumerWidget {
             children: <Widget>[
               Semantics(
                 header: true,
-                child: Text(l10n.onbThemeTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+                child: Text(l10n.onbThemeTitle, style: b.type.heading),
               ),
               const SizedBox(height: 8),
-              SegmentedChoice<ThemeMode>(
-                options: const <ThemeMode>[ThemeMode.system, ThemeMode.light, ThemeMode.dark],
-                selected: mode,
+              BhorSegmented<ThemeMode>(
+                segments: <BhorSegment<ThemeMode>>[
+                  BhorSegment<ThemeMode>(ThemeMode.system, l10n.onbThemeSystem),
+                  BhorSegment<ThemeMode>(ThemeMode.light, l10n.onbThemeLight),
+                  BhorSegment<ThemeMode>(ThemeMode.dark, l10n.onbThemeDark),
+                ],
+                value: mode,
                 onChanged: (ThemeMode m) => ref.read(themeModeProvider.notifier).set(m),
-                labelOf: (ThemeMode m) => switch (m) {
-                  ThemeMode.system => l10n.onbThemeSystem,
-                  ThemeMode.light => l10n.onbThemeLight,
-                  ThemeMode.dark => l10n.onbThemeDark,
-                },
               ),
               const SizedBox(height: 20),
-              TextField(
+              BhorTextField(
                 key: const Key('onb-center'),
                 controller: center,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => onSubmit(),
-                decoration: InputDecoration(
-                  labelText: l10n.onbCenterLabel,
-                  hintText: l10n.onbCenterHint,
-                  helperText: l10n.onbCenterHelper,
-                  helperMaxLines: 2,
-                ),
+                label: l10n.onbCenterLabel,
+                hint: l10n.onbCenterHint,
+                helper: l10n.onbCenterHelper,
               ),
             ],
           ),
@@ -113,58 +109,43 @@ class _LangCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final BorderRadius br = BorderRadius.circular(AuroraMetrics.radiusGlassCard);
-    final Color fg = selected ? tokens.onAccentContainer : tokens.textPrimary;
-    return Semantics(
-      container: true,
-      button: true,
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return BhorPressable(
+      onTap: onTap,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: '$title. $hint',
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Material(
-        color: selected ? tokens.accentContainer : tokens.surfaceDense,
-        shape: RoundedRectangleBorder(
-          borderRadius: br,
-          side: BorderSide(color: selected ? tokens.accent : tokens.hairline, width: selected ? 2 : 1),
-        ),
-        child: InkWell(
-          customBorder: RoundedRectangleBorder(borderRadius: br),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 120),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: tt.headlineMedium?.copyWith(color: fg, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      Icon(
-                        selected ? Icons.check_circle : Icons.circle_outlined,
-                        color: selected ? tokens.onAccentContainer : tokens.textSecondary,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    hint,
-                    style: tt.bodyMedium?.copyWith(color: selected ? tokens.onAccentContainer : tokens.textSecondary),
-                  ),
-                ],
-              ),
-            ),
+      semanticLabel: '$title. $hint',
+      excludeChildSemantics: true,
+      radius: BhorRadius.card,
+      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+        duration: BhorMotion.fast,
+        constraints: const BoxConstraints(minHeight: 120),
+        padding: const EdgeInsets.all(BhorSpace.s16),
+        decoration: BoxDecoration(
+          color: selected ? c.accentTint : c.surface,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(
+            color: selected ? c.accent : (s.hovered ? c.accentLine : c.line),
+            width: selected ? 2 : 1,
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(child: Text(title, style: b.type.title.copyWith(color: selected ? c.accent : c.text))),
+                Icon(
+                  selected ? Icons.check_circle : Icons.circle_outlined,
+                  color: selected ? c.accent : c.text3,
+                ),
+              ],
+            ),
+            const SizedBox(height: BhorSpace.s4),
+            Text(hint, style: b.type.meta),
+          ],
         ),
       ),
     );

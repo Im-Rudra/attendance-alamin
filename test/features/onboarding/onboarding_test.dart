@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -82,7 +83,7 @@ Future<void> typeInto(WidgetTester tester, String k, String text) async {
 }
 
 String textOf(WidgetTester tester, String k) =>
-    tester.widget<TextField>(key(k)).controller!.text;
+    tester.widget<BhorTextField>(key(k)).controller!.text;
 
 /// Walks the screen to the 0-based [step] the way a teacher would.
 Future<void> toStep(WidgetTester tester, int step) async {
@@ -136,15 +137,15 @@ void main() {
       // Step 2: subject chip + class chip compose "Math — Class 10".
       expect(find.text(bn.onbBatchTitle), findsOneWidget);
       expect(textOf(tester, 'onb-batch-name'), bn.onbBatchTimeName('সকাল ১১'));
-      await tester.ensureVisible(find.widgetWithText(ChoiceChip, bn.batchSuggestMath));
-      await tester.tap(find.widgetWithText(ChoiceChip, bn.batchSuggestMath));
+      await tester.ensureVisible(find.widgetWithText(BhorChip, bn.batchSuggestMath));
+      await tester.tap(find.widgetWithText(BhorChip, bn.batchSuggestMath));
       await tester.pump();
-      await tester.ensureVisible(find.widgetWithText(ChoiceChip, bn.onbClass10));
-      await tester.tap(find.widgetWithText(ChoiceChip, bn.onbClass10));
+      await tester.ensureVisible(find.widgetWithText(BhorChip, bn.onbClass10));
+      await tester.tap(find.widgetWithText(BhorChip, bn.onbClass10));
       await tester.pump();
       expect(textOf(tester, 'onb-subject'), '${bn.batchSuggestMath} — ${bn.onbClass10}');
       // No fee yet: the button says why it is off.
-      expect(tester.widget<FilledButton>(key('onb-primary')).onPressed, isNull);
+      expect(tester.widget<BhorButton>(key('onb-primary')).onPressed, isNull);
       expect(find.text(bn.batchReasonFee), findsOneWidget);
       await typeInto(tester, 'onb-fee', '১২০০');
       await tester.pumpAndSettle();
@@ -162,7 +163,7 @@ void main() {
       expect(find.text(bn.onbBillingStartNote(fmtBn.monthYear(const YearMonth(2026, 11)))), findsOneWidget);
       await typeInto(tester, 'onb-student-name', 'রহিম উদ্দিন');
       await tapKey(tester, 'onb-student-add');
-      expect(tester.widget<TextField>(key('onb-student-name')).focusNode!.hasFocus, isTrue);
+      expect(tester.widget<BhorTextField>(key('onb-student-name')).focusNode!.hasFocus, isTrue);
       expect(textOf(tester, 'onb-student-name'), '');
       await typeInto(tester, 'onb-student-name', 'করিম হোসেন');
       await typeInto(tester, 'onb-student-phone', '01712345678');

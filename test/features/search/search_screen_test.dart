@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/features/search/controllers/search_providers.dart';
 import 'package:attendance_alamin/features/search/ui/search_screen.dart';
 
@@ -91,7 +92,7 @@ void main() {
     overrides: () => seedFakes().overrides,
     verify: (WidgetTester tester) async {
       await _type(tester, 'zzzzqq');
-      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byType(BhorButton), findsOneWidget);
     },
   );
 

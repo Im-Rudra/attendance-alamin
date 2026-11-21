@@ -1,11 +1,11 @@
 // Three mini previews of the app (system = half light, half dark) so the
 // teacher sees what each theme looks like before choosing. Decorative: the
-// SegmentedChoice next to it is the control and carries the semantics.
+// segmented control next to it is the control and carries the semantics.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/widgets.dart';
 
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/theme/tokens.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 
 class ThemeSwatches extends StatelessWidget {
   const ThemeSwatches({super.key, required this.selected, required this.onChanged});
@@ -41,37 +41,37 @@ class _Swatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final BorderRadius br = BorderRadius.circular(AuroraMetrics.radiusField);
+    final BhorColors c = context.bhor.colors;
+    final BorderRadius br = BorderRadius.circular(BhorRadius.control);
     final Widget face = switch (mode) {
-      ThemeMode.light => const _Face(
-          bg: LightTokens.bg,
-          card: LightTokens.surfaceSolid,
-          accent: LightTokens.accent,
-          line: LightTokens.textSecondary,
+      ThemeMode.light => _Face(
+          bg: BhorColors.light.bg,
+          card: BhorColors.light.surface,
+          accent: BhorColors.light.accent,
+          line: BhorColors.light.text2,
         ),
-      ThemeMode.dark => const _Face(
-          bg: DuskTokens.bg,
-          card: DuskTokens.surfaceSolid,
-          accent: DuskTokens.accent,
-          line: DuskTokens.textSecondary,
+      ThemeMode.dark => _Face(
+          bg: BhorColors.dark.bg,
+          card: BhorColors.dark.surface,
+          accent: BhorColors.dark.accent,
+          line: BhorColors.dark.text2,
         ),
-      ThemeMode.system => const Row(
+      ThemeMode.system => Row(
           children: <Widget>[
             Expanded(
               child: _Face(
-                bg: LightTokens.bg,
-                card: LightTokens.surfaceSolid,
-                accent: LightTokens.accent,
-                line: LightTokens.textSecondary,
+                bg: BhorColors.light.bg,
+                card: BhorColors.light.surface,
+                accent: BhorColors.light.accent,
+                line: BhorColors.light.text2,
               ),
             ),
             Expanded(
               child: _Face(
-                bg: DuskTokens.bg,
-                card: DuskTokens.surfaceSolid,
-                accent: DuskTokens.accent,
-                line: DuskTokens.textSecondary,
+                bg: BhorColors.dark.bg,
+                card: BhorColors.dark.surface,
+                accent: BhorColors.dark.accent,
+                line: BhorColors.dark.text2,
               ),
             ),
           ],
@@ -79,19 +79,20 @@ class _Swatch extends StatelessWidget {
     };
     return AspectRatio(
       aspectRatio: 1.6,
-      child: GestureDetector(
+      child: BhorPressable(
         key: ValueKey<String>('theme-swatch-${mode.name}'),
-        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: DecoratedBox(
+        isButton: false,
+        radius: BhorRadius.control,
+        builder: (BuildContext context, BhorStates s) => DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: br,
             border: Border.all(
-              color: selected ? tokens.accent : tokens.hairline,
+              color: selected ? c.accent : c.line,
               width: selected ? 2 : 1,
             ),
           ),
-          child: ClipRRect(borderRadius: BorderRadius.circular(AuroraMetrics.radiusField - 1), child: face),
+          child: ClipRRect(borderRadius: BorderRadius.circular(BhorRadius.control - 1), child: face),
         ),
       ),
     );
@@ -99,7 +100,7 @@ class _Swatch extends StatelessWidget {
 }
 
 class _Face extends StatelessWidget {
-  const _Face({required this.bg, required this.card, required this.accent, required this.line});
+  _Face({required this.bg, required this.card, required this.accent, required this.line});
 
   final Color bg;
   final Color card;

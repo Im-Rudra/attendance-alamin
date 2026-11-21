@@ -1,12 +1,12 @@
 // Small shared pieces of the onboarding screens: heading, progress dots, the
 // section wrapper, the error box and the bottom action bar.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 
 /// Number of onboarding steps.
 const int kOnbSteps = 4;
@@ -20,21 +20,17 @@ class OnbHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Semantics(
           header: true,
-          child: Text(
-            title,
-            style: tt.headlineSmall?.copyWith(color: tokens.textPrimary, fontWeight: FontWeight.w700),
-          ),
+          child: Text(title, style: b.type.title),
         ),
         if (body != null) ...<Widget>[
           const SizedBox(height: 6),
-          Text(body!, style: tt.bodyLarge?.copyWith(color: tokens.textSecondary)),
+          Text(body!, style: b.type.body.copyWith(color: b.colors.text2)),
         ],
       ],
     );
@@ -50,7 +46,7 @@ class OnbProgressDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorColors c = context.bhor.colors;
     final String label = context.l10n.onbStepOf(
       context.fmt.number(step + 1),
       context.fmt.number(kOnbSteps),
@@ -63,14 +59,14 @@ class OnbProgressDots extends StatelessWidget {
         children: <Widget>[
           for (int i = 0; i < kOnbSteps; i++)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s4),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
+                duration: BhorMotion.base,
                 width: i == step ? 28 : 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: i <= step ? tokens.accent : tokens.track,
-                  borderRadius: BorderRadius.circular(AuroraMetrics.radiusPill),
+                  color: i <= step ? c.accent : c.line,
+                  borderRadius: BorderRadius.circular(5),
                 ),
               ),
             ),
@@ -80,8 +76,8 @@ class OnbProgressDots extends StatelessWidget {
   }
 }
 
-/// Form group on `surfaceDense`. On wide windows the whole step already sits
-/// on a dense card, so only narrow windows add the wrapper.
+/// Form group on a card. On wide windows the whole step already sits on a
+/// card, so only narrow windows add the wrapper.
 class OnbSection extends StatelessWidget {
   const OnbSection({super.key, required this.child});
 
@@ -90,7 +86,7 @@ class OnbSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (WindowClass.of(context).isWide) return child;
-    return GlassCard(dense: true, child: child);
+    return BhorCard(child: child);
   }
 }
 
@@ -102,26 +98,24 @@ class OnbErrorBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return Semantics(
       liveRegion: true,
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.errorContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: Border.all(color: tokens.errorContainerBorder),
+          color: c.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+          border: Border.all(color: c.danger.withValues(alpha: 0.4)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: tokens.onErrorContainer),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(message, style: tt.bodyLarge?.copyWith(color: tokens.onErrorContainer)),
-              ),
+              Icon(Icons.error_outline, color: c.danger),
+              const SizedBox(width: BhorSpace.s8),
+              Expanded(child: Text(message, style: b.type.body)),
             ],
           ),
         ),
@@ -150,42 +144,39 @@ class OnbActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.surfaceDense,
-        border: Border(top: BorderSide(color: tokens.hairline)),
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.line)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s12, BhorSpace.s16, BhorSpace.s12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               if (onPressed == null && disabledReason != null) ...<Widget>[
-                Text(
-                  disabledReason!,
-                  textAlign: TextAlign.center,
-                  style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                ),
-                const SizedBox(height: 8),
+                Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
+                const SizedBox(height: BhorSpace.s8),
               ],
-              FilledButton(
+              BhorButton(
                 key: const Key('onb-primary'),
+                label: label,
                 onPressed: onPressed,
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                child: Text(label),
+                expand: true,
               ),
               if (secondaryLabel != null) ...<Widget>[
-                const SizedBox(height: 4),
-                TextButton(
+                const SizedBox(height: BhorSpace.s4),
+                BhorButton(
                   key: const Key('onb-secondary'),
+                  label: secondaryLabel!,
+                  variant: BhorButtonVariant.ghost,
                   onPressed: onSecondary,
-                  style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                  child: Text(secondaryLabel!),
+                  expand: true,
                 ),
               ],
             ],

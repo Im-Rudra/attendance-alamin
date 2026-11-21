@@ -2,10 +2,11 @@
 // typed [SettingKeys] through the settings repository and saved the moment it
 // changes (no Save button).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -58,7 +59,7 @@ final appVersionProvider = FutureProvider<String?>((Ref ref) async {
   }
 });
 
-/// Saves [value] now; a failure shows a plain-language snackbar instead of
+/// Saves [value] now; a failure shows a plain-language toast instead of
 /// crashing the screen.
 Future<void> saveSetting<T>(
   BuildContext context,
@@ -67,11 +68,10 @@ Future<void> saveSetting<T>(
   T value,
 ) async {
   final repo = ref.read(settingsRepositoryProvider);
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final l10n = context.l10n;
   try {
     await repo.set<T>(key, value);
   } on Object catch (e) {
-    messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+    if (context.mounted) BhorToast.show(context, message: errorText(l10n, e));
   }
 }
