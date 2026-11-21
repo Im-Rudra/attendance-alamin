@@ -132,10 +132,10 @@ class _Swatch extends StatelessWidget {
                     duration: BhorMotion.base,
                     curve: BhorMotion.spring,
                     child: DecoratedBox(
-                      decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
-                      child: const Padding(
-                        padding: EdgeInsets.all(3),
-                        child: Icon(BhorIcons.check, size: 14, color: Color(0xFFFFFFFF)),
+                      decoration: BoxDecoration(color: c.accentFill, shape: BoxShape.circle),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: Icon(BhorIcons.check, size: 14, color: c.onAccentFill),
                       ),
                     ),
                   ),
