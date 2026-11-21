@@ -1,9 +1,13 @@
-// Choice controls: BhorSegmented (sliding thumb), BhorChip (filter),
-// BhorSwitch, BhorCheckbox, BhorRadioCard.
+// Choice controls (docs/council/13-fluid-ui-spec.md): BhorSegmented (soft
+// track, surface thumb that glides with the spring), BhorChip (pill, the
+// check slides in), BhorSwitch (50x30, spring thumb that stretches while
+// pressed), BhorCheckbox (the check draws in) and BhorRadioCard.
 
-import 'package:flutter/material.dart' show Icons;
+import 'dart:ui' show PathMetric;
+
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
@@ -17,7 +21,8 @@ class BhorSegment<T> {
   final IconData? icon;
 }
 
-/// Equal-width segmented control with a sliding thumb.
+/// Equal-width segmented control: soft track r14 with 4 px padding; the
+/// surface thumb glides (spring, 400 ms) and the labels cross-fade.
 /// Usage: `BhorSegmented<int>(segments: [...], value: v, onChanged: f)`.
 class BhorSegmented<T> extends StatelessWidget {
   const BhorSegmented({
@@ -32,7 +37,7 @@ class BhorSegmented<T> extends StatelessWidget {
   final T value;
   final ValueChanged<T>? onChanged;
 
-  /// 36 tall instead of 44.
+  /// 38 tall instead of 46.
   final bool compact;
 
   @override
@@ -42,14 +47,15 @@ class BhorSegmented<T> extends StatelessWidget {
     final int index = segments.indexWhere((BhorSegment<T> s) => s.value == value);
     final double h = compact ? BhorSize.compact : BhorSize.control;
     final int n = segments.length;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
     return Semantics(
       container: true,
       explicitChildNodes: true,
       child: Container(
         height: h,
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: c.surface2,
+          color: c.soft,
           borderRadius: BorderRadius.circular(BhorRadius.control),
         ),
         child: Stack(
@@ -57,16 +63,16 @@ class BhorSegmented<T> extends StatelessWidget {
             if (index >= 0)
               AnimatedAlign(
                 alignment: Alignment(n == 1 ? 0 : -1 + 2 * index / (n - 1), 0),
-                duration: BhorMotion.slow,
-                curve: BhorMotion.curve,
+                duration: BhorMotion.of(context, BhorMotion.glide),
+                curve: BhorMotion.curveOf(context, BhorMotion.spring),
                 child: FractionallySizedBox(
                   widthFactor: 1 / n,
                   heightFactor: 1,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: c.isDark ? c.line : c.surface,
-                      borderRadius: BorderRadius.circular(BhorRadius.control - 3),
-                      border: Border.all(color: c.isDark ? c.accentLine : c.line),
+                      color: c.isDark ? c.soft2 : c.surface,
+                      borderRadius: BorderRadius.circular(BhorRadius.control - 4),
+                      boxShadow: c.thumbShadow,
                     ),
                   ),
                 ),
@@ -81,7 +87,8 @@ class BhorSegmented<T> extends StatelessWidget {
                       inMutuallyExclusiveGroup: true,
                       semanticLabel: segments[i].label,
                       excludeChildSemantics: true,
-                      radius: BhorRadius.control - 3,
+                      scaleOnPress: false,
+                      radius: BhorRadius.control - 4,
                       builder: (BuildContext context, BhorStates s) {
                         final bool sel = i == index;
                         final Color fg = sel ? c.text : (s.hovered ? c.text : c.text2);
@@ -90,16 +97,25 @@ class BhorSegmented<T> extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               if (segments[i].icon != null) ...<Widget>[
-                                Icon(segments[i].icon, size: 16, color: fg),
+                                TweenAnimationBuilder<Color?>(
+                                  tween: ColorTween(end: fg),
+                                  duration: fast,
+                                  builder: (BuildContext context, Color? col, Widget? _) =>
+                                      Icon(segments[i].icon, size: BhorIconSize.inline, color: col),
+                                ),
                                 const SizedBox(width: 6),
                               ],
                               Flexible(
-                                child: Text(
-                                  segments[i].label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: AnimatedDefaultTextStyle(
+                                  duration: fast,
+                                  curve: BhorMotion.ease,
                                   style: (sel ? b.type.bodyStrong : b.type.body)
-                                      .copyWith(color: fg, fontSize: compact ? 13 : 14),
+                                      .copyWith(color: fg, fontSize: compact ? 13.5 : 14.5),
+                                  child: Text(
+                                    segments[i].label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ],
@@ -117,7 +133,8 @@ class BhorSegmented<T> extends StatelessWidget {
   }
 }
 
-/// Filter chip (radius 10, 36 visual in a 44 target).
+/// Filter / choice chip: pill h38, soft fill; selected = accent tint +
+/// accent text + a check that slides in (width 0 -> 20, spring).
 /// Usage: `BhorChip(label: 'বকেয়া', selected: on, onSelected: (v) => ...)`.
 class BhorChip extends StatelessWidget {
   const BhorChip({
@@ -141,39 +158,57 @@ class BhorChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: BhorPressable(
         onTap: onSelected == null ? null : () => onSelected!(!selected),
         selected: selected,
         semanticLabel: count == null ? label : '$label, $count',
         excludeChildSemantics: true,
-        radius: BhorRadius.chip,
+        radius: BhorSize.compact / 2,
         builder: (BuildContext context, BhorStates s) {
           final Color fg = selected ? c.accent : c.text2;
           return AnimatedContainer(
-            duration: BhorMotion.fast,
+            duration: fast,
+            curve: BhorMotion.ease,
             height: BhorSize.compact,
-            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: selected ? c.accentTint : (s.hovered ? c.surface2 : c.surface),
-              borderRadius: BorderRadius.circular(BhorRadius.chip),
-              border: Border.all(color: selected ? c.accentLine : c.line),
+              color: selected ? c.accentTint : (s.hovered || s.pressed ? c.soft2 : c.soft),
+              borderRadius: BorderRadius.circular(BhorRadius.pill),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                if (selected)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(Icons.check_rounded, size: 16, color: fg),
-                  )
-                else if (icon != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(icon, size: 16, color: fg),
+                // Reserved check slot: grows 0 -> 20 with the spring.
+                AnimatedContainer(
+                  duration: BhorMotion.of(context, BhorMotion.glide),
+                  curve: selected ? BhorMotion.curveOf(context, BhorMotion.spring) : BhorMotion.ease,
+                  width: selected ? 20 : 0,
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.centerLeft,
+                      maxWidth: 20,
+                      minWidth: 20,
+                      child: AnimatedOpacity(
+                        opacity: selected ? 1 : 0,
+                        duration: fast,
+                        child: Icon(BhorIcons.check, size: BhorIconSize.inline, color: fg),
+                      ),
+                    ),
                   ),
-                Text(label, style: b.type.label.copyWith(color: selected ? c.accent : c.text)),
+                ),
+                if (!selected && icon != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Icon(icon, size: BhorIconSize.inline, color: fg),
+                  ),
+                AnimatedDefaultTextStyle(
+                  duration: fast,
+                  style: b.type.label.copyWith(color: selected ? c.accent : c.text, fontSize: 13.5),
+                  child: Text(label),
+                ),
                 if (count != null) ...<Widget>[
                   const SizedBox(width: 6),
                   Text(count!, style: BhorType.tabular(b.type.caption.copyWith(color: fg))),
@@ -187,7 +222,8 @@ class BhorChip extends StatelessWidget {
   }
 }
 
-/// On/off switch (40x24 track in a 44 target).
+/// On/off switch: 50x30 track, the thumb spring-slides and stretches to
+/// 30 px while pressed; the track colour fades. 44 tall target.
 /// Usage: `BhorSwitch(value: on, onChanged: (v) => ..., semanticLabel: 'রিমাইন্ডার')`.
 class BhorSwitch extends StatelessWidget {
   const BhorSwitch({super.key, required this.value, required this.onChanged, this.semanticLabel});
@@ -200,41 +236,44 @@ class BhorSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorColors c = context.bhor.colors;
     final bool enabled = onChanged != null;
+    final bool reduced = BhorMotion.reduced(context);
     return BhorPressable(
       onTap: enabled ? () => onChanged!(!value) : null,
       toggled: value,
       isButton: false,
       semanticLabel: semanticLabel,
-      radius: 12,
+      radius: 15,
       scaleOnPress: false,
       builder: (BuildContext context, BhorStates s) => SizedBox(
-        width: 48,
+        width: 54,
         height: BhorSize.minTap,
         child: Center(
           child: AnimatedOpacity(
             opacity: enabled ? 1 : 0.45,
-            duration: BhorMotion.fast,
+            duration: BhorMotion.of(context, BhorMotion.fast),
             child: AnimatedContainer(
-              duration: BhorMotion.base,
-              curve: BhorMotion.curve,
-              width: 40,
-              height: 24,
+              duration: BhorMotion.of(context, BhorMotion.fast),
+              curve: BhorMotion.ease,
+              width: 50,
+              height: 30,
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: value ? c.accent : c.surface2,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: value ? c.accent : c.line),
+                color: value ? c.accentFill : c.soft2,
+                borderRadius: BorderRadius.circular(15),
               ),
               child: AnimatedAlign(
-                duration: BhorMotion.base,
-                curve: BhorMotion.curve,
+                duration: BhorMotion.of(context, BhorMotion.glide),
+                curve: BhorMotion.curveOf(context, BhorMotion.spring),
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  width: 16,
-                  height: 16,
+                child: AnimatedContainer(
+                  duration: BhorMotion.of(context, BhorMotion.fast),
+                  curve: BhorMotion.ease,
+                  width: s.pressed && !reduced ? 30 : 24,
+                  height: 24,
                   decoration: BoxDecoration(
-                    color: value ? c.onAccent : c.text3,
-                    shape: BoxShape.circle,
+                    color: c.isDark ? (value ? c.onAccentFill : c.text2) : c.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: c.thumbShadow,
                   ),
                 ),
               ),
@@ -246,7 +285,8 @@ class BhorSwitch extends StatelessWidget {
   }
 }
 
-/// Checkbox with optional label to its right (whole row is the target).
+/// Checkbox with optional label to its right (whole row is the target). The
+/// box fills and the check path draws in.
 /// Usage: `BhorCheckbox(value: v, onChanged: (x) => ..., label: 'সবাই')`.
 class BhorCheckbox extends StatelessWidget {
   const BhorCheckbox({super.key, required this.value, required this.onChanged, this.label, this.semanticLabel});
@@ -261,6 +301,7 @@ class BhorCheckbox extends StatelessWidget {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final bool enabled = onChanged != null;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
     return BhorPressable(
       onTap: enabled ? () => onChanged!(!value) : null,
       checked: value,
@@ -278,18 +319,22 @@ class BhorCheckbox extends StatelessWidget {
               width: BhorSize.minTap,
               child: Center(
                 child: AnimatedContainer(
-                  duration: BhorMotion.fast,
-                  width: 20,
-                  height: 20,
+                  duration: fast,
+                  curve: BhorMotion.ease,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
-                    color: value ? c.accent : c.surface,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: value ? c.accent : (s.hovered ? c.accentLine : c.text3),
-                      width: 1.5,
-                    ),
+                    color: value ? c.accentFill : (s.hovered ? c.soft2 : c.soft),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(color: value ? c.accentFill : c.text3, width: 1.5),
                   ),
-                  child: value ? Icon(Icons.check_rounded, size: 15, color: c.onAccent) : null,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(end: value ? 1 : 0),
+                    duration: fast,
+                    curve: BhorMotion.ease,
+                    builder: (BuildContext context, double t, Widget? _) =>
+                        CustomPaint(painter: BhorCheckPainter(progress: t, color: c.onAccentFill, strokeWidth: 2)),
+                  ),
                 ),
               ),
             ),
@@ -307,7 +352,54 @@ class BhorCheckbox extends StatelessWidget {
   }
 }
 
-/// A selectable card with a radio dot (one of a group).
+/// Paints a check mark drawn up to [progress] (0..1) of its length.
+class BhorCheckPainter extends CustomPainter {
+  BhorCheckPainter({required this.progress, required this.color, this.strokeWidth = 2});
+
+  final double progress;
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+    final double w = size.width;
+    final double h = size.height;
+    final Path path = Path()
+      ..moveTo(w * 0.26, h * 0.52)
+      ..lineTo(w * 0.43, h * 0.68)
+      ..lineTo(w * 0.75, h * 0.34);
+    final Path drawn = Path();
+    double total = 0;
+    final List<PathMetric> metrics = path.computeMetrics().toList();
+    for (final PathMetric m in metrics) {
+      total += m.length;
+    }
+    double left = total * progress.clamp(0.0, 1.0);
+    for (final PathMetric m in metrics) {
+      if (left <= 0) break;
+      final double take = left < m.length ? left : m.length;
+      drawn.addPath(m.extractPath(0, take), Offset.zero);
+      left -= take;
+    }
+    canvas.drawPath(
+      drawn,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(BhorCheckPainter old) =>
+      old.progress != progress || old.color != color || old.strokeWidth != strokeWidth;
+}
+
+/// A selectable card with a radio dot (one of a group). Soft fill; the
+/// chosen card gets the accent tint, an accent ring and a popping dot.
 /// Usage: `BhorRadioCard<int>(value: 1, groupValue: g, onChanged: f, title: 'মাসিক')`.
 class BhorRadioCard<T> extends StatelessWidget {
   const BhorRadioCard({
@@ -332,6 +424,7 @@ class BhorRadioCard<T> extends StatelessWidget {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final bool sel = value == groupValue;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
     return BhorPressable(
       onTap: onChanged == null ? null : () => onChanged!(value),
       checked: sel,
@@ -341,18 +434,19 @@ class BhorRadioCard<T> extends StatelessWidget {
       excludeChildSemantics: true,
       radius: BhorRadius.card,
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
-        duration: BhorMotion.fast,
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.all(BhorSpace.s12),
+        duration: fast,
+        curve: BhorMotion.ease,
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s12),
         decoration: BoxDecoration(
-          color: sel ? c.accentTint : c.surface,
+          color: sel ? c.accentTint : (s.hovered || s.pressed ? c.soft2 : c.soft),
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: sel ? c.accent : (s.hovered ? c.accentLine : c.line), width: sel ? 1.5 : 1),
+          border: Border.all(color: sel ? c.accent : c.accent.withValues(alpha: 0), width: 1.5),
         ),
         child: Row(
           children: <Widget>[
             if (icon != null) ...<Widget>[
-              Icon(icon, size: 20, color: sel ? c.accent : c.text2),
+              Icon(icon, size: BhorIconSize.row, color: sel ? c.accent : c.text2),
               const SizedBox(width: BhorSpace.s12),
             ],
             Expanded(
@@ -367,13 +461,24 @@ class BhorRadioCard<T> extends StatelessWidget {
             ),
             const SizedBox(width: BhorSpace.s8),
             AnimatedContainer(
-              duration: BhorMotion.fast,
-              width: 20,
-              height: 20,
+              duration: fast,
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: sel ? c.accent : c.text3, width: sel ? 6 : 1.5),
+                border: Border.all(color: sel ? c.accentFill : c.text3, width: 1.5),
                 color: c.surface,
+              ),
+              alignment: Alignment.center,
+              child: AnimatedScale(
+                scale: sel ? 1 : 0,
+                duration: BhorMotion.of(context, BhorMotion.glide),
+                curve: sel ? BhorMotion.curveOf(context, BhorMotion.spring) : BhorMotion.ease,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(color: c.accentFill, shape: BoxShape.circle),
+                ),
               ),
             ),
           ],

@@ -1,6 +1,7 @@
-// Shared interaction pieces: press/hover/focus handling (no ripple: scale
-// 0.98 + slight darken), the keyboard focus ring, a spinner and a hover
-// tooltip. All widgets-layer only.
+// Shared interaction pieces: press/hover/focus handling (no ripple: press
+// scale .96 in 80 ms, spring back on release), the keyboard focus ring, a
+// spinner and a hover tooltip (300 ms delay, fade + 4 px rise). All
+// widgets-layer only; reduced motion drops the scale.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -47,6 +48,7 @@ class BhorPressable extends StatefulWidget {
     this.autofocus = false,
     this.radius = BhorRadius.control,
     this.scaleOnPress = true,
+    this.pressScale = BhorMotion.pressScale,
     this.showFocusRing = true,
   });
 
@@ -67,6 +69,9 @@ class BhorPressable extends StatefulWidget {
   /// Corner radius of the focus ring.
   final double radius;
   final bool scaleOnPress;
+
+  /// Scale while pressed (.96 buttons, .9 small stepper buttons).
+  final double pressScale;
   final bool showFocusRing;
 
   @override
@@ -103,11 +108,12 @@ class _BhorPressableState extends State<BhorPressable> {
       enabled: enabled,
     );
     Widget child = widget.builder(context, states);
-    if (widget.scaleOnPress) {
+    if (widget.scaleOnPress && !BhorMotion.reduced(context)) {
+      // Press in fast and linear-ish; release with the spring (slight overshoot).
       child = AnimatedScale(
-        scale: states.pressed ? BhorMotion.pressScale : 1,
-        duration: BhorMotion.fast,
-        curve: BhorMotion.curve,
+        scale: states.pressed ? widget.pressScale : 1,
+        duration: states.pressed ? BhorMotion.instant : BhorMotion.glide,
+        curve: states.pressed ? BhorMotion.ease : BhorMotion.spring,
         child: child,
       );
     }
@@ -312,7 +318,7 @@ class _BhorTooltipState extends State<BhorTooltip> {
 
   void _showSoon() {
     _timer?.cancel();
-    _timer = Timer(const Duration(milliseconds: 350), () {
+    _timer = Timer(const Duration(milliseconds: 300), () {
       if (mounted) _portal.show();
     });
   }
@@ -348,7 +354,8 @@ class _BhorTooltipState extends State<BhorTooltip> {
               followerAnchor: Alignment.topCenter,
               offset: const Offset(0, 6),
               child: IgnorePointer(
-                child: ConstrainedBox(
+                child: _TooltipEntrance(
+                  child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 280),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -360,6 +367,7 @@ class _BhorTooltipState extends State<BhorTooltip> {
                       child: Text(widget.message, style: b.type.meta.copyWith(color: b.colors.bg)),
                     ),
                   ),
+                ),
                 ),
               ),
             ),
@@ -375,6 +383,42 @@ class _BhorTooltipState extends State<BhorTooltip> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Tooltip entrance: 120 ms fade + 4 px rise (fade only when reduced).
+class _TooltipEntrance extends StatefulWidget {
+  const _TooltipEntrance({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_TooltipEntrance> createState() => _TooltipEntranceState();
+}
+
+class _TooltipEntranceState extends State<_TooltipEntrance> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: BhorMotion.reducedFade)..forward();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool still = BhorMotion.reduced(context);
+    final Animation<double> a = CurvedAnimation(parent: _c, curve: BhorMotion.ease);
+    return FadeTransition(
+      opacity: a,
+      child: AnimatedBuilder(
+        animation: a,
+        builder: (BuildContext context, Widget? child) =>
+            Transform.translate(offset: Offset(0, still ? 0 : 4 * (1 - a.value)), child: child),
+        child: widget.child,
       ),
     );
   }

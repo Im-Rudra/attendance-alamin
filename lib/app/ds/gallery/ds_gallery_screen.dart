@@ -1,9 +1,9 @@
-// Developer gallery of every Bhor component, in light / dark / both themes
-// and at phone (360) / desktop (1024) / fit widths. Hidden route
+// Developer gallery of every Bhor component and motion
+// (docs/council/13-fluid-ui-spec.md), in light / dark / both themes and at
+// phone (360) / desktop (1024) / fit widths. Hidden route
 // `/more/design-system` (long-press the version row in More › Diagnostics).
 // Demo labels are sample content, not product copy.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -68,8 +68,8 @@ class _DsGalleryScreenState extends State<DsGalleryScreen> {
               children: <Widget>[
                 BhorSegmented<_ThemePick>(
                   segments: const <BhorSegment<_ThemePick>>[
-                    BhorSegment<_ThemePick>(_ThemePick.light, 'Light', icon: Icons.light_mode_outlined),
-                    BhorSegment<_ThemePick>(_ThemePick.dark, 'Dark', icon: Icons.dark_mode_outlined),
+                    BhorSegment<_ThemePick>(_ThemePick.light, 'Light', icon: BhorIcons.light),
+                    BhorSegment<_ThemePick>(_ThemePick.dark, 'Dark', icon: BhorIcons.dark),
                     BhorSegment<_ThemePick>(_ThemePick.both, 'Both'),
                   ],
                   value: _theme,
@@ -78,8 +78,8 @@ class _DsGalleryScreenState extends State<DsGalleryScreen> {
                 const SizedBox(height: BhorSpace.s8),
                 BhorSegmented<_WidthPick>(
                   segments: const <BhorSegment<_WidthPick>>[
-                    BhorSegment<_WidthPick>(_WidthPick.phone, 'Phone 360', icon: Icons.smartphone_outlined),
-                    BhorSegment<_WidthPick>(_WidthPick.desktop, 'Desktop 1024', icon: Icons.desktop_windows_outlined),
+                    BhorSegment<_WidthPick>(_WidthPick.phone, 'Phone 360', icon: BhorIcons.phoneDevice),
+                    BhorSegment<_WidthPick>(_WidthPick.desktop, 'Desktop 1024', icon: BhorIcons.desktop),
                     BhorSegment<_WidthPick>(_WidthPick.fit, 'Fit'),
                   ],
                   value: _width,
@@ -115,10 +115,18 @@ class _DemoState extends ChangeNotifier {
   int radio = 1;
   String? batch = 'b1';
   AttendanceKind? attendance = AttendanceKind.present;
+  List<AttendanceKind> roll = <AttendanceKind>[AttendanceKind.present, AttendanceKind.absent, AttendanceKind.late];
   DateTime date = DateTime(2026, 11, 21);
   int time = 16 * 60;
   int nav = 0;
   bool collapsed = false;
+  int months = 2;
+  int collected = 18500;
+  int pane = 0;
+  int view = 0;
+  int replay = 0;
+  bool saving = false;
+  bool saved = false;
   final TextEditingController name = TextEditingController();
   final TextEditingController fee = TextEditingController(text: '১৫০০');
 
@@ -197,6 +205,17 @@ Widget _wrap(List<Widget> children) => Wrap(
       children: children,
     );
 
+/// A short sample form used by the panel / sheet demos.
+Widget _demoForm(BuildContext ctx) => const Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorTextField(label: 'টাকার পরিমাণ', initialValue: '১০০০', tabular: true),
+        SizedBox(height: BhorSpace.s12),
+        BhorTextField(label: 'নোট', hint: 'ঐচ্ছিক'),
+      ],
+    );
+
 class _Sections extends StatelessWidget {
   const _Sections({required this.demo, required this.wide});
 
@@ -210,26 +229,30 @@ class _Sections extends StatelessWidget {
     final AppFormat fmt = context.fmt;
     final DateTime today = DateTime(2026, 11, 21);
     final List<BhorNavItem> nav = <BhorNavItem>[
-      const BhorNavItem(icon: Icons.today_outlined, activeIcon: Icons.today, label: 'আজ'),
-      const BhorNavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: 'ব্যাচ'),
-      const BhorNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'শিক্ষার্থী'),
-      BhorNavItem(icon: Icons.payments_outlined, activeIcon: Icons.payments, label: 'বেতন', badge: fmt.number(3)),
-      const BhorNavItem(icon: Icons.more_horiz, label: 'আরও'),
+      const BhorNavItem(icon: BhorIcons.today, activeIcon: BhorIcons.todayFill, label: 'আজ'),
+      const BhorNavItem(icon: BhorIcons.batches, activeIcon: BhorIcons.batchesFill, label: 'ব্যাচ'),
+      const BhorNavItem(icon: BhorIcons.students, activeIcon: BhorIcons.studentsFill, label: 'শিক্ষার্থী'),
+      BhorNavItem(icon: BhorIcons.fees, activeIcon: BhorIcons.feesFill, label: 'বেতন', badge: fmt.number(3)),
+      const BhorNavItem(icon: BhorIcons.more, activeIcon: BhorIcons.moreFill, label: 'আরও'),
     ];
     final List<(String, Color)> swatches = <(String, Color)>[
       ('bg', c.bg),
       ('surface', c.surface),
-      ('surface2', c.surface2),
+      ('soft', c.soft),
+      ('soft2', c.soft2),
       ('line', c.line),
       ('text', c.text),
       ('text2', c.text2),
       ('text3', c.text3),
       ('accent', c.accent),
+      ('accentFill', c.accentFill),
       ('accentTint', c.accentTint),
       ('ok', c.ok),
-      ('danger', c.danger),
-      ('absent', c.absent),
-      ('late', c.lateText),
+      ('warn', c.warn),
+      ('overdue', c.overdue),
+      ('absent', c.absentText),
+      ('late', c.late),
+      ('error', c.danger),
     ];
 
     final Widget pickers = wide
@@ -245,6 +268,13 @@ class _Sections extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[_datePicker(demo, today), const SizedBox(height: BhorSpace.s16), _timePicker(demo)],
           );
+
+    final List<(String, String, AttendanceKind)> roster = <(String, String, AttendanceKind)>[
+      ('রহিম উদ্দিন', 'রোল ৩', demo.roll[0]),
+      ('Fatema Akter', 'Roll 7', demo.roll[1]),
+      ('করিম', 'রোল ১২', demo.roll[2]),
+    ];
+    final int present = demo.roll.where((AttendanceKind k) => k == AttendanceKind.present).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -269,23 +299,63 @@ class _Sections extends StatelessWidget {
               ),
           ]),
           const SizedBox(height: BhorSpace.s12),
-          Text('প্রদর্শন · Display 24', style: b.type.display),
-          Text('শিরোনাম · Title 18', style: b.type.title),
-          Text('উপশিরোনাম · Heading 15', style: b.type.heading),
-          Text('মূল লেখা · Body 14 — আজ সকাল ১০টায় ক্লাস।', style: b.type.body),
-          Text('Body strong 14', style: b.type.bodyStrong),
-          Text('Label 12.5', style: b.type.label),
-          Text('Meta 12 · বৃহস্পতিবার, ১৯ নভেম্বর', style: b.type.meta),
-          Text('Caption 11', style: b.type.caption),
+          Text('প্রদর্শন · Display 26', style: b.type.display),
+          Text('শিরোনাম · Title 19', style: b.type.title),
+          Text('উপশিরোনাম · Heading 16', style: b.type.heading),
+          Text('মূল লেখা · Body 14.5 — আজ সকাল ১০টায় ক্লাস।', style: b.type.body),
+          Text('Body strong 14.5', style: b.type.bodyStrong),
+          Text('Label 13', style: b.type.label),
+          Text('Meta 12.5 · বৃহস্পতিবার, ১৯ নভেম্বর', style: b.type.meta),
+          Text('Caption 12.5', style: b.type.caption),
           BhorMoney(125000, style: b.type.stat, muteSign: true),
+          const SizedBox(height: BhorSpace.s8),
+          _wrap(<Widget>[
+            for (final IconData i in <IconData>[
+              BhorIcons.today,
+              BhorIcons.batches,
+              BhorIcons.students,
+              BhorIcons.fees,
+              BhorIcons.more,
+              BhorIcons.search,
+              BhorIcons.rollCall,
+              BhorIcons.takeMoney,
+              BhorIcons.remind,
+              BhorIcons.share,
+              BhorIcons.holiday,
+              BhorIcons.backupUp,
+              BhorIcons.late,
+              BhorIcons.edit,
+              BhorIcons.delete,
+              BhorIcons.warning,
+            ])
+              Icon(i, size: BhorIconSize.nav, color: c.text2),
+            Icon(BhorIcons.checkCircleFill, size: BhorIconSize.nav, color: c.ok),
+            Icon(BhorIcons.warningFill, size: BhorIconSize.nav, color: c.danger),
+          ]),
         ]),
         _Section('Buttons', <Widget>[
           _wrap(<Widget>[
-            BhorButton(label: 'হাজিরা নিন', icon: Icons.how_to_reg_outlined, onPressed: () {}),
+            BhorButton(label: 'হাজিরা নিন', icon: BhorIcons.rollCall, onPressed: () {}),
+            BhorButton(label: 'পরের ধাপ', arrow: true, onPressed: () {}),
             BhorButton(label: 'সম্পাদনা', variant: BhorButtonVariant.secondary, onPressed: () {}),
+            BhorButton(label: 'টাকা নিন', variant: BhorButtonVariant.tonal, icon: BhorIcons.takeMoney, onPressed: () {}),
             BhorButton(label: 'বাতিল', variant: BhorButtonVariant.ghost, onPressed: () {}),
             BhorButton(label: 'মুছুন', variant: BhorButtonVariant.danger, onPressed: () {}),
-            BhorButton(label: 'সংরক্ষণ হচ্ছে', loading: true, onPressed: () {}),
+            BhorButton(
+              label: 'সেভ করুন',
+              loading: demo.saving,
+              done: demo.saved,
+              onPressed: () => demo.set(() {
+                if (demo.saved) {
+                  demo.saved = false;
+                } else if (demo.saving) {
+                  demo.saving = false;
+                  demo.saved = true;
+                } else {
+                  demo.saving = true;
+                }
+              }),
+            ),
             const BhorButton(label: 'নিষ্ক্রিয়', onPressed: null, disabledReason: 'আগে একটি ব্যাচ বেছে নিন'),
             BhorButton(label: 'ছোট', size: BhorButtonSize.sm, onPressed: () {}),
             BhorButton(
@@ -293,30 +363,37 @@ class _Sections extends StatelessWidget {
           ]),
           const SizedBox(height: BhorSpace.s8),
           _wrap(<Widget>[
-            BhorIconButton(icon: Icons.search, semanticLabel: 'খুঁজুন', onPressed: () {}),
+            BhorIconButton(icon: BhorIcons.search, semanticLabel: 'খুঁজুন', onPressed: () {}),
             BhorIconButton(
-              icon: Icons.notifications_none,
+              icon: BhorIcons.search,
+              semanticLabel: 'খুঁজুন',
+              variant: BhorButtonVariant.secondary,
+              circle: true,
+              onPressed: () {},
+            ),
+            BhorIconButton(
+              icon: BhorIcons.bell,
               semanticLabel: 'বিজ্ঞপ্তি',
               badge: fmt.number(2),
               onPressed: () {},
             ),
             BhorIconButton(
-              icon: Icons.add,
+              icon: BhorIcons.add,
               semanticLabel: 'যোগ করুন',
               variant: BhorButtonVariant.primary,
               onPressed: () {},
             ),
             BhorIconButton(
-              icon: Icons.tune,
+              icon: BhorIcons.filter,
               semanticLabel: 'ফিল্টার',
               variant: BhorButtonVariant.secondary,
               size: BhorButtonSize.sm,
               onPressed: () {},
             ),
-            const BhorIconButton(icon: Icons.delete_outline, semanticLabel: 'মুছুন', onPressed: null),
+            const BhorIconButton(icon: BhorIcons.delete, semanticLabel: 'মুছুন', onPressed: null),
           ]),
           const SizedBox(height: BhorSpace.s8),
-          BhorButton(label: 'পুরো প্রস্থ', expand: true, onPressed: () {}),
+          BhorButton(label: 'পুরো প্রস্থ', expand: true, size: BhorButtonSize.lg, onPressed: () {}),
         ]),
         _Section('Text fields', <Widget>[
           BhorTextField(
@@ -338,7 +415,7 @@ class _Sections extends StatelessWidget {
             label: 'ফোন',
             initialValue: '০১৭১',
             error: 'ফোন নম্বর ১১ সংখ্যার হতে হবে',
-            prefix: Icon(Icons.phone_outlined),
+            prefix: Icon(BhorIcons.phone),
           ),
           const SizedBox(height: BhorSpace.s12),
           const BhorTextField(label: 'নোট', hint: 'ঐচ্ছিক', maxLines: 3, minLines: 3),
@@ -351,9 +428,9 @@ class _Sections extends StatelessWidget {
             hint: 'ব্যাচ বেছে নিন',
             value: demo.batch,
             options: const <BhorOption<String>>[
-              BhorOption<String>('b1', 'নবম শ্রেণি · গণিত', icon: Icons.groups_outlined),
-              BhorOption<String>('b2', 'দশম শ্রেণি · পদার্থ', icon: Icons.groups_outlined),
-              BhorOption<String>('b3', 'এসএসসি ব্যাচ ২০২৭', icon: Icons.groups_outlined),
+              BhorOption<String>('b1', 'নবম শ্রেণি · গণিত', icon: BhorIcons.batches),
+              BhorOption<String>('b2', 'দশম শ্রেণি · পদার্থ', icon: BhorIcons.batches),
+              BhorOption<String>('b3', 'এসএসসি ব্যাচ ২০২৭', icon: BhorIcons.batches),
             ],
             onChanged: (String v) => demo.set(() => demo.batch = v),
           ),
@@ -389,7 +466,9 @@ class _Sections extends StatelessWidget {
           _wrap(const <Widget>[
             BhorTag(label: 'সাধারণ'),
             BhorTag(label: 'চলছে', tone: BhorTone.accent),
-            BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok, icon: Icons.check),
+            BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok, icon: BhorIcons.check),
+            BhorTag(label: 'আংশিক', tone: BhorTone.warn),
+            BhorTag(label: 'মেয়াদোত্তীর্ণ', tone: BhorTone.overdue),
             BhorTag(label: 'বাতিল', tone: BhorTone.danger),
             BhorTag(label: 'দেরি', tone: BhorTone.late),
             BhorTag(label: 'অনুপস্থিত', tone: BhorTone.absent),
@@ -399,7 +478,7 @@ class _Sections extends StatelessWidget {
             for (final SeverityLevel l in SeverityLevel.values) BhorTag.severity(level: l, label: l.name),
           ]),
         ]),
-        _Section('Switch · Checkbox · Radio card', <Widget>[
+        _Section('Switch · Checkbox · Radio card · Stepper', <Widget>[
           Row(
             children: <Widget>[
               BhorSwitch(
@@ -427,20 +506,33 @@ class _Sections extends StatelessWidget {
               groupValue: demo.radio,
               title: t,
               subtitle: s,
-              icon: Icons.calendar_month_outlined,
+              icon: BhorIcons.calendar,
               onChanged: (int x) => demo.set(() => demo.radio = x),
             ),
             const SizedBox(height: BhorSpace.s8),
           ],
+          Row(children: <Widget>[
+            BhorStepper(
+              value: demo.months,
+              min: 1,
+              max: 12,
+              semanticLabel: 'মাস',
+              onChanged: (int v) => demo.set(() => demo.months = v),
+            ),
+            const SizedBox(width: BhorSpace.s12),
+            Text('মাস', style: b.type.body),
+          ]),
         ]),
         _Section('Cards', <Widget>[
           BhorCard.hero(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Text('পরের ক্লাস · ৪০ মিনিট পর', style: b.type.meta.copyWith(color: c.onHero)),
                 Text('নবম শ্রেণি · গণিত', style: b.type.title.copyWith(color: c.onHero)),
                 Text('বিকাল ৪:০০–৫:০০', style: BhorType.tabular(b.type.body.copyWith(color: c.onHero))),
+                const SizedBox(height: BhorSpace.s12),
+                BhorButton(label: 'হাজিরা নিন', variant: BhorButtonVariant.hero, expand: true, onPressed: () {}),
               ],
             ),
           ),
@@ -450,41 +542,38 @@ class _Sections extends StatelessWidget {
             semanticLabel: 'এই মাসের হিসাব',
             child: Row(
               children: <Widget>[
-                Expanded(child: BhorStatText(label: 'উপস্থিত', value: fmt.number(24))),
-                const Expanded(child: BhorStatText.money(label: 'আদায়', amount: 18500)),
+                const Expanded(child: BhorStatText.count(label: 'উপস্থিত', count: 24)),
+                Expanded(child: BhorStatText.money(label: 'আদায়', amount: demo.collected, countUp: true)),
                 Expanded(child: BhorStatText.money(label: 'বকেয়া', amount: 4500, color: c.danger)),
               ],
             ),
           ),
         ]),
-        _Section('List rows · Avatar', <Widget>[
-          BhorCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: <Widget>[
-                BhorListRow(
-                  leading: const BhorAvatar(name: 'রহিম উদ্দিন'),
-                  title: 'রহিম উদ্দিন',
-                  subtitle: 'রোল ৩ · নবম শ্রেণি',
-                  trailing: const BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok),
-                  onTap: () {},
-                ),
-                BhorListRow(
-                  leading: const BhorAvatar(name: 'Fatema Akter'),
-                  title: 'Fatema Akter',
-                  subtitle: 'Roll 7',
-                  trailing: const BhorTag.severity(level: SeverityLevel.overdue, label: 'মেয়াদোত্তীর্ণ'),
-                  onTap: () {},
-                  selected: true,
-                ),
-                const BhorListRow(
-                  leading: BhorAvatar(name: 'করিম'),
-                  title: 'করিম',
-                  subtitle: 'রোল ১২',
-                  divider: false,
-                ),
-              ],
-            ),
+        _Section('List · Rows · Avatar', <Widget>[
+          BhorList(
+            children: <Widget>[
+              BhorListRow(
+                leading: const BhorAvatar(name: 'রহিম উদ্দিন'),
+                title: 'রহিম উদ্দিন',
+                subtitle: 'রোল ৩ · নবম শ্রেণি',
+                trailing: const BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok),
+                onTap: () {},
+              ),
+              BhorListRow(
+                leading: const BhorAvatar(name: 'Fatema Akter'),
+                title: 'Fatema Akter',
+                subtitle: 'Roll 7',
+                trailing: const BhorMoney(1500),
+                onTap: () {},
+                selected: true,
+              ),
+              const BhorListRow(
+                leading: BhorAvatar(name: 'করিম'),
+                title: 'করিম',
+                subtitle: 'রোল ১২',
+                trailing: BhorTag.severity(level: SeverityLevel.overdue, label: 'মেয়াদোত্তীর্ণ'),
+              ),
+            ],
           ),
         ]),
         _Section('Attendance · Escalation · Money', <Widget>[
@@ -500,6 +589,28 @@ class _Sections extends StatelessWidget {
               onChanged: (AttendanceKind k) => demo.set(() => demo.attendance = k),
             ),
           ]),
+          const SizedBox(height: BhorSpace.s8),
+          _wrap(<Widget>[
+            BhorTag(label: 'উপস্থিত ${fmt.number(present)}', tone: BhorTone.ok),
+            BhorTag(label: 'অনুপস্থিত ${fmt.number(demo.roll.where((AttendanceKind k) => k == AttendanceKind.absent).length)}', tone: BhorTone.absent),
+            BhorTag(label: 'দেরি ${fmt.number(demo.roll.where((AttendanceKind k) => k == AttendanceKind.late).length)}', tone: BhorTone.late),
+          ]),
+          const SizedBox(height: BhorSpace.s8),
+          BhorList(
+            children: <Widget>[
+              for (int i = 0; i < roster.length; i++)
+                BhorListRow(
+                  leading: BhorAvatar(name: roster[i].$1),
+                  title: roster[i].$1,
+                  subtitle: roster[i].$2,
+                  trailing: BhorAttendanceToggle(
+                    value: roster[i].$3,
+                    iconOnly: true,
+                    onChanged: (AttendanceKind k) => demo.set(() => demo.roll[i] = k),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: BhorSpace.s12),
           for (final int d in <int>[0, 3, 7, 10, 12]) ...<Widget>[
             Row(
@@ -517,10 +628,10 @@ class _Sections extends StatelessWidget {
           ]),
         ]),
         _Section('Progress · Skeleton · Empty', <Widget>[
-          const BhorProgress(value: 0.72, semanticLabel: 'উপস্থিতি'),
+          BhorProgress(value: demo.collected / 25000, semanticLabel: 'আদায়'),
           const SizedBox(height: BhorSpace.s12),
           const Row(children: <Widget>[
-            BhorSkeleton(width: 36, height: 36, radius: BhorRadius.avatar),
+            BhorSkeleton(width: 36, height: 36, radius: 18),
             SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
@@ -532,30 +643,121 @@ class _Sections extends StatelessWidget {
           ]),
           const SizedBox(height: BhorSpace.s8),
           BhorEmptyState(
-            icon: Icons.groups_outlined,
+            icon: BhorIcons.batches,
             title: 'এখনো কোনো ব্যাচ নেই',
             message: 'প্রথম ব্যাচ যোগ করলে এখানে রুটিন আর হাজিরা দেখা যাবে।',
-            action: BhorButton(label: 'ব্যাচ যোগ করুন', icon: Icons.add, onPressed: () {}),
+            action: BhorButton(label: 'ব্যাচ যোগ করুন', icon: BhorIcons.add, onPressed: () {}),
           ),
         ]),
-        _Section('Date · Time pickers', <Widget>[pickers]),
-        _Section('Sheet · Dialog · Toast', <Widget>[
+        _Section('Motion', <Widget>[
           _wrap(<Widget>[
             BhorButton(
-              label: 'Sheet',
+              label: 'Replay stagger',
+              variant: BhorButtonVariant.secondary,
+              size: BhorButtonSize.sm,
+              onPressed: () => demo.set(() => demo.replay++),
+            ),
+            BhorButton(
+              label: '+৳১,০০০',
+              variant: BhorButtonVariant.secondary,
+              size: BhorButtonSize.sm,
+              onPressed: () => demo.set(() => demo.collected += 1000),
+            ),
+            BhorButton(
+              label: 'Switch view',
+              variant: BhorButtonVariant.secondary,
+              size: BhorButtonSize.sm,
+              onPressed: () => demo.set(() => demo.view = 1 - demo.view),
+            ),
+            BhorButton(
+              label: 'Next pane',
+              variant: BhorButtonVariant.secondary,
+              size: BhorButtonSize.sm,
+              onPressed: () => demo.set(() => demo.pane = (demo.pane + 1) % 3),
+            ),
+          ]),
+          const SizedBox(height: BhorSpace.s12),
+          BhorCountUp.money(amount: demo.collected, style: b.type.stat, muteSign: true),
+          const SizedBox(height: BhorSpace.s12),
+          KeyedSubtree(
+            key: ValueKey<int>(demo.replay),
+            child: BhorStaggerScope(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < 4; i++)
+                    BhorStagger(
+                      index: i,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: BhorCard(
+                          padding: const EdgeInsets.all(BhorSpace.s12),
+                          child: Text('তালিকার সারি ${fmt.number(i + 1)}', style: b.type.body),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          BhorFadeThrough(
+            child: KeyedSubtree(
+              key: ValueKey<int>(demo.view),
+              child: BhorCard(
+                child: Text(demo.view == 0 ? 'বকেয়া (fade through)' : 'আদায় (fade through)', style: b.type.heading),
+              ),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          BhorPaneSwitcher(
+            paneKey: demo.pane,
+            child: BhorCard(
+              child: Text('Detail pane ${fmt.number(demo.pane + 1)} (cross-fade + rise)', style: b.type.body),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          const Center(child: BhorSuccess(size: 56, label: 'হয়েছে')),
+        ]),
+        _Section('Date · Time pickers', <Widget>[pickers]),
+        _Section('Adaptive panel · Sheet · Side panel · Dialog · Toast', <Widget>[
+          _wrap(<Widget>[
+            BhorButton(
+              label: 'showBhorPanel (form)',
+              variant: BhorButtonVariant.secondary,
+              onPressed: () => showBhorPanel<void>(
+                context,
+                title: 'টাকা নিন',
+                builder: _demoForm,
+                footer: (BuildContext ctx) => BhorButton(
+                  label: 'সেভ করুন',
+                  expand: true,
+                  onPressed: () => showBhorSuccess<void>(ctx, label: 'জমা হয়েছে', toast: '৳১,০০০ জমা হয়েছে'),
+                ),
+              ),
+            ),
+            BhorButton(
+              label: 'showBhorPanel (confirm)',
+              variant: BhorButtonVariant.secondary,
+              onPressed: () => showBhorPanel<void>(
+                context,
+                kind: BhorPanelKind.confirm,
+                title: 'ছুটি দিন?',
+                builder: (BuildContext ctx) => Text('আজ সবার ছুটি থাকবে।', style: b.type.body),
+                footer: (BuildContext ctx) =>
+                    BhorButton(label: 'ঠিক আছে', onPressed: () => Navigator.of(ctx).pop()),
+              ),
+            ),
+            BhorButton(
+              label: 'Expanding sheet',
               variant: BhorButtonVariant.secondary,
               onPressed: () => showBhorSheet<void>(
                 context,
-                title: 'অন্যান্য আয় যোগ করুন',
-                builder: (BuildContext ctx) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    const BhorTextField(label: 'বিবরণ', hint: 'যেমন: বই বিক্রি'),
-                    const SizedBox(height: BhorSpace.s16),
-                    BhorButton(label: 'সংরক্ষণ', expand: true, onPressed: () => Navigator.of(ctx).pop()),
-                  ],
-                ),
+                title: 'নতুন শিক্ষার্থী',
+                expanding: true,
+                builder: (BuildContext ctx) => SingleChildScrollView(child: _demoForm(ctx)),
+                footer: (BuildContext ctx) =>
+                    BhorButton(label: 'সেভ করুন', expand: true, onPressed: () => Navigator.of(ctx).pop()),
               ),
             ),
             BhorButton(
@@ -574,9 +776,9 @@ class _Sections extends StatelessWidget {
               variant: BhorButtonVariant.secondary,
               onPressed: () => BhorToast.show(
                 context,
-                message: 'হাজিরা সংরক্ষিত হয়েছে',
+                message: 'হাজিরা সেভ হয়েছে',
                 tone: BhorTone.ok,
-                icon: Icons.check_circle_outline,
+                icon: BhorIcons.checkCircleFill,
                 actionLabel: 'ফেরান',
                 onAction: () {},
               ),
@@ -606,10 +808,22 @@ class _Sections extends StatelessWidget {
           ]),
           const SizedBox(height: BhorSpace.s12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(BhorRadius.sheet),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(BhorRadius.sheet)),
             child: const BhorSheetFrame(
               title: 'Sheet (inline preview)',
-              child: Text('Drag handle, title, close button, safe-area padding.'),
+              child: Text('Grab handle, title, close button, safe-area padding.'),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          _Framed(
+            height: 300,
+            child: ColoredBox(
+              color: c.bg,
+              child: BhorSidePanelFrame(
+                title: 'Side panel (inline)',
+                width: wide ? 420 : 300,
+                child: _demoForm(context),
+              ),
             ),
           ),
           const SizedBox(height: BhorSpace.s12),
@@ -624,14 +838,22 @@ class _Sections extends StatelessWidget {
         ]),
         _Section('Header · Bottom nav · Sidebar · Scaffold', <Widget>[
           _Framed(
-            height: 260,
+            height: 280,
             child: BhorScaffold(
               header: BhorHeader(
-                title: 'আজ',
-                subtitle: 'শনিবার, ২১ নভেম্বর',
+                overline: 'শনিবার, ২১ নভেম্বর',
+                title: 'শুভ সকাল',
                 large: true,
                 showBack: false,
-                actions: <Widget>[BhorIconButton(icon: Icons.search, semanticLabel: 'খুঁজুন', onPressed: () {})],
+                actions: <Widget>[
+                  BhorIconButton(
+                    icon: BhorIcons.search,
+                    semanticLabel: 'খুঁজুন',
+                    variant: BhorButtonVariant.secondary,
+                    circle: true,
+                    onPressed: () {},
+                  ),
+                ],
               ),
               body: const Center(child: Text('BhorScaffold body')),
               bottomNav: BhorBottomNav(
@@ -643,7 +865,7 @@ class _Sections extends StatelessWidget {
           ),
           const SizedBox(height: BhorSpace.s12),
           _Framed(
-            height: 380,
+            height: 400,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[

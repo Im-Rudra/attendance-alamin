@@ -62,6 +62,16 @@ void main() {
       ('onHero/heroEnd', c.onHero, c.heroEnd, c.heroEnd),
       ('onAbsent/absent', c.onAbsent, c.absent, c.absent),
       ('lateText/lateBg', c.lateText, c.lateBg, c.surface),
+      // Fluid tokens (docs/council/13-fluid-ui-spec.md).
+      ('onAccentFill/accentFill', c.onAccentFill, c.accentFill, c.accentFill),
+      ('onAccentFill/accentFillHover', c.onAccentFill, c.accentFillHover, c.accentFillHover),
+      ('accent/soft', c.accent, c.soft, c.soft),
+      ('text/soft2', c.text, c.soft2, c.soft2),
+      ('warn/warnBg', c.warn, c.warnBg, c.surface),
+      ('overdue/overdueBg', c.overdue, c.overdueBg, c.surface),
+      ('absentText/absentBg', c.absentText, c.absentBg, c.surface),
+      ('late/lateBg', c.late, c.lateBg, c.surface),
+      ('heroStart/heroButton', c.heroStart, c.heroButton, c.heroButton),
       ('text2/line (dark segmented thumb)', c.text2, c.line, c.line),
       for (final SeverityLevel l in SeverityLevel.values)
         ('sevText/sevFill ${l.name}', c.sevText[l.index], c.sevFill[l.index], c.surface),

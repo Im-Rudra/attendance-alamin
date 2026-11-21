@@ -167,7 +167,7 @@ void main() {
       await tester.tap(find.byType(BhorSelect<int>));
       await tester.pumpAndSettle();
       expect(find.text('দুই'), findsOneWidget);
-      await tester.tapAt(const Offset(390, 790));
+      await tester.tapAt(const Offset(200, 20));
       await tester.pumpAndSettle();
       expect(find.text('দুই'), findsNothing);
       expect(changes, 0);
@@ -270,7 +270,7 @@ void main() {
     await tester.tap(find.text('দুই'));
     await tester.tap(find.descendant(of: find.byType(BhorBottomNav), matching: find.text('ব্যাচ')));
     await tester.tap(find.descendant(of: find.byType(BhorSidebar), matching: find.text('ব্যাচ')));
-    await tester.tap(find.byIcon(Icons.keyboard_double_arrow_left_rounded));
+    await tester.tap(find.byIcon(BhorIcons.sidebarCollapse));
     await tester.pumpAndSettle();
     expect(tab, 1);
     expect(nav, 1);
@@ -312,7 +312,7 @@ void main() {
     await tester.tap(find.text('খুলুন'));
     await tester.pumpAndSettle();
     expect(find.text('দ্বিতীয় পাতা'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(BhorIcons.back));
     await tester.pumpAndSettle();
     expect(find.text('দ্বিতীয় পাতা'), findsNothing);
   });

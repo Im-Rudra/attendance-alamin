@@ -2,7 +2,7 @@
 // and BhorTimePicker (period first: ভোর/সকাল/দুপুর/বিকাল/সন্ধ্যা/রাত, then
 // hour, then 5-minute step), inline or in a BhorSheet.
 
-import 'package:flutter/material.dart' show Icons;
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
@@ -161,7 +161,7 @@ class _BhorDatePickerState extends State<BhorDatePicker> {
         Row(
           children: <Widget>[
             BhorIconButton(
-              icon: Icons.chevron_left_rounded,
+              icon: BhorIcons.chevronLeft,
               semanticLabel: l10n.dsPrevMonth,
               onPressed: _shown.isAfter(_first) ? () => setState(() => _shown = _shown.addMonths(-1)) : null,
             ),
@@ -172,7 +172,7 @@ class _BhorDatePickerState extends State<BhorDatePicker> {
               ),
             ),
             BhorIconButton(
-              icon: Icons.chevron_right_rounded,
+              icon: BhorIcons.chevronRight,
               semanticLabel: l10n.dsNextMonth,
               onPressed: _shown.isBefore(_last) ? () => setState(() => _shown = _shown.addMonths(1)) : null,
             ),

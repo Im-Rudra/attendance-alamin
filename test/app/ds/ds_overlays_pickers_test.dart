@@ -44,7 +44,7 @@ void main() {
 
         await tester.tap(find.text('খুলুন'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(BhorIcons.close));
         await tester.pumpAndSettle();
         expect(find.text('অন্যান্য আয়'), findsNothing);
         expect(result, isNull);

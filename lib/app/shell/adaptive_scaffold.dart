@@ -1,15 +1,17 @@
 // The navigation shell (UX 1, 3b; Bhor: docs/council/10-design-system-bhor.md).
 //
-// - compact (< 600): BhorScaffold + BhorBottomNav, a flat bar with a top
-//   hairline; the active icon sits in an accent-tint pill. Hidden while the
+// - compact (< 600): BhorScaffold + BhorBottomNav, the floating pill (inset
+//   10, r20) with a gliding accent-tint indicator. Hidden while the
 //   keyboard is open. Bottom toasts are lifted above it (BhorToastInset).
 // - medium / expanded (600–1199): BhorSidebar collapsed to icons (72).
-// - large / extra-large (≥ 1200): the full BhorSidebar (brand, labels,
-//   badges, 248), collapsible to icons.
+// - large / extra-large (≥ 1200): the full BhorSidebar (brand mark, search,
+//   labels, badges, 248), collapsible to icons.
+// Branch switches fade through (BhorFadeThrough.replay). On desktop the body
+// carries BhorChromeInset so side panels (showBhorPanel) dim only the
+// content and keep the sidebar in view. Icons are Phosphor (BhorIcons).
 // The বেতন item carries the number of overdue students. Desktop keys:
 // Ctrl+1…5 destinations, Ctrl+F / Ctrl+K search, `?` shortcut list.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,8 +32,9 @@ class AdaptiveScaffold extends ConsumerStatefulWidget {
   static const Key bottomNavKey = Key('shell-bottom-nav');
   static const Key sidebarKey = Key('shell-sidebar');
 
-  /// Height of the phone bottom nav (without the gesture-bar inset).
-  static const double bottomNavHeight = 64;
+  /// Height of the phone bottom nav: the pill plus its insets (without the
+  /// gesture-bar inset).
+  static const double bottomNavHeight = BhorBottomNav.height;
 
   @override
   ConsumerState<AdaptiveScaffold> createState() => _AdaptiveScaffoldState();
@@ -60,7 +63,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
         wash: false,
         body: BhorToastInset(
           bottom: keyboardOpen ? 0 : AdaptiveScaffold.bottomNavHeight,
-          child: _shell,
+          child: BhorFadeThrough.replay(trigger: index, child: _shell),
         ),
         bottomNav: keyboardOpen
             ? null
@@ -90,10 +93,14 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
             collapsed: collapsed,
             onToggleCollapsed: canExtend ? () => setState(() => _collapsed = !_collapsed) : null,
             toggleLabel: collapsed ? l10n.shellRailExpand : l10n.shellRailCollapse,
-            footer: _SidebarSearch(collapsed: collapsed),
+            top: _SidebarSearch(collapsed: collapsed),
           ),
         ),
-        body: _shell,
+        // Side panels opened from the body dim the content only.
+        body: BhorChromeInset(
+          start: collapsed ? BhorSidebar.collapsedWidth : BhorSidebar.width,
+          child: BhorFadeThrough.replay(trigger: index, child: _shell),
+        ),
       );
     }
     return _ShellKeys(onSelect: _select, child: scaffold);
@@ -106,24 +113,24 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
             ? '${context.fmt.number(99)}+'
             : context.fmt.number(overdue);
     return <BhorNavItem>[
-      BhorNavItem(icon: Icons.today_outlined, activeIcon: Icons.today, label: l10n.navToday),
-      BhorNavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: l10n.navBatches),
-      BhorNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: l10n.navStudents),
+      BhorNavItem(icon: BhorIcons.today, activeIcon: BhorIcons.todayFill, label: l10n.navToday),
+      BhorNavItem(icon: BhorIcons.batches, activeIcon: BhorIcons.batchesFill, label: l10n.navBatches),
+      BhorNavItem(icon: BhorIcons.students, activeIcon: BhorIcons.studentsFill, label: l10n.navStudents),
       BhorNavItem(
-        icon: Icons.payments_outlined,
-        activeIcon: Icons.payments,
+        icon: BhorIcons.fees,
+        activeIcon: BhorIcons.feesFill,
         label: l10n.navFees,
         badge: badge,
         // What a screen reader says: the label plus "Overdue 3".
         semanticLabel: badge == null ? null : '${l10n.navFees}, ${l10n.uiOverdueCount(context.fmt.number(overdue))}',
       ),
-      BhorNavItem(icon: Icons.menu, label: l10n.navMore),
+      BhorNavItem(icon: BhorIcons.more, activeIcon: BhorIcons.moreFill, label: l10n.navMore),
     ];
   }
 }
 
-/// Global search under the sidebar items: an icon when collapsed, an icon
-/// and the word when the sidebar is full width.
+/// Global search at the top of the sidebar: a soft search "field" with the
+/// shortcut when the sidebar is full width, an icon button when collapsed.
 class _SidebarSearch extends StatelessWidget {
   const _SidebarSearch({required this.collapsed});
 
@@ -131,20 +138,43 @@ class _SidebarSearch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final String label = context.l10n.commonSearch;
     void open() => context.push(Routes.search);
+    if (collapsed) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: BhorSpace.s4),
+        child: Center(child: BhorIconButton(icon: BhorIcons.search, semanticLabel: label, onPressed: open)),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s4, BhorSpace.s12, BhorSpace.s4),
-      child: Align(
-        alignment: collapsed ? Alignment.center : AlignmentDirectional.centerStart,
-        child: collapsed
-            ? BhorIconButton(icon: Icons.search, semanticLabel: label, onPressed: open)
-            : BhorButton(
-                label: label,
-                icon: Icons.search,
-                variant: BhorButtonVariant.ghost,
-                onPressed: open,
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, 0, BhorSpace.s12, BhorSpace.s8),
+      child: BhorPressable(
+        onTap: open,
+        semanticLabel: label,
+        excludeChildSemantics: true,
+        scaleOnPress: false,
+        radius: BhorRadius.sidebarItem,
+        builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+          duration: BhorMotion.of(context, BhorMotion.instant),
+          height: BhorSidebar.itemHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: s.hovered || s.pressed ? c.soft2 : c.soft,
+            borderRadius: BorderRadius.circular(BhorRadius.sidebarItem),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(BhorIcons.search, size: BhorIconSize.chip, color: c.text2),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.body.copyWith(color: c.text2)),
               ),
+              Text('Ctrl K', style: BhorType.tabular(b.type.caption.copyWith(color: c.text3, fontSize: 11.5))),
+            ],
+          ),
+        ),
       ),
     );
   }

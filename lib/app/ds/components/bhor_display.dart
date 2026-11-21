@@ -1,16 +1,20 @@
-// Display components: BhorTag, BhorCard (+ hero), BhorListRow,
-// BhorSectionHeader, BhorAvatar, BhorProgress, BhorSkeleton, BhorEmptyState.
+// Display components (docs/council/13-fluid-ui-spec.md): BhorTag (pill),
+// BhorCard (+ hero, the only gradient), BhorList (surface card r20 with a
+// line edge holding rows), BhorListRow (inset hairline, soft hover/press),
+// BhorSectionHeader, BhorAvatar (circle), BhorProgress (animated fill),
+// BhorSkeleton (shimmer sweep), BhorEmptyState.
 
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 import 'package:attendance_alamin/app/theme/tokens.dart' show SeverityLevel;
 
-enum BhorTone { neutral, accent, ok, danger, late, absent }
+enum BhorTone { neutral, accent, ok, danger, late, absent, warn, overdue }
 
-/// Compact status tag (radius 6). Never colour alone: always a word.
+/// Status tag: a pill. Never colour alone: always a word.
 /// Usage: `BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok)` or
 /// `BhorTag.severity(level: SeverityLevel.urgent, label: 'জরুরি')`.
 class BhorTag extends StatelessWidget {
@@ -27,33 +31,38 @@ class BhorTag extends StatelessWidget {
   final SeverityLevel? severity;
   final IconData? icon;
 
+  /// Fill and text colour of [tone].
+  static (Color, Color) colorsOf(BhorColors c, BhorTone tone) => switch (tone) {
+        BhorTone.neutral => (c.soft, c.text2),
+        BhorTone.accent => (c.accentTint, c.accent),
+        BhorTone.ok => (c.okBg, c.ok),
+        BhorTone.danger => (c.dangerBg, c.danger),
+        BhorTone.late => (c.lateBg, c.late),
+        BhorTone.absent => (c.absentBg, c.absentText),
+        BhorTone.warn => (c.warnBg, c.warn),
+        BhorTone.overdue => (c.overdueBg, c.overdue),
+      };
+
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final (Color bg, Color fg) = severity != null
-        ? (c.sevFill[severity!.index], c.sevText[severity!.index])
-        : switch (tone) {
-            BhorTone.neutral => (c.surface2, c.text2),
-            BhorTone.accent => (c.accentTint, c.accent),
-            BhorTone.ok => (c.okBg, c.ok),
-            BhorTone.danger => (c.dangerBg, c.danger),
-            BhorTone.late => (c.lateBg, c.lateText),
-            BhorTone.absent => (c.absent, c.onAbsent),
-          };
+    final (Color bg, Color fg) =
+        severity != null ? (c.sevFill[severity!.index], c.sevText[severity!.index]) : colorsOf(c, tone);
     return Semantics(
       container: true,
       label: label,
       excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(BhorRadius.tag)),
+      child: AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.fast),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(BhorRadius.pill)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             if (icon != null) ...<Widget>[
-              Icon(icon, size: 13, color: fg),
-              const SizedBox(width: 3),
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 4),
             ],
             Flexible(
               child: Text(
@@ -70,8 +79,9 @@ class BhorTag extends StatelessWidget {
   }
 }
 
-/// Surface card with a hairline border (radius 16); `hero` paints the
-/// signature gradient (radius 18, white text). Tappable when [onTap] is set.
+/// Surface card with a 1 px line edge (r18); `hero` paints the signature
+/// gradient (r22, white text) and is the only gradient in the app.
+/// Tappable when [onTap] is set (hover edge, press scale).
 /// Usage: `BhorCard(child: ...)`, `BhorCard.hero(child: ...)`.
 class BhorCard extends StatelessWidget {
   const BhorCard({super.key, required this.child, this.padding, this.onTap, this.semanticLabel})
@@ -92,8 +102,9 @@ class BhorCard extends StatelessWidget {
     final BhorColors c = b.colors;
     final double radius = hero ? BhorRadius.hero : BhorRadius.card;
     Widget box(BhorStates s) => AnimatedContainer(
-          duration: BhorMotion.fast,
-          padding: padding ?? const EdgeInsets.all(BhorSpace.s16),
+          duration: BhorMotion.of(context, BhorMotion.fast),
+          curve: BhorMotion.ease,
+          padding: padding ?? EdgeInsets.all(hero ? BhorSpace.s20 : BhorSpace.s16),
           decoration: BoxDecoration(
             color: hero ? null : c.surface,
             gradient: hero ? c.heroGradient : null,
@@ -114,12 +125,62 @@ class BhorCard extends StatelessWidget {
       onTap: onTap,
       semanticLabel: semanticLabel,
       radius: radius,
+      pressScale: 0.985,
       builder: (BuildContext context, BhorStates s) => box(s),
     );
   }
 }
 
-/// Dense row with a hairline divider (48 tall on phones, 44 on desktop).
+/// A list surface: surface card r20 with a 1 px line edge; put
+/// [BhorListRow]s in [children] (the last row's hairline is dropped).
+/// Usage: `BhorList(children: [BhorListRow(...), BhorListRow(...)])`.
+class BhorList extends StatelessWidget {
+  const BhorList({super.key, required this.children, this.header});
+
+  final List<Widget> children;
+
+  /// Optional title row inside the card, above the rows.
+  final Widget? header;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(BhorRadius.list),
+        border: Border.all(color: c.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ?header,
+          for (int i = 0; i < children.length; i++)
+            _LastRow(last: i == children.length - 1, child: children[i]),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tells a [BhorListRow] it is the last one of a [BhorList] (no hairline).
+class _LastRow extends InheritedWidget {
+  const _LastRow({required this.last, required super.child});
+
+  final bool last;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_LastRow>()?.last ?? false;
+
+  @override
+  bool updateShouldNotify(_LastRow oldWidget) => oldWidget.last != last;
+}
+
+/// Dense row with an inset hairline divider (48 tall on phones, 44 on
+/// desktop); hover / press paint the soft fill. Money goes in [trailing]
+/// (right-aligned, bold, tabular: `BhorMoney`).
 /// Usage: `BhorListRow(title: 'রহিম', subtitle: 'রোল ৩', trailing: tag, onTap: f)`.
 class BhorListRow extends StatelessWidget {
   const BhorListRow({
@@ -133,6 +194,7 @@ class BhorListRow extends StatelessWidget {
     this.divider = true,
     this.selected = false,
     this.semanticLabel,
+    this.dividerIndent,
   });
 
   final String title;
@@ -145,36 +207,54 @@ class BhorListRow extends StatelessWidget {
   final bool selected;
   final String? semanticLabel;
 
+  /// Start inset of the hairline (default: text start).
+  final double? dividerIndent;
+
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final double minH = context.bhorIsWide ? BhorSize.control : BhorSize.phoneRow;
-    Widget row(BhorStates s) => Container(
+    final double minH = context.bhorIsWide ? BhorSize.minTap : BhorSize.phoneRow;
+    final bool showLine = divider && !_LastRow.of(context);
+    final double indent = dividerIndent ?? (leading != null ? BhorSpace.s16 + 36 + BhorSpace.s12 : BhorSpace.s16);
+    Widget row(BhorStates s) => AnimatedContainer(
+          duration: BhorMotion.of(context, BhorMotion.instant),
           constraints: BoxConstraints(minHeight: minH),
-          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected ? c.accentTint : (s.hovered || s.pressed ? c.surface2 : null),
-            border: divider ? Border(bottom: BorderSide(color: c.line)) : null,
-          ),
-          child: Row(
+          color: selected ? c.accentTint : (s.hovered || s.pressed ? c.soft : c.soft.withValues(alpha: 0)),
+          child: Stack(
+            alignment: AlignmentDirectional.centerStart,
             children: <Widget>[
-              if (leading != null) ...<Widget>[leading!, const SizedBox(width: BhorSpace.s12)],
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 8),
+                child: Row(
                   children: <Widget>[
-                    Text(title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: b.type.bodyStrong.copyWith(color: selected ? c.accent : c.text)),
-                    if (subtitle != null)
-                      Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+                    if (leading != null) ...<Widget>[leading!, const SizedBox(width: BhorSpace.s12)],
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: b.type.bodyStrong.copyWith(color: selected ? c.accent : c.text)),
+                          if (subtitle != null)
+                            Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+                        ],
+                      ),
+                    ),
+                    if (trailing != null) ...<Widget>[const SizedBox(width: BhorSpace.s12), trailing!],
                   ],
                 ),
               ),
-              if (trailing != null) ...<Widget>[const SizedBox(width: BhorSpace.s12), trailing!],
+              if (showLine)
+                PositionedDirectional(
+                  start: indent,
+                  end: 0,
+                  bottom: 0,
+                  height: 1,
+                  child: ColoredBox(color: c.line),
+                ),
             ],
           ),
         );
@@ -230,19 +310,19 @@ class BhorSectionHeader extends StatelessWidget {
               onTap: onAction,
               semanticLabel: actionLabel,
               excludeChildSemantics: true,
-              radius: 8,
+              radius: 10,
               builder: (BuildContext context, BhorStates s) => ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: BhorSize.minTap),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8),
+                child: AnimatedContainer(
+                  duration: BhorMotion.of(context, BhorMotion.instant),
+                  padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+                  decoration: BoxDecoration(
+                    color: s.hovered || s.pressed ? c.accentTint : c.accentTint.withValues(alpha: 0),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Center(
                     widthFactor: 1,
-                    child: Text(actionLabel!,
-                        style: b.type.label.copyWith(
-                          color: c.accent,
-                          decoration: s.hovered ? TextDecoration.underline : TextDecoration.none,
-                          decorationColor: c.accent,
-                        )),
+                    child: Text(actionLabel!, style: b.type.label.copyWith(color: c.accent)),
                   ),
                 ),
               ),
@@ -253,7 +333,7 @@ class BhorSectionHeader extends StatelessWidget {
   }
 }
 
-/// Rounded-square initials avatar (radius 9).
+/// Circle initials avatar: accent tint, accent initials.
 /// Usage: `BhorAvatar(name: 'রহিম উদ্দিন', size: 36)`.
 class BhorAvatar extends StatelessWidget {
   const BhorAvatar({super.key, required this.name, this.size = 36, this.image});
@@ -275,7 +355,6 @@ class BhorAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final BorderRadius r = BorderRadius.circular(BhorRadius.avatar * size / 36);
     return Semantics(
       label: name,
       image: image != null,
@@ -285,8 +364,7 @@ class BhorAvatar extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           color: c.accentTint,
-          borderRadius: r,
-          border: Border.all(color: c.accentLine, width: 0.5),
+          shape: BoxShape.circle,
           image: image == null ? null : DecorationImage(image: image!, fit: BoxFit.cover),
         ),
         alignment: Alignment.center,
@@ -302,7 +380,8 @@ class BhorAvatar extends StatelessWidget {
   }
 }
 
-/// Thin progress bar (0..1).
+/// Thin progress bar (0..1). The fill animates from 0 on first appearance
+/// and from old to new on change (480 ms, count curve).
 /// Usage: `BhorProgress(value: 0.7, semanticLabel: 'উপস্থিতি ৭০%')`.
 class BhorProgress extends StatelessWidget {
   const BhorProgress({super.key, required this.value, this.height = 6, this.color, this.semanticLabel});
@@ -316,6 +395,7 @@ class BhorProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorColors c = context.bhor.colors;
     final double v = value.clamp(0.0, 1.0);
+    final bool reduced = BhorMotion.reduced(context);
     return Semantics(
       label: semanticLabel,
       value: '${(v * 100).round()}%',
@@ -323,23 +403,26 @@ class BhorProgress extends StatelessWidget {
         borderRadius: BorderRadius.circular(height / 2),
         child: SizedBox(
           height: height,
-          child: Stack(
-            children: <Widget>[
-              Positioned.fill(child: ColoredBox(color: c.surface2)),
-              AnimatedFractionallySizedBox(
-                duration: BhorMotion.slow,
-                curve: BhorMotion.curve,
-                alignment: Alignment.centerLeft,
-                widthFactor: v,
-                heightFactor: 1,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: color ?? c.accent,
-                    borderRadius: BorderRadius.circular(height / 2),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: reduced ? v : 0, end: v),
+            duration: reduced ? Duration.zero : BhorMotion.countUpMax,
+            curve: BhorMotion.countCurve,
+            builder: (BuildContext context, double t, Widget? _) => Stack(
+              children: <Widget>[
+                Positioned.fill(child: ColoredBox(color: c.soft)),
+                FractionallySizedBox(
+                  alignment: AlignmentDirectional.centerStart,
+                  widthFactor: t.clamp(0.0, 1.0),
+                  heightFactor: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: color ?? c.accentFill,
+                      borderRadius: BorderRadius.circular(height / 2),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -347,7 +430,8 @@ class BhorProgress extends StatelessWidget {
   }
 }
 
-/// Loading placeholder block with a soft pulse (still when animations are off).
+/// Loading placeholder block with a 1.2 s shimmer sweep (a static soft
+/// block when motion is reduced). Match the real row heights.
 /// Usage: `BhorSkeleton(width: 120, height: 14)`.
 class BhorSkeleton extends StatefulWidget {
   const BhorSkeleton({super.key, this.width, this.height = 14, this.radius = 6});
@@ -362,16 +446,15 @@ class BhorSkeleton extends StatefulWidget {
 
 class _BhorSkeletonState extends State<BhorSkeleton> with SingleTickerProviderStateMixin {
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    if (still) {
+    if (BhorMotion.reduced(context)) {
       _c.stop();
     } else if (!_c.isAnimating) {
-      _c.repeat(reverse: true);
+      _c.repeat();
     }
   }
 
@@ -384,21 +467,47 @@ class _BhorSkeletonState extends State<BhorSkeleton> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final BhorColors c = context.bhor.colors;
+    final Color base = c.soft;
+    final Color shine = Color.lerp(c.soft, c.surface, c.isDark ? 0.12 : 0.7)!;
+    final bool still = BhorMotion.reduced(context);
     return ExcludeSemantics(
-      child: FadeTransition(
-        opacity: Tween<double>(begin: 1, end: 0.55).animate(_c),
-        child: Container(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (BuildContext context, Widget? _) => Container(
           width: widget.width,
           height: widget.height,
-          decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(widget.radius)),
+          decoration: BoxDecoration(
+            color: base,
+            borderRadius: BorderRadius.circular(widget.radius),
+            gradient: still
+                ? null
+                : LinearGradient(
+                    begin: const Alignment(-1.0, -0.36),
+                    end: const Alignment(1.0, 0.36),
+                    colors: <Color>[base, shine, base],
+                    stops: const <double>[0.35, 0.5, 0.65],
+                    transform: _SweepTransform(_c.value),
+                  ),
+          ),
         ),
       ),
     );
   }
 }
 
+/// Moves the shimmer band from off the left edge to off the right edge.
+class _SweepTransform extends GradientTransform {
+  const _SweepTransform(this.t);
+
+  final double t;
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) =>
+      Matrix4.translationValues(bounds.width * (t * 2 - 1), 0, 0);
+}
+
 /// Calm empty state: icon tile, title, message and an optional action.
-/// Usage: `BhorEmptyState(icon: Icons.groups, title: '...', message: '...', action: button)`.
+/// Usage: `BhorEmptyState(icon: BhorIcons.batches, title: '...', message: '...', action: button)`.
 class BhorEmptyState extends StatelessWidget {
   const BhorEmptyState({super.key, required this.icon, required this.title, this.message, this.action});
 
@@ -417,13 +526,13 @@ class BhorEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            width: 56,
-            height: 56,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               color: c.accentTint,
               borderRadius: BorderRadius.circular(BhorRadius.card),
             ),
-            child: Icon(icon, size: 28, color: c.accent),
+            child: Icon(icon, size: BhorIconSize.nav + 4, color: c.accent),
           ),
           const SizedBox(height: BhorSpace.s16),
           Semantics(header: true, child: Text(title, textAlign: TextAlign.center, style: b.type.heading)),
