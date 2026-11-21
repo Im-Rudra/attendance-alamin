@@ -26,7 +26,7 @@
       }
     }
   },
-  "todayAddExtra": "অতিরিক্ত ক্লাস",
+  "todayAddExtra": "ক্লাস যোগ",
   "@todayAddExtra": {
     "description": "Button that adds a one-off extra class."
   },
