@@ -1,7 +1,6 @@
 // Hint strip: class reminders are only planned for fewer than three more days
 // (the app plans a rolling window and renews it whenever it is opened).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,7 +35,7 @@ class ReminderHint extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.notifications_active_outlined, size: 22, color: b.colors.accent),
+              Icon(BhorIcons.bell, size: 22, color: b.colors.accent),
               const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Text(

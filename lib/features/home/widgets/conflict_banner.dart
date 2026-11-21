@@ -2,7 +2,6 @@
 // overlap (legacy data, an unarchive that was accepted with clashes, an
 // import). It lists the first pairs and opens the slot editor of one batch.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,7 +82,7 @@ class ConflictBanner extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(Icons.warning_amber_rounded, color: on, size: 24),
+                  Icon(BhorIcons.warningFill, color: on, size: 24),
                   const SizedBox(width: BhorSpace.s12),
                   Expanded(
                     child: Column(

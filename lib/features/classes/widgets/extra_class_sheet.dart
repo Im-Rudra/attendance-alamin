@@ -18,6 +18,8 @@ Future<String?> showExtraClassSheet(
   return showClassSheet<String>(
     context,
     (BuildContext ctx) => ExtraClassSheet(batchId: batchId, date: date, startMin: startMin),
+    expand: true,
+    width: 520,
   );
 }
 

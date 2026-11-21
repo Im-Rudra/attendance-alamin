@@ -1,7 +1,6 @@
 // Navigation helpers shared by the Today tiles. Every route goes through the
 // router when there is one (widget tests pump screens without a router).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,8 +37,10 @@ Future<void> showBatchPickerSheet(
   final l10n = context.l10n;
   final List<Batch> sorted = List<Batch>.of(batches)
     ..sort((Batch a, Batch b) => a.sortOrder.compareTo(b.sortOrder));
-  final String? id = await showBhorSheet<String>(
+  final String? id = await showBhorPanel<String>(
     context,
+    kind: BhorPanelKind.list,
+    scroll: false,
     title: l10n.todayPickBatchTitle,
     builder: (BuildContext ctx) => SingleChildScrollView(
       child: Column(
@@ -48,7 +49,7 @@ Future<void> showBatchPickerSheet(
           for (int i = 0; i < sorted.length; i++)
             BhorListRow(
               title: sorted[i].name,
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(BhorIcons.chevronRight),
               divider: i < sorted.length - 1,
               onTap: () => Navigator.of(ctx).pop(sorted[i].id),
             ),

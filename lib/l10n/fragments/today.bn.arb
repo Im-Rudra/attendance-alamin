@@ -541,5 +541,17 @@
   "todayWeekOpen": "সপ্তাহের ছক খুলুন",
   "@todayWeekOpen": {
     "description": "Tooltip of the week tile."
+  },
+  "todayGreetMorning": "শুভ সকাল",
+  "@todayGreetMorning": {
+    "description": "Greeting on Today before noon."
+  },
+  "todayGreetAfternoon": "শুভ বিকাল",
+  "@todayGreetAfternoon": {
+    "description": "Greeting on Today from noon to 5 pm."
+  },
+  "todayGreetEvening": "শুভ সন্ধ্যা",
+  "@todayGreetEvening": {
+    "description": "Greeting on Today from 5 pm."
   }
 }

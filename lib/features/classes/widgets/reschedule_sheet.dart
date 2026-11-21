@@ -11,6 +11,8 @@ Future<bool> showRescheduleSheet(BuildContext context, {required String occ}) as
   final bool? saved = await showClassSheet<bool>(
     context,
     (BuildContext ctx) => RescheduleSheet(occ: occ),
+    expand: true,
+    width: 520,
   );
   return saved ?? false;
 }

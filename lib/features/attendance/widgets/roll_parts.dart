@@ -9,6 +9,14 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 
+/// Phosphor glyph of an attendance status (never the Material set).
+IconData statusIcon(AttendanceStatus s) => switch (s) {
+      AttendanceStatus.present => BhorIcons.present,
+      AttendanceStatus.absent => BhorIcons.absent,
+      AttendanceStatus.late => BhorIcons.late,
+      AttendanceStatus.leave => BhorIcons.leave,
+    };
+
 /// Tag tone of an attendance status.
 BhorTone attendanceTone(AttendanceStatus s) => switch (s) {
       AttendanceStatus.present => BhorTone.ok,
@@ -24,6 +32,6 @@ Widget attendanceTag(BuildContext context, AttendanceStatus s, {bool short = fal
   return BhorTag(
     label: short ? s.shortLabel(l10n) : s.label(l10n),
     tone: attendanceTone(s),
-    icon: s.icon,
+    icon: statusIcon(s),
   );
 }

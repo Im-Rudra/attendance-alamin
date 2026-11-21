@@ -1,9 +1,10 @@
-// One roll-call row (UX 2b): the whole row toggles present/absent, a trailing
-// 48dp button toggles late, long-press / right-click / the options button
-// open the status sheet (excused, note). Absent is the solid slate slab.
+// One roll-call row (UX 2b): a surface card with the student and the gliding
+// attendance toggle (present / absent / late). Tapping the name still flips
+// present/absent for speed; long-press / right-click / the options button open
+// the status panel (excused, note). Absent and late tint the row and add a
+// 3 px edge stripe, so the state never relies on colour alone.
 
 import 'package:flutter/gestures.dart' show kSecondaryButton;
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 
@@ -11,6 +12,7 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 
 class RollRow extends StatelessWidget {
   const RollRow({
@@ -22,7 +24,7 @@ class RollRow extends StatelessWidget {
     this.enabled = true,
     this.focused = false,
     this.onToggle,
-    this.onLate,
+    this.onSet,
     this.onMenu,
   });
 
@@ -30,7 +32,8 @@ class RollRow extends StatelessWidget {
   final int roll;
   final AttendanceStatus status;
 
-  /// Desktop strip (52dp) instead of the phone card (64dp).
+  /// Desktop strip (56dp, roll number in place of the avatar) instead of the
+  /// phone card (64dp).
   final bool dense;
 
   /// False for a future date or an archived batch: nothing reacts.
@@ -38,8 +41,12 @@ class RollRow extends StatelessWidget {
 
   /// The keyboard cursor is on this row.
   final bool focused;
+
+  /// Tap on the name: present <-> absent.
   final VoidCallback? onToggle;
-  final VoidCallback? onLate;
+
+  /// A segment of the attendance toggle was chosen.
+  final ValueChanged<AttendanceStatus>? onSet;
   final VoidCallback? onMenu;
 
   @override
@@ -48,84 +55,61 @@ class RollRow extends StatelessWidget {
     final BhorColors c = b.colors;
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final bool isLate = status == AttendanceStatus.late;
     final String statusText = status.label(l10n);
     final String rollText = fmt.number(roll);
     final VoidCallback? tap = enabled ? onToggle : null;
-    final VoidCallback? lateTap = enabled ? onLate : null;
     final VoidCallback? menu = enabled ? onMenu : null;
     final String hint = status == AttendanceStatus.absent ? l10n.a11yHintMarkPresent : l10n.a11yHintMarkAbsent;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
-    // Fill, text, icon and edge of the row per status (hairline, no shadow).
-    final (Color fill, Color text, Color icon, Color edge) = switch (status) {
-      AttendanceStatus.present => (c.surface, c.text, c.ok, c.line),
-      AttendanceStatus.absent => (c.absent, c.onAbsent, c.onAbsent, c.absent),
-      AttendanceStatus.late => (c.lateBg, c.lateText, c.lateText, c.lateText.withValues(alpha: 0.4)),
-      AttendanceStatus.leave => (c.surface2, c.text2, c.text2, c.line),
+    // Row tint and edge stripe per status; the row stays a surface card.
+    final (Color fill, Color stripe) = switch (status) {
+      AttendanceStatus.present => (c.surface, const Color(0x00000000)),
+      AttendanceStatus.absent => (c.absentBg, c.absentText),
+      AttendanceStatus.late => (c.lateBg, c.late),
+      AttendanceStatus.leave => (c.soft, c.text3),
     };
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final bool menuButton = dense && box.maxWidth >= 360 && menu != null;
-        final Widget label = Row(
-          mainAxisSize: MainAxisSize.min,
+        final bool labelled = dense && box.maxWidth >= 460;
+
+        final Widget info = Row(
           children: <Widget>[
-            Icon(status.icon, color: icon, size: 20),
-            const SizedBox(width: BhorSpace.s4),
-            Text(
-              // Always the full word (never "উ/অ/দে"): the name shrinks first.
-              statusText,
-              maxLines: 1,
-              softWrap: false,
-              style: b.type.label.copyWith(color: text),
+            if (dense)
+              SizedBox(
+                width: 32,
+                child: Text(rollText, maxLines: 1, style: BhorType.tabular(b.type.meta)),
+              )
+            else ...<Widget>[
+              BhorAvatar(name: name, size: 40),
+              const SizedBox(width: BhorSpace.s12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: b.type.bodyStrong.copyWith(color: c.text),
+                  ),
+                  if (!dense) Text(rollText, style: b.type.meta),
+                ],
+              ),
             ),
+            if (status == AttendanceStatus.leave) ...<Widget>[
+              const SizedBox(width: BhorSpace.s8),
+              attendanceTag(context, status),
+            ],
+            const SizedBox(width: BhorSpace.s8),
           ],
         );
 
-        final Widget info = dense
-            ? Row(
-                children: <Widget>[
-                  SizedBox(
-                    width: 28,
-                    child: Text(rollText, maxLines: 1, style: b.type.body.copyWith(color: text)),
-                  ),
-                  Expanded(
-                    child: Text(
-                      name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: b.type.heading.copyWith(color: text),
-                    ),
-                  ),
-                  const SizedBox(width: BhorSpace.s8),
-                  label,
-                ],
-              )
-            : Row(
-                children: <Widget>[
-                  BhorAvatar(name: name, size: 40),
-                  const SizedBox(width: BhorSpace.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: b.type.heading.copyWith(color: text),
-                        ),
-                        Text(rollText, style: b.type.meta.copyWith(color: text)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: BhorSpace.s8),
-                  label,
-                ],
-              );
-
-        final double height = dense ? 52 : 64;
+        final double height = dense ? 56 : 64;
         final Widget main = Semantics(
           container: true,
           button: tap != null,
@@ -152,10 +136,8 @@ class RollRow extends StatelessWidget {
               scaleOnPress: false,
               showFocusRing: false,
               builder: (BuildContext context, BhorStates s) => Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: dense ? BhorSpace.s12 : BhorSpace.s12,
-                  vertical: dense ? BhorSpace.s4 : BhorSpace.s8,
-                ),
+                padding: EdgeInsets.fromLTRB(BhorSpace.s12, dense ? BhorSpace.s4 : BhorSpace.s8, 0,
+                    dense ? BhorSpace.s4 : BhorSpace.s8),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: height - (dense ? 8 : 16)),
                   child: Align(alignment: AlignmentDirectional.centerStart, child: info),
@@ -165,58 +147,55 @@ class RollRow extends StatelessWidget {
           ),
         );
 
-        final Widget lateButton = Semantics(
-          container: true,
-          button: true,
-          toggled: isLate,
-          label: l10n.uiMarkLate,
-          excludeSemantics: true,
-          onTap: lateTap,
+        final Widget toggle = Padding(
+          padding: const EdgeInsets.only(right: BhorSpace.s12),
           child: SizedBox(
-            width: dense ? 60 : 64,
-            height: height,
-            child: Center(
-              child: BhorPressable(
-                onTap: lateTap,
-                radius: BhorRadius.chip,
-                builder: (BuildContext context, BhorStates s) => Container(
-                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                  padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isLate ? c.lateBg : (s.hovered ? c.surface2 : c.surface),
-                    borderRadius: BorderRadius.circular(BhorRadius.chip),
-                    border: Border.all(color: isLate ? c.lateText : c.line),
-                  ),
-                  child: Text(
-                    l10n.uiAttLate,
-                    maxLines: 1,
-                    style: b.type.label.copyWith(color: isLate ? c.lateText : c.text),
-                  ),
-                ),
-              ),
+            width: labelled ? 280 : null,
+            child: BhorAttendanceToggle(
+              value: status == AttendanceStatus.leave ? null : status.kind,
+              iconOnly: !labelled,
+              onChanged: enabled && onSet != null
+                  ? (AttendanceKind k) => onSet!(AttendanceStatus.values[k.index])
+                  : null,
             ),
           ),
         );
 
-        return Container(
+        return AnimatedContainer(
+          duration: fast,
+          curve: BhorMotion.ease,
           constraints: BoxConstraints(minHeight: height),
           decoration: BoxDecoration(
             color: fill,
             borderRadius: BorderRadius.circular(BhorRadius.card),
-            border: Border.all(color: focused ? c.accent : edge, width: focused ? 2 : 1),
+            border: Border.all(color: focused ? c.accent : c.line, width: focused ? 2 : 1),
           ),
-          child: Row(
+          child: Stack(
             children: <Widget>[
-              Expanded(child: main),
-              if (menuButton)
-                BhorIconButton(
-                  semanticLabel: l10n.rollRowMenu,
-                  icon: Icons.more_vert,
-                  color: text,
-                  onPressed: menu,
+              Row(
+                children: <Widget>[
+                  Expanded(child: main),
+                  if (menuButton)
+                    BhorIconButton(
+                      semanticLabel: l10n.rollRowMenu,
+                      icon: BhorIcons.overflow,
+                      size: BhorButtonSize.sm,
+                      color: c.text2,
+                      onPressed: menu,
+                    ),
+                  toggle,
+                ],
+              ),
+              Positioned(
+                left: 0,
+                top: 12,
+                bottom: 12,
+                width: 3,
+                child: AnimatedContainer(
+                  duration: fast,
+                  decoration: BoxDecoration(color: stripe, borderRadius: BorderRadius.circular(2)),
                 ),
-              lateButton,
+              ),
             ],
           ),
         );
@@ -241,18 +220,26 @@ Future<RollMenuChoice?> showRollStatusSheet(
   required String name,
   required AttendanceStatus current,
 }) {
-  return showBhorSheet<RollMenuChoice>(
+  // Phone: bottom sheet; desktop: a centred panel over the roster.
+  return showBhorPanel<RollMenuChoice>(
     context,
-    builder: (BuildContext ctx) => RollStatusSheet(name: name, current: current),
+    kind: BhorPanelKind.list,
+    title: context.l10n.rollStatusSheetTitle(name),
+    scroll: false,
+    width: 420,
+    builder: (BuildContext ctx) => RollStatusSheet(name: name, current: current, showTitle: false),
   );
 }
 
 /// The sheet body (public so the screen matrix can render it directly).
 class RollStatusSheet extends StatelessWidget {
-  const RollStatusSheet({super.key, required this.name, required this.current});
+  const RollStatusSheet({super.key, required this.name, required this.current, this.showTitle = true});
 
   final String name;
   final AttendanceStatus current;
+
+  /// False when the hosting panel already shows the title.
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -264,22 +251,23 @@ class RollStatusSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(bottom: BhorSpace.s8),
-            child: Semantics(
-              header: true,
-              child: Text(l10n.rollStatusSheetTitle(name), style: b.type.title),
+          if (showTitle)
+            Padding(
+              padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+              child: Semantics(
+                header: true,
+                child: Text(l10n.rollStatusSheetTitle(name), style: b.type.title),
+              ),
             ),
-          ),
           for (final AttendanceStatus s in all)
             BhorListRow(
-              leading: Icon(s.icon, color: _iconColor(b.colors, s)),
+              leading: Icon(statusIcon(s), color: _iconColor(b.colors, s)),
               title: s.label(l10n),
-              trailing: s == current ? Icon(Icons.check, color: b.colors.accent) : null,
+              trailing: s == current ? Icon(BhorIcons.check, color: b.colors.accent) : null,
               onTap: () => Navigator.of(context).pop(RollMenuChoice.status(s)),
             ),
           BhorListRow(
-            leading: const Icon(Icons.edit_note),
+            leading: const Icon(BhorIcons.notes),
             title: l10n.rollMenuNote,
             divider: false,
             onTap: () => Navigator.of(context).pop(const RollMenuChoice.note()),

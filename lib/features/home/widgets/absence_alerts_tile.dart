@@ -2,7 +2,6 @@
 // held sessions of a batch, each with a call / copy-number button and a dismiss
 // that lasts until their next absence (`absence_dismissed:<enrollmentId>`).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -40,19 +39,19 @@ class AbsenceAlertsTile extends ConsumerWidget {
     final List<AbsenceAlert>? alerts = ref.watch(absenceAlertsProvider).value;
 
     final Widget header = TileHeader(
-      icon: Icons.notifications_active_outlined,
+      icon: BhorIcons.bell,
       title: l10n.todayAlertsTitle,
     );
     if (alerts == null) {
       return hideWhenEmpty
           ? const SizedBox.shrink()
-          : TileFrame(header: header, child: const SizedBox(height: 96));
+          : TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
     if (alerts.isEmpty) {
       if (hideWhenEmpty) return const SizedBox.shrink();
       return TileFrame(
         header: header,
-        child: TileMessage(icon: Icons.verified_outlined, message: l10n.todayAlertsEmpty),
+        child: TileMessage(icon: BhorIcons.checkCircle, message: l10n.todayAlertsEmpty),
       );
     }
 
@@ -140,7 +139,7 @@ class _AlertRow extends ConsumerWidget {
             ),
           BhorIconButton(
             semanticLabel: l10n.todayAlertDismiss,
-            icon: Icons.close,
+            icon: BhorIcons.close,
             onPressed: () => _dismiss(context, ref),
           ),
         ],

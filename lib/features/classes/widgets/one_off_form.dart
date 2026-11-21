@@ -4,7 +4,6 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -339,7 +338,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
           FieldRow(
             label: l10n.clsFieldDate,
             value: fmt.weekdayDate(_date),
-            icon: Icons.calendar_today_outlined,
+            icon: BhorIcons.calendar,
             onTap: _pickDate,
           ),
           const SizedBox(height: BhorSpace.s12),
@@ -349,12 +348,12 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
             onTap: _pickTime,
             leading: BhorIconButton(
               semanticLabel: l10n.clsEarlier,
-              icon: Icons.remove,
+              icon: BhorIcons.minus,
               onPressed: _start - 15 >= 0 ? () => _setStart(_start - 15) : null,
             ),
             trailing: BhorIconButton(
               semanticLabel: l10n.clsLater,
-              icon: Icons.add,
+              icon: BhorIcons.add,
               onPressed: _start + _dur + 15 <= 1440 ? () => _setStart(_start + 15) : null,
             ),
           ),

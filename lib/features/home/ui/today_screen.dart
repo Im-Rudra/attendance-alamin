@@ -4,7 +4,6 @@
 // rows all sum to 12 with equal-height tiles, plus a দিন/সপ্তাহ toggle that
 // swaps the bento for the real week grid.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,17 +74,25 @@ class TodayScreen extends ConsumerWidget {
       if (quickActionsInTopBar(wc)) ..._topBarQuick(context, today),
       BhorIconButton(
         semanticLabel: l10n.commonSearch,
-        icon: Icons.search,
+        icon: BhorIcons.search,
+        variant: BhorButtonVariant.secondary,
+        circle: true,
         onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
       ),
       const LanguageChip(),
       const SizedBox(width: BhorSpace.s8),
     ];
 
+    // "শুভ সকাল / বিকাল / সন্ধ্যা" over the weekday-date line.
+    final int nowMin = ref.watch(nowMinutesProvider);
+    final String greeting = nowMin < 12 * 60
+        ? l10n.todayGreetMorning
+        : (nowMin < 17 * 60 ? l10n.todayGreetAfternoon : l10n.todayGreetEvening);
+
     return BhorScaffold(
       header: BhorHeader(
-        title: l10n.navToday,
-        subtitle: context.fmt.weekdayDate(today),
+        overline: context.fmt.weekdayDate(today),
+        title: greeting,
         large: true,
         showBack: false,
         actions: actions,
@@ -133,7 +140,14 @@ class _WideBody extends ConsumerWidget {
         children: <Widget>[
           const ConflictBanner(),
           const ReminderHint(),
-          Expanded(child: week ? _weekBody(ref) : _bento()),
+          Expanded(
+            child: BhorFadeThrough(
+              child: KeyedSubtree(
+                key: ValueKey<bool>(week),
+                child: week ? _weekBody(ref) : _bento(),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -215,6 +229,8 @@ class _StackedBody extends ConsumerWidget {
     );
 
     const Widget gap = SizedBox(height: BhorSpace.s12);
+    int n = 0;
+    Widget st(Widget w) => BhorStagger(index: n++, child: w);
 
     Widget pair(double height, Widget a, Widget b) => SizedBox(
           height: height,
@@ -232,31 +248,33 @@ class _StackedBody extends ConsumerWidget {
       const ConflictBanner(),
       const ReminderHint(),
       if (medium && isToday)
-        pair(_kMediumTopRow, HeroClassCard(date: selected, fill: true), const DuesCard())
+        st(pair(_kMediumTopRow, HeroClassCard(date: selected, fill: true), const DuesCard()))
       else
-        HeroClassCard(date: selected),
+        st(HeroClassCard(date: selected)),
       gap,
-      if (!medium && isToday) ...<Widget>[const DuesCard(), gap],
+      if (!medium && isToday) ...<Widget>[st(const DuesCard()), gap],
       const BackupNudgeTile(onlyWhenDue: true, gapBelow: BhorSpace.s12),
       if (!medium) const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: BhorSpace.s12),
-      TodayTimeline(date: selected, strip: strip),
+      st(TodayTimeline(date: selected, strip: strip)),
       gap,
       if (medium) ...<Widget>[
-        pair(_kMediumStatRow, const CollectionTile(), const AttendanceTodayTile()),
+        st(pair(_kMediumStatRow, const CollectionTile(), const AttendanceTodayTile())),
         gap,
         const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: BhorSpace.s12),
       ] else ...<Widget>[
-        const CollectionTile(),
+        st(const CollectionTile()),
         gap,
-        const AttendanceTodayTile(),
+        st(const AttendanceTodayTile()),
         gap,
       ],
-      QuickActionsCard(date: selected),
+      st(QuickActionsCard(date: selected)),
     ];
 
-    return ListView(
+    return BhorStaggerScope(
+      child: ListView(
       padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g + bottom),
       children: children,
+      ),
     );
   }
 }

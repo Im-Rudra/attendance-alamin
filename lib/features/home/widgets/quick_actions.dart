@@ -2,7 +2,6 @@
 // search. A 2x2 tile on expanded windows, a card on phones and mediums, and
 // buttons in the top bar on large windows.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -26,22 +25,22 @@ List<QuickAction> quickActionsOf(BuildContext context, LocalDate date) {
   final l10n = context.l10n;
   return <QuickAction>[
     QuickAction(
-      icon: Icons.payments_outlined,
+      icon: BhorIcons.takeMoney,
       label: l10n.todayQuickCollect,
       onTap: () => goRoute(context, Routes.fees),
     ),
     QuickAction(
-      icon: Icons.person_add_alt_1_outlined,
+      icon: BhorIcons.students,
       label: l10n.todayQuickAddStudent,
       onTap: () => pushRoute(context, Routes.studentNew),
     ),
     QuickAction(
-      icon: Icons.add_circle_outline,
+      icon: BhorIcons.addCircle,
       label: l10n.todayQuickExtra,
       onTap: () => showExtraClassSheet(context, date: date),
     ),
     QuickAction(
-      icon: Icons.search,
+      icon: BhorIcons.search,
       label: l10n.todayQuickSearch,
       onTap: () => pushRoute(context, Routes.search),
     ),
@@ -60,7 +59,7 @@ class QuickActionsTile extends StatelessWidget {
     final List<QuickAction> a = quickActionsOf(context, date);
     return TileFrame(
       scroll: false,
-      header: TileHeader(icon: Icons.bolt_outlined, title: context.l10n.todayQuickTitle),
+      header: TileHeader(icon: BhorIcons.sparkle, title: context.l10n.todayQuickTitle),
       child: Column(
         children: <Widget>[
           Expanded(
@@ -98,7 +97,7 @@ class QuickActionsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<QuickAction> a = quickActionsOf(context, date);
     return TileFrame(
-      header: TileHeader(icon: Icons.bolt_outlined, title: context.l10n.todayQuickTitle),
+      header: TileHeader(icon: BhorIcons.sparkle, title: context.l10n.todayQuickTitle),
       child: Column(
         children: <Widget>[
           Row(

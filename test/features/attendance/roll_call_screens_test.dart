@@ -212,7 +212,7 @@ void main() {
     expect(find.byType(BhorSpinner), findsNothing);
   });
 
-  testWidgets('dark mode: an absent row is the slate slab with white text', (WidgetTester tester) async {
+  testWidgets('dark mode: an absent row is a tinted surface with an edge stripe', (WidgetTester tester) async {
     await pumpApp(
       tester,
       BhorTheme(
@@ -224,13 +224,14 @@ void main() {
       themeMode: ThemeMode.dark,
     );
     final BhorColors c = BhorColors.dark;
-    final Container card = tester.widget<Container>(
-      find.descendant(of: find.byType(RollRow), matching: find.byType(Container)).first,
+    await tester.pumpAndSettle();
+    final AnimatedContainer card = tester.widget<AnimatedContainer>(
+      find.descendant(of: find.byType(RollRow), matching: find.byType(AnimatedContainer)).first,
     );
-    expect((card.decoration! as BoxDecoration).color, c.absent);
-    // Light text on the slab (about 9:1), never dark-on-light.
+    expect((card.decoration! as BoxDecoration).color, c.absentBg);
+    // Primary text on the tinted row, never dark-on-dark.
     final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
-    expect(name.style?.color, c.onAbsent);
+    expect(name.style?.color, c.text);
     final Text initials = tester.widget<Text>(find.text('রউ'));
     expect(initials.style?.color, c.accent);
   });
@@ -244,7 +245,7 @@ void main() {
     expect(find.text('Saved'), findsOneWidget);
     expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
 
-    await tester.tap(find.text('Late').first);
+    await tester.tap(find.descendant(of: find.byType(RollRow).first, matching: find.byIcon(BhorIcons.late)));
     await tester.pumpAndSettle();
     expect(find.text('Present 2 · Absent 0 · Late 1'), findsOneWidget);
     final AttendanceRecord rahim = f.attendance.records.firstWhere((AttendanceRecord r) =>
