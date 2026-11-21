@@ -64,7 +64,6 @@ class RollRow extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) {
-        final bool shortLabel = dense && c.maxWidth < 300;
         final bool menuButton = dense && c.maxWidth >= 360 && menu != null;
         final Widget label = Row(
           mainAxisSize: MainAxisSize.min,
@@ -72,8 +71,10 @@ class RollRow extends StatelessWidget {
             Icon(status.icon, color: text, size: 20),
             const SizedBox(width: 4),
             Text(
-              shortLabel ? status.shortLabel(l10n) : statusText,
+              // Always the full word (never "উ/অ/দে"): the name shrinks first.
+              statusText,
               maxLines: 1,
+              softWrap: false,
               style: tt.labelMedium?.copyWith(color: text),
             ),
           ],

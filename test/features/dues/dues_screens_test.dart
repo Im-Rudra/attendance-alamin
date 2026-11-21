@@ -387,6 +387,15 @@ void main() {
 
   // ---- desktop layout ----------------------------------------------------------
   group('take money', () {
+    testWidgets('phone: the list ends with room for the floating take-money button',
+        (WidgetTester tester) async {
+      await _pumpFeesPhone(tester, seedFakes());
+      final Finder tail = find.byKey(const ValueKey<String>('dues-list-tail'));
+      expect(tail, findsOneWidget);
+      // FAB lift (84) + FAB height (56) + margin.
+      expect(tester.getSize(tail).height, greaterThanOrEqualTo(84 + 56 + 16));
+    });
+
     testWidgets('the Fees tab has a take-money button that opens the picker, then the collect sheet',
         (WidgetTester tester) async {
       await _pumpFeesPhone(tester, seedFakes());

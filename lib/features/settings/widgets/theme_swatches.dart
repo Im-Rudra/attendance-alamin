@@ -8,9 +8,10 @@ import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/theme/tokens.dart';
 
 class ThemeSwatches extends StatelessWidget {
-  const ThemeSwatches({super.key, required this.selected});
+  const ThemeSwatches({super.key, required this.selected, required this.onChanged});
 
   final ThemeMode selected;
+  final ValueChanged<ThemeMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,7 @@ class ThemeSwatches extends StatelessWidget {
             ThemeMode.dark,
           ]) ...<Widget>[
             if (m != ThemeMode.system) const SizedBox(width: 10),
-            Expanded(child: _Swatch(mode: m, selected: m == selected)),
+            Expanded(child: _Swatch(mode: m, selected: m == selected, onTap: () => onChanged(m))),
           ],
         ],
       ),
@@ -32,10 +33,11 @@ class ThemeSwatches extends StatelessWidget {
 }
 
 class _Swatch extends StatelessWidget {
-  const _Swatch({required this.mode, required this.selected});
+  const _Swatch({required this.mode, required this.selected, required this.onTap});
 
   final ThemeMode mode;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -77,15 +79,20 @@ class _Swatch extends StatelessWidget {
     };
     return AspectRatio(
       aspectRatio: 1.6,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: br,
-          border: Border.all(
-            color: selected ? tokens.accent : tokens.hairline,
-            width: selected ? 2 : 1,
+      child: GestureDetector(
+        key: ValueKey<String>('theme-swatch-${mode.name}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: br,
+            border: Border.all(
+              color: selected ? tokens.accent : tokens.hairline,
+              width: selected ? 2 : 1,
+            ),
           ),
+          child: ClipRRect(borderRadius: BorderRadius.circular(AuroraMetrics.radiusField - 1), child: face),
         ),
-        child: ClipRRect(borderRadius: BorderRadius.circular(AuroraMetrics.radiusField - 1), child: face),
       ),
     );
   }

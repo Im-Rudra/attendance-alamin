@@ -112,6 +112,7 @@ class _FeesListScaffold extends StatelessWidget {
                   icon: const Icon(Icons.payments_outlined),
                   label: Text(l10n.payTitle),
                 ),
+              if (wc.usesRail) const SizedBox(width: 12),
               IconButton(
                 tooltip: l10n.commonSearch,
                 icon: const Icon(Icons.manage_search),

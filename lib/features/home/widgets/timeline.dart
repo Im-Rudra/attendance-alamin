@@ -16,6 +16,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
@@ -45,6 +46,8 @@ class TodayTimeline extends ConsumerWidget {
         ? l10n.todayRoutineToday
         : l10n.todayRoutineOther(fmt.dateShort(date));
 
+    final bool noClasses = plan != null && plan.classes.isEmpty && plan.movedAway.isEmpty;
+
     final Widget header = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -57,7 +60,9 @@ class TodayTimeline extends ConsumerWidget {
         TileHeader(
           icon: Icons.event_note_outlined,
           title: title,
-          trailing: TextButton(
+          trailing: noClasses
+              ? null
+              : TextButton(
             style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
             onPressed: () => showExtraClassSheet(context, date: date),
             child: Text(l10n.todayAddExtra),
@@ -84,7 +89,7 @@ class TodayTimeline extends ConsumerWidget {
       if (plan == null) {
         body = const SizedBox.shrink();
       } else if (rows.isEmpty) {
-        body = TileMessage(icon: Icons.event_available_outlined, message: l10n.todayNoClassesDay);
+        body = _emptyDay(context, date);
       } else {
         body = _FadingList(rows: rows);
       }
@@ -97,7 +102,7 @@ class TodayTimeline extends ConsumerWidget {
     } else if (rows.isEmpty) {
       body = Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        child: TileMessage(icon: Icons.event_available_outlined, message: l10n.todayNoClassesDay),
+        child: _emptyDay(context, date),
       );
     } else {
       body = Column(
@@ -112,6 +117,22 @@ class TodayTimeline extends ConsumerWidget {
     }
     return TileFrame(header: header, child: body);
   }
+}
+
+/// The empty-day state: says so and offers "+ অতিরিক্ত ক্লাস" right there.
+Widget _emptyDay(BuildContext context, LocalDate date) {
+  final l10n = context.l10n;
+  return TileMessage(
+    icon: Icons.event_available_outlined,
+    message: l10n.todayNoClassesDay,
+    action: FilledButton.tonalIcon(
+      key: const ValueKey<String>('today-empty-add-extra'),
+      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+      onPressed: () => showExtraClassSheet(context, date: date),
+      icon: const Icon(Icons.add),
+      label: Text(l10n.todayAddExtra),
+    ),
+  );
 }
 
 /// A scrolling list whose bottom edge fades out (UX 3b: the timeline scrolls
@@ -278,7 +299,7 @@ class _ClassRow extends ConsumerWidget {
           IconButton(
             tooltip: l10n.todayClassOptions,
             icon: const Icon(Icons.more_vert),
-            onPressed: () => showClassActionsSheet(context, occ: dc.occ),
+            onPressed: () => showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today),
           ),
         ],
       ),
@@ -291,7 +312,7 @@ class _ClassRow extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           if (cancelled || isFuture) {
-            showClassActionsSheet(context, occ: dc.occ);
+            showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today);
           } else {
             openRollCall(context, dc.occ);
           }

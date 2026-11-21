@@ -165,7 +165,10 @@ class SettingsGroupBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              ThemeSwatches(selected: mode),
+              ThemeSwatches(
+                selected: mode,
+                onChanged: (ThemeMode v) => ref.read(themeModeProvider.notifier).set(v),
+              ),
               const SizedBox(height: 10),
               SegmentedChoice<ThemeMode>(
                 key: const Key('more-theme'),

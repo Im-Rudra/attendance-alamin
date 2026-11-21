@@ -436,6 +436,15 @@ void main() {
 
   // ---- desktop keys, shrink-wrapped widgets -----------------------------------
 
+  testWidgets('desktop: status labels are full words, not one letter', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f,
+        lang: Lang.bn, viewport: TestViewport.desktop);
+    expect(find.text('উপস্থিত'), findsWidgets);
+    expect(find.text('উ'), findsNothing);
+    await unmount(tester);
+  });
+
   testWidgets('desktop keys: J moves, A marks absent, Ctrl+S saves', (WidgetTester tester) async {
     final SeededFakes f = seedFakes(withAttendance: false);
     await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
