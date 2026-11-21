@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
@@ -20,13 +20,13 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 import '../helpers/fixtures.dart';
 import '../helpers/pump_app.dart';
 
-Widget _button(String key, Future<void> Function(BuildContext) onTap) => Scaffold(
+Widget _button(String key, Future<void> Function(BuildContext) onTap) => BhorScaffold(
       body: Center(
         child: Builder(
-          builder: (BuildContext context) => ElevatedButton(
+          builder: (BuildContext context) => BhorButton(
             key: ValueKey<String>(key),
+            label: 'go',
             onPressed: () => onTap(context),
-            child: const Text('go'),
           ),
         ),
       ),
@@ -43,20 +43,14 @@ void main() {
       expect(const AppFormat(Lang.bn).money(-100), '-৳ ১০০');
     });
 
-    testWidgets('MoneyText renders the sign as a smaller, lighter span', (WidgetTester tester) async {
-      await pumpApp(tester, const Center(child: MoneyText('৳ ৬০০', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700))));
-      final Finder f = find.text('৳ ৬০০');
+    testWidgets('BhorMoney renders the sign as a smaller span', (WidgetTester tester) async {
+      await pumpApp(tester, const Center(child: BhorMoney(600, style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700))));
+      final Finder f = find.text(const AppFormat(Lang.bn).money(600));
       expect(f, findsOneWidget);
       final TextSpan root = tester.widget<Text>(f).textSpan! as TextSpan;
       final TextSpan sign = root.children!.first as TextSpan;
-      expect(sign.text, '৳');
+      expect(sign.text, AppFormat.takaSign);
       expect(sign.style!.fontSize, closeTo(28, 0.01));
-      expect(sign.style!.fontWeight, FontWeight.w400);
-    });
-
-    testWidgets('a figure without the sign stays a plain Text', (WidgetTester tester) async {
-      await pumpApp(tester, const Center(child: MoneyText('৪২')));
-      expect(tester.widget<Text>(find.text('৪২')).textSpan, isNull);
     });
   });
 
@@ -97,15 +91,16 @@ void main() {
 
   group('QA-12 date picker week start', () {
     List<String> headers(WidgetTester tester) => <String>[
-          for (int i = 0; i < 7; i++) tester.widget<Text>(find.byKey(ValueKey<String>('dp-head-$i'))).data!,
+          for (int i = 0; i < 7; i++) tester.widget<Text>(find.byKey(ValueKey<String>('bhor-weekday-$i'))).data!,
         ];
 
-    testWidgets('starts on Saturday by default', (WidgetTester tester) async {
+    testWidgets('starts on Saturday by default and returns a date-only value', (WidgetTester tester) async {
+      DateTime? picked;
       await pumpApp(
         tester,
         _button('pick', (BuildContext c) async {
-          await showAppDatePicker(
-            context: c,
+          picked = await showBhorDatePicker(
+            c,
             initialDate: DateTime(2026, 11, 21),
             firstDate: DateTime(2026, 1, 1),
             lastDate: DateTime(2027, 1, 1),
@@ -114,32 +109,29 @@ void main() {
         overrides: seedFakes().overrides,
       );
       await tester.tap(find.byKey(const ValueKey<String>('pick')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
       const AppFormat fmt = AppFormat(Lang.bn);
       expect(headers(tester), <String>[
         for (final int iso in const <int>[6, 7, 1, 2, 3, 4, 5]) fmt.weekdayShort(iso),
       ]);
-      // 21 Nov 2026 is a Saturday: it is selected and in the first column.
-      final Finder day21 = find.byKey(const ValueKey<String>('dp-day-21'));
-      expect(day21, findsOneWidget);
-      // Picking returns a date-only value.
-      await tester.tap(find.byKey(const ValueKey<String>('dp-day-5')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey<String>('dp-ok')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byKey(const ValueKey<String>('dp-ok')), findsNothing);
+      // 21 Nov 2026 is a Saturday: it sits in the first column.
+      expect(tester.getCenter(find.text(fmt.digits('21'))).dx,
+          moreOrLessEquals(tester.getCenter(find.byKey(const ValueKey<String>('bhor-weekday-0'))).dx, epsilon: 1));
+      await tester.tap(find.text(fmt.digits('5')));
+      await tester.pumpAndSettle();
+      expect(picked, DateTime(2026, 11, 5));
+      expect(find.byType(BhorDatePicker), findsNothing);
     });
 
     testWidgets('follows the Settings week start (Monday)', (WidgetTester tester) async {
       await pumpApp(
         tester,
-        AppDatePickerDialog(
-          initialDate: DateTime(2026, 11, 21),
+        BhorDatePicker(
+          selected: DateTime(2026, 11, 21),
           firstDate: DateTime(2026, 1, 1),
           lastDate: DateTime(2027, 1, 1),
-          weekStart: 1,
+          weekStart: DateTime.monday,
+          onChanged: (DateTime _) {},
         ),
       );
       const AppFormat fmt = AppFormat(Lang.bn);
@@ -165,9 +157,10 @@ void main() {
   group('QA-18 duplicates', () {
     testWidgets('the Today dues card shows the overdue count once', (WidgetTester tester) async {
       await pumpApp(tester, const SingleChildScrollView(child: DuesCard()), overrides: seedFakes().overrides);
-      for (final EscalationBar bar in tester.widgetList<EscalationBar>(find.byType(EscalationBar))) {
-        expect(bar.overdueCount, 0);
-      }
+      await tester.pump(const Duration(milliseconds: 100));
+      // The escalation bar carries no count of its own; the headline counts once.
+      expect(find.byType(BhorEscalationBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a one-batch student profile on the phone has a single Collect fee button',

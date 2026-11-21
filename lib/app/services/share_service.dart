@@ -1,14 +1,15 @@
 // Share plain text (dues reminders, receipts, cancel notices) through the
 // system share sheet (share_plus). Windows and web also copy the text and say
-// so, because a desktop share target is often missing; a desktop browser has
-// no share sheet at all (share_plus would open a mail client), so there the
-// copy is the whole action.
+// so (a BhorToast), because a desktop share target is often missing; a desktop
+// browser has no share sheet at all (share_plus would open a mail client), so
+// there the copy is the whole action.
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 
 abstract final class ShareService {
@@ -25,17 +26,18 @@ abstract final class ShareService {
   /// copied and the teacher is told so, so a tap always gives feedback (QA-06).
   static Future<void> shareText(BuildContext context, String text) async {
     if (text.trim().isEmpty) return;
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+    // Read before any await: the caller (often a sheet) may be gone by then.
+    final BuildContext anchor = BhorToast.anchorOf(context);
+    final double lift = BhorToastInset.of(context);
     final String copiedMessage = context.l10n.shellTextCopied;
 
     Future<void> copy() async {
       try {
         await Clipboard.setData(ClipboardData(text: text));
       } catch (_) {
-        // Still tell the teacher: the snackbar below is the feedback.
+        // Still tell the teacher: the toast below is the feedback.
       }
-      messenger?.hideCurrentSnackBar();
-      messenger?.showSnackBar(SnackBar(content: Text(copiedMessage)));
+      if (anchor.mounted) BhorToast.show(anchor, message: copiedMessage, bottomOffset: lift);
     }
 
     if (_alsoCopy) await copy();

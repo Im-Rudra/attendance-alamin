@@ -45,7 +45,7 @@ Future<void> showClassActionsSheet(BuildContext context, {required String occ, S
     case RollCallRequested():
       GoRouter.maybeOf(context)?.push<void>(Routes.rollCall(occ), extra: returnTo);
     case final CancelDone done:
-      if (Overlay.maybeOf(context, rootOverlay: true) == null) return;
+      if (!BhorToast.canShowIn(context)) return;
       _showCancelToast(
         context: context,
         repo: container.read(scheduleRepositoryProvider),
@@ -84,148 +84,20 @@ void _showCancelToast({
     );
     return;
   }
-  // The library toast has one action; the guardians' notice needs a second.
-  _CancelToast.show(
+  BhorToast.show(
     context,
     message: text,
-    undoLabel: l10n.commonUndo,
-    onUndo: () => unawaited(undo()),
-    notifyLabel: l10n.clsNotifyGuardians,
-    onNotify: () {
-      if (context.mounted) ShareService.shareText(context, notice);
-    },
+    duration: const Duration(seconds: 8),
+    actions: <BhorToastAction>[
+      BhorToastAction(
+        label: l10n.clsNotifyGuardians,
+        onPressed: () {
+          if (context.mounted) ShareService.shareText(context, notice);
+        },
+      ),
+      BhorToastAction(label: l10n.commonUndo, onPressed: () => unawaited(undo())),
+    ],
   );
-}
-
-/// A bottom toast with two actions (undo, notify guardians), 8 s, Bhor look.
-class _CancelToast extends StatefulWidget {
-  const _CancelToast({
-    required this.message,
-    required this.undoLabel,
-    required this.onUndo,
-    required this.notifyLabel,
-    required this.onNotify,
-    required this.onGone,
-    required this.theme,
-  });
-
-  final String message;
-  final String undoLabel;
-  final VoidCallback onUndo;
-  final String notifyLabel;
-  final VoidCallback onNotify;
-  final VoidCallback onGone;
-  final BhorThemeData theme;
-
-  static void show(
-    BuildContext context, {
-    required String message,
-    required String undoLabel,
-    required VoidCallback onUndo,
-    required String notifyLabel,
-    required VoidCallback onNotify,
-  }) {
-    final OverlayState overlay = Overlay.of(context, rootOverlay: true);
-    late final OverlayEntry entry;
-    void remove() {
-      if (entry.mounted) entry.remove();
-    }
-
-    entry = OverlayEntry(
-      builder: (BuildContext ctx) => _CancelToast(
-        message: message,
-        undoLabel: undoLabel,
-        onUndo: () {
-          remove();
-          onUndo();
-        },
-        notifyLabel: notifyLabel,
-        onNotify: () {
-          remove();
-          onNotify();
-        },
-        onGone: remove,
-        theme: context.bhor,
-      ),
-    );
-    overlay.insert(entry);
-  }
-
-  @override
-  State<_CancelToast> createState() => _CancelToastState();
-}
-
-class _CancelToastState extends State<_CancelToast> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(const Duration(seconds: 8), widget.onGone);
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final BhorThemeData b = widget.theme;
-    final BhorColors c = b.colors;
-    return BhorTheme(
-      data: b,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(BhorSpace.s16),
-            child: Semantics(
-              liveRegion: true,
-              container: true,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 480),
-                padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
-                decoration: BoxDecoration(
-                  color: c.surface,
-                  borderRadius: BorderRadius.circular(BhorRadius.control),
-                  border: Border.all(color: c.line),
-                ),
-                child: DefaultTextStyle(
-                  style: b.type.body,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(widget.message, style: b.type.body),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          BhorButton(
-                            label: widget.notifyLabel,
-                            variant: BhorButtonVariant.ghost,
-                            size: BhorButtonSize.sm,
-                            onPressed: widget.onNotify,
-                          ),
-                          BhorButton(
-                            label: widget.undoLabel,
-                            variant: BhorButtonVariant.ghost,
-                            size: BhorButtonSize.sm,
-                            onPressed: widget.onUndo,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// The sheet body (public so the screen matrix can render it directly).
@@ -424,7 +296,7 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
           ),
           const SizedBox(height: BhorSpace.s12),
           if (_restoreClash != null) ...<Widget>[
-            ClashCard(
+            BhorClashCard(
               lines: <String>[
                 for (final ClashGroup g in _restoreClash!.groups.take(3))
                   clashLine(

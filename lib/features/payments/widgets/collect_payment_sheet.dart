@@ -13,7 +13,6 @@ import 'package:attendance_alamin/domain/models/payment.dart';
 import 'package:attendance_alamin/features/payments/controllers/collect_payment_controller.dart';
 import 'package:attendance_alamin/features/payments/controllers/pay_providers.dart';
 import 'package:attendance_alamin/features/payments/widgets/collect_payment_form.dart';
-import 'package:attendance_alamin/features/payments/widgets/paid_toast.dart';
 import 'package:attendance_alamin/features/payments/widgets/receipt_preview.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
@@ -45,7 +44,7 @@ Future<bool> showEditPaymentSheet(
   required String studentId,
 }) async {
   final String done = context.l10n.payEditedToast;
-  final double lift = context.bhorIsWide ? 0 : 64;
+  final double lift = BhorToastInset.of(context);
   final SavedPayment? saved = await showBhorSheet<SavedPayment>(
     context,
     builder: (BuildContext ctx) => _EditSheet(
@@ -102,20 +101,22 @@ void showPaidSnackBar(BuildContext context, SavedPayment saved) {
   final AppLocalizations l10n = context.l10n;
   final String message = l10n.payPaidToast(context.fmt.money(saved.total));
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
-  final double lift = context.bhorIsWide ? 0 : 64;
-  showPaidToast(
+  final double lift = BhorToastInset.of(context);
+  BhorToast.show(
     context,
     message: message,
+    tone: BhorTone.ok,
+    duration: const Duration(seconds: 8),
     bottomOffset: lift,
-    actions: <PaidToastAction>[
-      PaidToastAction(
+    actions: <BhorToastAction>[
+      BhorToastAction(
         key: const ValueKey<String>('pay-snack-send'),
         label: l10n.paySendReceipt,
         onPressed: () {
           if (context.mounted) shareReceiptNow(context, receiptId: saved.receiptId);
         },
       ),
-      PaidToastAction(
+      BhorToastAction(
         key: const ValueKey<String>('pay-snack-undo'),
         label: l10n.commonUndo,
         onPressed: () async {

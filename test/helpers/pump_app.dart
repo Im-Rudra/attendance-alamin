@@ -1,18 +1,22 @@
-// Shared widget-test harness (plan 2.11): pumps a widget under the real theme,
-// real localisation, a fixed clock and a ProviderScope with the given
-// overrides, and runs the 8-case screen matrix.
+// Shared widget-test harness (plan 2.11): pumps a widget under the real Bhor
+// theme (picked by the theme mode, like the app), real localisation, a fixed
+// clock and a ProviderScope with the given overrides, and runs the 8-case
+// screen matrix.
 //
-// It builds its own MaterialApp (no router, no app.dart), so it works for any
-// screen or widget. Use the fake repositories from test/helpers/fakes/ (see
+// It builds its own WidgetsApp (no MaterialApp, no router) with the app's
+// BhorAppRoot (theme, default text/icon styles, toast host), so it works for
+// any screen or widget. Use the fake repositories from test/helpers/fakes/ (see
 // `seedFakes` in fixtures.dart) instead of drift.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/app.dart' show BhorAppRoot;
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/app_theme.dart';
 import 'package:attendance_alamin/app/widgets/effects_mode.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/center_time.dart';
@@ -52,8 +56,8 @@ List<Override> _baseOverrides(DateTime nowUtc) => <Override>[
           ref.watch(centerTimeProvider).minutesNow(ref.watch(clockProvider)))),
     ];
 
-/// Pumps [child] inside a ProviderScope and a MaterialApp with the app theme
-/// (light and dark both registered, [themeMode] picks), [lang] locale and
+/// Pumps [child] inside a ProviderScope and a WidgetsApp with the Bhor theme
+/// of [themeMode] (system follows the platform brightness), [lang] locale and
 /// delegates, a [viewport] sized window and [EffectsMode]. [today] fixes the
 /// clock at 10:00 on that date (default 2026-11-21). [overrides] come last
 /// and win over the harness's own.
@@ -77,22 +81,21 @@ Future<void> pumpApp(
     ProviderScope(
       retry: (_, __) => null,
       overrides: <Override>[..._baseOverrides(nowUtc), ...overrides],
-      child: MaterialApp(
+      child: WidgetsApp(
         debugShowCheckedModeBanner: false,
-        theme: buildTheme(Brightness.light),
-        darkTheme: buildTheme(Brightness.dark),
-        themeMode: themeMode,
+        color: BhorThemeData.light().colors.accent,
         locale: Locale(lang.code),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        builder: (BuildContext context, Widget? home) =>
-            EffectsMode(reduced: reducedEffects, child: home!),
-        home: Builder(
-          builder: (BuildContext context) => Material(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: child,
-          ),
+        pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) => PageRouteBuilder<T>(
+          settings: settings,
+          pageBuilder: (BuildContext context, Animation<double> a, Animation<double> s) => builder(context),
         ),
+        builder: (BuildContext context, Widget? home) => BhorAppRoot(
+          themeMode: themeMode,
+          child: EffectsMode(reduced: reducedEffects, child: home!),
+        ),
+        home: child,
       ),
     ),
   );
@@ -104,7 +107,7 @@ Future<void> pumpApp(
 
 /// The ProviderContainer of the app pumped by [pumpApp].
 ProviderContainer containerOf(WidgetTester tester) =>
-    ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
+    ProviderScope.containerOf(tester.element(find.byType(WidgetsApp)));
 
 /// One cell of the matrix.
 class MatrixCase {

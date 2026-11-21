@@ -6,7 +6,7 @@
 // window) the grid scrolls by itself. A tile spanning N rows is
 // N units + (N - 1) gutters tall.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// One tile. [col] and [row] are ZERO-based; spans are in columns / rows.
 class BentoPlacement {

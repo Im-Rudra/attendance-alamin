@@ -1,8 +1,11 @@
 // App-specific pieces: BhorAttendanceToggle (উপস্থিত/অনুপস্থিত/দেরি),
-// BhorEscalationBar (10-day dues bar, today ringed), BhorMoney, BhorStatText.
+// BhorEscalationBar (10-day dues bar, today ringed), BhorMoney, BhorStatText,
+// BhorClashCard (clashing classes with fix buttons).
 
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
@@ -220,6 +223,85 @@ class BhorStatText extends StatelessWidget {
             Text(value!, maxLines: 1, style: stat),
           Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
         ],
+      ),
+    );
+  }
+}
+
+/// One fix offered by a [BhorClashCard].
+class BhorClashFix {
+  const BhorClashFix({required this.label, required this.onTap, this.primary = false});
+
+  final String label;
+  final VoidCallback onTap;
+
+  /// The recommended fix (danger-styled button).
+  final bool primary;
+}
+
+/// The red "classes clash" card: the clashing lines, "+N more" and 1-3 fix
+/// buttons. A live region, so it is announced when it appears.
+/// Usage: `BhorClashCard(lines: ['ফিজিক্স এ, ৪টা-৫টা'], fixes: [BhorClashFix(label: 'সময় বদলান', onTap: f)])`.
+class BhorClashCard extends StatelessWidget {
+  const BhorClashCard({super.key, required this.lines, this.moreCount = 0, this.fixes = const <BhorClashFix>[]});
+
+  final List<String> lines;
+  final int moreCount;
+  final List<BhorClashFix> fixes;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final l10n = context.l10n;
+    final Color on = b.colors.danger;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: b.colors.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: on.withValues(alpha: 0.35)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(BhorSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(Icons.warning_amber_rounded, color: on, size: 24),
+                  const SizedBox(width: BhorSpace.s8),
+                  Expanded(child: Text(l10n.uiConflictTitle, style: b.type.heading.copyWith(color: on))),
+                ],
+              ),
+              const SizedBox(height: BhorSpace.s8),
+              for (final String line in lines)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: BhorSpace.s4),
+                  child: Text(line, style: b.type.body.copyWith(color: on)),
+                ),
+              if (moreCount > 0)
+                Text(l10n.uiConflictMore(context.fmt.number(moreCount)), style: b.type.label.copyWith(color: on)),
+              if (fixes.isNotEmpty) ...<Widget>[
+                const SizedBox(height: BhorSpace.s8),
+                Wrap(
+                  spacing: BhorSpace.s8,
+                  runSpacing: BhorSpace.s8,
+                  children: <Widget>[
+                    for (final BhorClashFix f in fixes)
+                      BhorButton(
+                        label: f.label,
+                        variant: f.primary ? BhorButtonVariant.danger : BhorButtonVariant.secondary,
+                        onPressed: f.onTap,
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

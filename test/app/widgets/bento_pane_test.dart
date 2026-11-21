@@ -90,7 +90,7 @@ void main() {
   });
 
   testWidgets('a ragged row asserts when built', (WidgetTester tester) async {
-    await pumpAurora(
+    await pumpLayout(
       tester,
       BentoGrid(
         rowCount: 1,
@@ -148,7 +148,7 @@ void main() {
       testWidgets('${e.key}: rows sum to 12 and heights are equal at window height $height',
           (WidgetTester tester) async {
         final (List<Spec> spec, double width, double gutter, int rows) = e.value;
-        await pumpAurora(
+        await pumpLayout(
           tester,
           Align(
             alignment: Alignment.topLeft,
@@ -167,7 +167,7 @@ void main() {
   }
 
   testWidgets('three rows fill a tall window exactly', (WidgetTester tester) async {
-    await pumpAurora(
+    await pumpLayout(
       tester,
       Align(
         alignment: Alignment.topLeft,
@@ -223,7 +223,7 @@ void main() {
   group('PaneLayout widget', () {
     testWidgets('three panes abut with hairline dividers and the handle resizes', (WidgetTester tester) async {
       final List<double> changes = <double>[];
-      await pumpAurora(
+      await pumpLayout(
         tester,
         PaneLayout(
           list: const ColoredBox(key: ValueKey<String>('list'), color: Colors.transparent),

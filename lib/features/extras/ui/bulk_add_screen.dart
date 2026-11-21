@@ -22,7 +22,6 @@ import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/controllers/extra_providers.dart';
 import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
-import 'package:attendance_alamin/features/extras/widgets/extras_action_bar.dart';
 
 class BulkAddScreen extends ConsumerStatefulWidget {
   const BulkAddScreen({super.key, required this.batchId});
@@ -231,7 +230,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
         ),
       ),
       bottomNav: ready
-          ? ExtrasActionBar(
+          ? BhorActionBar(
               buttonKey: const ValueKey<String>('bulk-save'),
               label: _phoneOwner != null ? l10n.extraBulkSaveAnyway : l10n.extraBulkSaveNext,
               onPressed: _canSave ? _save : null,
@@ -262,6 +261,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           const SizedBox(height: BhorSpace.s12),
           BhorTextField(
             key: const ValueKey<String>('bulk-name'),
+            textCapitalization: TextCapitalization.words,
             controller: _name,
             focusNode: _nameFocus,
             autofocus: true,

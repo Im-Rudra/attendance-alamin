@@ -1,17 +1,17 @@
 // Placeholder body for routes whose feature module has not landed yet (plan
 // section 0, "stubs make features independent"), plus the not-found screen.
-// A frosted top bar over the mesh and one glass card holding a full-pane
-// empty state: polished in both themes, never a blank page.
+// A Bhor header and one card holding a full-pane empty state: polished in
+// both themes, never a blank page.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 
 class StubScreen extends StatelessWidget {
   const StubScreen({
@@ -53,13 +53,17 @@ class StubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final double g = WindowClass.of(context).gutter;
     final bool embedded = PaneScope.isEmbedded(context);
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !embedded,
+    final l10n = context.l10n;
+    final String? actionText = actionLabel;
+    return BhorScaffold(
+      header: BhorHeader(
+        title: name,
+        showBack: embedded ? false : null,
         leading: fullScreen
-            ? IconButton(
-                tooltip: context.l10n.commonClose,
-                icon: const Icon(Icons.close),
+            ? BhorIconButton(
+                icon: Icons.close,
+                semanticLabel: l10n.commonClose,
+                color: context.bhor.colors.text,
                 onPressed: () {
                   if (context.canPop()) {
                     context.pop();
@@ -69,33 +73,33 @@ class StubScreen extends StatelessWidget {
                 },
               )
             : null,
-        title: Semantics(header: true, child: Text(name)),
         actions: <Widget>[
           ...actions,
           if (showSearch)
-            IconButton(
-              tooltip: context.l10n.commonSearch,
-              icon: const Icon(Icons.search),
+            BhorIconButton(
+              icon: Icons.search,
+              semanticLabel: l10n.commonSearch,
               onPressed: () => context.push(Routes.search),
             ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(g, 4, g, g),
-          child: body ??
-              GlassCard(
-                padding: EdgeInsets.zero,
-                child: EmptyState(
-                  icon: icon,
-                  message: message ?? context.l10n.shellStubMessage,
-                  actionLabel: actionLabel,
-                  onAction: onAction,
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(g, 4, g, g),
+        child: body ??
+            BhorCard(
+              padding: EdgeInsets.zero,
+              child: Center(
+                child: SingleChildScrollView(
+                  child: BhorEmptyState(
+                    icon: icon,
+                    title: message ?? l10n.shellStubMessage,
+                    action: actionText == null
+                        ? null
+                        : BhorButton(label: actionText, onPressed: onAction),
+                  ),
                 ),
               ),
-        ),
+            ),
       ),
     );
   }
@@ -118,7 +122,7 @@ class NotFoundScreen extends StatelessWidget {
   }
 }
 
-/// A card-like section header used by stub bodies (kept here so stubs stay
+/// A section header used by stub bodies (kept here so stubs stay
 /// self-contained).
 class StubSectionTitle extends StatelessWidget {
   const StubSectionTitle(this.text, {super.key});
@@ -126,14 +130,14 @@ class StubSectionTitle extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-        child: Semantics(
-          header: true,
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.aurora.accent),
-          ),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      child: Semantics(
+        header: true,
+        child: Text(text, style: b.type.label.copyWith(color: b.colors.accent)),
+      ),
+    );
+  }
 }

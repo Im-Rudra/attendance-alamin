@@ -7,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/bento_grid.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
 import 'package:attendance_alamin/domain/models/attendance.dart';

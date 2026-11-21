@@ -30,13 +30,9 @@ class _Launcher extends StatelessWidget {
 
   final Future<void> Function(BuildContext context) onTap;
 
-  // A Material Scaffold on purpose: ShareService (app/services) still reports
-  // through the ScaffoldMessenger until the services migrate.
   @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: ElevatedButton(onPressed: () => onTap(context), child: const Text('open')),
-        ),
+  Widget build(BuildContext context) => BhorScaffold(
+        body: Center(child: BhorButton(label: 'open', onPressed: () => onTap(context))),
       );
 }
 

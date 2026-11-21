@@ -46,10 +46,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       await ref.read(backupRepositoryProvider).restoreSafetyCopy(copy.id);
       if (mounted) {
         requestRemindersReplan(context);
-        BhorToast.show(context, message: l10n.backupRestoreDone, tone: BhorTone.ok, bottomOffset: 64);
+        BhorToast.show(context, message: l10n.backupRestoreDone, tone: BhorTone.ok);
       }
     } on Object catch (e) {
-      if (mounted) BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger, bottomOffset: 64);
+      if (mounted) BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
     } finally {
       if (mounted) setState(() => _restoring = false);
     }

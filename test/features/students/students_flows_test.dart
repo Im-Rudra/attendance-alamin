@@ -30,10 +30,7 @@ class _Launcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: ElevatedButton(
-          onPressed: () => onTap(context),
-          child: const Text('open'),
-        ),
+        child: BhorButton(label: 'open', onPressed: () => onTap(context)),
       );
 }
 
@@ -554,8 +551,8 @@ void main() {
 
 /// Opens the "remove from this batch" dialog for Sara's Chem B enrollment.
 Future<void> openLeaveForTest(BuildContext context) async {
-  await showDialog<bool>(
-    context: context,
+  await showBhorDialog<bool>(
+    context,
     builder: (BuildContext ctx) => const LeaveDialog(
       studentId: kStuSara,
       enrollmentId: kEnrSaraChem,

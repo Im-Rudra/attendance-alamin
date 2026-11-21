@@ -8,10 +8,11 @@
 // root navigator (no navigation chrome). Static segments are declared before
 // `:param` siblings. Only this file imports feature screens.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/ds/gallery/ds_gallery_screen.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
@@ -81,6 +82,18 @@ Page<void> _detailPage(GoRouterState state, Widget child) => CustomTransitionPag
       },
     );
 
+/// Every other page: the Bhor fade + rise (200 ms, ease-out), the same on
+/// every platform (WidgetsApp has no Material page transitions).
+Page<void> _page(GoRouterState state, Widget child) => CustomTransitionPage<void>(
+      key: state.pageKey,
+      name: state.name,
+      arguments: state.extra,
+      child: child,
+      transitionDuration: BhorMotion.slow,
+      reverseTransitionDuration: const Duration(milliseconds: 160),
+      transitionsBuilder: bhorPageTransition,
+    );
+
 GoRouter buildRouter(String initialLocation) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -97,7 +110,7 @@ GoRouter buildRouter(String initialLocation) {
             routes: <RouteBase>[
               GoRoute(
                 path: Routes.today,
-                builder: (BuildContext context, GoRouterState state) => const TodayScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const TodayScreen()),
               ),
             ],
           ),
@@ -106,12 +119,12 @@ GoRouter buildRouter(String initialLocation) {
             routes: <RouteBase>[
               GoRoute(
                 path: Routes.batches,
-                builder: (BuildContext context, GoRouterState state) => const BatchesScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const BatchesScreen()),
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'new',
                     parentNavigatorKey: rootNavigatorKey,
-                    builder: (BuildContext context, GoRouterState state) => const BatchFormScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const BatchFormScreen()),
                   ),
                   GoRoute(
                     path: ':batchId',
@@ -127,29 +140,26 @@ GoRouter buildRouter(String initialLocation) {
                       GoRoute(
                         path: 'edit',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) =>
-                            BatchFormScreen(batchId: _param(state, 'batchId')),
+                        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, BatchFormScreen(batchId: _param(state, 'batchId'))),
                       ),
                       GoRoute(
                         path: 'slots',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) =>
-                            SlotEditorScreen(batchId: _param(state, 'batchId')),
+                        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, SlotEditorScreen(batchId: _param(state, 'batchId'))),
                       ),
                       GoRoute(
                         path: 'rollcall/:date',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) {
+                        pageBuilder: (BuildContext context, GoRouterState state) {
                           final LocalDate? date = LocalDate.tryParse(state.pathParameters['date']);
-                          if (date == null) return const NotFoundScreen();
-                          return BatchRollCallLauncher(batchId: _param(state, 'batchId'), date: date);
+                          if (date == null) return _page(state, const NotFoundScreen());
+                          return _page(state, BatchRollCallLauncher(batchId: _param(state, 'batchId'), date: date));
                         },
                       ),
                       GoRoute(
                         path: 'bulk-add',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) =>
-                            BulkAddScreen(batchId: _param(state, 'batchId')),
+                        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, BulkAddScreen(batchId: _param(state, 'batchId'))),
                       ),
                     ],
                   ),
@@ -162,14 +172,14 @@ GoRouter buildRouter(String initialLocation) {
             routes: <RouteBase>[
               GoRoute(
                 path: Routes.students,
-                builder: (BuildContext context, GoRouterState state) => const StudentsScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const StudentsScreen()),
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'new',
                     parentNavigatorKey: rootNavigatorKey,
-                    builder: (BuildContext context, GoRouterState state) {
+                    pageBuilder: (BuildContext context, GoRouterState state) {
                       final Object? extra = state.extra;
-                      return StudentFormScreen(initialBatchId: extra is String ? extra : null);
+                      return _page(state, StudentFormScreen(initialBatchId: extra is String ? extra : null));
                     },
                   ),
                   GoRoute(
@@ -186,8 +196,7 @@ GoRouter buildRouter(String initialLocation) {
                       GoRoute(
                         path: 'edit',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) =>
-                            StudentFormScreen(studentId: _param(state, 'studentId')),
+                        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, StudentFormScreen(studentId: _param(state, 'studentId'))),
                       ),
                     ],
                   ),
@@ -200,11 +209,11 @@ GoRouter buildRouter(String initialLocation) {
             routes: <RouteBase>[
               GoRoute(
                 path: Routes.fees,
-                builder: (BuildContext context, GoRouterState state) => const FeesScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const FeesScreen()),
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'collection',
-                    builder: (BuildContext context, GoRouterState state) => const CollectionScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const CollectionScreen()),
                   ),
                   GoRoute(
                     path: 's/:studentId',
@@ -226,53 +235,52 @@ GoRouter buildRouter(String initialLocation) {
             routes: <RouteBase>[
               GoRoute(
                 path: Routes.more,
-                builder: (BuildContext context, GoRouterState state) => const MoreScreen(),
+                pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const MoreScreen()),
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'backup',
-                    builder: (BuildContext context, GoRouterState state) => const BackupScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const BackupScreen()),
                     routes: <RouteBase>[
                       GoRoute(
                         path: 'review',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (BuildContext context, GoRouterState state) => const BackupReviewScreen(),
+                        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const BackupReviewScreen()),
                       ),
                     ],
                   ),
                   GoRoute(
                     path: 'archived',
-                    builder: (BuildContext context, GoRouterState state) => const ArchivedBatchesScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const ArchivedBatchesScreen()),
                   ),
                   GoRoute(
                     path: 'left',
-                    builder: (BuildContext context, GoRouterState state) => const LeftStudentsScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const LeftStudentsScreen()),
                   ),
                   GoRoute(
                     path: 'templates/:kind',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        TemplateEditorScreen(kind: _param(state, 'kind')),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, TemplateEditorScreen(kind: _param(state, 'kind'))),
                   ),
                   GoRoute(
                     path: 'payment-methods',
-                    builder: (BuildContext context, GoRouterState state) => const PaymentMethodsScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const PaymentMethodsScreen()),
                   ),
                   GoRoute(
                     path: 'holidays',
-                    builder: (BuildContext context, GoRouterState state) => const HolidayScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const HolidayScreen()),
                   ),
                   GoRoute(
                     path: 'diagnostics',
-                    builder: (BuildContext context, GoRouterState state) => const DiagnosticsScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const DiagnosticsScreen()),
                   ),
                   GoRoute(
                     path: 'help',
-                    builder: (BuildContext context, GoRouterState state) => const HelpScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const HelpScreen()),
                   ),
                   // Lead amendment (ds/bhor-library): hidden design-system gallery.
                   GoRoute(
                     path: 'design-system',
                     parentNavigatorKey: rootNavigatorKey,
-                    builder: (BuildContext context, GoRouterState state) => const DsGalleryScreen(),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const DsGalleryScreen()),
                   ),
                 ],
               ),
@@ -283,22 +291,22 @@ GoRouter buildRouter(String initialLocation) {
       // Full-screen routes: top-level, so they live on the root navigator.
       GoRoute(
         path: '/rollcall/:occ',
-        builder: (BuildContext context, GoRouterState state) => RollCallScreen(
+        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, RollCallScreen(
           occ: _param(state, 'occ'),
           returnTo: state.extra is String ? state.extra! as String : null,
-        ),
+        )),
       ),
       GoRoute(
         path: Routes.search,
-        builder: (BuildContext context, GoRouterState state) => const SearchScreen(),
+        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const SearchScreen()),
       ),
       GoRoute(
         path: Routes.onboarding,
-        builder: (BuildContext context, GoRouterState state) => const OnboardingScreen(),
+        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const OnboardingScreen()),
       ),
       GoRoute(
         path: Routes.reminderPriming,
-        builder: (BuildContext context, GoRouterState state) => const ReminderPrimingScreen(),
+        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const ReminderPrimingScreen()),
       ),
     ],
   );

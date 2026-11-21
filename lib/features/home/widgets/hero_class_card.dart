@@ -44,7 +44,6 @@ class HeroClassCard extends ConsumerWidget {
     final Color heroText = b.colors.onHero;
     final Color heroText2 = heroText.withValues(alpha: 0.8);
 
-    final TextStyle small = b.type.label.copyWith(color: heroText2);
     final TextStyle status = b.type.heading.copyWith(color: heroText);
     final TextStyle title = b.type.display.copyWith(color: heroText);
     final TextStyle line = b.type.body.copyWith(color: heroText2);
@@ -71,10 +70,7 @@ class HeroClassCard extends ConsumerWidget {
           onPressed: () => pushRoute(context, Routes.batchNew),
         ));
       case HeroKind.noClasses:
-        texts
-          ..add(t(fmt.weekdayDate(date), small, maxLines: 1))
-          ..add(const SizedBox(height: BhorSpace.s8))
-          ..add(t(l10n.todayHeroRest, title));
+        texts.add(t(l10n.todayHeroRest, title));
         actions
           ..add(_HeroPill(
             label: l10n.todayAddExtraLong,
@@ -86,8 +82,6 @@ class HeroClassCard extends ConsumerWidget {
           ));
       case HeroKind.allDone:
         texts
-          ..add(t(fmt.weekdayDate(date), small, maxLines: 1))
-          ..add(const SizedBox(height: BhorSpace.s8))
           ..add(Row(
             children: <Widget>[
               Icon(Icons.check_circle, color: heroText, size: 28),
@@ -131,8 +125,6 @@ class HeroClassCard extends ConsumerWidget {
       case HeroKind.current:
       case HeroKind.next:
       case HeroKind.pending:
-        texts.add(t(fmt.weekdayDate(date), small, maxLines: 1));
-        texts.add(const SizedBox(height: BhorSpace.s8));
         texts.add(t(_statusText(l10n, fmt, hero), status, maxLines: 1));
         if (focus != null) {
           texts

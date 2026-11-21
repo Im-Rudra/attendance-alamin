@@ -1,10 +1,12 @@
 // BhorScaffold: page background + faint top-left wash + safe areas, with
 // optional header, sidebar (desktop), bottom nav (phone) and a floating
-// primary action. Replaces Material Scaffold.
+// primary action. Replaces Material Scaffold. BhorActionBar is the sticky
+// save bar pinned under full-screen forms.
 // Usage: `BhorScaffold(header: BhorHeader(title: 'আজ'), body: ..., bottomNav: nav)`.
 
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 
@@ -109,4 +111,106 @@ class _WashPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WashPainter old) => old.color != color;
+}
+
+/// The bar pinned under a full-screen form or the roll call: optional live
+/// summary above the full-width primary button, and the reason under it
+/// while it is disabled. Pass it as `BhorScaffold(bottomNav: ...)` or put it
+/// at the bottom of a Column.
+/// Usage: `BhorActionBar(label: 'সংরক্ষণ', onPressed: save, disabledReason: why, summary: counts)`.
+class BhorActionBar extends StatelessWidget {
+  const BhorActionBar({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.buttonKey,
+    this.disabledReason,
+    this.summary,
+  });
+
+  final String label;
+
+  /// Null disables the button.
+  final VoidCallback? onPressed;
+
+  /// Key of the [BhorButton] itself (tests and automation tap it).
+  final Key? buttonKey;
+
+  /// Shown under a disabled button so the teacher knows what is missing.
+  final String? disabledReason;
+
+  /// Live counts, e.g. "২৮ উপস্থিত, ২ অনুপস্থিত".
+  final String? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: b.colors.surface,
+        border: Border(top: BorderSide(color: b.colors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s12, BhorSpace.s16, BhorSpace.s12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (summary != null) ...<Widget>[
+                Semantics(
+                  liveRegion: true,
+                  child: Text(summary!, textAlign: TextAlign.center, style: b.type.meta),
+                ),
+                const SizedBox(height: BhorSpace.s8),
+              ],
+              BhorButton(
+                key: buttonKey,
+                label: label,
+                expand: true,
+                onPressed: onPressed,
+                disabledReason: disabledReason,
+              ),
+              if (onPressed == null && disabledReason != null) ...<Widget>[
+                const SizedBox(height: BhorSpace.s8),
+                Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The Bhor page transition: a short fade + rise (200 ms in, 160 ms out,
+/// ease-out). Used by [BhorPageRoute] and the app router's pages.
+Widget bhorPageTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child,
+) {
+  final Animation<double> curved =
+      CurvedAnimation(parent: animation, curve: BhorMotion.curve, reverseCurve: Curves.easeInCubic);
+  return FadeTransition(
+    opacity: curved,
+    child: SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(curved),
+      child: child,
+    ),
+  );
+}
+
+/// A full-screen page pushed outside the router (replaces MaterialPageRoute).
+/// Usage: `Navigator.of(context).push(BhorPageRoute<void>(builder: (_) => const X()))`.
+class BhorPageRoute<T> extends PageRouteBuilder<T> {
+  BhorPageRoute({required WidgetBuilder builder, super.settings, super.fullscreenDialog})
+      : super(
+          transitionDuration: BhorMotion.slow,
+          reverseTransitionDuration: const Duration(milliseconds: 160),
+          pageBuilder: (BuildContext context, Animation<double> a, Animation<double> s) => builder(context),
+          transitionsBuilder: bhorPageTransition,
+        );
 }

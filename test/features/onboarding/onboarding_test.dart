@@ -61,7 +61,7 @@ GoRouter makeRouter() {
       GoRoute(path: Routes.onboarding, builder: (_, __) => const OnboardingScreen()),
       GoRoute(
         path: Routes.today,
-        builder: (_, __) => const Scaffold(body: CoachMarkAnchor(child: Text('TODAY-PAGE'))),
+        builder: (_, __) => const BhorScaffold(body: CoachMarkAnchor(child: Text('TODAY-PAGE'))),
       ),
     ],
   );

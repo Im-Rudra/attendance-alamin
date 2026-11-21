@@ -63,7 +63,6 @@ Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) asy
     actionLabel: l10n.commonUndo,
     onAction: () => container.read(otherIncomeRepositoryProvider).softDelete(saved.id),
     duration: const Duration(seconds: 8),
-    bottomOffset: context.bhorIsWide ? 0 : 64,
   );
   if (saved.share) {
     final String text = await _receiptText(context, container, saved.income);
@@ -242,6 +241,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
           const SizedBox(height: BhorSpace.s16),
           BhorTextField(
             key: const ValueKey<String>('income-label'),
+            textCapitalization: TextCapitalization.sentences,
             controller: _label,
             textInputAction: TextInputAction.next,
             label: l10n.extraIncomeLabelField,

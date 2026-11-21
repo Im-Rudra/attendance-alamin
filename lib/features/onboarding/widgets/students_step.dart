@@ -93,6 +93,7 @@ class StudentsStep extends StatelessWidget {
             children: <Widget>[
               BhorTextField(
                 key: const Key('onb-student-name'),
+                textCapitalization: TextCapitalization.words,
                 controller: name,
                 focusNode: nameFocus,
                 autofocus: true,

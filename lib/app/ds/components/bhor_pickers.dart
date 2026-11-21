@@ -366,11 +366,12 @@ class _BhorTimePickerState extends State<BhorTimePicker> {
 
 /// Opens a [BhorTimePicker] in a sheet with a Done button; resolves with
 /// minutes after midnight (null when dismissed).
-/// Usage: `final m = await showBhorTimePicker(context, initial: 960)`.
-Future<int?> showBhorTimePicker(BuildContext context, {int? initial}) {
+/// [title] names the time being picked (default "সময় বেছে নিন").
+/// Usage: `final m = await showBhorTimePicker(context, initial: 960, title: 'শুরু')`.
+Future<int?> showBhorTimePicker(BuildContext context, {int? initial, String? title}) {
   return showBhorSheet<int>(
     context,
-    title: context.l10n.dsPickTime,
+    title: title ?? context.l10n.dsPickTime,
     builder: (BuildContext ctx) => _TimeSheet(initial: initial),
   );
 }

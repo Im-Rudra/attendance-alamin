@@ -3,16 +3,19 @@
 // 1. Initialise the notification gateway; a tap on a reminder while the app
 //    runs (warm) opens that occurrence's roll call.
 // 2. Keep the reminder service alive (it replans on every change).
-// 3. Web: show each due reminder as an in-app banner while the tab is open.
+// 3. Web: show each due reminder as an in-app banner (a top BhorToast that
+//    stays until tapped) while the tab is open.
 // 4. Cold start: return the route of the notification that launched the app.
 // A reminder whose class was cancelled after it fired opens the batch (its
 // schedule tab) with an "এই ক্লাস বাতিল" note instead of the roll call.
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/router.dart';
 import 'package:attendance_alamin/data/notifications/notification_providers.dart';
@@ -27,8 +30,8 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 final reminderNavigatorProvider = Provider<void Function(String location)>(
     (Ref ref) => (String location) => ref.read(routerProvider).go(location));
 
-/// Shows a short note (snackbar) once the app's navigator is up (overridden
-/// in tests).
+/// Shows a short note (a BhorToast) once the app's navigator is up
+/// (overridden in tests).
 final reminderNoteProvider = Provider<void Function(String text)>((Ref ref) => _showNoteWhenReady);
 
 /// Web: turns each due reminder into an in-app banner (kept alive by
@@ -86,23 +89,22 @@ Future<ReminderTapTarget?> _targetOf(ProviderContainer container, String payload
 AppLocalizations _l10n(ProviderContainer container) =>
     lookupAppLocalizations(Locale(container.read(langProvider).code));
 
-/// Runs [show] with the app's ScaffoldMessenger as soon as the router's
-/// navigator is mounted (cold start: after the first frames).
-void _whenMessengerReady(void Function(ScaffoldMessengerState messenger) show, [int attempt = 0]) {
+/// Runs [show] with a context that can hold a BhorToast as soon as the
+/// router's navigator is mounted (cold start: after the first frames).
+void _whenToastReady(void Function(BuildContext context) show, [int attempt = 0]) {
   final BuildContext? context = rootNavigatorKey.currentContext;
-  final ScaffoldMessengerState? messenger = context == null ? null : ScaffoldMessenger.maybeOf(context);
-  if (messenger != null) {
-    show(messenger);
+  if (context != null && context.mounted && BhorToast.canShowIn(context)) {
+    show(context);
     return;
   }
   if (attempt >= 1200) return; // ~20 s of frames: give up quietly
   final WidgetsBinding binding = WidgetsBinding.instance;
-  binding.addPostFrameCallback((Duration _) => _whenMessengerReady(show, attempt + 1));
+  binding.addPostFrameCallback((Duration _) => _whenToastReady(show, attempt + 1));
   binding.scheduleFrame();
 }
 
-void _showNoteWhenReady(String text) => _whenMessengerReady(
-    (ScaffoldMessengerState m) => m.showSnackBar(SnackBar(content: Text(text))));
+void _showNoteWhenReady(String text) =>
+    _whenToastReady((BuildContext context) => BhorToast.show(context, message: text));
 
 void _showBanner(Ref ref, ScheduledNotice notice) {
   final AppLocalizations l10n = lookupAppLocalizations(Locale(ref.read(langProvider).code));
@@ -123,26 +125,19 @@ void _showBanner(Ref ref, ScheduledNotice notice) {
     }
   }
 
-  _whenMessengerReady((ScaffoldMessengerState m) {
-    m.clearMaterialBanners();
-    m.showMaterialBanner(MaterialBanner(
-      leading: const Icon(Icons.notifications_active_outlined),
-      content: Text('${notice.title}\n${notice.body}'),
-      actions: <Widget>[
-        if (notice.payload.isNotEmpty)
-          TextButton(
-            onPressed: () {
-              m.hideCurrentMaterialBanner();
-              unawaited(open());
-            },
-            child: Text(notice.actionLabel),
-          ),
-        TextButton(
-          onPressed: m.hideCurrentMaterialBanner,
-          child: Text(l10n.remindBannerDismiss),
-        ),
+  _whenToastReady((BuildContext context) {
+    BhorToast.show(
+      context,
+      message: '${notice.title}\n${notice.body}',
+      icon: Icons.notifications_active_outlined,
+      tone: BhorTone.accent,
+      top: true,
+      // Like the old banner: stays until the teacher opens or dismisses it.
+      duration: null,
+      actions: <BhorToastAction>[
+        if (notice.payload.isNotEmpty) BhorToastAction(label: notice.actionLabel, onPressed: () => unawaited(open())),
+        BhorToastAction(label: l10n.remindBannerDismiss, onPressed: () {}),
       ],
-    ));
+    );
   });
 }
-

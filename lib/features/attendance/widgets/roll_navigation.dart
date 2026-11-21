@@ -2,10 +2,10 @@
 // on the root navigator) and, where no router exists (widget tests), through a
 // plain page route.
 
-import 'package:flutter/material.dart' show MaterialPageRoute;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/attendance/ui/batch_roll_call_launcher.dart';
@@ -19,7 +19,7 @@ Future<void> pushRollCallOcc(BuildContext context, String occ) async {
     return;
   }
   await Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute<void>(builder: (BuildContext _) => RollCallScreen(occ: occ)),
+    BhorPageRoute<void>(builder: (BuildContext _) => RollCallScreen(occ: occ)),
   );
 }
 
@@ -31,7 +31,7 @@ Future<void> pushRollCallBatchDate(BuildContext context, String batchId, LocalDa
     return;
   }
   await Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute<void>(
+    BhorPageRoute<void>(
       builder: (BuildContext _) => BatchRollCallLauncher(batchId: batchId, date: date),
     ),
   );

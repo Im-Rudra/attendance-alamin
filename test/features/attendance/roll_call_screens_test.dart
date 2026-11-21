@@ -21,7 +21,6 @@ import 'package:attendance_alamin/features/attendance/controllers/roll_models.da
 import 'package:attendance_alamin/features/attendance/ui/batch_roll_call_launcher.dart';
 import 'package:attendance_alamin/features/attendance/ui/roll_call_screen.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
-import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/attendance/widgets/session_chooser_sheet.dart';
@@ -193,8 +192,8 @@ void main() {
     final GoRouter router = GoRouter(
       initialLocation: '/rollcall',
       routes: <RouteBase>[
-        GoRoute(path: '/today', builder: (_, __) => const Scaffold(body: Text('TODAY-PAGE'))),
-        GoRoute(path: '/students', builder: (_, __) => const Scaffold(body: Text('STUDENTS-PAGE'))),
+        GoRoute(path: '/today', builder: (_, __) => const BhorScaffold(body: Text('TODAY-PAGE'))),
+        GoRoute(path: '/students', builder: (_, __) => const BhorScaffold(body: Text('STUDENTS-PAGE'))),
         GoRoute(path: '/rollcall', builder: (_, __) => RollCallScreen(occ: occ, returnTo: '/today')),
       ],
     );
@@ -208,9 +207,9 @@ void main() {
   });
 
   testWidgets('while loading the roll call shows a roster skeleton, not a spinner', (WidgetTester tester) async {
-    await pumpApp(tester, const Scaffold(body: RollSkeleton()));
+    await pumpApp(tester, const BhorScaffold(body: RollSkeleton()));
     expect(find.byKey(const Key('roll-skeleton')), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(BhorSpinner), findsNothing);
   });
 
   testWidgets('dark mode: an absent row is the slate slab with white text', (WidgetTester tester) async {
@@ -218,7 +217,7 @@ void main() {
       tester,
       BhorTheme(
         data: BhorThemeData.dark(),
-        child: const Scaffold(
+        child: const BhorScaffold(
           body: RollRow(name: 'রহিম উদ্দিন', roll: 1, status: AttendanceStatus.absent),
         ),
       ),
@@ -288,9 +287,9 @@ void main() {
       tester,
       Builder(
         builder: (BuildContext context) => Center(
-          child: ElevatedButton(
+          child: BhorButton(
+            label: 'go',
             onPressed: () => openRollCallForBatchDate(context, batchId: kBatPhysA, date: kToday),
-            child: const Text('go'),
           ),
         ),
       ),
@@ -394,7 +393,7 @@ void main() {
     ]);
     await open(tester, const BatchRollCallLauncher(batchId: kBatPhysA, date: _friday), f);
 
-    expect(find.byType(RollClashCard), findsOneWidget);
+    expect(find.byType(BhorClashCard), findsOneWidget);
     expect(find.text('Fix the time clash first'), findsOneWidget);
     final BhorButton save = tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save attendance (3)'));
     expect(save.onPressed, isNull);

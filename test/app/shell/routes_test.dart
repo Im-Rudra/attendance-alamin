@@ -78,11 +78,8 @@ final Map<String, Type> _routes = <String, Type>{
   '/no/such/page': NotFoundScreen,
 };
 
-/// A page frame: the Material one (not yet migrated) or the Bhor one.
-Finder _anyScaffold() => find.byWidgetPredicate(
-      (Widget w) => w is Scaffold || w is BhorScaffold,
-      description: 'Scaffold or BhorScaffold',
-    );
+/// A page frame: every screen (and the shell) is a BhorScaffold now.
+Finder _anyScaffold() => find.byType(BhorScaffold);
 
 void main() {
   group('every route renders', () {
