@@ -467,8 +467,6 @@ void main() {
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 23))));
       await tester.pumpAndSettle();
       await tester.tap(find.text('24'));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       for (var i = 0; i < 22; i++) {
         await tester.tap(_byLabel('15 min earlier'));
@@ -571,9 +569,7 @@ void main() {
       const String held = "Attendance for this class is already taken \u2014 it can't move to a future date";
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 18))));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey<String>('dp-day-22')));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('22'));
       await tester.pumpAndSettle();
       expect(find.text(held), findsOneWidget);
       expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save')).onPressed, isNull);

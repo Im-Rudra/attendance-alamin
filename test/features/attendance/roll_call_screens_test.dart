@@ -345,7 +345,7 @@ void main() {
     await tester.pump(const Duration(seconds: 9));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '6:00–7:00 PM'));
+    await tester.tap(find.widgetWithText(BhorChip, '6:00–7:00 PM'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
