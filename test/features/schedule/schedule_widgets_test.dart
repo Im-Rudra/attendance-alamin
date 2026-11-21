@@ -303,6 +303,25 @@ void main() {
       expect(result, 19 * 60 + 30);
     });
 
+    testWidgets('desktop: typed "10:00" after a PM time is 10 AM and says so (QA-07)',
+        (WidgetTester tester) async {
+      Object? result;
+      await pumpApp(
+        tester,
+        _Launcher(
+          (BuildContext c) => showTimePickerSheet(c, initialMin: 16 * 60),
+          (Object? v) => result = v,
+        ),
+        viewport: TestViewport.desktop,
+      );
+      await _tapText(tester, 'open');
+      await tester.enterText(find.byType(TextField), '10:00');
+      await tester.pump();
+      expect(find.text('বুঝেছি: সকাল ১০:০০'), findsOneWidget);
+      await _tapText(tester, 'ঠিক আছে');
+      expect(result, 10 * 60);
+    });
+
     testScreenMatrix(
       'time picker open',
       () => _Launcher(

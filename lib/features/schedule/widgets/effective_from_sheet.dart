@@ -43,7 +43,7 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
 
   Future<void> _pick() async {
     final LocalDate t = widget.today;
-    final DateTime? d = await showDatePicker(
+    final DateTime? d = await showAppDatePicker(
       context: context,
       initialDate: DateTime(_date.year, _date.month, _date.day),
       firstDate: DateTime(t.year, t.month, t.day),

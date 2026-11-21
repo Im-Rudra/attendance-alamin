@@ -62,7 +62,7 @@
       }
     }
   },
-  "shellTextCopied": "লেখাটি কপি হয়েছে — যেকোনো অ্যাপে পেস্ট করুন",
+  "shellTextCopied": "লেখা কপি হয়েছে — যেকোনো জায়গায় পেস্ট করুন",
   "@shellTextCopied": {
     "description": "Snackbar after a message was copied for sharing."
   },

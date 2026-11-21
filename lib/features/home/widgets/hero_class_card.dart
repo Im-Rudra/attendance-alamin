@@ -257,14 +257,37 @@ class _HeroShell extends StatelessWidget {
                   ],
                 ],
               );
+        // A short tile (about 1000x640) must not clip the title or the time:
+        // the content scales down just enough to fit (QA-10).
+        final double innerWidth = c.hasBoundedWidth ? c.maxWidth - 40 : 0;
+        if (innerWidth <= 0) {
+          return HeroCard(
+            child: SizedBox(
+              height: inner,
+              width: double.infinity,
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: inner),
+                  child: body,
+                ),
+              ),
+            ),
+          );
+        }
         return HeroCard(
           child: SizedBox(
             height: inner,
             width: double.infinity,
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.topStart,
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: inner),
+                constraints: BoxConstraints(
+                  minWidth: innerWidth,
+                  maxWidth: innerWidth,
+                  minHeight: inner,
+                ),
                 child: body,
               ),
             ),

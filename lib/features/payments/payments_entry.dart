@@ -29,6 +29,10 @@ class CollectPaymentPanel extends StatelessWidget {
 Future<void> shareReceipt(BuildContext context, {required String receiptId}) =>
     shareReceiptNow(context, receiptId: receiptId);
 
+/// Opens one receipt (with edit / delete), as the student's Payment history does.
+Future<void> showReceipt(BuildContext context, {required String receiptId}) =>
+    showReceiptSheet(context, receiptId: receiptId);
+
 /// Waive one month's fee; true when waived.
 Future<bool> showWaiveDialog(BuildContext context, {required String enrollmentId, required YearMonth month}) =>
     runWaiveDialog(context, enrollmentId: enrollmentId, month: month);

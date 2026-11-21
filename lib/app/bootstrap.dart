@@ -9,7 +9,7 @@
 //  6. run the app; on web, run the one-time raster check (UX 4 rule 5).
 
 import 'dart:async';
-import 'dart:ui' show FrameTiming, TimingsCallback;
+import 'dart:ui' show FrameTiming, PlatformDispatcher, TimingsCallback;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -30,8 +30,14 @@ import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 /// How long the first database query may take before we call it a failure.
 const Duration kDatabaseOpenTimeout = Duration(seconds: 30);
 
+/// The route the page was opened at (web deep link or reload), read before the
+/// loading frame can rewrite the browser URL to "/" (QA-11). Kept across
+/// retries.
+String? _entryRoute;
+
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) _entryRoute ??= PlatformDispatcher.instance.defaultRouteName;
   runApp(const StartupApp.loading());
   final ProviderContainer? container = await _start();
   if (container == null) return;
@@ -61,7 +67,6 @@ Future<ProviderContainer?> _start() async {
       ],
     );
     prefs = await loadAppPrefs(c.read(settingsRepositoryProvider), c.read(localMetaRepositoryProvider));
-    if (!prefs.onboardingDone) location = Routes.onboarding;
 
     // Reminders never block the start: a failure only means no launch route.
     String? launch;
@@ -70,7 +75,11 @@ Future<ProviderContainer?> _start() async {
     } catch (_) {
       launch = null;
     }
-    if (launch != null) location = launch;
+    location = pickInitialLocation(
+      entryRoute: _entryRoute ?? '/',
+      onboardingDone: prefs.onboardingDone,
+      launchRoute: launch,
+    );
     return c;
   } catch (error) {
     container?.dispose();

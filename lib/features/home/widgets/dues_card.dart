@@ -98,7 +98,7 @@ class _DuesBody extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: Text(
+                child: MoneyText(
                   fmt.money(report.totalOutstandingActive),
                   maxLines: 1,
                   style: context.statNumber,
@@ -122,7 +122,8 @@ class _DuesBody extends StatelessWidget {
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints c) => EscalationBar(
                   todayDay: escalationDayOf(today),
-                  overdueCount: c.maxWidth >= 280 ? report.overdueStudents : 0,
+                  // The legend below already counts the overdue students (QA-18).
+                  overdueCount: 0,
                 ),
               ),
               if (legend.isNotEmpty) ...<Widget>[

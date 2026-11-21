@@ -91,11 +91,16 @@ class _ListScaffold extends StatelessWidget {
           ),
           floatingActionButton: table
               ? null
-              : FloatingActionButton.extended(
-                  key: const ValueKey<String>('stu-fab-new'),
-                  onPressed: () => stuPush(context, Routes.studentNew),
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: Text(l10n.stuNewStudent),
+              : Padding(
+                  // Lift the FAB above the floating nav pill on phones (QA-03).
+                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
+                  child: FloatingActionButton.extended(
+                    key: const ValueKey<String>('stu-fab-new'),
+                    heroTag: null,
+                    onPressed: () => stuPush(context, Routes.studentNew),
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: Text(l10n.stuNewStudent),
+                  ),
                 ),
           body: SafeArea(
             top: false,

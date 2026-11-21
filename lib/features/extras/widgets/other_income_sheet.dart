@@ -12,6 +12,9 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/widgets/app_date_picker.dart';
+import 'package:attendance_alamin/core/errors/app_exception.dart';
+import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
@@ -22,6 +25,7 @@ import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/other_income_text.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
+import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// What the sheet returns when it saved.
 class SavedOtherIncome {
@@ -132,6 +136,19 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     }
   }
 
+  /// Inline message when the typed amount is above the maximum (QA-13).
+  String? _amountError(AppLocalizations l10n) {
+    if (_amount.text.trim().isEmpty) return null;
+    try {
+      Validators.amount(_amount.text);
+    } on ValidationException catch (e) {
+      if (e.code == ErrorCodes.amountTooLarge) return errorText(l10n, e);
+    } on Object {
+      return null;
+    }
+    return null;
+  }
+
   bool get _labelOk => _label.text.trim().isNotEmpty;
   bool get _canSave => !_busy && _labelOk && _amountValue != null;
 
@@ -140,7 +157,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,
@@ -263,7 +280,12 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             controller: _amount,
             keyboardType: TextInputType.number,
             inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯,]'))],
-            decoration: InputDecoration(labelText: l10n.payAmountLabel, prefixText: '৳ '),
+            decoration: InputDecoration(
+              labelText: l10n.payAmountLabel,
+              prefixText: '৳ ',
+              errorText: _amountError(l10n),
+              errorMaxLines: 2,
+            ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),

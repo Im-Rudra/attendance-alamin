@@ -185,6 +185,7 @@ class _ProfileBody extends ConsumerWidget {
           key: ValueKey<String>('enr-${e.id}'),
           student: student,
           enrollment: e,
+          showCollect: enrollments.length > 1,
         ),
       if (enrollments.isEmpty)
         GlassCard(
@@ -399,7 +400,7 @@ class _DuesTotalCard extends StatelessWidget {
         children: <Widget>[
           Text(l10n.stuTotalOutstanding,
               style: tt.labelLarge?.copyWith(color: tokens.textSecondary)),
-          Text(context.fmt.money(dues.totalOutstanding),
+          MoneyText(context.fmt.money(dues.totalOutstanding),
               style: tt.titleLarge?.copyWith(color: tokens.textPrimary)),
           StudentDuesBadge(dues: dues, compact: false),
         ],

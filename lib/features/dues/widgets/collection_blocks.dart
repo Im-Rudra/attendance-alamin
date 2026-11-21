@@ -397,7 +397,12 @@ class _ReceiptRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: divider ? Border(top: BorderSide(color: tokens.hairline)) : null,
       ),
-      child: ConstrainedBox(
+      // Tapping the row opens the receipt (edit / delete), like the student
+      // profile's Payment history (QA-14).
+      child: InkWell(
+        key: ValueKey<String>('coll-receipt-open-${line.receiptId}'),
+        onTap: () => showReceipt(context, receiptId: line.receiptId),
+        child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
         child: Padding(
           padding: const EdgeInsets.only(left: 16, top: 6, bottom: 6),
@@ -441,6 +446,7 @@ class _ReceiptRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

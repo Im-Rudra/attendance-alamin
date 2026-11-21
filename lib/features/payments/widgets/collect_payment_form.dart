@@ -10,6 +10,7 @@ import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/widgets/app_date_picker.dart';
 import 'package:attendance_alamin/app/widgets/initials_avatar.dart';
 import 'package:attendance_alamin/app/widgets/sticky_action_bar.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -106,7 +107,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,

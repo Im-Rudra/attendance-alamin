@@ -198,7 +198,7 @@ class DateField extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        final DateTime? d = await showDatePicker(
+        final DateTime? d = await showAppDatePicker(
           context: context,
           initialDate: DateTime(value.year, value.month, value.day),
           firstDate: DateTime(firstDate.year, firstDate.month, firstDate.day),

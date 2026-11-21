@@ -279,7 +279,7 @@ void main() {
       expect(t, contains('শিক্ষার্থী: রহিম উদ্দিন (১২)'));
       expect(t, contains('মাস: সেপ্টেম্বর, অক্টোবর, নভেম্বর (আংশিক)'));
       expect(t, contains('জমা: ৳২,৫০০ (ক্যাশ), তারিখ ২১ নভেম্বর ২০২৬'));
-      expect(t, contains('বাকি: ৳৫০০'));
+      expect(t, contains('বাকি: ৳ ৫০০'));
       expect(RegExp(r'[0-9]').hasMatch(t), isFalse);
     });
 
@@ -288,7 +288,7 @@ void main() {
       expect(t, contains('Receipt — আপনার কোচিং'));
       expect(t, contains('Months: September, October, November (partial)'));
       expect(t, contains('Paid: ৳2,500 (Cash), date 21 Nov 2026'));
-      expect(t, contains('Remaining: ৳500'));
+      expect(t, contains('Remaining: ৳ 500'));
       expect(RegExp(r'[০-৯]').hasMatch(t), isFalse);
     });
 
@@ -330,7 +330,7 @@ void main() {
         methodLabel: 'Cash',
         paidOn: kToday,
       );
-      expect(t, 'রহিম উদ্দিন: 2,500 / September, October, November (partial) / Remaining: ৳500');
+      expect(t, 'রহিম উদ্দিন: 2,500 / September, October, November (partial) / Remaining: ৳ 500');
     });
   });
 

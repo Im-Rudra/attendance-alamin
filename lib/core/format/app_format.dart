@@ -63,10 +63,15 @@ class AppFormat {
     return parts.join(',');
   }
 
-  /// ৳১,৫০০ / ৳1,500 (negative: -৳১০০).
+  /// The taka sign and the thin space (U+2009) that follows it: in Hind
+  /// Siliguri the sign is easily mistaken for the digit ৬ when it touches it.
+  static const String takaSign = '৳';
+  static const String takaGap = '\u2009';
+
+  /// ৳ ১,৫০০ / ৳ 1,500 (negative: -৳ ১০০), thin space after the sign.
   String money(int taka) {
-    if (taka < 0) return '-৳${number(-taka)}';
-    return '৳${number(taka)}';
+    if (taka < 0) return '-$takaSign$takaGap${number(-taka)}';
+    return '$takaSign$takaGap${number(taka)}';
   }
 
   /// ৮৫% / 85%.

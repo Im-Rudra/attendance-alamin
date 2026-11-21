@@ -30,10 +30,19 @@ import 'package:attendance_alamin/features/students/widgets/student_fields.dart'
 enum _CardAction { startMonth, remove }
 
 class EnrollmentCard extends ConsumerWidget {
-  const EnrollmentCard({super.key, required this.student, required this.enrollment});
+  const EnrollmentCard({
+    super.key,
+    required this.student,
+    required this.enrollment,
+    this.showCollect = true,
+  });
 
   final Student student;
   final Enrollment enrollment;
+
+  /// False when the profile already offers one student-level "Collect fee"
+  /// (single enrollment), so the button is not shown twice (QA-18).
+  final bool showCollect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,7 +173,7 @@ class EnrollmentCard extends ConsumerWidget {
           const SizedBox(height: 8),
           EnrollmentAttendanceSummary(
               studentId: student.id, batchId: enrollment.batchId),
-          if (!ended || (dues?.totalOutstanding ?? 0) > 0) ...<Widget>[
+          if (showCollect && (!ended || (dues?.totalOutstanding ?? 0) > 0)) ...<Widget>[
             const SizedBox(height: 8),
             Align(
               alignment: AlignmentDirectional.centerEnd,

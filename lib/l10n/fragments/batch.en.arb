@@ -103,5 +103,6 @@
   "batchContextNoAttendance": "No attendance taken yet",
   "batchContextNoDues": "No dues",
   "batchContextStudentsOne": "{count}",
-  "batchBulkAdd": "Add many at once"
+  "batchBulkAdd": "Add many at once",
+  "batchOverviewByStudents": "Students per batch"
 }

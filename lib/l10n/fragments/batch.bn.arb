@@ -565,5 +565,9 @@
   "batchBulkAdd": "একসাথে অনেক যোগ করুন",
   "@batchBulkAdd": {
     "description": "Batch detail action: open the bulk add students screen."
+  },
+  "batchOverviewByStudents": "ব্যাচ অনুযায়ী শিক্ষার্থী",
+  "@batchOverviewByStudents": {
+    "description": "Overview card title: students per batch."
   }
 }

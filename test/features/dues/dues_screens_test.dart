@@ -186,8 +186,8 @@ void main() {
       final double sara = tester.getTopLeft(_row(kStuSara)).dy;
       expect(nila, lessThan(rahim));
       expect(rahim, lessThan(sara));
-      expect(find.text('৳১,০০০'), findsWidgets);
-      expect(find.text('৳৮০০'), findsWidgets);
+      expect(find.text('৳ ১,০০০'), findsWidgets);
+      expect(find.text('৳ ৮০০'), findsWidgets);
     });
 
     testWidgets('this-month filter drops Sara (her open month is October)', (WidgetTester tester) async {
@@ -368,8 +368,8 @@ void main() {
       await _tall(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.text(l10n.collBillingBlock('নভেম্বর ২০২৬')), findsOneWidget);
-      expect(find.text('৳৪,৬০০'), findsOneWidget, reason: 'expected');
-      expect(find.text('৳৩,৬০০'), findsOneWidget, reason: 'outstanding');
+      expect(find.text('৳ ৪,৬০০'), findsOneWidget, reason: 'expected');
+      expect(find.text('৳ ৩,৬০০'), findsOneWidget, reason: 'outstanding');
       expect(find.text(l10n.collByBatch), findsOneWidget);
       expect(find.text(l10n.collCashBlock('নভেম্বর ২০২৬')), findsOneWidget);
       // One receipt in November: Sara paid ৳1,000 by bKash on 2 November.
@@ -377,12 +377,24 @@ void main() {
       expect(find.byKey(const ValueKey<String>('coll-other-income')), findsNothing);
     });
 
+    testWidgets('tapping a payment row opens its receipt with edit and delete (QA-14)',
+        (WidgetTester tester) async {
+      await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
+      await _tall(tester);
+      await tester.tap(find.byKey(const ValueKey<String>('coll-receipt-open-rcp-4')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const ValueKey<String>('pay-receipt-text')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('pay-receipt-edit')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('pay-receipt-delete')), findsOneWidget);
+    });
+
     testWidgets('the other-income line appears only when there is some', (WidgetTester tester) async {
       await pumpApp(tester, const CollectionScreen(), overrides: _withOtherIncome().overrides);
       await _tall(tester);
       expect(find.byKey(const ValueKey<String>('coll-other-income')), findsOneWidget);
-      expect(find.text('৳৫০০'), findsOneWidget);
-      expect(find.text('৳১,৫০০'), findsOneWidget, reason: 'fees 1000 + other income 500');
+      expect(find.text('৳ ৫০০'), findsOneWidget);
+      expect(find.text('৳ ১,৫০০'), findsOneWidget, reason: 'fees 1000 + other income 500');
     });
 
     testWidgets('stepping back shows October; the next arrow is off on the current month',
@@ -397,7 +409,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text(l10n.collBillingBlock('অক্টোবর ২০২৬')), findsOneWidget);
-      expect(find.text('৳২,৮০০'), findsOneWidget, reason: 'October expected');
+      expect(find.text('৳ ২,৮০০'), findsOneWidget, reason: 'October expected');
       expect(next().onPressed, isNotNull);
     });
 

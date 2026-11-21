@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/glass_card.dart';
+import 'package:attendance_alamin/app/widgets/money_text.dart';
 
 class StatTile extends StatelessWidget {
   const StatTile({
@@ -46,7 +47,7 @@ class StatTile extends StatelessWidget {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: AlignmentDirectional.centerStart,
-                  child: Text(value, maxLines: 1, style: context.statNumber),
+                  child: MoneyText(value, maxLines: 1, style: context.statNumber),
                 ),
                 if (cap != null)
                   Text(cap, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
