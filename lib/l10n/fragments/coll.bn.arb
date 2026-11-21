@@ -155,5 +155,9 @@
   "collExportCsv": "CSV ফাইল নামান",
   "@collExportCsv": {
     "description": "Collection screen action: export this month's data as CSV."
+  },
+  "collOtherIncomeMenu": "অন্যান্য আয় (ভর্তি/পরীক্ষা ফি)",
+  "@collOtherIncomeMenu": {
+    "description": "Overflow menu item that opens the other-income sheet; clearly not a fee payment."
   }
 }

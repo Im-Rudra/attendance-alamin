@@ -13,6 +13,7 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/app_date_picker.dart';
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -47,6 +48,8 @@ Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) asy
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // Above the floating nav pill, never behind it (C15).
+    useRootNavigator: true,
     showDragHandle: true,
     constraints: const BoxConstraints(maxWidth: 560),
     builder: (BuildContext ctx) => Padding(
@@ -233,7 +236,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewPaddingOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,12 +282,13 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             key: const ValueKey<String>('income-amount'),
             controller: _amount,
             keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯,]'))],
+            inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
             decoration: InputDecoration(
               labelText: l10n.payAmountLabel,
               prefixText: '৳ ',
               errorText: _amountError(l10n),
               errorMaxLines: 2,
+              helperText: _amountValue == null ? null : fmt.money(_amountValue!),
             ),
             onChanged: (_) => setState(() {}),
           ),

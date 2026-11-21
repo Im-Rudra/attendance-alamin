@@ -44,16 +44,24 @@ class CollectionScreen extends ConsumerWidget {
         title: Semantics(header: true, child: Text(l10n.collTitle)),
         actions: <Widget>[
           IconButton(
-            key: const Key('coll-add-other-income'),
-            tooltip: l10n.collAddOtherIncome,
-            icon: const Icon(Icons.add_card_outlined),
-            onPressed: () => showOtherIncomeSheet(context),
-          ),
-          IconButton(
             key: const Key('coll-export-csv'),
             tooltip: l10n.collExportCsv,
             icon: const Icon(Icons.table_view_outlined),
             onPressed: () => runCsvExport(context, month: month),
+          ),
+          PopupMenuButton<String>(
+            key: const Key('coll-menu'),
+            tooltip: l10n.payMenuTooltip,
+            onSelected: (String v) {
+              if (v == 'other-income') showOtherIncomeSheet(context);
+            },
+            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                key: const Key('coll-add-other-income'),
+                value: 'other-income',
+                child: Text(l10n.collOtherIncomeMenu),
+              ),
+            ],
           ),
         ],
       ),

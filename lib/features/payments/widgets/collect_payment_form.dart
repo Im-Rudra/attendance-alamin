@@ -154,11 +154,22 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     if (!duesAsync.hasValue) return const _Loading();
     if (dues == null) return _Message(text: l10n.payNoEnrollment);
 
-    final CollectPlan plan = buildPlan(dues: dues, today: today, amount: input.amount, split: input.split);
+    final CollectPlan plan = buildPlan(
+      dues: dues,
+      today: today,
+      amount: input.amount,
+      split: input.split,
+      start: input.startMonth,
+    );
     final bool manual = input.split != null;
     final List<PaymentMethod> visible = ref.watch(paymentMethodsConfigProvider).visible;
     final PaymentMethod method = input.method ?? defaultMethod(visible);
     final LocalDate paidOn = input.paidOn ?? today;
+    final Set<YearMonth> selectedMonths = plan.months.isNotEmpty
+        ? plan.months.toSet()
+        : <YearMonth>{
+            if (plan.openMonths.isNotEmpty) input.startMonth ?? plan.openMonths.first.month,
+          };
     final int shownAmount = manual ? plan.total : (input.amount ?? plan.prefill);
     _showAmount(fmt, shownAmount);
 
@@ -253,12 +264,34 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       ],
       const SizedBox(height: 16),
       _Label(l10n.payMonthsLabel),
+      if (!editing && plan.openMonths.isNotEmpty) ...<Widget>[
+        Wrap(
+          key: const ValueKey<String>('pay-month-chips'),
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            for (final MonthDue md in plan.openMonths.take(6))
+              _Pill(
+                key: ValueKey<String>('pay-month-${md.month.toInt()}'),
+                label: _chipLabel(l10n, fmt, md, today),
+                selected: selectedMonths.contains(md.month),
+                onTap: () => notifier.pickMonth(md.month),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+      ],
       Semantics(
         liveRegion: true,
         child: Text(
           plan.months.isEmpty
               ? l10n.payMonthsNone
-              : fmt.monthList(plan.months, currentYear: today.year, partial: plan.partialMonths.toSet()),
+              : (plan.pureAdvance
+                  ? l10n.payMonthAdvance(possessive(
+                      monthsSpan(fmt, plan.months, currentYear: today.year),
+                      bangla: fmt.lang == Lang.bn,
+                    ))
+                  : fmt.monthList(plan.months, currentYear: today.year, partial: plan.partialMonths.toSet())),
           key: const ValueKey<String>('pay-months'),
           style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
@@ -276,7 +309,10 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         onChanged: (String t) => notifier.setAmount(parseDigits(t).toString()),
         decoration: InputDecoration(
           prefixText: '৳ ',
-          helperText: manual ? l10n.payAmountFromSplit : null,
+          // The amount in the app language (grouped), so a typo is obvious.
+          helperText: manual
+              ? l10n.payAmountFromSplit
+              : (shownAmount > 0 && plan.problem == PlanProblem.none ? fmt.money(shownAmount) : null),
           errorText: problemMessage,
           errorMaxLines: 3,
         ),
@@ -405,6 +441,13 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         );
       },
     );
+  }
+
+  String _chipLabel(AppLocalizations l10n, AppFormat fmt, MonthDue md, LocalDate today) {
+    final String name = fmt.monthList(<YearMonth>[md.month], currentYear: today.year);
+    if (!md.isDue) return l10n.payChipAdvance(name);
+    if (md.paid > 0) return l10n.payChipPartial(name);
+    return name;
   }
 
   String _subtitle(EnrollmentTerms t) {

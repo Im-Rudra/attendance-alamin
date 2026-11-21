@@ -66,5 +66,8 @@
   "payDeleteTitle": "Delete this payment ({amount}, {months})?",
   "payDeleteBody": "The month will show as due again.",
   "payA11yMethod": "Method: {method}",
-  "payA11yReceipt": "Receipt, {months}, {amount}"
+  "payA11yReceipt": "Receipt, {months}, {amount}",
+  "payMonthAdvance": "{months} in advance",
+  "payChipAdvance": "{month} · advance",
+  "payChipPartial": "{month} · partial"
 }

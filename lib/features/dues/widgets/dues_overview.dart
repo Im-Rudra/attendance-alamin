@@ -21,6 +21,7 @@ import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_empty.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 
 /// Glass card: total due, headline, escalation bar, level legend.
@@ -47,7 +48,7 @@ class DuesSummaryCard extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                l10n.duesAllPaid,
+                duesEmptyMessage(context, ref.watch(billingStatusProvider).value),
                 style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
               ),
             ),

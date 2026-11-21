@@ -249,5 +249,45 @@
   "duesReminderFailed": "বার্তা তৈরি করা যায়নি",
   "@duesReminderFailed": {
     "description": "Snackbar when the reminder text could not be built."
+  },
+  "duesNotStarted": "এখনো কারও বেতন শুরু হয়নি — {month} থেকে শুরু হবে",
+  "@duesNotStarted": {
+    "description": "Empty state when students are enrolled but billing has not started. month is a month name with year.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "ডিসেম্বর ২০২৬"
+      }
+    }
+  },
+  "duesNoneYet": "কোনো বকেয়া নেই",
+  "@duesNoneYet": {
+    "description": "Zero-dues state when nobody owes anything and nothing was billed this month."
+  },
+  "duesSeeStudents": "শিক্ষার্থীদের দেখুন",
+  "@duesSeeStudents": {
+    "description": "Link from the empty dues state to the students list."
+  },
+  "duesPickerTitle": "কার টাকা নিচ্ছেন?",
+  "@duesPickerTitle": {
+    "description": "Title of the student picker opened by the Take money button on the Fees tab."
+  },
+  "duesPickerSearch": "নাম, রোল বা ফোন নম্বর লিখুন",
+  "@duesPickerSearch": {
+    "description": "Search hint of the student picker."
+  },
+  "duesPickerNone": "কাউকে পাওয়া যায়নি",
+  "@duesPickerNone": {
+    "description": "Student picker when the search matches nobody."
+  },
+  "duesPickerOwes": "{amount} বাকি",
+  "@duesPickerOwes": {
+    "description": "Amount a student owes, shown in the picker. amount is formatted money.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳৮০০"
+      }
+    }
   }
 }

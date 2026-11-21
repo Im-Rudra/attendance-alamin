@@ -223,8 +223,27 @@ void main() {
 
       // November is settled: the next month opens as an advance.
       await _open(tester);
-      expect(_monthsText(tester), 'ডিসেম্বর');
+      expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
       expect(_label(tester), 'ডিসেম্বরের ৳ ১,০০০ অগ্রিম জমা করুন');
+    });
+
+    testWidgets('the month chips are visible up front; one tap picks another month',
+        (WidgetTester tester) async {
+      await _openCollect(tester);
+      // No need to open "split by month": the months being paid are chips.
+      expect(_key('pay-month-chips'), findsOneWidget);
+      expect(_key('pay-month-202611'), findsOneWidget);
+      expect(_key('pay-month-202612'), findsOneWidget);
+      expect(find.text('ডিসেম্বর · অগ্রিম'), findsOneWidget);
+      // Typed Bangla digits are previewed in the app language under the field.
+      expect(find.text('৳ ১,০০০'), findsOneWidget);
+      await tester.tap(_key('pay-month-202612'));
+      await tester.pump();
+      expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
+      expect(_label(tester), 'ডিসেম্বরের ৳ ১,০০০ অগ্রিম জমা করুন');
+      await tester.tap(_key('pay-month-202611'));
+      await tester.pump();
+      expect(_monthsText(tester), 'নভেম্বর');
     });
 
     testWidgets('scenario 5: 2,500 over three unpaid months', (WidgetTester tester) async {
@@ -580,7 +599,7 @@ void main() {
       expect(waived.billingMonth, _nov);
       expect(waived.enrollmentId, kEnrRahimPhys);
       expect(waived.note, 'গরিব');
-      expect(_monthsText(tester), 'ডিসেম্বর');
+      expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
     });
 
     testWidgets('a waived month is listed and the waiver can be removed', (WidgetTester tester) async {
