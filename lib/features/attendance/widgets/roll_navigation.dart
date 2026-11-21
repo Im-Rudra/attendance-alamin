@@ -2,7 +2,8 @@
 // on the root navigator) and, where no router exists (widget tests), through a
 // plain page route.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show MaterialPageRoute;
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/routes.dart';

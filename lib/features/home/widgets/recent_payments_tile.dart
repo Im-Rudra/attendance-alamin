@@ -1,11 +1,11 @@
 // Recent payments (UX 3b): the last five receipts with a receipt-share button.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
@@ -20,8 +20,7 @@ class RecentPaymentsTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<RecentReceipt>? receipts = ref.watch(todayRecentReceiptsProvider).value;
     final List<Student> students = ref.watch(todayStudentsProvider).value ?? const <Student>[];
 
@@ -50,11 +49,11 @@ class RecentPaymentsTile extends ConsumerWidget {
           for (final RecentReceipt r in receipts)
             Padding(
               key: ValueKey<String>('today-receipt-${r.receiptId}'),
-              padding: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
               child: Row(
                 children: <Widget>[
-                  InitialsAvatar(name: names[r.studentId] ?? '', size: 36),
-                  const SizedBox(width: 12),
+                  BhorAvatar(name: names[r.studentId] ?? '', size: 36),
+                  const SizedBox(width: BhorSpace.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,23 +62,20 @@ class RecentPaymentsTile extends ConsumerWidget {
                           names[r.studentId] ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.titleSmall?.copyWith(
-                            color: tokens.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: b.type.heading,
                         ),
                         Text(
                           l10n.todayRecentLine(fmt.money(r.total), fmt.dateShort(r.paidOn)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                          style: b.type.meta,
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: l10n.todayRecentShare,
-                    icon: const Icon(Icons.share_outlined),
+                  BhorIconButton(
+                    semanticLabel: l10n.todayRecentShare,
+                    icon: Icons.share_outlined,
                     onPressed: () => shareReceipt(context, receiptId: r.receiptId),
                   ),
                 ],

@@ -2,11 +2,12 @@
 // make a new one. It turns info-coloured once the nudge is due. Wide windows
 // always show it; phones show it only when the nudge is due.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/features/backup/backup_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
@@ -27,8 +28,7 @@ class BackupNudgeTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final BackupStatus? s = ref.watch(todayBackupProvider).value;
 
     final Widget header = TileHeader(
@@ -42,8 +42,8 @@ class BackupNudgeTile extends ConsumerWidget {
     }
     if (onlyWhenDue && !s.due) return const SizedBox.shrink();
 
-    final Color chipBg = s.due ? tokens.infoContainer : tokens.track;
-    final Color chipFg = s.due ? tokens.info : tokens.textPrimary;
+    final Color chipBg = s.due ? b.colors.accentTint : b.colors.surface2;
+    final Color chipFg = s.due ? b.colors.accent : b.colors.text;
 
     final Widget tile = TileFrame(
       header: header,
@@ -57,51 +57,45 @@ class BackupNudgeTile extends ConsumerWidget {
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: chipBg,
-                  borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
+                  borderRadius: BorderRadius.circular(BhorRadius.control),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Icon(s.due ? Icons.info_outline : Icons.verified_outlined,
                           size: 20, color: chipFg),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: BhorSpace.s8),
                       Flexible(
                         child: Text(
                           _statusText(l10n, fmt, s),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.labelLarge?.copyWith(color: chipFg),
+                          style: b.type.label.copyWith(color: chipFg),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: BhorSpace.s8),
               Text(
                 s.due ? l10n.todayBackupDueHint : l10n.todayBackupOkHint,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.meta,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: BhorSpace.s12),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: s.due
-                ? FilledButton(
-                    style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-                    onPressed: () => runExportBackup(context),
-                    child: Text(l10n.todayBackupButton),
-                  )
-                : FilledButton.tonal(
-                    style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-                    onPressed: () => runExportBackup(context),
-                    child: Text(l10n.todayBackupButton),
-                  ),
+            child: BhorButton(
+              label: l10n.todayBackupButton,
+              variant: s.due ? BhorButtonVariant.primary : BhorButtonVariant.secondary,
+              onPressed: () => runExportBackup(context),
+            ),
           ),
         ],
       ),

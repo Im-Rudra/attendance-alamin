@@ -2,15 +2,16 @@
 // 10-segment escalation bar with today ringed, a level legend, and a tap that
 // opens Fees. With nobody owing it turns into the green "everyone paid" card.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
@@ -59,8 +60,7 @@ class _DuesBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     final List<Widget> legend = <Widget>[
       for (final DueLevel level in _legendOrder)
@@ -68,11 +68,15 @@ class _DuesBody extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              SeverityBadge(level: level, compact: true),
-              const SizedBox(width: 4),
+              BhorTag.severity(
+                level: level.severityLevel,
+                label: level.label(l10n),
+                icon: level.icon,
+              ),
+              const SizedBox(width: BhorSpace.s4),
               Text(
                 fmt.number(report.countByLevel[level] ?? 0),
-                style: tt.labelLarge?.copyWith(color: tokens.textPrimary),
+                style: b.type.label,
               ),
             ],
           ),
@@ -83,9 +87,9 @@ class _DuesBody extends StatelessWidget {
       header: TileHeader(
         icon: Icons.account_balance_wallet_outlined,
         title: l10n.todayDuesTitle,
-        trailing: Tooltip(
+        trailing: BhorTooltip(
           message: l10n.todayDuesOpen,
-          child: Icon(Icons.chevron_right, color: tokens.textSecondary),
+          child: Icon(Icons.chevron_right, color: b.colors.text2),
         ),
       ),
       child: Column(
@@ -98,11 +102,7 @@ class _DuesBody extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: MoneyText(
-                  fmt.money(report.totalOutstandingActive),
-                  maxLines: 1,
-                  style: context.statNumber,
-                ),
+                child: BhorMoney(report.totalOutstandingActive, style: b.type.display),
               ),
               Text(
                 l10n.todayDuesHeadline(
@@ -111,31 +111,26 @@ class _DuesBody extends StatelessWidget {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(color: tokens.textPrimary),
+                style: b.type.heading,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: BhorSpace.s12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints c) => EscalationBar(
-                  todayDay: escalationDayOf(today),
-                  // The legend below already counts the overdue students (QA-18).
-                  overdueCount: 0,
-                ),
-              ),
+              // The legend below already counts the overdue students (QA-18).
+              BhorEscalationBar(day: escalationDayOf(today) ?? 0),
               if (legend.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 8),
+                const SizedBox(height: BhorSpace.s8),
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: tokens.surfaceDense,
-                    borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
+                    color: b.colors.surface2,
+                    borderRadius: BorderRadius.circular(BhorRadius.control),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    child: Wrap(spacing: 12, runSpacing: 6, children: legend),
+                    padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
+                    child: Wrap(spacing: BhorSpace.s12, runSpacing: BhorSpace.s8, children: legend),
                   ),
                 ),
               ],
@@ -155,9 +150,7 @@ class _AllPaid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final sev = context.severity;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final int collected = ref.watch(todayCollectionProvider).value?.collected ?? 0;
     final BillingStatus? status = ref.watch(billingStatusProvider).value;
     final bool notStarted = status != null && status.notStarted;
@@ -168,20 +161,20 @@ class _AllPaid extends ConsumerWidget {
       header: TileHeader(
         icon: Icons.account_balance_wallet_outlined,
         title: l10n.todayDuesTitle,
-        trailing: Icon(Icons.chevron_right, color: tokens.textSecondary),
+        trailing: Icon(Icons.chevron_right, color: b.colors.text2),
       ),
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             DecoratedBox(
-              decoration: BoxDecoration(color: sev.paidFill, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: b.colors.okBg, shape: BoxShape.circle),
               child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Icon(notStarted ? Icons.schedule : Icons.check, size: 32, color: sev.paidText),
+                padding: const EdgeInsets.all(BhorSpace.s12),
+                child: Icon(notStarted ? Icons.schedule : Icons.check, size: 32, color: b.colors.ok),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: BhorSpace.s16),
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,15 +186,12 @@ class _AllPaid extends ConsumerWidget {
                     notStarted
                         ? l10n.duesNotStarted(fmt.monthYear(status.firstUpcoming!))
                         : (allPaid ? l10n.todayDuesAllPaid : l10n.todayDuesNone),
-                    style: tt.titleMedium?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: b.type.heading,
                   ),
                   if (allPaid && collected > 0)
                     Text(
                       l10n.todayDuesAllPaidSub(fmt.money(collected)),
-                      style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                      style: b.type.meta,
                     ),
                 ],
               ),

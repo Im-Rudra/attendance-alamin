@@ -2,15 +2,15 @@
 // held sessions of a batch, each with a call / copy-number button and a dismiss
 // that lasts until their next absence (`absence_dismissed:<enrollmentId>`).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/attendance_providers.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
@@ -36,8 +36,7 @@ class AbsenceAlertsTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<AbsenceAlert>? alerts = ref.watch(absenceAlertsProvider).value;
 
     final Widget header = TileHeader(
@@ -70,10 +69,10 @@ class AbsenceAlertsTile extends ConsumerWidget {
             _AlertRow(key: ValueKey<String>('today-alert-${a.enrollmentId}'), alert: a),
           if (more > 0)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: BhorSpace.s4),
               child: Text(
                 l10n.todayAlertsMore(context.fmt.number(more)),
-                style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.label.copyWith(color: b.colors.text2),
               ),
             ),
         ],
@@ -91,7 +90,6 @@ class _AlertRow extends ConsumerWidget {
   final AbsenceAlert alert;
 
   Future<void> _dismiss(BuildContext context, WidgetRef ref) async {
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     final l10n = context.l10n;
     try {
       await ref.read(localMetaRepositoryProvider).setRaw(
@@ -99,22 +97,22 @@ class _AlertRow extends ConsumerWidget {
             alert.lastSessionId,
           );
     } on Object catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      if (!context.mounted) return;
+      BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String? phone = alert.student.callNumber;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
       child: Row(
         children: <Widget>[
-          InitialsAvatar(name: alert.student.name, size: 40),
-          const SizedBox(width: 12),
+          BhorAvatar(name: alert.student.name, size: 40),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,29 +121,26 @@ class _AlertRow extends ConsumerWidget {
                   l10n.todayAlertLine(alert.student.name),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: tt.titleSmall?.copyWith(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: b.type.heading,
                 ),
                 Text(
                   alert.batch.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                  style: b.type.meta,
                 ),
               ],
             ),
           ),
           if (phone != null)
-            IconButton(
-              tooltip: ContactActions.label(l10n),
-              icon: Icon(ContactActions.icon),
+            BhorIconButton(
+              semanticLabel: ContactActions.label(l10n),
+              icon: ContactActions.icon,
               onPressed: () => ContactActions.callOrCopy(context, phone),
             ),
-          IconButton(
-            tooltip: l10n.todayAlertDismiss,
-            icon: const Icon(Icons.close),
+          BhorIconButton(
+            semanticLabel: l10n.todayAlertDismiss,
+            icon: Icons.close,
             onPressed: () => _dismiss(context, ref),
           ),
         ],

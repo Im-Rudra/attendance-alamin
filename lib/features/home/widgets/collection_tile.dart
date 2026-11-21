@@ -2,13 +2,13 @@
 // share of the month's fees it covers on a progress track, and the split by
 // payment method. Tap opens the monthly collection summary.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/money_text.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
@@ -23,14 +23,13 @@ class CollectionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final MonthCollection? c = ref.watch(todayCollectionProvider).value;
 
     final Widget header = TileHeader(
       icon: Icons.savings_outlined,
       title: l10n.todayCollectionTitle,
-      trailing: Icon(Icons.chevron_right, color: tokens.textSecondary),
+      trailing: Icon(Icons.chevron_right, color: b.colors.text2),
     );
     if (c == null) {
       return TileFrame(header: header, child: const SizedBox(height: 96));
@@ -54,7 +53,7 @@ class CollectionTile extends ConsumerWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: MoneyText(fmt.money(c.collected), maxLines: 1, style: context.statNumber),
+                child: BhorMoney(c.collected, style: b.type.display),
               ),
               Text(
                 c.expected > 0
@@ -62,43 +61,28 @@ class CollectionTile extends ConsumerWidget {
                     : l10n.todayCollectionNone,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.meta,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: BhorSpace.s12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               if (c.expected > 0)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: c.fraction,
-                    minHeight: 10,
-                    backgroundColor: tokens.track,
-                    color: tokens.accent,
-                    semanticsLabel: l10n.todayCollectionProgress(fmt.percent(percent ?? 0)),
-                  ),
+                BhorProgress(
+                  value: c.fraction,
+                  height: 10,
+                  semanticLabel: l10n.todayCollectionProgress(fmt.percent(percent ?? 0)),
                 ),
               if (roomy && c.byMethod.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 10),
+                const SizedBox(height: BhorSpace.s12),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
+                  spacing: BhorSpace.s8,
+                  runSpacing: BhorSpace.s8,
                   children: <Widget>[
                     for (final MethodAmount m in c.byMethod.take(3))
-                      DecoratedBox(
-                        decoration: ShapeDecoration(color: tokens.track, shape: const StadiumBorder()),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          child: Text(
-                            '${paymentMethodLabel(l10n, m.method)} ${fmt.money(m.amount)}',
-                            maxLines: 1,
-                            style: tt.labelMedium?.copyWith(color: tokens.textPrimary),
-                          ),
-                        ),
-                      ),
+                      BhorTag(label: '${paymentMethodLabel(l10n, m.method)} ${fmt.money(m.amount)}'),
                   ],
                 ),
               ],

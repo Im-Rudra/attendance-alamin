@@ -3,15 +3,15 @@
 // their counts; tapping a class reopens its roll call. Shrink-wrapped: it
 // scrolls by itself only when its parent gives it a bounded height.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/async_combine.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
@@ -102,13 +102,13 @@ class BatchAttendanceTab extends ConsumerWidget {
     final Batch? batch = ref.watch(rollBatchProvider(batchId)).value;
 
     if (data.hasError) {
-      return EmptyState(icon: Icons.error_outline, message: errorText(l10n, data.error!), fill: false);
+      return BhorEmptyState(icon: Icons.error_outline, title: errorText(l10n, data.error!));
     }
     final value = data.value;
     if (value == null) {
       return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.all(BhorSpace.s24),
+        child: Center(child: BhorSpinner(size: 28)),
       );
     }
     final List<SessionSummary> sessions = <SessionSummary>[...value.sessions]..sort(
@@ -123,9 +123,11 @@ class BatchAttendanceTab extends ConsumerWidget {
       records: value.records,
       enrollments: value.enrollments,
     );
+    final int weekStart = ref.watch(weekStartProvider).value ?? DateTime.saturday;
     final Widget content = _TabContent(
       batchId: batchId,
       today: today,
+      weekStart: weekStart,
       archived: batch?.archived ?? false,
       sessions: sessions,
       stats: stats,
@@ -134,7 +136,7 @@ class BatchAttendanceTab extends ConsumerWidget {
       builder: (BuildContext context, BoxConstraints c) {
         if (!c.hasBoundedHeight) return content;
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s8, BhorSpace.s16, BhorSpace.s24),
           child: content,
         );
       },
@@ -146,6 +148,7 @@ class _TabContent extends StatefulWidget {
   const _TabContent({
     required this.batchId,
     required this.today,
+    required this.weekStart,
     required this.archived,
     required this.sessions,
     required this.stats,
@@ -153,6 +156,7 @@ class _TabContent extends StatefulWidget {
 
   final String batchId;
   final LocalDate today;
+  final int weekStart;
   final bool archived;
   final List<SessionSummary> sessions;
   final ({int? percent, int held}) stats;
@@ -167,11 +171,13 @@ class _TabContentState extends State<_TabContent> {
 
   Future<void> _pickDate() async {
     final LocalDate today = widget.today;
-    final DateTime? picked = await showAppDatePicker(
-      context: context,
+    final DateTime? picked = await showBhorDatePicker(
+      context,
       initialDate: DateTime(today.year, today.month, today.day),
       firstDate: DateTime(today.year - 2, today.month, today.day),
       lastDate: DateTime(today.year, today.month, today.day),
+      weekStart: widget.weekStart,
+      today: DateTime(today.year, today.month, today.day),
     );
     if (picked == null || !mounted) return;
     await pushRollCallBatchDate(
@@ -182,8 +188,7 @@ class _TabContentState extends State<_TabContent> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final int? percent = widget.stats.percent;
     final List<SessionSummary> shown =
         _all ? widget.sessions : widget.sessions.take(_preview).toList();
@@ -195,72 +200,69 @@ class _TabContentState extends State<_TabContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: StatTile(
-                label: l10n.rollTabMonthAvg,
-                value: percent == null ? '—' : fmt.percent(percent),
+              child: BhorCard(
+                child: BhorStatText(
+                  label: l10n.rollTabMonthAvg,
+                  value: percent == null ? '—' : fmt.percent(percent),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: BhorSpace.s8),
             Expanded(
-              child: StatTile(
-                label: l10n.rollTabMonthHeld,
-                value: fmt.number(widget.stats.held),
+              child: BhorCard(
+                child: BhorStatText(
+                  label: l10n.rollTabMonthHeld,
+                  value: fmt.number(widget.stats.held),
+                ),
               ),
             ),
           ],
         ),
         if (!widget.archived) ...<Widget>[
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s8,
             children: <Widget>[
-              FilledButton.icon(
+              BhorButton(
+                label: l10n.rollTabTake,
+                icon: Icons.how_to_reg_outlined,
                 onPressed: () => pushRollCallBatchDate(context, widget.batchId, widget.today),
-                icon: const Icon(Icons.how_to_reg_outlined),
-                label: Text(l10n.rollTabTake),
-                style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
               ),
-              OutlinedButton.icon(
+              BhorButton(
+                label: l10n.rollTabOtherDate,
+                icon: Icons.event,
+                variant: BhorButtonVariant.secondary,
                 onPressed: _pickDate,
-                icon: const Icon(Icons.event),
-                label: Text(l10n.rollTabOtherDate),
-                style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
               ),
             ],
           ),
         ],
-        const SizedBox(height: 8),
-        SectionHeader(title: l10n.rollTabRecent),
+        const SizedBox(height: BhorSpace.s8),
+        BhorSectionHeader(title: l10n.rollTabRecent),
         if (widget.sessions.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              l10n.rollTabEmpty,
-              style: tt.bodyLarge?.copyWith(color: tokens.textSecondary),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: BhorSpace.s16),
+            child: Text(l10n.rollTabEmpty, style: b.type.body.copyWith(color: b.colors.text2)),
           )
         else
-          GlassCard(
-            dense: true,
+          BhorCard(
             padding: EdgeInsets.zero,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                for (var i = 0; i < shown.length; i++) ...<Widget>[
-                  if (i > 0) Divider(height: 1, color: tokens.hairline),
-                  _SessionRow(summary: shown[i]),
-                ],
+                for (var i = 0; i < shown.length; i++)
+                  _SessionRow(summary: shown[i], divider: i < shown.length - 1),
               ],
             ),
           ),
         if (widget.sessions.length > _preview)
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
+            child: BhorButton(
+              label: _all ? l10n.rollTabShowLess : l10n.rollTabShowAll,
+              variant: BhorButtonVariant.ghost,
               onPressed: () => setState(() => _all = !_all),
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: Text(_all ? l10n.rollTabShowLess : l10n.rollTabShowAll),
             ),
           ),
       ],
@@ -269,65 +271,42 @@ class _TabContentState extends State<_TabContent> {
 }
 
 class _SessionRow extends StatelessWidget {
-  const _SessionRow({required this.summary});
+  const _SessionRow({required this.summary, required this.divider});
 
   final SessionSummary summary;
+  final bool divider;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final AttendanceSession s = summary.session;
     final AttendanceTally t = summary.tally;
     final int? percent = t.percent;
     final String line = l10n.rollTabSessionLine(fmt.number(t.present + t.late), fmt.number(t.held));
     final String dateText = fmt.weekdayDate(s.date);
     final String timeText = fmt.timeRange(s.startMin, s.endMin);
-    return Semantics(
-      container: true,
-      button: true,
-      label: '$dateText, $timeText, $line',
-      excludeSemantics: true,
+    return BhorListRow(
+      title: dateText,
+      subtitle: timeText,
+      divider: divider,
+      semanticLabel: '$dateText, $timeText, $line',
       onTap: () => pushRollCallOcc(context, s.occ),
-      child: InkWell(
-        onTap: () => pushRollCallOcc(context, s.occ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 64),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(dateText, style: tt.titleSmall?.copyWith(color: tokens.textPrimary)),
-                      Text(timeText, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(line, style: tt.bodyMedium?.copyWith(color: tokens.textPrimary)),
-                    if (percent != null)
-                      Text(
-                        l10n.rollTabPercent(fmt.percent(percent)),
-                        style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                      ),
-                  ],
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, color: tokens.textSecondary),
-              ],
-            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(line, style: b.type.body),
+              if (percent != null) Text(l10n.rollTabPercent(fmt.percent(percent)), style: b.type.meta),
+            ],
           ),
-        ),
+          const SizedBox(width: BhorSpace.s4),
+          Icon(Icons.chevron_right, color: b.colors.text2),
+        ],
       ),
     );
   }

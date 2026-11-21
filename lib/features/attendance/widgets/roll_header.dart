@@ -2,11 +2,12 @@
 // arrows and session chips, the coloured notes (past day, cancelled class,
 // extra class...), the ad-hoc time card and the desktop summary pane.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_call_controller.dart';
@@ -41,8 +42,7 @@ class RollDateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String dateText = fmt.weekdayDate(date);
     final String timeText = fmt.timeRange(startMin, endMin);
     return Column(
@@ -51,9 +51,9 @@ class RollDateHeader extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            IconButton(
-              tooltip: l10n.rollPrevDay,
-              icon: const Icon(Icons.chevron_left),
+            BhorIconButton(
+              semanticLabel: l10n.rollPrevDay,
+              icon: Icons.chevron_left,
               onPressed: onPrev,
             ),
             Expanded(
@@ -67,36 +67,36 @@ class RollDateHeader extends StatelessWidget {
                     Text(
                       dateText,
                       textAlign: TextAlign.center,
-                      style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+                      style: b.type.heading,
                     ),
                     Text(
                       timeText,
                       textAlign: TextAlign.center,
-                      style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                      style: b.type.meta,
                     ),
                   ],
                 ),
               ),
             ),
-            IconButton(
-              tooltip: l10n.rollNextDay,
-              icon: const Icon(Icons.chevron_right),
+            BhorIconButton(
+              semanticLabel: l10n.rollNextDay,
+              icon: Icons.chevron_right,
               onPressed: canGoNext ? onNext : null,
             ),
           ],
         ),
         if (choices.length > 1) ...<Widget>[
-          const SizedBox(height: 4),
+          const SizedBox(height: BhorSpace.s4),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s4,
             children: <Widget>[
               for (final SessionChoice c in choices)
-                ChoiceChip(
+                BhorChip(
+                  label: fmt.timeRange(c.startMin, c.endMin),
                   selected: c.occ == selectedOcc,
-                  avatar: c.taken ? const Icon(Icons.check, size: 18) : null,
-                  label: Text(fmt.timeRange(c.startMin, c.endMin)),
+                  icon: c.taken ? Icons.check : null,
                   onSelected: (bool _) => onPick(c.occ),
                 ),
             ],
@@ -109,8 +109,8 @@ class RollDateHeader extends StatelessWidget {
 
 enum RollBannerTone { info, warning }
 
-/// A one-sentence note with an icon (info = accent-free container, warning =
-/// the error container).
+/// A one-sentence note with an icon (info = accent tint, warning = the danger
+/// tint).
 class RollBanner extends StatelessWidget {
   const RollBanner({super.key, required this.icon, required this.text, this.tone = RollBannerTone.info});
 
@@ -120,28 +120,27 @@ class RollBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final bool warn = tone == RollBannerTone.warning;
-    final Color bg = warn ? tokens.errorContainer : tokens.infoContainer;
-    final Color fg = warn ? tokens.onErrorContainer : tokens.textPrimary;
+    final Color bg = warn ? b.colors.dangerBg : b.colors.accentTint;
+    final Color fg = warn ? b.colors.danger : b.colors.text;
     return Semantics(
       container: true,
       liveRegion: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: warn ? Border.all(color: tokens.errorContainerBorder) : null,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: warn ? b.colors.danger.withValues(alpha: 0.35) : b.colors.accentLine),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(icon, color: warn ? fg : tokens.info, size: 22),
-              const SizedBox(width: 8),
-              Expanded(child: Text(text, style: tt.bodyMedium?.copyWith(color: fg))),
+              Icon(icon, color: warn ? fg : b.colors.accent, size: 22),
+              const SizedBox(width: BhorSpace.s8),
+              Expanded(child: Text(text, style: b.type.body.copyWith(color: fg))),
             ],
           ),
         ),
@@ -180,7 +179,7 @@ class AdHocTimeCard extends StatelessWidget {
             onTap: enabled ? onStart : null,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: BhorSpace.s8),
         Expanded(
           child: _TimeTile(
             label: l10n.rollAdHocEnd,
@@ -202,42 +201,38 @@ class _TimeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return Semantics(
       button: onTap != null,
       label: context.l10n.a11yLabelValue(label, value),
       excludeSemantics: true,
       onTap: onTap,
-      child: Material(
-        color: tokens.surfaceDense,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-          side: BorderSide(color: tokens.hairline),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(label, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
-                        Text(value, style: tt.bodyLarge?.copyWith(color: tokens.textPrimary)),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.schedule, color: tokens.textSecondary),
-                ],
+      child: BhorPressable(
+        onTap: onTap,
+        radius: BhorRadius.control,
+        builder: (BuildContext context, BhorStates s) => Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
+          decoration: BoxDecoration(
+            color: s.hovered ? c.surface2 : c.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: Border.all(color: s.hovered ? c.accentLine : c.line),
+          ),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(label, style: b.type.meta),
+                    Text(value, style: BhorType.tabular(b.type.bodyStrong)),
+                  ],
+                ),
               ),
-            ),
+              Icon(Icons.schedule, color: c.text2),
+            ],
           ),
         ),
       ),
@@ -261,10 +256,10 @@ class RollSummaryPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    Widget tile(AttendanceStatus s, int n) =>
-        StatTile(label: s.label(l10n), value: fmt.number(n));
+    final BhorThemeData b = context.bhor;
+    Widget tile(AttendanceStatus s, int n) => BhorCard(
+          child: BhorStatText(label: s.label(l10n), value: fmt.number(n)),
+        );
     final List<String> legend = <String>[
       l10n.rollKeyMove,
       l10n.rollKeyToggle,
@@ -274,60 +269,96 @@ class RollSummaryPane extends StatelessWidget {
       l10n.rollKeyDay,
     ];
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(BhorSpace.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           state,
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(child: tile(AttendanceStatus.present, counts.present)),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(child: tile(AttendanceStatus.absent, counts.absent)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(child: tile(AttendanceStatus.late, counts.late)),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(child: tile(AttendanceStatus.leave, counts.leave)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           if (note != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(l10n.rollNoteLabel(note!), style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+              padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+              child: Text(l10n.rollNoteLabel(note!), style: b.type.meta),
             ),
           if (onNote != null)
-            OutlinedButton.icon(
+            BhorButton(
+              label: l10n.rollMenuNote,
+              icon: Icons.edit_note,
+              variant: BhorButtonVariant.secondary,
+              expand: true,
               onPressed: onNote,
-              icon: const Icon(Icons.edit_note),
-              label: Text(l10n.rollMenuNote),
-              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
             ),
-          const SizedBox(height: 8),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            title: Text(l10n.rollShortcutsTitle, style: tt.titleSmall?.copyWith(color: tokens.textPrimary)),
-            children: <Widget>[
-              for (final String line in legend)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(line, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
-                  ),
-                ),
-            ],
-          ),
+          const SizedBox(height: BhorSpace.s8),
+          _ShortcutLegend(title: l10n.rollShortcutsTitle, lines: legend),
         ],
       ),
+    );
+  }
+}
+
+/// A collapsible list of the desktop shortcuts (closed by default).
+class _ShortcutLegend extends StatefulWidget {
+  const _ShortcutLegend({required this.title, required this.lines});
+
+  final String title;
+  final List<String> lines;
+
+  @override
+  State<_ShortcutLegend> createState() => _ShortcutLegendState();
+}
+
+class _ShortcutLegendState extends State<_ShortcutLegend> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorPressable(
+          onTap: () => setState(() => _open = !_open),
+          semanticLabel: widget.title,
+          semanticHint: null,
+          radius: BhorRadius.control,
+          builder: (BuildContext context, BhorStates s) => Container(
+            constraints: const BoxConstraints(minHeight: BhorSize.minTap),
+            child: Row(
+              children: <Widget>[
+                Expanded(child: Text(widget.title, style: b.type.heading)),
+                Icon(_open ? Icons.expand_less : Icons.expand_more, color: b.colors.text2),
+              ],
+            ),
+          ),
+        ),
+        if (_open)
+          for (final String line in widget.lines)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+                child: Text(line, style: b.type.meta),
+              ),
+            ),
+      ],
     );
   }
 }

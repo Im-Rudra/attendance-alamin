@@ -1,7 +1,7 @@
 // Moves one class to another date / time ("শুধু এই তারিখ"; weekly changes live
 // in the batch schedule).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/features/classes/widgets/one_off_form.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
