@@ -1,12 +1,16 @@
-// BhorSelect: a dropdown field whose menu is a custom popup route on the
-// root Overlay (no Material DropdownButton / PopupMenu).
+// BhorSelect (docs/council/13-fluid-ui-spec.md, Select): field-styled (soft
+// fill, floating label), the chevron rotates 180° with the spring. On wide
+// windows the menu drops from the field as a surface popover (scale .96 -> 1,
+// y -4 -> 0, fade, 200 ms) with a check on the chosen item; on phones the
+// options open as a bottom-sheet list instead. No Material DropdownButton.
 // Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`.
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/components/bhor_overlays.dart';
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
@@ -59,23 +63,41 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
   }
 
   Future<void> _openMenu() async {
-    final RenderBox? box = _boxKey.currentContext?.findRenderObject() as RenderBox?;
-    final NavigatorState nav = Navigator.of(context, rootNavigator: true);
-    final RenderBox? navBox = nav.context.findRenderObject() as RenderBox?;
-    if (box == null || navBox == null) return;
-    final Rect anchor = box.localToGlobal(Offset.zero, ancestor: navBox) & box.size;
     setState(() => _open = true);
-    final _Pick<T>? picked = await nav.push(_BhorMenuRoute<T>(
-      anchor: anchor,
-      options: widget.options,
-      selected: widget.value,
-      theme: context.bhor,
-      barrierLabel: widget.label ?? widget.semanticLabel ?? '',
-    ));
+    final _Pick<T>? picked = context.bhorIsWide ? await _popover() : await _sheet();
     if (!mounted) return;
     setState(() => _open = false);
     if (picked != null && picked.value != widget.value) widget.onChanged?.call(picked.value);
   }
+
+  Future<_Pick<T>?> _popover() async {
+    final RenderBox? box = _boxKey.currentContext?.findRenderObject() as RenderBox?;
+    final NavigatorState nav = Navigator.of(context, rootNavigator: true);
+    final RenderBox? navBox = nav.context.findRenderObject() as RenderBox?;
+    if (box == null || navBox == null) return null;
+    final Rect anchor = box.localToGlobal(Offset.zero, ancestor: navBox) & box.size;
+    return nav.push(_BhorMenuRoute<T>(
+      anchor: anchor,
+      options: widget.options,
+      selected: widget.value,
+      theme: context.bhor,
+      reduced: BhorMotion.reduced(context),
+      barrierLabel: widget.label ?? widget.semanticLabel ?? '',
+    ));
+  }
+
+  Future<_Pick<T>?> _sheet() => showBhorSheet<_Pick<T>>(
+        context,
+        title: widget.label ?? widget.semanticLabel,
+        builder: (BuildContext ctx) => SingleChildScrollView(
+          child: _OptionList<T>(
+            options: widget.options,
+            selected: widget.value,
+            rowHeight: BhorSize.field - 4,
+            onPick: (T v) => Navigator.of(ctx).pop(_Pick<T>(v)),
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -85,65 +107,81 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
     final bool hasError = widget.error != null && widget.error!.isNotEmpty;
     final BhorOption<T>? current = _current;
     final String shown = current?.label ?? widget.hint ?? '';
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+    final bool hasLabel = widget.label != null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (widget.label != null) ...<Widget>[
-          ExcludeSemantics(child: Text(widget.label!, style: b.type.label.copyWith(color: c.text2))),
-          const SizedBox(height: 6),
-        ],
         BhorPressable(
           onTap: enabled ? _openMenu : null,
           semanticLabel: '${widget.label ?? widget.semanticLabel ?? ''}${current == null ? '' : ', ${current.label}'}',
           excludeChildSemantics: true,
           scaleOnPress: false,
-          builder: (BuildContext context, BhorStates s) => AnimatedContainer(
-            key: _boxKey,
-            duration: BhorMotion.fast,
-            constraints: const BoxConstraints(minHeight: BhorSize.control),
-            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: 8),
-            decoration: BoxDecoration(
-              color: enabled ? c.surface : c.surface2,
-              borderRadius: BorderRadius.circular(BhorRadius.control),
-              border: Border.all(
-                color: hasError
-                    ? c.danger
-                    : _open
-                        ? c.accent
-                        : s.hovered
-                            ? c.accentLine
-                            : c.line,
-                width: _open || hasError ? 1.5 : 1,
+          radius: BhorRadius.control,
+          builder: (BuildContext context, BhorStates s) => BhorFocusRing(
+            visible: _open,
+            radius: BhorRadius.control,
+            child: AnimatedContainer(
+              key: _boxKey,
+              duration: fast,
+              curve: BhorMotion.ease,
+              constraints: BoxConstraints(minHeight: hasLabel ? BhorSize.field : BhorSize.control),
+              padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 6, BhorSpace.s12, 6),
+              decoration: BoxDecoration(
+                color: !enabled ? c.soft : (_open ? c.surface : (s.hovered || s.pressed ? c.soft2 : c.soft)),
+                borderRadius: BorderRadius.circular(BhorRadius.control),
+                border: Border.all(color: hasError ? c.danger : c.danger.withValues(alpha: 0), width: 1.5),
               ),
-            ),
-            child: Row(
-              children: <Widget>[
-                if (current?.icon != null) ...<Widget>[
-                  Icon(current!.icon, size: 18, color: c.text2),
-                  const SizedBox(width: BhorSpace.s8),
-                ],
-                Expanded(
-                  child: Text(
-                    shown,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: b.type.body.copyWith(color: current == null || !enabled ? c.text3 : c.text),
+              child: Row(
+                children: <Widget>[
+                  if (current?.icon != null) ...<Widget>[
+                    Icon(current!.icon, size: BhorIconSize.chip, color: c.text2),
+                    const SizedBox(width: BhorSpace.s8),
+                  ],
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (hasLabel)
+                          Text(
+                            widget.label!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: b.type.label.copyWith(
+                              fontSize: 12,
+                              color: hasError ? c.danger : (_open ? c.accent : c.text2),
+                            ),
+                          ),
+                        Text(
+                          shown,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: b.type.body.copyWith(
+                            fontSize: 15,
+                            color: current == null || !enabled ? c.text3 : c.text,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                AnimatedRotation(
-                  turns: _open ? 0.5 : 0,
-                  duration: BhorMotion.base,
-                  child: Icon(Icons.expand_more_rounded, size: 20, color: c.text2),
-                ),
-              ],
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: BhorMotion.of(context, BhorMotion.glide),
+                    curve: BhorMotion.curveOf(context, BhorMotion.spring),
+                    child: Icon(BhorIcons.chevronDown, size: BhorIconSize.row, color: c.text2),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        if (hasError) ...<Widget>[
-          const SizedBox(height: 6),
-          Text(widget.error!, style: b.type.meta.copyWith(color: c.danger)),
-        ],
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(widget.error!, style: b.type.meta.copyWith(color: c.danger)),
+          ),
       ],
     );
   }
@@ -156,12 +194,74 @@ class _Pick<T> {
   final T value;
 }
 
+/// The option rows shared by the popover and the phone sheet.
+class _OptionList<T> extends StatelessWidget {
+  const _OptionList({required this.options, required this.selected, required this.onPick, this.rowHeight = BhorSize.control});
+
+  final List<BhorOption<T>> options;
+  final T? selected;
+  final ValueChanged<T> onPick;
+  final double rowHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final BhorOption<T> o in options)
+          BhorPressable(
+            autofocus: o.value == selected,
+            onTap: o.enabled ? () => onPick(o.value) : null,
+            selected: o.value == selected,
+            semanticLabel: o.label,
+            excludeChildSemantics: true,
+            scaleOnPress: false,
+            radius: 10,
+            builder: (BuildContext context, BhorStates s) {
+              final bool sel = o.value == selected;
+              return AnimatedContainer(
+                duration: BhorMotion.of(context, BhorMotion.instant),
+                constraints: BoxConstraints(minHeight: rowHeight),
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+                decoration: BoxDecoration(
+                  color: s.hovered || s.pressed ? c.soft : c.soft.withValues(alpha: 0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    if (o.icon != null) ...<Widget>[
+                      Icon(o.icon, size: BhorIconSize.chip, color: sel ? c.accent : c.text2),
+                      const SizedBox(width: BhorSpace.s8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        o.label,
+                        style: (sel ? b.type.bodyStrong : b.type.body)
+                            .copyWith(color: !o.enabled ? c.text3 : (sel ? c.accent : c.text)),
+                      ),
+                    ),
+                    if (sel) Icon(BhorIcons.check, size: BhorIconSize.chip, color: c.accent),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
 class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   _BhorMenuRoute({
     required this.anchor,
     required this.options,
     required this.selected,
     required this.theme,
+    required this.reduced,
     required this.barrierLabel,
   });
 
@@ -169,6 +269,7 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   final List<BhorOption<T>> options;
   final T? selected;
   final BhorThemeData theme;
+  final bool reduced;
 
   @override
   final String barrierLabel;
@@ -180,15 +281,37 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   bool get barrierDismissible => true;
 
   @override
-  Duration get transitionDuration => BhorMotion.base;
+  Duration get transitionDuration => reduced ? BhorMotion.reducedFade : const Duration(milliseconds: 200);
+
+  @override
+  Duration get reverseTransitionDuration => reduced ? BhorMotion.reducedFade : const Duration(milliseconds: 120);
 
   @override
   Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+    final BhorColors c = theme.colors;
     return BhorTheme(
       data: theme,
       child: CustomSingleChildLayout(
         delegate: _MenuLayout(anchor: anchor, padding: MediaQuery.paddingOf(context)),
-        child: _Menu<T>(options: options, selected: selected),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: Border.all(color: c.line),
+            boxShadow: c.floatShadow,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: _OptionList<T>(
+                options: options,
+                selected: selected,
+                onPick: (T v) => Navigator.of(context).pop(_Pick<T>(v)),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -196,12 +319,16 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   @override
   Widget buildTransitions(
       BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-    final Animation<double> a = CurvedAnimation(parent: animation, curve: BhorMotion.curve);
+    final Animation<double> a = CurvedAnimation(parent: animation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
+    if (reduced) return FadeTransition(opacity: a, child: child);
     return FadeTransition(
       opacity: a,
-      child: ScaleTransition(
-        alignment: Alignment.topCenter,
-        scale: Tween<double>(begin: 0.97, end: 1).animate(a),
+      child: AnimatedBuilder(
+        animation: a,
+        builder: (BuildContext context, Widget? child) => Transform.translate(
+          offset: Offset(0, -4 * (1 - a.value)),
+          child: Transform.scale(scale: 0.96 + 0.04 * a.value, alignment: Alignment.topCenter, child: child),
+        ),
         child: child,
       ),
     );
@@ -238,71 +365,4 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_MenuLayout old) => old.anchor != anchor || old.padding != padding;
-}
-
-class _Menu<T> extends StatelessWidget {
-  const _Menu({required this.options, required this.selected});
-
-  final List<BhorOption<T>> options;
-  final T? selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final BhorThemeData b = context.bhor;
-    final BhorColors c = b.colors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(BhorRadius.control),
-        border: Border.all(color: c.line),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(BhorRadius.control),
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          children: <Widget>[
-            for (final BhorOption<T> o in options)
-              BhorPressable(
-                autofocus: o.value == selected,
-                onTap: o.enabled ? () => Navigator.of(context).pop(_Pick<T>(o.value)) : null,
-                selected: o.value == selected,
-                semanticLabel: o.label,
-                excludeChildSemantics: true,
-                scaleOnPress: false,
-                radius: 8,
-                builder: (BuildContext context, BhorStates s) {
-                  final bool sel = o.value == selected;
-                  return Container(
-                    constraints: const BoxConstraints(minHeight: BhorSize.control),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
-                    decoration: BoxDecoration(
-                      color: sel ? c.accentTint : (s.hovered || s.pressed ? c.surface2 : null),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        if (o.icon != null) ...<Widget>[
-                          Icon(o.icon, size: 18, color: sel ? c.accent : c.text2),
-                          const SizedBox(width: BhorSpace.s8),
-                        ],
-                        Expanded(
-                          child: Text(
-                            o.label,
-                            style: (sel ? b.type.bodyStrong : b.type.body)
-                                .copyWith(color: !o.enabled ? c.text3 : (sel ? c.accent : c.text)),
-                          ),
-                        ),
-                        if (sel) Icon(Icons.check_rounded, size: 18, color: c.accent),
-                      ],
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -20,13 +20,14 @@ void main() {
       expect(find.descendant(of: find.byType(SchedChip), matching: find.byType(BhorChip)), findsOneWidget);
       final BuildContext ctx = tester.element(find.byType(SchedChip));
       final BhorColors c = ctx.bhor.colors;
+      // Fluid Bhor: chips are filled (soft), not outlined (13-fluid-ui-spec.md).
       final AnimatedContainer box = tester.widget<AnimatedContainer>(
-        find.descendant(of: find.byType(BhorChip), matching: find.byType(AnimatedContainer)),
+        find.descendant(of: find.byType(BhorChip), matching: find.byType(AnimatedContainer)).first,
       );
       final BoxDecoration deco = box.decoration! as BoxDecoration;
-      expect((deco.border! as Border).top.color, c.line, reason: 'a hairline outline');
-      final Text label = tester.widget<Text>(find.text('Fri'));
-      expect(label.style?.color, c.text, reason: 'full-contrast text');
+      expect(deco.color, c.soft, reason: 'a visible soft fill');
+      final TextStyle label = DefaultTextStyle.of(tester.element(find.text('Fri'))).style;
+      expect(label.color, c.text, reason: 'full-contrast text');
     });
   }
 }

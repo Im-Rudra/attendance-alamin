@@ -144,7 +144,10 @@ void main() {
       expect(s.fontFamily, 'HindSiliguri');
       expect(s.height, 1.45);
     }
-    expect(t.display.fontSize, 24);
+    expect(t.display.fontSize, 26);
+    // Bangla is never below 12.5 px.
+    expect(t.caption.fontSize, greaterThanOrEqualTo(12.5));
+    expect(t.meta.fontSize, greaterThanOrEqualTo(12.5));
     expect(t.stat.fontFeatures, isNotEmpty);
   });
 

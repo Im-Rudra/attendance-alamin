@@ -159,7 +159,7 @@ void main() {
     await pumpApp(tester, _host(), overrides: f.overrides);
     await _open(tester);
     await tester.enterText(find.byKey(_label), 'নোট');
-    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.tap(find.byIcon(BhorIcons.close));
     await _settle(tester);
     expect(_result, isFalse);
     expect(f.otherIncome.items, isEmpty);

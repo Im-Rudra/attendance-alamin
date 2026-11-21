@@ -44,7 +44,7 @@ void main() {
 
         await tester.tap(find.text('খুলুন'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(BhorIcons.close));
         await tester.pumpAndSettle();
         expect(find.text('অন্যান্য আয়'), findsNothing);
         expect(result, isNull);
@@ -216,7 +216,7 @@ void main() {
       await tester.tap(find.text('৪'), warnIfMissed: false);
       await tester.pump();
       expect(picked, isNull, reason: 'before firstDate');
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.tap(find.byIcon(BhorIcons.chevronRight));
       await tester.pumpAndSettle();
       expect(find.text('ডিসেম্বর ২০২৬'), findsOneWidget);
     });

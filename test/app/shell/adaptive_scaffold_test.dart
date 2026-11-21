@@ -64,22 +64,59 @@ void main() {
     });
   }
 
-  testWidgets('phone bottom nav is a flat full-width bar on the bottom edge', (WidgetTester tester) async {
+  testWidgets('phone bottom nav is a floating pill inset 10 from the edges', (WidgetTester tester) async {
     await pumpShell(tester);
-    final Rect nav = tester.getRect(find.byKey(AdaptiveScaffold.bottomNavKey));
+    final Finder area = find.byKey(AdaptiveScaffold.bottomNavKey);
+    final Rect nav = tester.getRect(area);
     expect(nav.bottom, kPhone.height);
-    expect(nav.left, 0);
     expect(nav.width, kPhone.width);
     expect(nav.height, AdaptiveScaffold.bottomNavHeight);
-    // Top hairline, no floating inset or shadow.
-    final DecoratedBox bar = tester.widget<DecoratedBox>(
-      find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.byType(DecoratedBox)).first,
-    );
-    final BoxDecoration d = bar.decoration as BoxDecoration;
+    // The pill: inset 10, r20, a line edge, no shadow.
+    final Finder pill = find.descendant(
+      of: area,
+      matching: find.byWidgetPredicate((Widget w) =>
+          w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).borderRadius != null),
+    ).first;
+    final Rect r = tester.getRect(pill);
+    expect(r.left, BhorBottomNav.inset);
+    expect(r.right, kPhone.width - BhorBottomNav.inset);
+    expect(r.bottom, kPhone.height - BhorBottomNav.inset);
+    expect(r.height, BhorBottomNav.pillHeight);
+    final BoxDecoration d = tester.widget<Container>(pill).decoration! as BoxDecoration;
+    expect(d.borderRadius, BorderRadius.circular(BhorRadius.nav));
     expect((d.border! as Border).top.width, 1);
     expect(d.boxShadow, isNull);
-    // The page above ends where the bar starts.
+    // The page above ends where the nav area starts.
     expect(tester.getRect(find.byType(TodayScreen)).bottom, nav.top);
+  });
+
+  testWidgets('switching branches fades through and keeps branch state', (WidgetTester tester) async {
+    await pumpShell(tester);
+    final l10n = l10nOf(Lang.bn);
+    // The branch stack sits in one fade-through (it is never built twice).
+    expect(find.byWidgetPredicate((Widget w) => w is BhorFadeThrough), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navBatches)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    final FadeTransition fade = tester.widget<FadeTransition>(find
+        .descendant(
+          of: find.byWidgetPredicate((Widget w) => w is BhorFadeThrough),
+          matching: find.byType(FadeTransition),
+        )
+        .first);
+    expect(fade.opacity.value, lessThan(1));
+    await tester.pumpAndSettle();
+    expect(find.byType(BatchesScreen), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navToday)));
+    await tester.pumpAndSettle();
+    expect(find.byType(TodayScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('desktop body carries the sidebar inset for side panels', (WidgetTester tester) async {
+    await pumpShell(tester, size: kDesktop);
+    final BhorChromeInset inset = tester.widget<BhorChromeInset>(find.byType(BhorChromeInset));
+    expect(inset.start, BhorSidebar.width);
   });
 
   testWidgets('phone toasts sit above the bottom nav', (WidgetTester tester) async {

@@ -1,12 +1,25 @@
 // Bhor tokens: colours (light/dark), type scale, spacing, radii, sizes and
-// motion (docs/council/10-design-system-bhor.md). Read them with
-// `context.bhor` (see bhor_theme.dart); never hard-code values in screens.
+// motion (docs/council/13-fluid-ui-spec.md; first set in
+// 10-design-system-bhor.md). Read them with `context.bhor` (see
+// bhor_theme.dart); never hard-code values in screens.
+//
+// Fluid additions (all older names still work):
+// - soft / soft2: the filled-control fill and its hover/pressed shade
+//   (surface2 is the same as soft).
+// - accentFill / onAccentFill / accentFillHover: solid primary fills with
+//   white text (buttons, switch track, brand mark, active thumbs). `accent`
+//   stays the accent for TEXT and icons; its legacy `onAccent` contrasts with
+//   it (near-black in dark).
+// - warn / overdue / absentText / late with their tints, error, shadow
+//   (floating toasts, menus and panels only), highlight (button top edge).
 
+import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/theme/bhor_palette.dart';
 import 'package:attendance_alamin/app/theme/tokens.dart'
     show DuskTokens, LightTokens, SeverityLevel, kFontFamily;
+import 'package:attendance_alamin/app/widgets/effects_mode.dart';
 
 /// Semantic colours of one theme. Translucent values (dark tints) are meant
 /// to be painted over [surface] or [bg].
@@ -17,30 +30,47 @@ class BhorColors {
     required this.washStart,
     required this.surface,
     required this.surface2,
+    required this.soft,
+    required this.soft2,
     required this.line,
     required this.text,
     required this.text2,
     required this.text3,
     required this.accent,
     required this.accent2,
+    required this.accentHover,
     required this.onAccent,
+    required this.accentFill,
+    required this.accentFillHover,
+    required this.onAccentFill,
     required this.accentTint,
     required this.accentLine,
     required this.focusRing,
     required this.ok,
     required this.okBg,
+    required this.warn,
+    required this.warnBg,
+    required this.overdue,
+    required this.overdueBg,
     required this.danger,
     required this.dangerBg,
     required this.onDanger,
     required this.heroStart,
     required this.heroEnd,
     required this.onHero,
+    required this.heroButton,
     required this.absent,
     required this.onAbsent,
+    required this.absentText,
+    required this.absentBg,
+    required this.late,
     required this.lateBg,
     required this.lateText,
     required this.scrim,
+    required this.panelScrim,
     required this.pressShade,
+    required this.shadow,
+    required this.highlight,
     required this.sevHue,
     required this.sevFill,
     required this.sevText,
@@ -52,31 +82,76 @@ class BhorColors {
   /// Inner colour of the faint top-left page wash (fades to transparent).
   final Color washStart;
   final Color surface;
+
+  /// Same as [soft] (older name).
   final Color surface2;
+
+  /// Fill of soft controls (fields, segmented track, chips, icon buttons).
+  final Color soft;
+
+  /// Hover / pressed shade of [soft].
+  final Color soft2;
   final Color line;
   final Color text;
   final Color text2;
   final Color text3;
+
+  /// Accent for text and icons.
   final Color accent;
+
+  /// Older name of [accentHover].
   final Color accent2;
+  final Color accentHover;
+
+  /// Text on a solid [accent] fill (legacy fills).
   final Color onAccent;
+
+  /// Solid accent fill under [onAccentFill] (white) text.
+  final Color accentFill;
+  final Color accentFillHover;
+  final Color onAccentFill;
   final Color accentTint;
   final Color accentLine;
   final Color focusRing;
   final Color ok;
   final Color okBg;
+  final Color warn;
+  final Color warnBg;
+  final Color overdue;
+  final Color overdueBg;
+
+  /// The error colour (text, rings, danger buttons).
   final Color danger;
   final Color dangerBg;
   final Color onDanger;
   final Color heroStart;
   final Color heroEnd;
   final Color onHero;
+
+  /// Near-white solid button on the hero card (hero-colour text).
+  final Color heroButton;
+
+  /// Legacy solid absent fill (with [onAbsent] text).
   final Color absent;
   final Color onAbsent;
+
+  /// Absent status text / icon and its tint (attendance thumb, tags).
+  final Color absentText;
+  final Color absentBg;
+  final Color late;
   final Color lateBg;
   final Color lateText;
   final Color scrim;
+
+  /// The lighter dim behind a desktop side panel (the list stays visible).
+  final Color panelScrim;
   final Color pressShade;
+
+  /// Soft neutral shadow: only floating toasts, menus and panels use it.
+  final Color shadow;
+
+  /// 1px inner top highlight of the primary button.
+  final Color highlight;
 
   /// Dues severity hues / tag fills / tag texts, index = [SeverityLevel.index].
   final List<Color> sevHue;
@@ -85,19 +160,29 @@ class BhorColors {
 
   bool get isDark => brightness == Brightness.dark;
 
-  /// Hero card gradient (140 degrees).
+  /// The error colour (same as [danger]).
+  Color get error => danger;
+
+  /// Hero card gradient (140 degrees). The only gradient in the app.
   LinearGradient get heroGradient => LinearGradient(
         begin: const Alignment(-0.77, -0.64),
         end: const Alignment(0.77, 0.64),
         colors: <Color>[heroStart, heroEnd],
       );
 
-  /// Primary button gradient (accent2 on top, accent below).
-  LinearGradient get buttonGradient => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[accent2, accent],
-      );
+  /// Older primary-button fill, now a flat accent fill (no gradients
+  /// outside the hero card).
+  LinearGradient get buttonGradient => LinearGradient(colors: <Color>[accentFill, accentFill]);
+
+  /// Floating elevation (toasts, menus, side panels): a soft neutral shadow.
+  List<BoxShadow> get floatShadow => <BoxShadow>[
+        BoxShadow(color: shadow, blurRadius: 24, offset: const Offset(0, 8)),
+      ];
+
+  /// The tiny shadow under a segmented / switch thumb.
+  List<BoxShadow> get thumbShadow => <BoxShadow>[
+        BoxShadow(color: shadow.withValues(alpha: shadow.a * 0.6), blurRadius: 3, offset: const Offset(0, 1)),
+      ];
 
   /// Escalation-bar colour of day [day] (1..10; beyond 10 is overdue).
   Color segment(int day) {
@@ -111,31 +196,48 @@ class BhorColors {
     bg: BhorPaletteLight.bg,
     washStart: BhorPaletteLight.accent.withValues(alpha: 0.07),
     surface: BhorPaletteLight.surface,
-    surface2: BhorPaletteLight.surface2,
+    surface2: BhorPaletteLight.soft,
+    soft: BhorPaletteLight.soft,
+    soft2: BhorPaletteLight.soft2,
     line: BhorPaletteLight.line,
     text: BhorPaletteLight.text,
     text2: BhorPaletteLight.text2,
     text3: BhorPaletteLight.text3,
     accent: BhorPaletteLight.accent,
-    accent2: BhorPaletteLight.accent2,
+    accent2: BhorPaletteLight.accentHover,
+    accentHover: BhorPaletteLight.accentHover,
     onAccent: BhorPaletteLight.onAccent,
+    accentFill: BhorPaletteLight.accent,
+    accentFillHover: BhorPaletteLight.accentHover,
+    onAccentFill: BhorPaletteLight.onAccent,
     accentTint: BhorPaletteLight.accentTint,
     accentLine: BhorPaletteLight.accentLine,
     focusRing: BhorPaletteLight.accent.withValues(alpha: 0.14),
     ok: BhorPaletteLight.ok,
     okBg: BhorPaletteLight.okBg,
-    danger: BhorPaletteLight.danger,
-    dangerBg: BhorPaletteLight.dangerBg,
+    warn: BhorPaletteLight.warn,
+    warnBg: BhorPaletteLight.warnBg,
+    overdue: BhorPaletteLight.overdue,
+    overdueBg: BhorPaletteLight.overdueBg,
+    danger: BhorPaletteLight.error,
+    dangerBg: BhorPaletteLight.overdueBg,
     onDanger: BhorPaletteLight.onDanger,
     heroStart: BhorPaletteLight.heroStart,
     heroEnd: BhorPaletteLight.heroEnd,
     onHero: BhorPaletteLight.onHero,
+    heroButton: BhorPaletteLight.heroButton,
     absent: BhorPaletteLight.absent,
     onAbsent: BhorPaletteLight.onAbsent,
+    absentText: BhorPaletteLight.absentText,
+    absentBg: BhorPaletteLight.absentBg,
+    late: BhorPaletteLight.late,
     lateBg: BhorPaletteLight.lateBg,
     lateText: BhorPaletteLight.lateText,
     scrim: BhorPaletteLight.scrim,
+    panelScrim: BhorPaletteLight.panelScrim,
     pressShade: BhorPaletteLight.pressShade,
+    shadow: BhorPaletteLight.shadow,
+    highlight: BhorPaletteLight.highlight,
     sevHue: LightTokens.sevHue,
     sevFill: LightTokens.sevFill,
     sevText: LightTokens.sevText,
@@ -146,50 +248,68 @@ class BhorColors {
     bg: BhorPaletteDark.bg,
     washStart: BhorPaletteDark.accent.withValues(alpha: 0.10),
     surface: BhorPaletteDark.surface,
-    surface2: BhorPaletteDark.surface2,
+    surface2: BhorPaletteDark.soft,
+    soft: BhorPaletteDark.soft,
+    soft2: BhorPaletteDark.soft2,
     line: BhorPaletteDark.line,
     text: BhorPaletteDark.text,
     text2: BhorPaletteDark.text2,
     text3: BhorPaletteDark.text3,
     accent: BhorPaletteDark.accent,
-    accent2: BhorPaletteDark.accent2,
+    accent2: BhorPaletteDark.accentHover,
+    accentHover: BhorPaletteDark.accentHover,
     onAccent: BhorPaletteDark.onAccent,
-    accentTint: BhorPaletteDark.accent.withValues(alpha: 0.14),
+    accentFill: BhorPaletteDark.accentFill,
+    accentFillHover: BhorPaletteDark.accentFillHover,
+    onAccentFill: BhorPaletteDark.onAccentFill,
+    accentTint: BhorPaletteDark.accent.withValues(alpha: 0.16),
     accentLine: BhorPaletteDark.accent.withValues(alpha: 0.35),
-    focusRing: BhorPaletteDark.accent.withValues(alpha: 0.18),
+    focusRing: BhorPaletteDark.accent.withValues(alpha: 0.22),
     ok: BhorPaletteDark.ok,
-    okBg: BhorPaletteDark.ok.withValues(alpha: 0.13),
-    danger: BhorPaletteDark.danger,
-    dangerBg: BhorPaletteDark.danger.withValues(alpha: 0.12),
+    okBg: BhorPaletteDark.ok.withValues(alpha: 0.15),
+    warn: BhorPaletteDark.warn,
+    warnBg: BhorPaletteDark.warn.withValues(alpha: 0.15),
+    overdue: BhorPaletteDark.overdue,
+    overdueBg: BhorPaletteDark.overdueHue.withValues(alpha: 0.18),
+    danger: BhorPaletteDark.error,
+    dangerBg: BhorPaletteDark.overdueHue.withValues(alpha: 0.18),
     onDanger: BhorPaletteDark.onDanger,
     heroStart: BhorPaletteDark.heroStart,
     heroEnd: BhorPaletteDark.heroEnd,
     onHero: BhorPaletteDark.onHero,
+    heroButton: BhorPaletteDark.heroButton,
     absent: BhorPaletteDark.absent,
     onAbsent: BhorPaletteDark.onAbsent,
-    lateBg: BhorPaletteDark.lateHue.withValues(alpha: 0.15),
+    absentText: BhorPaletteDark.absentText,
+    absentBg: BhorPaletteDark.absentText.withValues(alpha: 0.20),
+    late: BhorPaletteDark.late,
+    lateBg: BhorPaletteDark.late.withValues(alpha: 0.16),
     lateText: BhorPaletteDark.lateText,
     scrim: BhorPaletteDark.scrim,
+    panelScrim: BhorPaletteDark.panelScrim,
     pressShade: BhorPaletteDark.pressShade,
+    shadow: BhorPaletteDark.shadow,
+    highlight: BhorPaletteDark.highlight,
     sevHue: DuskTokens.sevHue,
     sevFill: DuskTokens.sevFill,
     sevText: DuskTokens.sevText,
   );
 }
 
-/// Type scale (Hind Siliguri, line height 1.45 for Bangla). Colours default
-/// to the theme's [BhorColors.text]; recolour with `copyWith`.
+/// Type scale (Hind Siliguri, line height 1.45 for Bangla). Bangla never
+/// below 12.5; body 14.5; titles 17-26 bold. Colours default to the theme's
+/// [BhorColors.text]; recolour with `copyWith`.
 class BhorType {
   BhorType(Color text, Color text2)
-      : display = _s(24, FontWeight.w700, text, tracking: -0.3),
-        title = _s(18, FontWeight.w700, text),
-        heading = _s(15, FontWeight.w600, text),
-        body = _s(14, FontWeight.w400, text),
-        bodyStrong = _s(14, FontWeight.w600, text),
-        label = _s(12.5, FontWeight.w600, text),
-        meta = _s(12, FontWeight.w400, text2),
-        caption = _s(11, FontWeight.w400, text2),
-        stat = _s(22, FontWeight.w700, text).copyWith(fontFeatures: _tabular);
+      : display = _s(26, FontWeight.w700, text, tracking: -0.3),
+        title = _s(19, FontWeight.w700, text, tracking: -0.1),
+        heading = _s(16, FontWeight.w600, text),
+        body = _s(14.5, FontWeight.w400, text),
+        bodyStrong = _s(14.5, FontWeight.w600, text),
+        label = _s(13, FontWeight.w600, text),
+        meta = _s(12.5, FontWeight.w400, text2),
+        caption = _s(12.5, FontWeight.w400, text2),
+        stat = _s(24, FontWeight.w700, text, tracking: -0.2).copyWith(fontFeatures: _tabular);
 
   static const List<FontFeature> _tabular = <FontFeature>[FontFeature.tabularFigures()];
 
@@ -230,33 +350,154 @@ abstract final class BhorSpace {
   static const double s24 = 24;
   static const double s32 = 32;
   static const double s40 = 40;
+
+  /// Screen padding on phones / desktop.
+  static const double screenPhone = 16;
+  static const double screenDesktop = 24;
 }
 
 /// Corner radii.
 abstract final class BhorRadius {
-  static const double control = 12;
-  static const double card = 16;
-  static const double hero = 18;
-  static const double sheet = 20;
-  static const double tag = 6;
+  /// Buttons, fields, segmented track, menus.
+  static const double control = 14;
+
+  /// Cards.
+  static const double card = 18;
+
+  /// Lists (surface card holding rows).
+  static const double list = 20;
+  static const double hero = 22;
+
+  /// Bottom sheet top corners.
+  static const double sheet = 28;
+
+  /// Floating desktop side panel and dialogs.
+  static const double panel = 20;
+
+  /// Phone floating nav pill.
+  static const double nav = 20;
+
+  /// Chips, tags, toasts, the attendance pill.
+  static const double pill = 999;
+
+  /// Status tags (pills).
+  static const double tag = pill;
+
+  /// Small cells (calendar days, week blocks). Not a chip shape any more:
+  /// BhorChip uses [pill].
   static const double chip = 10;
+
+  /// Square avatar radius at 36 (older look; BhorAvatar is a circle now).
   static const double avatar = 9;
+
+  /// The soft back button.
+  static const double back = 13;
+
+  /// Desktop sidebar items.
+  static const double sidebarItem = 12;
 }
 
 /// Control heights and tap targets.
 abstract final class BhorSize {
-  static const double control = 44;
-  static const double compact = 36;
+  /// Buttons (md) and icon buttons.
+  static const double control = 46;
+
+  /// Small buttons, chips.
+  static const double compact = 38;
+
+  /// Large sticky CTA.
+  static const double large = 52;
+
+  /// Filled text field with a floating label.
+  static const double field = 56;
   static const double minTap = 44;
   static const double phoneRow = 48;
   static const double focusRingWidth = 4;
 }
 
-/// Motion: 120-200 ms, ease-out.
+/// Motion tokens (docs/council/13-fluid-ui-spec.md "Motion tokens",
+/// 12-ux-review.md section 4). Springs are expressed both as
+/// [SpringDescription]s (drag release, physics) and as overshooting
+/// [Cubic] curves for implicit animations, so tests can settle them.
+///
+/// Reduced motion ([reduced]: the app's reduced-effects flag, the OS
+/// "remove animations" or high-contrast setting): every transform becomes a
+/// 120 ms cross-fade, count-ups show the final value, stagger is 0.
 abstract final class BhorMotion {
-  static const Duration fast = Duration(milliseconds: 120);
-  static const Duration base = Duration(milliseconds: 160);
-  static const Duration slow = Duration(milliseconds: 200);
-  static const Curve curve = Curves.easeOutCubic;
-  static const double pressScale = 0.98;
+  /// Press-in.
+  static const Duration instant = Duration(milliseconds: 80);
+
+  /// Toggles, chips, colour changes, icon swaps.
+  static const Duration fast = Duration(milliseconds: 180);
+
+  /// Cross-fades, popovers, list inserts.
+  static const Duration base = Duration(milliseconds: 260);
+
+  /// Sheets, panels, gliding indicators, page pushes.
+  static const Duration slow = Duration(milliseconds: 450);
+
+  /// Thumbs and segmented indicators (spring).
+  static const Duration glide = Duration(milliseconds: 400);
+
+  /// Number count-ups (scaled by distance between 260 and 480).
+  static const Duration countUp = Duration(milliseconds: 420);
+  static const Duration countUpMin = Duration(milliseconds: 260);
+  static const Duration countUpMax = Duration(milliseconds: 480);
+
+  /// Exits are shorter than entries.
+  static const Duration exit = Duration(milliseconds: 220);
+
+  /// The reduced-motion cross-fade.
+  static const Duration reducedFade = Duration(milliseconds: 120);
+
+  /// First-load stagger step and the number of items that stagger.
+  static const Duration staggerStep = Duration(milliseconds: 30);
+  static const int staggerCap = 8;
+
+  /// cubic-bezier(.2,0,0,1): fades and colour.
+  static const Curve ease = Cubic(0.2, 0.0, 0.0, 1.0);
+
+  /// Older name of [ease] (every existing caller keeps working).
+  static const Curve curve = ease;
+
+  /// cubic-bezier(.3,0,1,1): exits (accelerate).
+  static const Curve exitCurve = Cubic(0.3, 0.0, 1.0, 1.0);
+
+  /// cubic-bezier(.34,1.4,.64,1): the spring (thumbs, indicators, sheets,
+  /// chips, toasts, press-release). Overshoots: never use it for opacity or
+  /// colour.
+  static const Curve spring = Cubic(0.34, 1.4, 0.64, 1.0);
+
+  /// A gentler overshoot for large surfaces (sheets, side panels).
+  static const Curve springSoft = Cubic(0.3, 1.18, 0.6, 1.0);
+
+  /// cubic-bezier(.16,1,.3,1): count-ups and progress fills.
+  static const Curve countCurve = Cubic(0.16, 1.0, 0.3, 1.0);
+
+  /// Thumbs, toggles, press-release (≈ [spring]).
+  static const SpringDescription springSnappy = SpringDescription(mass: 1, stiffness: 420, damping: 26);
+
+  /// Sheets and drag release.
+  static const SpringDescription springGentle = SpringDescription(mass: 1, stiffness: 380, damping: 32);
+
+  /// The success check pop (small overshoot).
+  static const SpringDescription springPop = SpringDescription(mass: 1, stiffness: 500, damping: 18);
+
+  /// Press scale of buttons; .9 for stepper buttons.
+  static const double pressScale = 0.96;
+  static const double pressScaleSmall = 0.9;
+
+  /// Rise / slide offsets.
+  static const double distanceSm = 6;
+  static const double distanceMd = 16;
+  static const double distanceLg = 32;
+
+  /// True when motion must be reduced for [context].
+  static bool reduced(BuildContext context) => EffectsMode.reducedOf(context);
+
+  /// [d], or the 120 ms fade when motion is reduced.
+  static Duration of(BuildContext context, Duration d) => reduced(context) ? reducedFade : d;
+
+  /// [c], or a plain ease when motion is reduced (no overshoot).
+  static Curve curveOf(BuildContext context, Curve c) => reduced(context) ? ease : c;
 }

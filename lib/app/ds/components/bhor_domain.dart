@@ -1,11 +1,16 @@
-// App-specific pieces: BhorAttendanceToggle (উপস্থিত/অনুপস্থিত/দেরি),
+// App-specific pieces (docs/council/13-fluid-ui-spec.md):
+// BhorAttendanceToggle (soft pill track, a coloured thumb glides between
+// উপস্থিত / অনুপস্থিত / দেরি; labelled on wide rows, icon-only ✓ ✕ clock in
+// dense phone rows), BhorStepper (± with a counting value),
 // BhorEscalationBar (10-day dues bar, today ringed), BhorMoney, BhorStatText,
 // BhorClashCard (clashing classes with fix buttons).
 
-import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
+import 'package:attendance_alamin/app/ds/components/bhor_motion.dart';
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
@@ -13,10 +18,21 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/theme/tokens.dart' show AttendanceKind;
 import 'package:attendance_alamin/core/format/app_format.dart';
 
-/// Three-way attendance control for one student.
-/// Usage: `BhorAttendanceToggle(value: AttendanceKind.present, onChanged: f)`.
+/// Three-way attendance control for one student: a soft pill track whose
+/// coloured thumb (ok / absent / late tint) glides to the chosen status with
+/// the spring; the icon / text colour follows. Fills the width when
+/// labelled; [compact] uses short labels, [iconOnly] shows ✓ ✕ clock for
+/// dense phone rows.
+/// Usage: `BhorAttendanceToggle(value: AttendanceKind.present, onChanged: f)`,
+/// `BhorAttendanceToggle(value: v, iconOnly: true, onChanged: f)`.
 class BhorAttendanceToggle extends StatelessWidget {
-  const BhorAttendanceToggle({super.key, required this.value, required this.onChanged, this.compact = false});
+  const BhorAttendanceToggle({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.compact = false,
+    this.iconOnly = false,
+  });
 
   static const List<AttendanceKind> kinds = <AttendanceKind>[
     AttendanceKind.present,
@@ -27,8 +43,18 @@ class BhorAttendanceToggle extends StatelessWidget {
   final AttendanceKind? value;
   final ValueChanged<AttendanceKind>? onChanged;
 
-  /// Short labels (P/A/L style) and 36 tall.
+  /// Short labels and 38 tall, sized to its content.
   final bool compact;
+
+  /// Icons only (✓ ✕ clock), sized to its content.
+  final bool iconOnly;
+
+  static IconData iconOf(AttendanceKind k) => switch (k) {
+        AttendanceKind.present => BhorIcons.present,
+        AttendanceKind.absent => BhorIcons.absent,
+        AttendanceKind.late => BhorIcons.late,
+        AttendanceKind.leave => BhorIcons.leave,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -47,60 +73,197 @@ class BhorAttendanceToggle extends StatelessWidget {
           AttendanceKind.late => l10n.uiAttLate,
           AttendanceKind.leave => l10n.uiAttExcused,
         };
-    (Color, Color, Color) look(AttendanceKind k) => switch (k) {
-          AttendanceKind.present => (c.okBg, c.ok, c.ok),
-          AttendanceKind.absent => (c.absent, c.onAbsent, c.absent),
-          AttendanceKind.late => (c.lateBg, c.lateText, c.lateText),
-          AttendanceKind.leave => (c.surface2, c.text2, c.line),
+    (Color, Color) look(AttendanceKind k) => switch (k) {
+          AttendanceKind.present => (c.okBg, c.ok),
+          AttendanceKind.absent => (c.absentBg, c.absentText),
+          AttendanceKind.late => (c.lateBg, c.late),
+          AttendanceKind.leave => (c.soft2, c.text2),
         };
-    return Semantics(
-      container: true,
-      explicitChildNodes: true,
-      child: Row(
-        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
-        children: <Widget>[
-          for (int i = 0; i < kinds.length; i++) ...<Widget>[
-            if (i > 0) const SizedBox(width: 6),
-            _wrap(
-              compact,
-              BhorPressable(
-                onTap: onChanged == null ? null : () => onChanged!(kinds[i]),
-                selected: value == kinds[i],
-                inMutuallyExclusiveGroup: true,
-                semanticLabel: fullLabel(kinds[i]),
-                excludeChildSemantics: true,
-                radius: BhorRadius.chip,
-                builder: (BuildContext context, BhorStates s) {
-                  final bool sel = value == kinds[i];
-                  final (Color bg, Color fg, Color edge) = look(kinds[i]);
-                  return AnimatedContainer(
-                    duration: BhorMotion.fast,
-                    height: compact ? BhorSize.compact : BhorSize.control,
-                    constraints: const BoxConstraints(minWidth: BhorSize.minTap),
-                    padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: sel ? bg : (s.hovered ? c.surface2 : c.surface),
-                      borderRadius: BorderRadius.circular(BhorRadius.chip),
-                      border: Border.all(color: sel ? edge : c.line),
-                    ),
-                    child: Text(
-                      label(kinds[i]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: (sel ? b.type.bodyStrong : b.type.body).copyWith(color: sel ? fg : c.text2),
-                    ),
-                  );
-                },
+    final bool dense = compact || iconOnly;
+    final double h = dense ? BhorSize.compact : BhorSize.control;
+    final int sel = value == null ? -1 : kinds.indexOf(value!);
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+
+    Widget track(double segW) {
+      final (Color thumbFill, _) = look(sel < 0 ? AttendanceKind.present : kinds[sel]);
+      return Container(
+        height: h,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(color: c.soft, borderRadius: BorderRadius.circular(BhorRadius.pill)),
+        child: Stack(
+          children: <Widget>[
+            AnimatedPositioned(
+              duration: BhorMotion.of(context, BhorMotion.glide),
+              curve: BhorMotion.curveOf(context, BhorMotion.spring),
+              left: (sel < 0 ? 0 : sel) * segW,
+              top: 0,
+              bottom: 0,
+              width: segW,
+              child: AnimatedOpacity(
+                opacity: sel < 0 ? 0 : 1,
+                duration: fast,
+                child: AnimatedContainer(
+                  duration: fast,
+                  curve: BhorMotion.ease,
+                  decoration: BoxDecoration(color: thumbFill, borderRadius: BorderRadius.circular(BhorRadius.pill)),
+                ),
               ),
             ),
+            Row(
+              children: <Widget>[
+                for (int i = 0; i < kinds.length; i++)
+                  SizedBox(
+                    width: segW,
+                    child: BhorPressable(
+                      onTap: onChanged == null
+                          ? null
+                          : () {
+                              if (value != kinds[i]) HapticFeedback.selectionClick();
+                              onChanged!(kinds[i]);
+                            },
+                      selected: value == kinds[i],
+                      inMutuallyExclusiveGroup: true,
+                      semanticLabel: fullLabel(kinds[i]),
+                      excludeChildSemantics: true,
+                      radius: (h - 6) / 2,
+                      pressScale: 0.94,
+                      builder: (BuildContext context, BhorStates s) {
+                        final bool on = i == sel;
+                        final Color fg = on ? look(kinds[i]).$2 : (s.hovered ? c.text : c.text2);
+                        final Widget glyph = TweenAnimationBuilder<Color?>(
+                          tween: ColorTween(end: fg),
+                          duration: fast,
+                          builder: (BuildContext context, Color? col, Widget? _) =>
+                              Icon(iconOf(kinds[i]), size: dense ? BhorIconSize.chip : BhorIconSize.inline, color: col),
+                        );
+                        return Center(
+                          child: iconOnly
+                              ? glyph
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    if (!compact) ...<Widget>[glyph, const SizedBox(width: 6)],
+                                    Flexible(
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: fast,
+                                        style: (on ? b.type.bodyStrong : b.type.body).copyWith(color: fg),
+                                        child: Text(label(kinds[i]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ],
-        ],
+        ),
+      );
+    }
+
+    final Widget body = dense
+        ? track(iconOnly ? 42 : 46)
+        : LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints box) =>
+                track(((box.maxWidth.isFinite ? box.maxWidth : 360) - 6) / kinds.length),
+          );
+    return Semantics(container: true, explicitChildNodes: true, child: body);
+  }
+}
+
+/// Number stepper: soft track, surface − / + buttons (press scale .9), the
+/// value counts up / down. Usage:
+/// `BhorStepper(value: n, min: 1, max: 12, onChanged: (v) => ..., semanticLabel: 'মাস')`.
+class BhorStepper extends StatelessWidget {
+  const BhorStepper({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.min = 0,
+    this.max = 999999,
+    this.step = 1,
+    this.semanticLabel,
+    this.format,
+    this.decreaseLabel,
+    this.increaseLabel,
+  });
+
+  final int value;
+  final ValueChanged<int>? onChanged;
+  final int min;
+  final int max;
+  final int step;
+  final String? semanticLabel;
+
+  /// Formats the value (default: locale digits).
+  final String Function(int value)? format;
+
+  /// Accessible names of the buttons (default "−" / "+").
+  final String? decreaseLabel;
+  final String? increaseLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    final bool enabled = onChanged != null;
+    Widget button(IconData icon, String label, int next, bool can) => BhorPressable(
+          onTap: enabled && can ? () => onChanged!(next.clamp(min, max)) : null,
+          semanticLabel: label,
+          excludeChildSemantics: true,
+          radius: 11,
+          pressScale: BhorMotion.pressScaleSmall,
+          builder: (BuildContext context, BhorStates s) => AnimatedOpacity(
+            opacity: enabled && can ? 1 : 0.4,
+            duration: BhorMotion.of(context, BhorMotion.fast),
+            child: AnimatedContainer(
+              duration: BhorMotion.of(context, BhorMotion.instant),
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: s.hovered || s.pressed ? Color.alphaBlend(c.pressShade, c.surface) : c.surface,
+                borderRadius: BorderRadius.circular(11),
+                boxShadow: c.thumbShadow,
+              ),
+              child: Icon(icon, size: BhorIconSize.chip, color: c.text),
+            ),
+          ),
+        );
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      value: format?.call(value) ?? context.fmt.number(value),
+      child: Container(
+        height: BhorSize.control,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: c.soft, borderRadius: BorderRadius.circular(BhorRadius.control)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            button(BhorIcons.minus, decreaseLabel ?? '−', value - step, value > min),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 52),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8),
+                child: ExcludeSemantics(
+                  child: BhorCountUp(
+                    value: value,
+                    from: value,
+                    format: format == null ? null : (num v) => format!(v.round()),
+                    style: BhorType.tabular(b.type.heading),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+            button(BhorIcons.add, increaseLabel ?? '+', value + step, value < max),
+          ],
+        ),
       ),
     );
   }
-
-  static Widget _wrap(bool compact, Widget child) => compact ? child : Expanded(child: child);
 }
 
 /// Thin 5px, 10-segment dues escalation bar; [day] is the day since due
@@ -139,7 +302,7 @@ class BhorEscalationBar extends StatelessWidget {
                     ),
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: (day > 10 || i <= day) ? c.segment(day > 10 ? 11 : i) : c.surface2,
+                        color: (day > 10 || i <= day) ? c.segment(day > 10 ? 11 : i) : c.soft,
                         borderRadius: BorderRadius.circular(2.5),
                       ),
                       child: const SizedBox.expand(),
@@ -157,6 +320,7 @@ class BhorEscalationBar extends StatelessWidget {
 
 /// Money: "৳" + thin space + lakh-grouped digits, the sign at 70% size.
 /// In stats ([muteSign]) the sign is text2. Usage: `BhorMoney(1500, style: b.type.stat)`.
+/// For a counting amount use `BhorCountUp.money(...)`.
 class BhorMoney extends StatelessWidget {
   const BhorMoney(this.amount, {super.key, this.style, this.muteSign = false, this.color});
 
@@ -194,33 +358,52 @@ class BhorMoney extends StatelessWidget {
   }
 }
 
-/// A stat: big value (text or money) over a meta label.
-/// Usage: `BhorStatText(label: 'উপস্থিত', value: '২৪')`, `BhorStatText.money(label: 'বকেয়া', amount: 4500)`.
+/// A stat: big value (text or money) over a meta label. [countUp] counts
+/// money / numeric values up on first appearance and rolls on change.
+/// Usage: `BhorStatText(label: 'উপস্থিত', value: '২৪')`,
+/// `BhorStatText.money(label: 'বকেয়া', amount: 4500, countUp: true)`,
+/// `BhorStatText.count(label: 'উপস্থিত', count: 24)`.
 class BhorStatText extends StatelessWidget {
   const BhorStatText({super.key, required this.label, required String this.value, this.color})
-      : amount = null;
+      : amount = null,
+        count = null,
+        countUp = false;
 
-  const BhorStatText.money({super.key, required this.label, required int this.amount, this.color})
-      : value = null;
+  const BhorStatText.money({super.key, required this.label, required int this.amount, this.color, this.countUp = false})
+      : value = null,
+        count = null;
+
+  /// A counting integer (locale digits).
+  const BhorStatText.count({super.key, required this.label, required int this.count, this.color})
+      : value = null,
+        amount = null,
+        countUp = true;
 
   final String label;
   final String? value;
   final int? amount;
+  final int? count;
   final Color? color;
+  final bool countUp;
 
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final TextStyle stat = color == null ? b.type.stat : b.type.stat.copyWith(color: color);
+    final Widget big;
+    if (amount != null) {
+      big = countUp ? BhorCountUp.money(amount: amount!, style: stat, muteSign: true) : BhorMoney(amount!, style: stat, muteSign: true);
+    } else if (count != null) {
+      big = BhorCountUp(value: count!, style: stat);
+    } else {
+      big = Text(value!, maxLines: 1, style: stat);
+    }
     return MergeSemantics(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (amount != null)
-            BhorMoney(amount!, style: stat, muteSign: true)
-          else
-            Text(value!, maxLines: 1, style: stat),
+          big,
           Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
         ],
       ),
@@ -261,7 +444,6 @@ class BhorClashCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: b.colors.dangerBg,
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: on.withValues(alpha: 0.35)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(BhorSpace.s16),
@@ -271,7 +453,7 @@ class BhorClashCard extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(Icons.warning_amber_rounded, color: on, size: 24),
+                  Icon(BhorIcons.warningFill, color: on, size: BhorIconSize.nav),
                   const SizedBox(width: BhorSpace.s8),
                   Expanded(child: Text(l10n.uiConflictTitle, style: b.type.heading.copyWith(color: on))),
                 ],

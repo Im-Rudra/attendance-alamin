@@ -93,3 +93,88 @@ Binding spec: `10-design-system-bhor.md`. Library: `lib/app/ds/` (import only th
 7. `tool/check_no_material.sh` is blocking in CI (0 uses across lib/). The app root is `WidgetsApp.router` +
    `BhorAppRoot` (BhorTheme from the theme setting); the shell is `BhorScaffold` + `BhorBottomNav`/`BhorSidebar`.
    Pages pushed outside the router use `BhorPageRoute`.
+
+## Fluid migration guide (ds/fluid → every screen)
+
+The library and shell now follow `13-fluid-ui-spec.md` (tokens, motion, components) and `12-ux-review.md`
+§3 / §4. Every existing API still compiles; screens opt into the fluid behaviour below. One screen (or one
+feature) per PR, screens only — the library is done; report gaps to the Lead.
+
+### What is already automatic (no screen change)
+- Filled, borderless `BhorTextField` with a floating label (the label now sits **inside** the field; drop any
+  extra `Text` label you put above it). `BhorSelect` opens a popover on desktop and a sheet list on phone.
+- Press spring, hover shifts, gliding thumbs (segmented, switch, attendance toggle, tabs, bottom nav, sidebar),
+  pill chips / tags / toasts, circle avatars, spring sheets with drag-to-dismiss, the floating side panel,
+  dialog scale-in, phone page push with parallax, the shell's tab fade-through, reduced-motion fallbacks
+  (120 ms fades) via `EffectsMode` / OS "remove animations".
+- Radii / heights changed: `BhorRadius.control` 14, `card` 18, `hero` 22, `sheet` 28, `tag` = pill;
+  `BhorSize.control` 46, `compact` 38, `field` 56. `BhorRadius.chip` stays 10 (calendar / week cells).
+
+### 1. Icons → Phosphor (`BhorIcons`)
+Replace every `Icons.*` with `BhorIcons.*` (Regular; `…Fill` only for active / status) and drop
+`import 'package:flutter/material.dart' show Icons;`. Sizes: `BhorIconSize.inline` 16, `chip` 18, `row` 20,
+`nav` 24. Mapping is in `lib/app/ds/foundation/bhor_icons.dart` (12-ux-review §1.4 table).
+```dart
+BhorIconButton(icon: BhorIcons.search, semanticLabel: l10n.commonSearch, variant: BhorButtonVariant.secondary, circle: true, onPressed: open)
+BhorButton(label: l10n.payTake, icon: BhorIcons.takeMoney, variant: BhorButtonVariant.tonal, size: BhorButtonSize.sm, onPressed: pay)
+```
+Tests that find icons switch to the same constant (`find.byIcon(BhorIcons.close)`).
+
+### 2. Edit / create flows → `showBhorPanel` (navigation table, 12-ux-review §3)
+Instead of `context.push('/students/new')` / `showBhorSheet` for forms, open the adaptive container. Phone:
+bottom sheet (`expand: true` = expanding sheet for long forms). Desktop: floating side panel (`kind: form`)
+or centred dialog (`kind: confirm` / `kind: list`). Keep the route for deep links (it can render the same
+form), but in-app taps use the panel.
+```dart
+final bool? saved = await showBhorPanel<bool>(
+  context,
+  title: l10n.payTitle,
+  kind: BhorPanelKind.form,            // payment, student/batch edit, slot editor, other income, filters
+  expand: true,                        // phone: opens at 60%, drags to full
+  builder: (BuildContext c) => CollectPaymentForm(studentId: id),
+  footer: (BuildContext c) => BhorButton(label: l10n.commonSave, expand: true, onPressed: save),
+);
+// Confirmations / short choices:
+showBhorPanel<void>(context, kind: BhorPanelKind.confirm, title: l10n.holidayTitle, builder: ..., footer: ...);
+```
+Finish a save with the success moment (circle ✓ pops + draws, the panel closes, then a toast):
+```dart
+await showBhorSuccess<bool>(ctx, result: true, label: l10n.payDone, toast: l10n.paySaved(fmt.money(1000)));
+```
+Per the §3 table: batch new/edit, slot editor (`width: 560`), student new/edit, collect payment → `form`;
+bulk add → `confirm` dialog (`width: 720`); add-student → `list`; other income, waive / fee change,
+reschedule / extra class forms, backup export, reminder priming, holidays → `confirm`. Roll call,
+onboarding, batch / student detail stay full screen.
+
+### 3. First-load stagger, count-ups, panes
+```dart
+BhorStaggerScope(                      // once per list; replays only on the first paint
+  child: BhorList(children: <Widget>[
+    for (int i = 0; i < rows.length; i++)
+      BhorStagger(index: i, child: BhorListRow(title: rows[i].name, trailing: BhorMoney(rows[i].due))),
+  ]),
+)
+BhorStatText.money(label: l10n.feesDue, amount: total, countUp: true)   // or BhorStatText.count(...)
+BhorCountUp.money(amount: collected, style: b.type.stat, muteSign: true)
+BhorProgress(value: collected / expected)                              // fill animates by itself
+// Desktop list → detail:
+BhorPaneSwitcher(paneKey: selectedId, child: StudentProfile(id: selectedId))
+// In-page view toggles (Fees বকেয়া / আদায়, Today day / week):
+BhorFadeThrough(child: KeyedSubtree(key: ValueKey<int>(view), child: view == 0 ? dues : collection))
+```
+Loading: show `BhorSkeleton` blocks with the real row heights for queries > 150 ms (it shimmers; static when
+motion is reduced).
+
+### 4. Surfaces and controls
+- Lists: wrap rows in `BhorList` (surface card r20, line edge, inset hairlines; the last hairline drops).
+- Hero (next class) is the only gradient: `BhorCard.hero` with a `BhorButton(variant: BhorButtonVariant.hero, expand: true)`.
+- Today greeting: `BhorHeader(overline: fmt.weekdayDate(today), title: greeting, large: true, actions: [round search])`.
+- Row actions use `BhorButtonVariant.tonal` / `secondary` at `BhorButtonSize.sm`; one primary per view;
+  sticky CTA: `BhorActionBar(label:, onPressed:, loading:, done:)` (lg 52).
+- Roll call rows on phone: `BhorAttendanceToggle(value: v, iconOnly: true, onChanged: f)`; labelled
+  (default) on wide rows; live counts as `BhorTag` with `BhorTone.ok / absent / late`.
+- New tones: `BhorTone.warn` (partial), `BhorTone.overdue`. Numbers: `BhorStepper` for month counts.
+- Pushed pages outside the router: `BhorPageRoute` (parallax on phone, cross-fade on desktop).
+- Never hand-roll `AnimatedContainer` timings: use `BhorMotion.of(context, BhorMotion.fast)` and
+  `BhorMotion.curveOf(context, BhorMotion.spring)` so reduced motion works. Never put `BhorMotion.spring`
+  (it overshoots) on opacity, colour or a size that animates towards 0.

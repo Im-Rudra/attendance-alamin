@@ -2,7 +2,6 @@
 // step 3): "এই ব্রাউজারে ডেটা সংরক্ষণ হবে না". Never dismissible, sits above
 // every route. Stays hidden on Android / Windows (report is null there).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -58,7 +57,7 @@ class _InMemoryBanner extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 10),
             child: Row(
               children: <Widget>[
-                ExcludeSemantics(child: Icon(Icons.warning_amber_rounded, color: c.onDanger, size: 22)),
+                ExcludeSemantics(child: Icon(BhorIcons.warningFill, color: c.onDanger, size: 22)),
                 const SizedBox(width: BhorSpace.s12),
                 Expanded(
                   child: Text(

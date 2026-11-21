@@ -3,7 +3,6 @@
 // A Bhor header and one card holding a full-pane empty state: polished in
 // both themes, never a blank page.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,7 +16,7 @@ class StubScreen extends StatelessWidget {
   const StubScreen({
     super.key,
     required this.name,
-    this.icon = Icons.auto_awesome_outlined,
+    this.icon = BhorIcons.sparkle,
     this.message,
     this.actionLabel,
     this.onAction,
@@ -61,7 +60,7 @@ class StubScreen extends StatelessWidget {
         showBack: embedded ? false : null,
         leading: fullScreen
             ? BhorIconButton(
-                icon: Icons.close,
+                icon: BhorIcons.close,
                 semanticLabel: l10n.commonClose,
                 color: context.bhor.colors.text,
                 onPressed: () {
@@ -77,7 +76,7 @@ class StubScreen extends StatelessWidget {
           ...actions,
           if (showSearch)
             BhorIconButton(
-              icon: Icons.search,
+              icon: BhorIcons.search,
               semanticLabel: l10n.commonSearch,
               onPressed: () => context.push(Routes.search),
             ),
@@ -114,7 +113,7 @@ class NotFoundScreen extends StatelessWidget {
     final l10n = context.l10n;
     return StubScreen(
       name: l10n.shellNotFoundTitle,
-      icon: Icons.explore_off_outlined,
+      icon: BhorIcons.explore,
       message: l10n.shellNotFoundMessage,
       actionLabel: l10n.shellGoToToday,
       onAction: () => context.go(Routes.today),

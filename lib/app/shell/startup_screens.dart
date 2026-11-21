@@ -4,7 +4,7 @@
 // The language and the light/dark look follow the device (the saved choices
 // live in the database).
 
-import 'package:flutter/material.dart' show Icons, ThemeMode;
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/app.dart' show BhorAppRoot;
@@ -98,7 +98,7 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  ExcludeSemantics(child: Icon(Icons.storage_rounded, size: 64, color: c.danger)),
+                  ExcludeSemantics(child: Icon(BhorIcons.storage, size: 64, color: c.danger)),
                   const SizedBox(height: BhorSpace.s16),
                   Semantics(
                     header: true,
@@ -112,7 +112,7 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                   ),
                   const SizedBox(height: BhorSpace.s20),
                   Center(
-                    child: BhorButton(label: l10n.commonRetry, icon: Icons.refresh, onPressed: widget.onRetry),
+                    child: BhorButton(label: l10n.commonRetry, icon: BhorIcons.refresh, onPressed: widget.onRetry),
                   ),
                   const SizedBox(height: BhorSpace.s8),
                   BhorPressable(
@@ -133,7 +133,7 @@ class _StartupErrorScreenState extends State<StartupErrorScreen> {
                           AnimatedRotation(
                             turns: _details ? 0.5 : 0,
                             duration: BhorMotion.base,
-                            child: Icon(Icons.expand_more_rounded, color: c.text2),
+                            child: Icon(BhorIcons.chevronDown, color: c.text2),
                           ),
                         ],
                       ),

@@ -13,5 +13,6 @@
   "dsPickTime": "Pick a time",
   "dsPrevMonth": "Previous month",
   "dsNextMonth": "Next month",
-  "dsGalleryTitle": "Design system"
+  "dsGalleryTitle": "Design system",
+  "dsDone": "Done"
 }

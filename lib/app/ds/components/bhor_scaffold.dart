@@ -7,6 +7,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
+import 'package:attendance_alamin/app/ds/components/bhor_navigation.dart' show BhorBottomNav;
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 
@@ -74,7 +75,10 @@ class BhorScaffold extends StatelessWidget {
               if (floating != null)
                 Positioned(
                   right: BhorSpace.s16,
-                  bottom: BhorSpace.s16 + (bottomNav == null ? MediaQuery.paddingOf(context).bottom : 64 + MediaQuery.paddingOf(context).bottom),
+                  bottom: BhorSpace.s16 +
+                      (bottomNav == null
+                          ? MediaQuery.paddingOf(context).bottom
+                          : BhorBottomNav.height + MediaQuery.paddingOf(context).bottom),
                   child: SafeArea(top: false, bottom: false, child: floating!),
                 ),
             ],
@@ -126,7 +130,15 @@ class BhorActionBar extends StatelessWidget {
     this.buttonKey,
     this.disabledReason,
     this.summary,
+    this.loading = false,
+    this.done = false,
   });
+
+  /// Spinner in the button (saving).
+  final bool loading;
+
+  /// The button morphs to a check + "হয়েছে".
+  final bool done;
 
   final String label;
 
@@ -169,6 +181,9 @@ class BhorActionBar extends StatelessWidget {
                 key: buttonKey,
                 label: label,
                 expand: true,
+                size: BhorButtonSize.lg,
+                loading: loading,
+                done: done,
                 onPressed: onPressed,
                 disabledReason: disabledReason,
               ),
@@ -184,8 +199,11 @@ class BhorActionBar extends StatelessWidget {
   }
 }
 
-/// The Bhor page transition: a short fade + rise (200 ms in, 160 ms out,
-/// ease-out). Used by [BhorPageRoute] and the app router's pages.
+/// The Bhor page transition. Phone push: the new page slides in from
+/// x +32 px and fades in (ease) while the page underneath slides to
+/// x -16 px and dims to .94 (parallax); pop reverses with the exit curve.
+/// Desktop (>= 840): a cross-fade with scale .985 -> 1. Reduced motion: a
+/// fade only. Used by [BhorPageRoute] and the app router's pages.
 Widget bhorPageTransition(
   BuildContext context,
   Animation<double> animation,
@@ -193,13 +211,26 @@ Widget bhorPageTransition(
   Widget child,
 ) {
   final Animation<double> curved =
-      CurvedAnimation(parent: animation, curve: BhorMotion.curve, reverseCurve: Curves.easeInCubic);
-  return FadeTransition(
-    opacity: curved,
-    child: SlideTransition(
-      position: Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(curved),
-      child: child,
+      CurvedAnimation(parent: animation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
+  if (BhorMotion.reduced(context)) return FadeTransition(opacity: curved, child: child);
+  if (context.bhorIsWide) {
+    return FadeTransition(
+      opacity: curved,
+      child: ScaleTransition(scale: Tween<double>(begin: 0.985, end: 1).animate(curved), child: child),
+    );
+  }
+  final Animation<double> under =
+      CurvedAnimation(parent: secondaryAnimation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
+  return AnimatedBuilder(
+    animation: Listenable.merge(<Listenable>[curved, under]),
+    builder: (BuildContext context, Widget? page) => Transform.translate(
+      offset: Offset(32 * (1 - curved.value) - 16 * under.value, 0),
+      child: Opacity(
+        opacity: (curved.value * (1 - 0.06 * under.value)).clamp(0.0, 1.0),
+        child: page,
+      ),
     ),
+    child: child,
   );
 }
 
@@ -208,9 +239,10 @@ Widget bhorPageTransition(
 class BhorPageRoute<T> extends PageRouteBuilder<T> {
   BhorPageRoute({required WidgetBuilder builder, super.settings, super.fullscreenDialog})
       : super(
-          transitionDuration: BhorMotion.slow,
-          reverseTransitionDuration: const Duration(milliseconds: 160),
+          transitionDuration: const Duration(milliseconds: 320),
+          reverseTransitionDuration: const Duration(milliseconds: 220),
           pageBuilder: (BuildContext context, Animation<double> a, Animation<double> s) => builder(context),
           transitionsBuilder: bhorPageTransition,
         );
 }
+

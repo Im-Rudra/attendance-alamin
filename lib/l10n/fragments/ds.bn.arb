@@ -55,5 +55,9 @@
   "dsGalleryTitle": "ডিজাইন সিস্টেম",
   "@dsGalleryTitle": {
     "description": "Title of the hidden developer gallery of Bhor components."
+  },
+  "dsDone": "হয়েছে",
+  "@dsDone": {
+    "description": "Success state of a button or sheet after a save (the check mark label)."
   }
 }

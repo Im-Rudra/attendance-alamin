@@ -1,10 +1,15 @@
-// BhorTextField: label above, hint, helper, inline error, prefix/suffix and a
-// focus ring, built on EditableText (no Material InputDecorator).
+// BhorTextField (docs/council/13-fluid-ui-spec.md, TextField): filled, no
+// border. h56, r14, soft fill (hover soft2). The label floats inside the box
+// (15 px at rest -> 12 px at the top on focus / when filled, 220 ms). Focus:
+// surface fill + 1.5 px accent ring + 4 px focus ring, accent label. Error:
+// 1.5 px error ring and a message that slides down 4 px and fades in.
+// Built on EditableText (no Material InputDecorator).
 // Usage: `BhorTextField(label: 'নাম', controller: c, error: err, onChanged: f)`.
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
@@ -39,11 +44,14 @@ class BhorTextField extends StatefulWidget {
     this.semanticLabel,
   });
 
+  /// Floating label inside the box.
   final String? label;
+
+  /// Placeholder, shown once the label has floated and the field is empty.
   final String? hint;
   final String? helper;
 
-  /// Inline error under the field; non-null turns the border red.
+  /// Inline error under the field; non-null paints the error ring.
   final String? error;
   final TextEditingController? controller;
   final FocusNode? focusNode;
@@ -137,16 +145,12 @@ class _BhorTextFieldState extends State<BhorTextField>
     final BhorColors c = b.colors;
     final bool focused = _focus.hasFocus;
     final bool hasError = widget.error != null && widget.error!.isNotEmpty;
-    final Color border = hasError
-        ? c.danger
-        : focused
-            ? c.accent
-            : _hovered && widget.enabled
-                ? c.accentLine
-                : c.line;
-    TextStyle style = b.type.body.copyWith(color: widget.enabled ? c.text : c.text3);
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+    final Duration labelDur = BhorMotion.of(context, const Duration(milliseconds: 220));
+    TextStyle style = b.type.body.copyWith(color: widget.enabled ? c.text : c.text3, fontSize: 15);
     if (widget.tabular) style = BhorType.tabular(style);
     final bool multi = widget.maxLines == null || widget.maxLines! > 1;
+    final bool hasLabel = widget.label != null;
 
     final Widget editable = EditableText(
       key: editableTextKey,
@@ -177,30 +181,77 @@ class _BhorTextFieldState extends State<BhorTextField>
       enableInteractiveSelection: widget.enabled,
     );
 
-    final Widget text = Stack(
-      children: <Widget>[
-        if (widget.hint != null)
-          Positioned.fill(
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
-              builder: (BuildContext context, TextEditingValue v, Widget? _) => v.text.isEmpty
-                  ? IgnorePointer(
-                      child: ExcludeSemantics(
-                        child: Text(
-                          widget.hint!,
-                          maxLines: multi ? null : 1,
-                          overflow: multi ? null : TextOverflow.ellipsis,
-                          textAlign: widget.textAlign,
-                          style: style.copyWith(color: c.text3),
-                        ),
+    final Widget field = ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _controller,
+      builder: (BuildContext context, TextEditingValue v, Widget? _) {
+        final bool empty = v.text.isEmpty;
+        // The label floats on focus or once there is text.
+        final bool floated = !hasLabel || focused || !empty;
+        final Color labelColor = hasError ? c.danger : (focused ? c.accent : c.text2);
+        final Widget text = Stack(
+          children: <Widget>[
+            if (widget.hint != null && empty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ExcludeSemantics(
+                    child: AnimatedOpacity(
+                      opacity: empty && floated ? 1 : 0,
+                      duration: fast,
+                      child: Text(
+                        widget.hint!,
+                        maxLines: multi ? null : 1,
+                        overflow: multi ? null : TextOverflow.ellipsis,
+                        textAlign: widget.textAlign,
+                        style: style.copyWith(color: c.text3),
                       ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
+                    ),
+                  ),
+                ),
+              ),
+            editable,
+          ],
+        );
+        if (!hasLabel) return text;
+        return TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: floated ? 1 : 0),
+          duration: labelDur,
+          curve: BhorMotion.ease,
+          builder: (BuildContext context, double t, Widget? child) => Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              Padding(padding: const EdgeInsets.only(top: 17), child: child),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 10 * (1 - t),
+                child: IgnorePointer(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      widget.label!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: widget.textAlign,
+                      style: b.type.body.copyWith(
+                        fontSize: 15 - 3 * t,
+                        fontWeight: t > 0.5 ? FontWeight.w600 : FontWeight.w400,
+                        color: Color.lerp(c.text2, labelColor, t),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        editable,
-      ],
+          child: text,
+        );
+      },
     );
+
+    final Color fill = !widget.enabled
+        ? c.soft
+        : focused
+            ? c.surface
+            : (_hovered ? c.soft2 : c.soft);
 
     final Widget box = MouseRegion(
       cursor: widget.enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
@@ -218,38 +269,58 @@ class _BhorTextFieldState extends State<BhorTextField>
           editableTextKey.currentState?.requestKeyboard();
         },
         child: _gestures.buildGestureDetector(
-        behavior: HitTestBehavior.translucent,
-        child: BhorFocusRing(
-          visible: focused && !hasError,
-          child: AnimatedContainer(
-            duration: BhorMotion.fast,
-            curve: BhorMotion.curve,
-            constraints: const BoxConstraints(minHeight: BhorSize.control),
-            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: 10),
-            decoration: BoxDecoration(
-              color: widget.enabled ? c.surface : c.surface2,
-              borderRadius: BorderRadius.circular(BhorRadius.control),
-              border: Border.all(color: border, width: focused || hasError ? 1.5 : 1),
-            ),
-            child: Row(
-              crossAxisAlignment: multi ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-              children: <Widget>[
-                if (widget.prefix != null) ...<Widget>[
-                  IconTheme(data: IconThemeData(color: c.text3, size: 18), child: widget.prefix!),
-                  const SizedBox(width: BhorSpace.s8),
+          behavior: HitTestBehavior.translucent,
+          child: BhorFocusRing(
+            visible: focused && !hasError,
+            radius: BhorRadius.control,
+            child: AnimatedContainer(
+              duration: fast,
+              curve: BhorMotion.ease,
+              constraints: const BoxConstraints(minHeight: BhorSize.field),
+              padding: hasLabel
+                  ? const EdgeInsets.fromLTRB(BhorSpace.s16, 7, BhorSpace.s16, 11)
+                  : const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 16),
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(BhorRadius.control),
+                border: Border.all(color: hasError ? c.danger : c.danger.withValues(alpha: 0), width: 1.5),
+              ),
+              child: Row(
+                crossAxisAlignment: multi ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                children: <Widget>[
+                  if (widget.prefix != null) ...<Widget>[
+                    IconTheme(data: IconThemeData(color: c.text3, size: BhorIconSize.chip), child: widget.prefix!),
+                    const SizedBox(width: BhorSpace.s8),
+                  ],
+                  Expanded(child: field),
+                  if (widget.suffix != null) ...<Widget>[
+                    const SizedBox(width: BhorSpace.s8),
+                    IconTheme(data: IconThemeData(color: c.text3, size: BhorIconSize.chip), child: widget.suffix!),
+                  ],
                 ],
-                Expanded(child: text),
-                if (widget.suffix != null) ...<Widget>[
-                  const SizedBox(width: BhorSpace.s8),
-                  IconTheme(data: IconThemeData(color: c.text3, size: 18), child: widget.suffix!),
-                ],
-              ],
+              ),
             ),
           ),
         ),
-        ),
       ),
     );
+
+    final Widget below = hasError
+        ? Semantics(
+            key: const ValueKey<String>('error'),
+            liveRegion: true,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4),
+              child: Text(widget.error!, style: b.type.meta.copyWith(color: c.danger)),
+            ),
+          )
+        : widget.helper != null
+            ? Padding(
+                key: const ValueKey<String>('helper'),
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(widget.helper!, style: b.type.meta.copyWith(color: c.text3)),
+              )
+            : const SizedBox(key: ValueKey<String>('none'), width: double.infinity);
 
     return Semantics(
       container: true,
@@ -258,23 +329,29 @@ class _BhorTextFieldState extends State<BhorTextField>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (widget.label != null) ...<Widget>[
-            ExcludeSemantics(
-              child: Text(widget.label!, style: b.type.label.copyWith(color: c.text2)),
-            ),
-            const SizedBox(height: 6),
-          ],
           box,
-          if (hasError) ...<Widget>[
-            const SizedBox(height: 6),
-            Semantics(
-              liveRegion: true,
-              child: Text(widget.error!, style: b.type.meta.copyWith(color: c.danger)),
+          AnimatedSize(
+            duration: fast,
+            curve: BhorMotion.ease,
+            alignment: Alignment.topCenter,
+            child: AnimatedSwitcher(
+              duration: fast,
+              switchInCurve: BhorMotion.ease,
+              switchOutCurve: BhorMotion.exitCurve,
+              layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+                alignment: Alignment.topLeft,
+                children: <Widget>[...previous, if (current != null) current],
+              ),
+              transitionBuilder: (Widget child, Animation<double> a) => FadeTransition(
+                opacity: a,
+                child: SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0, -0.22), end: Offset.zero).animate(a),
+                  child: child,
+                ),
+              ),
+              child: below,
             ),
-          ] else if (widget.helper != null) ...<Widget>[
-            const SizedBox(height: 6),
-            Text(widget.helper!, style: b.type.meta.copyWith(color: c.text3)),
-          ],
+          ),
         ],
       ),
     );
