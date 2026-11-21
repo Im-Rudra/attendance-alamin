@@ -44,6 +44,26 @@ android {
         versionName = flutter.versionName
     }
 
+    // Size (apply.py): compress native libs inside the APK (smaller download; extracted on
+    // install) and drop licence/metadata files nothing reads at runtime.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += listOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "/META-INF/*.version",
+                "/META-INF/proguard/**",
+                "/META-INF/LICENSE*",
+                "/META-INF/NOTICE*",
+                "/META-INF/DEPENDENCIES",
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+            )
+        }
+    }
+
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
@@ -59,6 +79,10 @@ android {
         release {
             // Release key from android/key.properties when present, else the debug key (apply.py).
             signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            // Size (apply.py): R8 code shrinking + resource shrinking; rules in proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
