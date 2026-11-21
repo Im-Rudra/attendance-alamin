@@ -577,9 +577,7 @@ void main() {
       // An earlier day is fine: the roll call moves with the class.
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 22))));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey<String>('dp-day-17')));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('17'));
       await tester.pumpAndSettle();
       expect(find.text(held), findsNothing);
       expect(f.store.exceptions, isEmpty);
