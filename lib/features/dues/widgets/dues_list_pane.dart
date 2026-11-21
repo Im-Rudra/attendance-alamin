@@ -1,9 +1,9 @@
-// The dues list (UX 2d, 3b): summary, filter chips, "remind everyone", then
-// sticky severity groups (overdue first) and the collapsed grey
-// "ছেড়ে যাওয়া / আর্কাইভ" group. On large windows the same data becomes the
-// dues data table.
+// The dues list: on phones the summary card (with "remind everyone"), one
+// scrolling filter line, then sticky severity groups (overdue first) of rows
+// in list cards and the collapsed grey "ছেড়ে যাওয়া / আর্কাইভ" group. On wide
+// windows the three summary tiles lead, the filter line carries the "remind
+// everyone" button, and each row opens the payment side panel.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,24 +20,20 @@ import 'package:attendance_alamin/features/dues/widgets/dues_filters.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_group_header.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
-import 'package:attendance_alamin/features/dues/widgets/dues_table.dart';
 import 'package:attendance_alamin/features/dues/widgets/reminder_walkthrough.dart';
 
 class DuesListPane extends ConsumerStatefulWidget {
   const DuesListPane({
     super.key,
     this.selectedId,
-    this.table = false,
     this.showSummary = true,
   });
 
   /// Student whose payment panel is open (wide windows).
   final String? selectedId;
 
-  /// Large windows: the data table instead of rows.
-  final bool table;
-
-  /// Show the summary card above the filters (phones and mediums).
+  /// Show the summary card above the filters (phones and mediums); wide
+  /// windows show the three summary tiles instead.
   final bool showSummary;
 
   @override
@@ -71,15 +67,15 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     final AsyncValue<DuesView> async = ref.watch(duesViewProvider);
     final DuesReport? report = ref.watch(duesReportProvider).value;
     return async.when(
-      loading: () => const Center(child: BhorSpinner()),
+      loading: () => const _DuesSkeleton(),
       error: (Object e, StackTrace s) =>
-          BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed),
+          BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed),
       data: (DuesView view) {
-        if (report == null) return const Center(child: BhorSpinner());
+        if (report == null) return const _DuesSkeleton();
         if (report.active.isEmpty && report.inactive.isEmpty) {
           return const DuesEmptyState();
         }
-        return widget.table ? _buildTable(view, report, g) : _buildList(view, report, g);
+        return _buildList(view, report, g);
       },
     );
   }
@@ -87,8 +83,9 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
   Widget _remindAllButton(DuesView view) {
     return BhorButton(
       key: const ValueKey<String>('dues-remind-all'),
-      variant: BhorButtonVariant.secondary,
-      icon: Icons.campaign_outlined,
+      variant: BhorButtonVariant.tonal,
+      size: BhorButtonSize.sm,
+      icon: BhorIcons.bell,
       label: context.l10n.duesRemindAll,
       onPressed: () => _remindAll(view.active),
     );
@@ -97,7 +94,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
   Widget _noMatch() {
     final l10n = context.l10n;
     return BhorEmptyState(
-      icon: Icons.filter_alt_off_outlined,
+      icon: BhorIcons.filter,
       title: l10n.duesNoMatch,
       action: BhorButton(
         label: l10n.duesShowAll,
@@ -107,64 +104,46 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     );
   }
 
-  /// Total and "N unpaid · M overdue" in one compact line (wide windows keep
-  /// the summary card in the overview pane).
-  Widget _headline(DuesReport report) {
-    final l10n = context.l10n;
-    final fmt = context.fmt;
-    final BhorThemeData b = context.bhor;
-    return Wrap(
-      spacing: BhorSpace.s12,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        BhorMoney(report.totalOutstandingActive, style: b.type.stat),
-        Text(
-          l10n.duesHeadline(
-            fmt.number(report.studentsWithDues),
-            fmt.number(report.overdueStudents),
-          ),
-          style: b.type.bodyStrong.copyWith(color: b.colors.text2),
-        ),
-      ],
-    );
-  }
-
-  // ---- rows (phone, medium, narrow panes) ------------------------------------
-
   Widget _buildList(DuesView view, DuesReport report, double g) {
     final l10n = context.l10n;
+    final bool wide = WindowClass.of(context).isWide;
+    final Widget? remind = view.active.isEmpty ? null : _remindAllButton(view);
     final List<Widget> slivers = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(g, 4, g, 8),
+          padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, BhorSpace.s8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (widget.showSummary)
-                DuesSummaryCard(report: report)
+              if (wide)
+                const FeesSummaryTiles()
+              else if (widget.showSummary)
+                DuesSummaryCard(report: report, action: remind),
+              const SizedBox(height: BhorSpace.s12),
+              if (wide && remind != null)
+                Row(
+                  children: <Widget>[
+                    const Expanded(child: DuesFilters()),
+                    const SizedBox(width: BhorSpace.s12),
+                    remind,
+                  ],
+                )
               else
-                _headline(report),
-              const SizedBox(height: 12),
-              const DuesFilters(),
-              if (view.active.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: _remindAllButton(view),
-                ),
-              ],
+                const DuesFilters(),
             ],
           ),
         ),
       ),
     ];
+    int stagger = 0;
     if (view.isEmpty) {
       slivers.add(SliverToBoxAdapter(child: SizedBox(height: 320, child: _noMatch())));
     } else {
       for (final DueLevel level in kDuesGroupOrder) {
         final List<DuesRow> rows = view.ofLevel(level);
         if (rows.isEmpty) continue;
-        slivers.add(_group(DuesGroupHeader.level(level: level, count: rows.length), rows, g));
+        slivers.add(_group(DuesGroupHeader.level(level: level, count: rows.length), rows, g, stagger));
+        stagger += rows.length;
       }
       if (view.inactive.isNotEmpty) {
         slivers.add(_group(
@@ -175,6 +154,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
           ),
           _showInactive ? view.inactive : const <DuesRow>[],
           g,
+          stagger,
           hint: _showInactive ? l10n.duesInactiveHint : null,
         ));
       }
@@ -183,10 +163,10 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     // "টাকা নিন" button: 84 lift + 56 height + margin.
     final double tail = WindowClass.of(context).usesRail ? 112 : 168;
     slivers.add(SliverToBoxAdapter(child: SizedBox(key: const ValueKey<String>('dues-list-tail'), height: tail)));
-    return CustomScrollView(slivers: slivers);
+    return BhorStaggerScope(child: CustomScrollView(slivers: slivers));
   }
 
-  Widget _group(Widget header, List<DuesRow> rows, double g, {String? hint}) {
+  Widget _group(Widget header, List<DuesRow> rows, double g, int offset, {String? hint}) {
     return SliverMainAxisGroup(
       slivers: <Widget>[
         SliverPersistentHeader(
@@ -202,82 +182,48 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
           ),
         if (rows.isNotEmpty)
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(g, 8, g, 4),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int i) {
-                  final DuesRow r = rows[i];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: DuesRowTile(
-                      key: ValueKey<String>('dues-row-${r.studentId}'),
-                      row: r,
-                      selected: r.studentId == widget.selectedId,
-                      onOpen: () => _open(r.studentId),
+            padding: EdgeInsets.fromLTRB(g, BhorSpace.s8, g, BhorSpace.s4),
+            sliver: SliverToBoxAdapter(
+              child: BhorList(
+                children: <Widget>[
+                  for (int i = 0; i < rows.length; i++)
+                    BhorStagger(
+                      key: ValueKey<String>('dues-stagger-${rows[i].studentId}'),
+                      index: offset + i,
+                      child: DuesRowTile(
+                        key: ValueKey<String>('dues-row-${rows[i].studentId}'),
+                        row: rows[i],
+                        selected: rows[i].studentId == widget.selectedId,
+                        divider: i < rows.length - 1,
+                        onOpen: () => _open(rows[i].studentId),
+                      ),
                     ),
-                  );
-                },
-                childCount: rows.length,
+                ],
               ),
             ),
           ),
       ],
     );
   }
+}
 
-  // ---- data table (large windows) --------------------------------------------
+/// Placeholder rows with the real row height while the dues load.
+class _DuesSkeleton extends StatelessWidget {
+  const _DuesSkeleton();
 
-  Widget _buildTable(DuesView view, DuesReport report, double g) {
-    final l10n = context.l10n;
-    final fmt = context.fmt;
-    final List<DuesRow> rows = <DuesRow>[
-      ...view.active,
-      if (_showInactive) ...view.inactive,
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  @override
+  Widget build(BuildContext context) {
+    final double g = WindowClass.of(context).gutter;
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s8, g, g),
       children: <Widget>[
-        Padding(
-          padding: EdgeInsets.fromLTRB(g, 4, g, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _headline(report),
-              const SizedBox(height: 8),
-              const DuesFilters(),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  if (view.active.isNotEmpty) _remindAllButton(view),
-                  if (view.inactive.isNotEmpty)
-                    BhorChip(
-                      key: const ValueKey<String>('dues-toggle-inactive'),
-                      icon: Icons.inventory_2_outlined,
-                      label:
-                          '${l10n.duesInactiveGroup} · ${l10n.duesGroupCount(fmt.number(view.inactive.length))}',
-                      selected: _showInactive,
-                      onSelected: (bool _) => _toggleInactive(),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: rows.isEmpty
-              ? _noMatch()
-              : Padding(
-                  padding: EdgeInsets.fromLTRB(g, 0, g, g),
-                  child: DuesTable(
-                    rows: rows,
-                    selectedId: widget.selectedId,
-                    onSelect: _open,
-                  ),
-                ),
-        ),
+        const BhorSkeleton(height: 120, radius: BhorRadius.card),
+        const SizedBox(height: BhorSpace.s16),
+        for (int i = 0; i < 4; i++) ...<Widget>[
+          const BhorSkeleton(height: 72, radius: BhorRadius.card),
+          const SizedBox(height: BhorSpace.s8),
+        ],
       ],
     );
   }

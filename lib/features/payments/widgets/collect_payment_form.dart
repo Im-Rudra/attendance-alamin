@@ -2,7 +2,6 @@
 // side panel (UX 2c): batch, months, amount, method, date, note and one big
 // button that repeats the months and the amount.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +33,7 @@ class CollectPaymentForm extends ConsumerStatefulWidget {
     this.enrollmentId,
     this.receiptId,
     this.onClose,
+    this.fill = false,
   });
 
   final String studentId;
@@ -47,6 +47,10 @@ class CollectPaymentForm extends ConsumerStatefulWidget {
 
   /// Shows a close button in the header when set.
   final VoidCallback? onClose;
+
+  /// True inside a sheet / side panel of fixed height: the save bar is pinned
+  /// to the bottom and the form scrolls above it.
+  final bool fill;
 
   @override
   ConsumerState<CollectPaymentForm> createState() => _CollectPaymentFormState();
@@ -102,16 +106,19 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
 
   /// The ⋮ menu: waive the first open month.
   Future<void> _openMenu(String enrollmentId, YearMonth month) async {
-    final bool? waive = await showBhorSheet<bool>(
+    final bool? waive = await showBhorPanel<bool>(
       context,
-      builder: (BuildContext ctx) => BhorCard(
-        padding: EdgeInsets.zero,
-        child: BhorListRow(
-          key: const ValueKey<String>('pay-menu-waive'),
-          title: context.l10n.payWaiveMenu,
-          divider: false,
-          onTap: () => Navigator.of(ctx).pop(true),
-        ),
+      kind: BhorPanelKind.list,
+      width: 360,
+      builder: (BuildContext ctx) => BhorList(
+        children: <Widget>[
+          BhorListRow(
+            key: const ValueKey<String>('pay-menu-waive'),
+            title: context.l10n.payWaiveMenu,
+            divider: false,
+            onTap: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
       ),
     );
     if (waive != true || !mounted) return;
@@ -226,15 +233,17 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     final List<Widget> body = <Widget>[
       Row(
         children: <Widget>[
-          BhorAvatar(name: terms.studentName, size: 40),
+          BhorAvatar(name: terms.studentName, size: 44),
           const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Semantics(
-                  header: true,
-                  child: Text(editing ? l10n.payTitleEdit : l10n.payTitle, style: b.type.heading),
+                Text(
+                  terms.studentName,
+                  style: b.type.heading,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   _subtitle(terms),
@@ -248,18 +257,24 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
           if (!editing)
             BhorIconButton(
               key: const ValueKey<String>('pay-menu'),
-              icon: Icons.more_vert,
+              icon: BhorIcons.overflowVertical,
               semanticLabel: l10n.payMenuTooltip,
+              variant: BhorButtonVariant.secondary,
+              circle: true,
               onPressed: plan.openMonths.isEmpty
                   ? null
                   : () => _openMenu(enrollmentId, plan.openMonths.first.month),
             ),
-          if (widget.onClose != null)
+          if (widget.onClose != null) ...<Widget>[
+            const SizedBox(width: BhorSpace.s8),
             BhorIconButton(
-              icon: Icons.close,
+              icon: BhorIcons.close,
               semanticLabel: l10n.commonClose,
+              variant: BhorButtonVariant.secondary,
+              circle: true,
               onPressed: widget.onClose,
             ),
+          ],
         ],
       ),
       if (chooser) ...<Widget>[
@@ -267,16 +282,16 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         _Label(l10n.payBatchLabel),
         Wrap(
           spacing: BhorSpace.s8,
-          runSpacing: BhorSpace.s8,
+          runSpacing: BhorSpace.s4,
           children: <Widget>[
             for (final EnrollmentDues c in choices)
-              _Pill(
+              BhorChip(
                 key: ValueKey<String>('pay-batch-${c.terms.enrollmentId}'),
                 label: c.totalOutstanding > 0
                     ? l10n.payBatchOwed(c.terms.batchName, fmt.money(c.totalOutstanding))
                     : l10n.payBatchClear(c.terms.batchName),
                 selected: c.terms.enrollmentId == enrollmentId,
-                onTap: () => notifier.pickEnrollment(c.terms.enrollmentId),
+                onSelected: (bool _) => notifier.pickEnrollment(c.terms.enrollmentId),
               ),
           ],
         ),
@@ -286,15 +301,15 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       if (!editing && plan.openMonths.isNotEmpty) ...<Widget>[
         Wrap(
           key: const ValueKey<String>('pay-month-chips'),
-          spacing: 8,
-          runSpacing: 8,
+          spacing: BhorSpace.s8,
+          runSpacing: BhorSpace.s4,
           children: <Widget>[
             for (final MonthDue md in plan.openMonths.take(6))
-              _Pill(
+              BhorChip(
                 key: ValueKey<String>('pay-month-${md.month.toInt()}'),
                 label: _chipLabel(l10n, fmt, md, today),
                 selected: selectedMonths.contains(md.month),
-                onTap: () => notifier.pickMonth(md.month),
+                onSelected: (bool _) => notifier.pickMonth(md.month),
               ),
           ],
         ),
@@ -316,16 +331,15 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         ),
       ),
       const SizedBox(height: 16),
-      _Label(l10n.payAmountLabel),
       BhorTextField(
         key: const ValueKey<String>('pay-amount'),
+        label: l10n.payAmountLabel,
         controller: _amount,
         focusNode: _amountFocus,
         readOnly: manual,
         keyboardType: TextInputType.number,
         inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
         tabular: true,
-        semanticLabel: l10n.payAmountLabel,
         onChanged: (String t) => notifier.setAmount(parseDigits(t).toString()),
         prefix: Text('৳', style: b.type.body.copyWith(color: b.colors.text2)),
         // The amount in the app language (grouped), so a typo is obvious.
@@ -337,13 +351,13 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       if (plan.ok && plan.partialLeft > 0)
         _Note(
           key: const ValueKey<String>('pay-partial-note'),
-          icon: Icons.info_outline,
+          icon: BhorIcons.info,
           text: l10n.payPartialNote(fmt.money(plan.partialLeft)),
         ),
       if (plan.ok && plan.advanceTotal > 0 && !plan.pureAdvance)
         _Note(
           key: const ValueKey<String>('pay-advance-note'),
-          icon: Icons.event_available,
+          icon: BhorIcons.calendar,
           text: l10n.payAdvanceNote(
             fmt.money(plan.advanceTotal),
             fmt.monthList(plan.advanceMonths, currentYear: today.year),
@@ -368,16 +382,15 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       const SizedBox(height: 16),
       _Label(l10n.payMethodLabel),
       Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: BhorSpace.s8,
+        runSpacing: BhorSpace.s4,
         children: <Widget>[
           for (final PaymentMethod m in visible)
-            _Pill(
+            BhorChip(
               key: ValueKey<String>('pay-method-${m.code}'),
               label: paymentMethodLabel(l10n, m),
               selected: m == method,
-              semanticsLabel: l10n.payA11yMethod(paymentMethodLabel(l10n, m)),
-              onTap: () => notifier.setMethod(m),
+              onSelected: (bool _) => notifier.setMethod(m),
             ),
         ],
       ),
@@ -399,8 +412,10 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
           ),
           BhorIconButton(
             key: const ValueKey<String>('pay-date-edit'),
-            icon: Icons.edit_calendar,
+            icon: BhorIcons.calendar,
             semanticLabel: l10n.payDateEdit,
+            variant: BhorButtonVariant.secondary,
+            circle: true,
             onPressed: () => _pickDate(paidOn, today),
           ),
         ],
@@ -419,7 +434,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
           child: BhorButton(
             key: const ValueKey<String>('pay-note-add'),
             variant: BhorButtonVariant.ghost,
-            icon: Icons.edit_note,
+            icon: BhorIcons.notes,
             label: l10n.payNoteAdd,
             onPressed: () => setState(() => _showNote = true),
           ),
@@ -437,6 +452,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       child: _ActionBar(
         label: buttonLabel,
         onPressed: plan.ok && !input.busy && !_locked ? _submit : null,
+        loading: input.busy || _locked,
         disabledReason: disabledReason,
       ),
     );
@@ -444,14 +460,20 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final Widget scroll = SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(BhorSpace.s4, 4, BhorSpace.s4, 8),
+          padding: const EdgeInsets.only(top: BhorSpace.s4, bottom: BhorSpace.s8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
         );
+        final bool pinned = widget.fill && box.hasBoundedHeight;
         return Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: pinned ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (box.hasBoundedHeight) Flexible(child: scroll) else scroll,
+            if (pinned)
+              Expanded(child: scroll)
+            else if (box.hasBoundedHeight)
+              Flexible(child: scroll)
+            else
+              scroll,
             bar,
           ],
         );
@@ -468,7 +490,6 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
 
   String _subtitle(EnrollmentTerms t) {
     final List<String> parts = <String>[
-      t.studentName,
       if (t.subjectName.isNotEmpty) t.subjectName,
       t.batchName,
     ];
@@ -577,7 +598,7 @@ class _SplitHeader extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Expanded(child: Text(title, style: b.type.label.copyWith(color: b.colors.accent))),
-              Icon(open ? Icons.expand_less : Icons.expand_more, color: b.colors.accent),
+              Icon(open ? BhorIcons.chevronUp : BhorIcons.chevronDown, color: b.colors.accent),
             ],
           ),
         ),
@@ -586,68 +607,19 @@ class _SplitHeader extends StatelessWidget {
   }
 }
 
-/// A single-choice pill (batch, month, method).
-class _Pill extends StatelessWidget {
-  const _Pill({
-    super.key,
+/// The big save button pinned under the form, with the reason it is disabled.
+/// While the save runs the button shows the spinner (and ignores taps).
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({
     required this.label,
-    required this.selected,
-    required this.onTap,
-    this.semanticsLabel,
+    required this.onPressed,
+    required this.loading,
+    this.disabledReason,
   });
 
   final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final String? semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final BhorThemeData b = context.bhor;
-    final BhorColors c = b.colors;
-    final Color fg = selected ? c.accent : c.text;
-    return BhorPressable(
-      onTap: onTap,
-      semanticLabel: semanticsLabel ?? label,
-      selected: selected,
-      inMutuallyExclusiveGroup: true,
-      excludeChildSemantics: true,
-      radius: BhorRadius.control,
-      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
-        duration: BhorMotion.fast,
-        constraints: const BoxConstraints(minHeight: BhorSize.control, minWidth: 64),
-        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
-        decoration: BoxDecoration(
-          color: selected ? c.accentTint : (s.hovered ? c.surface2 : c.surface),
-          borderRadius: BorderRadius.circular(BhorRadius.control),
-          border: Border.all(color: selected ? c.accentLine : c.line),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (selected) ...<Widget>[
-              Icon(Icons.check, size: 18, color: fg),
-              const SizedBox(width: BhorSpace.s4),
-            ],
-            Flexible(
-              child: Text(
-                label,
-                style: b.type.label.copyWith(color: fg, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The big save button pinned under the form, with the reason it is disabled.
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.label, required this.onPressed, this.disabledReason});
-
-  final String label;
   final VoidCallback? onPressed;
+  final bool loading;
   final String? disabledReason;
 
   @override
@@ -656,16 +628,29 @@ class _ActionBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(border: Border(top: BorderSide(color: b.colors.line))),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s12, BhorSpace.s4, BhorSpace.s12),
+        padding: const EdgeInsets.fromLTRB(0, BhorSpace.s12, 0, BhorSpace.s4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            BhorButton(label: label, onPressed: onPressed, expand: true),
-            if (onPressed == null && disabledReason != null) ...<Widget>[
-              const SizedBox(height: BhorSpace.s8),
-              Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
-            ],
+            BhorButton(
+              label: label,
+              onPressed: onPressed,
+              loading: loading,
+              expand: true,
+              size: BhorButtonSize.lg,
+            ),
+            AnimatedSize(
+              duration: BhorMotion.of(context, BhorMotion.fast),
+              curve: BhorMotion.ease,
+              alignment: Alignment.topCenter,
+              child: onPressed == null && !loading && disabledReason != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: BhorSpace.s8),
+                      child: Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
           ],
         ),
       ),

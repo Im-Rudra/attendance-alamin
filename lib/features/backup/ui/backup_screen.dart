@@ -2,7 +2,6 @@
 // backup" and the safety copies (last 3) with a one-tap way back. On wide
 // windows the three cards stand side by side and fill the height.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,7 +66,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     Widget exportCard(bool fill) => _ActionCard(
       key: const Key('backup-export-card'),
       fill: fill,
-      icon: Icons.save_alt_outlined,
+      icon: BhorIcons.backupDown,
       title: l10n.backupExportTitle,
       body: l10n.backupExportBody,
       button: l10n.backupExportButton,
@@ -77,7 +76,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     Widget importCard(bool fill) => _ActionCard(
       key: const Key('backup-import-card'),
       fill: fill,
-      icon: Icons.upload_file_outlined,
+      icon: BhorIcons.backupUp,
       title: l10n.backupImportTitle,
       body: l10n.backupImportBody,
       button: l10n.backupImportButton,
@@ -89,6 +88,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.shellTitleBackup,
+        large: true,
         showBack: embedded ? false : null,
       ),
       body: LayoutBuilder(
@@ -174,7 +174,7 @@ class _LastBackupCard extends ConsumerWidget {
       key: const Key('backup-last-card'),
       child: Row(
         children: <Widget>[
-          Icon(stale ? Icons.info_outline : Icons.check_circle_outline, color: b.colors.accent),
+          Icon(stale ? BhorIcons.info : BhorIcons.checkCircle, color: b.colors.accent),
           const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Column(
@@ -322,7 +322,7 @@ class _SafetyCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.restore, color: b.colors.accent, size: 28),
+              Icon(BhorIcons.undo, color: b.colors.accent, size: 28),
               const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(

@@ -6,7 +6,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,9 +23,11 @@ import 'package:attendance_alamin/features/backup/controllers/backup_state.dart'
 
 /// Shows the export sheet; completes when it closes.
 Future<void> showExportSheet(BuildContext context) {
-  return showBhorSheet<void>(
+  return showBhorPanel<void>(
     context,
     title: context.l10n.backupExportTitle,
+    kind: BhorPanelKind.confirm,
+    scroll: false,
     builder: (BuildContext _) => const ExportSheet(),
   );
 }
@@ -84,7 +85,6 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
     final Snapshot? snapshot = _snapshot;
     if (bytes == null || snapshot == null) return;
     final l10n = context.l10n;
-    final NavigatorState navigator = Navigator.of(context);
     final BackupFiles files = ref.read(backupFilesProvider);
     setState(() => _phase = _ExportPhase.busy);
     try {
@@ -110,13 +110,11 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
       // The file is safe; only the "last backup" note could not be updated.
     }
     if (!mounted) return;
-    // The toast lives on the root overlay: show it, then close the sheet.
-    BhorToast.show(
+    // The success moment (check pops), the sheet closes, then the toast.
+    await showBhorSuccess<void>(
       context,
-      message: share ? l10n.backupExportShared : l10n.backupExportSaved,
-      tone: BhorTone.ok,
+      toast: share ? l10n.backupExportShared : l10n.backupExportSaved,
     );
-    navigator.pop();
   }
 
   @override
@@ -172,7 +170,7 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
               padding: const EdgeInsets.all(BhorSpace.s12),
               child: Row(
                 children: <Widget>[
-                  Icon(Icons.insert_drive_file_outlined, color: b.colors.accent),
+                  Icon(BhorIcons.notes, color: b.colors.accent),
                   const SizedBox(width: BhorSpace.s12),
                   Expanded(
                     child: Semantics(
@@ -199,7 +197,7 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(Icons.lock_outline, color: b.colors.accent),
+                    Icon(BhorIcons.settings, color: b.colors.accent),
                     const SizedBox(width: BhorSpace.s12),
                     Expanded(
                       child: Text(
@@ -215,7 +213,7 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
             const SizedBox(height: BhorSpace.s16),
             BhorButton(
               key: const Key('backup-export-save'),
-              icon: Icons.save_alt_outlined,
+              icon: BhorIcons.backupDown,
               label: l10n.backupExportSave,
               loading: busy,
               expand: true,
@@ -226,7 +224,7 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
               BhorButton(
                 key: const Key('backup-export-share'),
                 variant: BhorButtonVariant.secondary,
-                icon: Icons.ios_share,
+                icon: BhorIcons.share,
                 label: l10n.backupExportShare,
                 expand: true,
                 onPressed: busy ? null : () => _deliver(share: true),

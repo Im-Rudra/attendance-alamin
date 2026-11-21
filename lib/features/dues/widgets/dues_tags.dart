@@ -2,7 +2,6 @@
 // + day / month count) and the state tag of one month of a student's ledger.
 // Replace the Aurora SeverityBadge / MonthStateChip.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -32,7 +31,24 @@ String dueLevelLabel(
   return parts.join(' · ');
 }
 
-/// Severity tag of [level] (honey to rose; overdue is solid).
+/// Calm tone of a due level: only the overdue tag is red; the middle levels
+/// are amber, "just due" is the accent tint, upcoming is neutral.
+BhorTone dueLevelTone(DueLevel level) => switch (level) {
+      DueLevel.upcoming => BhorTone.neutral,
+      DueLevel.justDue => BhorTone.accent,
+      DueLevel.remind || DueLevel.followUp || DueLevel.urgent || DueLevel.finalDays => BhorTone.warn,
+      DueLevel.overdue => BhorTone.overdue,
+    };
+
+IconData dueLevelIcon(DueLevel level) => switch (level) {
+      DueLevel.upcoming => BhorIcons.clock,
+      DueLevel.justDue || DueLevel.remind => BhorIcons.bell,
+      DueLevel.followUp || DueLevel.urgent => BhorIcons.warning,
+      DueLevel.finalDays => BhorIcons.clock,
+      DueLevel.overdue => BhorIcons.warningFill,
+    };
+
+/// Pill tag of [level] (see [dueLevelTone]).
 Widget dueLevelTag(
   BuildContext context,
   DueLevel level, {
@@ -41,9 +57,9 @@ Widget dueLevelTag(
   int? partialRemaining,
   bool compact = false,
 }) {
-  return BhorTag.severity(
-    level: level.severityLevel,
-    icon: level.icon,
+  return BhorTag(
+    tone: dueLevelTone(level),
+    icon: dueLevelIcon(level),
     label: dueLevelLabel(
       context,
       level,
@@ -65,12 +81,12 @@ Widget monthStateTag(BuildContext context, MonthDue due) {
       return BhorTag(
         label: advance ? l10n.uiStateAdvance : l10n.uiStatePaid,
         tone: BhorTone.ok,
-        icon: advance ? Icons.add_circle : Icons.check_circle,
+        icon: advance ? BhorIcons.addCircle : BhorIcons.checkCircleFill,
       );
     case MonthState.waived:
-      return BhorTag(label: l10n.uiStateWaived, icon: Icons.do_not_disturb_on);
+      return BhorTag(label: l10n.uiStateWaived, icon: BhorIcons.minus);
     case MonthState.free:
-      return BhorTag(label: l10n.uiStateFree, icon: Icons.circle_outlined);
+      return BhorTag(label: l10n.uiStateFree, icon: BhorIcons.minus);
     case MonthState.partial:
     case MonthState.unpaid:
       final DueLevel? level = due.level;
@@ -78,12 +94,12 @@ Widget monthStateTag(BuildContext context, MonthDue due) {
       if (level == null || level == DueLevel.upcoming) {
         return BhorTag(
           label: due.state == MonthState.partial ? partial : l10n.uiLevelUpcoming,
-          icon: Icons.schedule,
+          icon: BhorIcons.clock,
         );
       }
-      return BhorTag.severity(
-        level: level.severityLevel,
-        icon: level.icon,
+      return BhorTag(
+        tone: due.state == MonthState.partial ? BhorTone.warn : dueLevelTone(level),
+        icon: dueLevelIcon(level),
         label: due.state == MonthState.partial ? partial : level.label(l10n),
       );
   }

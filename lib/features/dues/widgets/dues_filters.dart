@@ -1,7 +1,6 @@
 // Filter chips of the dues list (UX 2d): সব · মেয়াদোত্তীর্ণ · এ মাসে ·
 // [ব্যাচ ▾], plus the month chip the collection summary sets.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,56 +21,64 @@ class DuesFilters extends ConsumerWidget {
     final List<Batch> batches = ref.watch(duesBatchesProvider).value ?? const <Batch>[];
     final bool monthSet = filter.month != null;
 
-    return Wrap(
-      spacing: BhorSpace.s8,
-      runSpacing: BhorSpace.s4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        BhorChip(
-          key: const ValueKey<String>('dues-filter-all'),
-          label: l10n.duesFilterAll,
-          selected: filter.scope == DuesScope.all && !monthSet,
-          onSelected: (bool _) {
-            ctl.setScope(DuesScope.all);
-          },
-        ),
-        BhorChip(
-          key: const ValueKey<String>('dues-filter-overdue'),
-          label: l10n.duesFilterOverdue,
-          selected: filter.scope == DuesScope.overdue,
-          onSelected: (bool _) => ctl.setScope(DuesScope.overdue),
-        ),
-        BhorChip(
-          key: const ValueKey<String>('dues-filter-month'),
-          label: l10n.duesFilterThisMonth,
-          selected: filter.scope == DuesScope.thisMonth,
-          onSelected: (bool _) => ctl.setScope(DuesScope.thisMonth),
-        ),
-        if (filter.month != null)
-          BhorTooltip(
-            message: l10n.duesFilterClearMonth,
-            child: BhorChip(
-              key: const ValueKey<String>('dues-filter-picked-month'),
-              label: l10n.duesFilterMonth(context.fmt.monthYear(filter.month!)),
-              selected: true,
-              onSelected: (bool _) => ctl.clearMonth(),
+    // One scrolling line (chips + batch select) instead of a wrapping block.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          BhorChip(
+            key: const ValueKey<String>('dues-filter-all'),
+            label: l10n.duesFilterAll,
+            selected: filter.scope == DuesScope.all && !monthSet,
+            onSelected: (bool _) {
+              ctl.setScope(DuesScope.all);
+            },
+          ),
+          const SizedBox(width: BhorSpace.s8),
+          BhorChip(
+            key: const ValueKey<String>('dues-filter-overdue'),
+            label: l10n.duesFilterOverdue,
+            selected: filter.scope == DuesScope.overdue,
+            onSelected: (bool _) => ctl.setScope(DuesScope.overdue),
+          ),
+          const SizedBox(width: BhorSpace.s8),
+          BhorChip(
+            key: const ValueKey<String>('dues-filter-month'),
+            label: l10n.duesFilterThisMonth,
+            selected: filter.scope == DuesScope.thisMonth,
+            onSelected: (bool _) => ctl.setScope(DuesScope.thisMonth),
+          ),
+          if (filter.month != null) ...<Widget>[
+            const SizedBox(width: BhorSpace.s8),
+            BhorTooltip(
+              message: l10n.duesFilterClearMonth,
+              child: BhorChip(
+                key: const ValueKey<String>('dues-filter-picked-month'),
+                label: l10n.duesFilterMonth(context.fmt.monthYear(filter.month!)),
+                selected: true,
+                onSelected: (bool _) => ctl.clearMonth(),
+              ),
+            ),
+          ],
+          const SizedBox(width: BhorSpace.s8),
+          SizedBox(
+            width: 168,
+            child: BhorSelect<String>(
+              key: const ValueKey<String>('dues-filter-batch'),
+              semanticLabel: l10n.duesFilterBatch,
+              hint: l10n.duesFilterBatch,
+              value: filter.batchId ?? '',
+              options: <BhorOption<String>>[
+                BhorOption<String>('', l10n.commonAll, icon: BhorIcons.batches),
+                for (final Batch b in batches) BhorOption<String>(b.id, b.name, icon: BhorIcons.batches),
+              ],
+              onChanged: (String id) => ctl.setBatch(id.isEmpty ? null : id),
             ),
           ),
-        SizedBox(
-          width: 180,
-          child: BhorSelect<String>(
-            key: const ValueKey<String>('dues-filter-batch'),
-            semanticLabel: l10n.duesFilterBatch,
-            hint: l10n.duesFilterBatch,
-            value: filter.batchId ?? '',
-            options: <BhorOption<String>>[
-              BhorOption<String>('', l10n.commonAll, icon: Icons.groups_outlined),
-              for (final Batch b in batches) BhorOption<String>(b.id, b.name, icon: Icons.groups_outlined),
-            ],
-            onChanged: (String id) => ctl.setBatch(id.isEmpty ? null : id),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

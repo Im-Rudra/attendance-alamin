@@ -3,7 +3,6 @@
 // 2. cash in during the calendar month: by method, other income, total, and
 //    the receipts behind it.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +54,7 @@ class _StatCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
-            child: BhorMoney(amount, style: b.type.stat),
+            child: BhorCountUp.money(amount: amount, style: b.type.stat, muteSign: true),
           ),
           if (caption != null) Text(caption!, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
           if (footer != null) ...<Widget>[const SizedBox(height: BhorSpace.s4), footer!],
@@ -172,7 +171,7 @@ class BillingBlock extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: BhorSpace.s4),
-                        Icon(Icons.arrow_forward, size: 16, color: b.colors.accent),
+                        Icon(BhorIcons.arrowRight, size: 16, color: b.colors.accent),
                       ],
                     )
                   : null,
@@ -191,9 +190,7 @@ class BillingBlock extends ConsumerWidget {
     if (summary.batches.isNotEmpty) {
       children.addAll(<Widget>[
         BhorSectionHeader(title: l10n.collByBatch),
-        BhorCard(
-          padding: EdgeInsets.zero,
-          child: Column(
+        BhorList(
             children: <Widget>[
               for (int i = 0; i < summary.batches.length; i++)
                 _BatchLine(
@@ -209,7 +206,6 @@ class BillingBlock extends ConsumerWidget {
                   bold: true,
                 ),
             ],
-          ),
         ),
       ]);
     }
@@ -377,9 +373,7 @@ class ReceiptLog extends ConsumerWidget {
             child: Text(l10n.collLogEmpty, style: b.type.body.copyWith(color: b.colors.text2)),
           )
         else
-          BhorCard(
-            padding: EdgeInsets.zero,
-            child: Column(
+          BhorList(
               children: <Widget>[
                 for (int i = 0; i < receipts.length; i++)
                   _ReceiptRow(
@@ -392,7 +386,6 @@ class ReceiptLog extends ConsumerWidget {
                     monthsText: fmt.monthList(receipts[i].months, currentYear: summary.month.year),
                   ),
               ],
-            ),
           ),
       ],
     );
@@ -428,6 +421,7 @@ class _ReceiptRow extends StatelessWidget {
     // profile's Payment history (QA-14).
     return BhorListRow(
       key: ValueKey<String>('coll-receipt-open-${line.receiptId}'),
+      leading: BhorAvatar(name: name.isNotEmpty ? name : '·', size: 36),
       title: name.isNotEmpty ? name : sub,
       subtitle: name.isNotEmpty ? sub : null,
       divider: divider,
@@ -437,7 +431,7 @@ class _ReceiptRow extends StatelessWidget {
         children: <Widget>[
           BhorMoney(line.amount, style: b.type.bodyStrong),
           BhorIconButton(
-            icon: Icons.share,
+            icon: BhorIcons.share,
             semanticLabel: l10n.collShareReceipt,
             onPressed: () => shareReceipt(context, receiptId: line.receiptId),
           ),

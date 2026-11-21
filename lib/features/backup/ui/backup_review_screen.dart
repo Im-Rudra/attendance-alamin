@@ -3,7 +3,6 @@
 // column. Desktop: the numbers (info, headline, table) on one side, the named
 // details (deletions, clashes, samples, explanations) on the other.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -71,7 +70,7 @@ class BackupReviewScreen extends ConsumerWidget {
     switch (s.phase) {
       case ImportPhase.idle:
         body = ReviewNotice(
-          icon: Icons.upload_file_outlined,
+          icon: BhorIcons.backupUp,
           message: l10n.backupReviewEmpty,
           actions: <Widget>[
             BhorButton(
@@ -95,7 +94,7 @@ class BackupReviewScreen extends ConsumerWidget {
         );
       case ImportPhase.failed:
         body = ReviewNotice(
-          icon: Icons.error_outline,
+          icon: BhorIcons.warning,
           error: true,
           title: l10n.backupFailedTitle,
           message: errorTextForCode(l10n, s.errorCode ?? 'unknown'),
@@ -163,7 +162,7 @@ class _ReadyBody extends ConsumerWidget {
         ? null
         : ReviewError(text: errorTextForCode(l10n, state.errorCode!));
     final Widget? info = snapshot == null ? null : ReviewInfoCard(snapshot: snapshot, center: center);
-    final Widget? older = state.older ? ReviewNote(icon: Icons.history_toggle_off, text: l10n.backupOlderBanner) : null;
+    final Widget? older = state.older ? ReviewNote(icon: BhorIcons.clock, text: l10n.backupOlderBanner) : null;
     final Widget headline = ReviewHeadline(changes: changes, kept: keptTotal(summary));
     final bool hasDeletions = summary.entities.values.any((EntityChange c) => c.deleted > 0);
     final Widget? deletions =
@@ -273,17 +272,16 @@ class ReviewError extends StatelessWidget {
       child: DecoratedBox(
         key: const Key('review-error'),
         decoration: BoxDecoration(
-          color: b.colors.dangerBg,
+          color: b.colors.warnBg,
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: b.colors.danger.withValues(alpha: 0.35)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: b.colors.danger),
+              Icon(BhorIcons.warning, color: b.colors.warn),
               const SizedBox(width: BhorSpace.s12),
-              Expanded(child: Text(text, style: b.type.body.copyWith(color: b.colors.danger))),
+              Expanded(child: Text(text, style: b.type.body.copyWith(color: b.colors.warn))),
             ],
           ),
         ),

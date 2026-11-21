@@ -3,7 +3,6 @@
 // two scrolling columns (billing month || cash in + receipts) so both fill the
 // height. Tapping "outstanding" opens the dues list filtered to that month.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,16 +40,20 @@ class CollectionScreen extends ConsumerWidget {
     }
 
     Future<void> openMenu() async {
-      final String? v = await showBhorSheet<String>(
+      final String? v = await showBhorPanel<String>(
         context,
-        builder: (BuildContext ctx) => BhorCard(
-          padding: EdgeInsets.zero,
-          child: BhorListRow(
-            key: const Key('coll-add-other-income'),
-            title: l10n.collOtherIncomeMenu,
-            divider: false,
-            onTap: () => Navigator.of(ctx).pop('other-income'),
-          ),
+        kind: BhorPanelKind.list,
+        width: 400,
+        builder: (BuildContext ctx) => BhorList(
+          children: <Widget>[
+            BhorListRow(
+              key: const Key('coll-add-other-income'),
+              leading: Icon(BhorIcons.addCircle, color: ctx.bhor.colors.accent),
+              title: l10n.collOtherIncomeMenu,
+              divider: false,
+              onTap: () => Navigator.of(ctx).pop('other-income'),
+            ),
+          ],
         ),
       );
       if (v == 'other-income' && context.mounted) showOtherIncomeSheet(context);
@@ -59,19 +62,25 @@ class CollectionScreen extends ConsumerWidget {
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.collTitle,
+        large: true,
         actions: <Widget>[
           BhorIconButton(
             key: const Key('coll-export-csv'),
-            icon: Icons.table_view_outlined,
+            icon: BhorIcons.notes,
             semanticLabel: l10n.collExportCsv,
+            variant: BhorButtonVariant.secondary,
+            circle: true,
             onPressed: () => runCsvExport(context, month: month),
           ),
           BhorIconButton(
             key: const Key('coll-menu'),
-            icon: Icons.more_vert,
+            icon: BhorIcons.overflowVertical,
             semanticLabel: l10n.payMenuTooltip,
+            variant: BhorButtonVariant.secondary,
+            circle: true,
             onPressed: openMenu,
           ),
+          const SizedBox(width: BhorSpace.s8),
         ],
       ),
       body: Column(
@@ -92,7 +101,7 @@ class CollectionScreen extends ConsumerWidget {
             child: async.when(
               loading: () => const Center(child: BhorSpinner()),
               error: (Object e, StackTrace s) => BhorEmptyState(
-                icon: Icons.error_outline,
+                icon: BhorIcons.warning,
                 title: l10n.commonLoadingFailed,
               ),
               data: (CollectionSummary summary) => LayoutBuilder(

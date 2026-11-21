@@ -2,7 +2,6 @@
 // share it. Three files - students, payments, attendance - each with its own
 // save and share button. The files carry a UTF-8 BOM so Excel shows Bangla.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,9 +17,11 @@ import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// Opens the sheet for [month].
 Future<void> openCsvExportSheet(BuildContext context, {required YearMonth month}) {
-  return showBhorSheet<void>(
+  return showBhorPanel<void>(
     context,
     title: context.l10n.extraCsvTitle,
+    kind: BhorPanelKind.confirm,
+    scroll: false,
     builder: (BuildContext ctx) => CsvExportSheet(initialMonth: month),
   );
 }
@@ -81,19 +82,19 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
         <({CsvKind kind, IconData icon, String title, String hint})>[
       (
         kind: CsvKind.students,
-        icon: Icons.groups_outlined,
+        icon: BhorIcons.batches,
         title: l10n.extraCsvStudents,
         hint: l10n.extraCsvStudentsHint,
       ),
       (
         kind: CsvKind.payments,
-        icon: Icons.payments_outlined,
+        icon: BhorIcons.takeMoney,
         title: l10n.extraCsvPayments,
         hint: l10n.extraCsvPaymentsHint,
       ),
       (
         kind: CsvKind.attendance,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.checkCircle,
         title: l10n.extraCsvAttendance,
         hint: l10n.extraCsvAttendanceHint,
       ),
@@ -107,7 +108,7 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
             children: <Widget>[
               BhorIconButton(
                 key: const ValueKey<String>('csv-prev-month'),
-                icon: Icons.chevron_left,
+                icon: BhorIcons.chevronLeft,
                 semanticLabel: fmt.monthYear(_month.addMonths(-1)),
                 onPressed: () => setState(() => _month = _month.addMonths(-1)),
               ),
@@ -121,7 +122,7 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
               ),
               BhorIconButton(
                 key: const ValueKey<String>('csv-next-month'),
-                icon: Icons.chevron_right,
+                icon: BhorIcons.chevronRight,
                 semanticLabel: fmt.monthYear(_month.addMonths(1)),
                 onPressed: () => setState(() => _month = _month.addMonths(1)),
               ),
@@ -207,14 +208,14 @@ class _CsvRow extends StatelessWidget {
             children: <Widget>[
               BhorButton(
                 key: ValueKey<String>('csv-save-${kind.name}'),
-                icon: Icons.save_alt,
+                icon: BhorIcons.backupDown,
                 label: saveLabel,
                 onPressed: enabled ? onSave : null,
               ),
               BhorButton(
                 key: ValueKey<String>('csv-share-${kind.name}'),
                 variant: BhorButtonVariant.secondary,
-                icon: Icons.share_outlined,
+                icon: BhorIcons.share,
                 label: shareLabel,
                 onPressed: enabled ? onShare : null,
               ),

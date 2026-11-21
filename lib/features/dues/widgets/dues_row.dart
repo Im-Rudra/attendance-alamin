@@ -1,9 +1,11 @@
-// One student of the dues list (UX 2d): 4dp level bar, name and amount, the
-// severity tag (icon + word + day), batches and months, then Call / Remind
-// and the Collect button. Also the shared row actions and the desktop
-// right-click menu (UX 3b: টাকা নিন · মনে করান · নম্বর কপি · মওকুফ).
+// One student of the dues list: avatar, name and amount, the calm pill tag
+// (icon + word + day), batches and months, then Call / Remind and the
+// secondary "টাকা নিন" button that opens the payment panel. Also the shared
+// row actions and the desktop right-click menu (টাকা নিন · মনে করান ·
+// নম্বর কপি · মওকুফ).
 
-import 'package:flutter/material.dart' show Icons;
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,8 +15,8 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
-import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
@@ -27,9 +29,13 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 // ---- shared actions ----------------------------------------------------------
 
-/// Selects a student: the payment panel on wide windows, the profile on phones
-/// (the router decides, `/fees/s/:studentId`).
+/// Opens the payment flow of a student: the floating side panel on wide
+/// windows, the profile on phones (the router decides, `/fees/s/:studentId`).
 void openDuesStudent(BuildContext context, String studentId) {
+  if (WindowClass.of(context).isWide) {
+    unawaited(duesCollect(context, studentId));
+    return;
+  }
   GoRouter.maybeOf(context)?.go(Routes.feesStudent(studentId));
 }
 
@@ -95,17 +101,22 @@ class DuesRowTile extends ConsumerWidget {
     required this.row,
     required this.selected,
     required this.onOpen,
+    this.divider = true,
   });
 
   final DuesRow row;
   final bool selected;
   final VoidCallback onOpen;
 
+  /// Hairline under the row (off for the last row of a list card).
+  final bool divider;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final l10n = context.l10n;
+    final bool wide = context.bhorIsWide;
     final bool reminded =
         ref.watch(duesRemindedProvider).value?.contains(row.studentId) ?? false;
     final int year = ref.watch(todayProvider).year;
@@ -113,15 +124,116 @@ class DuesRowTile extends ConsumerWidget {
       row.batchNames.join(' · '),
       duesMonthsText(context, row, year),
     ].where((String s) => s.isNotEmpty).join(' · ');
-    final DueLevel? level = row.inactive ? null : row.level;
 
-    final Widget remind = BhorButton(
-      key: ValueKey<String>('dues-remind-${row.studentId}'),
-      variant: BhorButtonVariant.ghost,
-      icon: reminded ? Icons.check : Icons.share,
-      label: reminded ? l10n.duesRemindedToday : l10n.duesRemind,
-      onPressed: () => duesRemind(context, row.studentId),
+    final String remindLabel = reminded ? l10n.duesRemindedToday : l10n.duesRemind;
+    final Widget call = wide
+        ? BhorIconButton(
+            key: ValueKey<String>('dues-call-${row.studentId}'),
+            icon: ContactActions.icon,
+            semanticLabel: ContactActions.label(l10n),
+            size: BhorButtonSize.sm,
+            onPressed: () => duesCall(context, ref, row.studentId),
+          )
+        : BhorButton(
+            key: ValueKey<String>('dues-call-${row.studentId}'),
+            variant: BhorButtonVariant.ghost,
+            size: BhorButtonSize.sm,
+            icon: ContactActions.icon,
+            label: ContactActions.label(l10n),
+            onPressed: () => duesCall(context, ref, row.studentId),
+          );
+    final Widget remind = wide
+        ? BhorIconButton(
+            key: ValueKey<String>('dues-remind-${row.studentId}'),
+            icon: reminded ? BhorIcons.check : BhorIcons.share,
+            semanticLabel: remindLabel,
+            size: BhorButtonSize.sm,
+            onPressed: () => duesRemind(context, row.studentId),
+          )
+        : BhorButton(
+            key: ValueKey<String>('dues-remind-${row.studentId}'),
+            variant: BhorButtonVariant.ghost,
+            size: BhorButtonSize.sm,
+            icon: reminded ? BhorIcons.check : BhorIcons.share,
+            label: remindLabel,
+            onPressed: () => duesRemind(context, row.studentId),
+          );
+    final Widget collect = BhorButton(
+      key: ValueKey<String>('dues-collect-${row.studentId}'),
+      variant: BhorButtonVariant.secondary,
+      size: BhorButtonSize.sm,
+      label: l10n.duesCollect,
+      onPressed: () => duesCollect(context, row.studentId),
     );
+    final Widget name = Text(
+      row.name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: b.type.bodyStrong,
+    );
+    final Widget amount = BhorMoney(
+      row.total,
+      style: b.type.bodyStrong,
+      color: row.inactive ? c.text2 : null,
+    );
+    final Widget details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        name,
+        const SizedBox(height: 2),
+        Align(alignment: AlignmentDirectional.centerStart, child: DuesStatusBadge(row: row)),
+        if (subtitle.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 2),
+          Text(subtitle, maxLines: wide ? 1 : 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
+        ],
+      ],
+    );
+
+    final Widget content = wide
+        ? Row(
+            children: <Widget>[
+              BhorAvatar(name: row.name, size: 40),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(child: details),
+              const SizedBox(width: BhorSpace.s12),
+              call,
+              remind,
+              const SizedBox(width: BhorSpace.s12),
+              SizedBox(width: 104, child: Align(alignment: AlignmentDirectional.centerEnd, child: amount)),
+              const SizedBox(width: BhorSpace.s12),
+              collect,
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  BhorAvatar(name: row.name, size: 40),
+                  const SizedBox(width: BhorSpace.s12),
+                  Expanded(child: details),
+                  const SizedBox(width: BhorSpace.s8),
+                  amount,
+                ],
+              ),
+              const SizedBox(height: BhorSpace.s8),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[call, remind],
+                    ),
+                  ),
+                  const SizedBox(width: BhorSpace.s8),
+                  collect,
+                ],
+              ),
+            ],
+          );
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -131,95 +243,16 @@ class DuesRowTile extends ConsumerWidget {
         onTap: onOpen,
         semanticLabel: row.name,
         selected: selected,
-        radius: BhorRadius.card,
+        scaleOnPress: false,
+        radius: 0,
         builder: (BuildContext context, BhorStates s) => AnimatedContainer(
-          duration: BhorMotion.fast,
-          clipBehavior: Clip.antiAlias,
+          duration: BhorMotion.of(context, BhorMotion.instant),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s12),
           decoration: BoxDecoration(
-            color: selected ? c.accentTint : c.surface,
-            borderRadius: BorderRadius.circular(BhorRadius.card),
-            border: Border.all(color: selected || s.hovered ? c.accentLine : c.line),
+            color: selected ? c.accentTint : (s.hovered || s.pressed ? c.soft : c.soft.withValues(alpha: 0)),
+            border: divider ? Border(bottom: BorderSide(color: c.line)) : null,
           ),
-          child: Stack(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 10, BhorSpace.s12, BhorSpace.s8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            row.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: b.type.heading,
-                          ),
-                        ),
-                        const SizedBox(width: BhorSpace.s8),
-                        BhorMoney(
-                          row.total,
-                          style: b.type.heading,
-                          color: row.inactive ? c.text2 : null,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: BhorSpace.s4),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: DuesStatusBadge(row: row),
-                    ),
-                    if (subtitle.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: BhorSpace.s4),
-                      Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
-                    ],
-                    const SizedBox(height: BhorSpace.s4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Expanded(
-                          child: Wrap(
-                            spacing: BhorSpace.s4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: <Widget>[
-                              BhorButton(
-                                key: ValueKey<String>('dues-call-${row.studentId}'),
-                                variant: BhorButtonVariant.ghost,
-                                icon: ContactActions.icon,
-                                label: ContactActions.label(l10n),
-                                onPressed: () => duesCall(context, ref, row.studentId),
-                              ),
-                              remind,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: BhorSpace.s8),
-                        BhorButton(
-                          key: ValueKey<String>('dues-collect-${row.studentId}'),
-                          label: l10n.duesCollect,
-                          onPressed: () => duesCollect(context, row.studentId),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: ExcludeSemantics(
-                  child: Container(
-                    width: 4,
-                    color: level == null ? null : c.sevHue[level.severityLevel.index],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: content,
         ),
       ),
     );

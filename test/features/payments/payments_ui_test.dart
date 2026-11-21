@@ -312,8 +312,8 @@ void main() {
       expect(_receipts(f).where((Payment p) => p.billingMonth == _nov).single.method, PaymentMethod.bkash);
 
       await _open(tester);
-      expect(find.descendant(of: _key('pay-method-bkash'), matching: find.byIcon(Icons.check)), findsOneWidget);
-      expect(find.descendant(of: _key('pay-method-cash'), matching: find.byIcon(Icons.check)), findsNothing);
+      expect(tester.widget<BhorChip>(_key('pay-method-bkash')).selected, isTrue);
+      expect(tester.widget<BhorChip>(_key('pay-method-cash')).selected, isFalse);
     });
 
     testWidgets('a hidden method is not offered', (WidgetTester tester) async {
@@ -458,7 +458,7 @@ void main() {
       final Finder text = _key('pay-receipt-text');
       expect(text, findsOneWidget);
       // Sara owes nothing: "সব বেতন পরিশোধিত ✓" with the tick drawn as an icon.
-      expect(find.descendant(of: text, matching: find.byIcon(Icons.check)), findsOneWidget);
+      expect(find.descendant(of: text, matching: find.byIcon(BhorIcons.check)), findsOneWidget);
       expect(find.textContaining('✓'), findsNothing);
       expect(find.textContaining('সব বেতন পরিশোধিত'), findsOneWidget);
     });

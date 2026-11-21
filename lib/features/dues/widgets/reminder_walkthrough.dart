@@ -2,7 +2,6 @@
 // at a time. No SMS gateway: every message goes through the share sheet, the
 // teacher picks WhatsApp / SMS / Messenger and comes back for the next one.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,7 +89,7 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Icon(Icons.check_circle, size: 56, color: b.colors.accent),
+          Icon(BhorIcons.checkCircleFill, size: 56, color: b.colors.accent),
           const SizedBox(height: BhorSpace.s12),
           Text(
             l10n.duesWalkDone(fmt.number(_sent)),
@@ -178,7 +177,7 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
                   builder: (BuildContext context, AsyncSnapshot<String?> snap) {
                     final String? text = snap.data;
                     return BhorButton(
-                      icon: Icons.share,
+                      icon: BhorIcons.share,
                       label: l10n.duesWalkSend,
                       onPressed: (text == null || text.isEmpty) ? null : () => _send(text),
                     );
@@ -209,7 +208,7 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
                     ),
             ),
             BhorIconButton(
-              icon: Icons.close,
+              icon: BhorIcons.close,
               semanticLabel: l10n.commonClose,
               onPressed: () => Navigator.of(context).pop(),
             ),

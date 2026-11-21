@@ -2,7 +2,6 @@
 // chips). Every open month up to 12 months ahead is a row; a month can never
 // get more than it still owes.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -57,7 +56,7 @@ class AllocationEditor extends StatelessWidget {
             child: BhorButton(
               key: const ValueKey<String>('pay-split-auto'),
               variant: BhorButtonVariant.ghost,
-              icon: Icons.auto_fix_high,
+              icon: BhorIcons.sparkle,
               label: l10n.paySplitAuto,
               onPressed: onAuto,
             ),
@@ -109,7 +108,7 @@ class _SplitRow extends StatelessWidget {
               width: 48,
               height: 48,
               child: Icon(
-                on ? Icons.check_box : Icons.check_box_outline_blank,
+                on ? BhorIcons.checkCircleFill : BhorIcons.minus,
                 color: on ? b.colors.accent : b.colors.text2,
               ),
             ),

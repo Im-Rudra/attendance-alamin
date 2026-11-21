@@ -26,7 +26,7 @@ import 'package:attendance_alamin/features/dues/widgets/dues_empty.dart';
 import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
-import 'package:attendance_alamin/features/dues/widgets/dues_table.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_list_pane.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
@@ -425,7 +425,7 @@ void main() {
     testWidgets('the other-income action lives in a labelled menu', (WidgetTester tester) async {
       await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
       final AppLocalizations l10n = _l10n(Lang.bn);
-      expect(find.byIcon(Icons.add_card_outlined), findsNothing);
+      expect(find.byIcon(BhorIcons.takeMoney), findsNothing);
       await tester.tap(find.byKey(const Key('coll-menu')));
       await tester.pumpAndSettle();
       expect(find.text(l10n.collOtherIncomeMenu), findsOneWidget);
@@ -433,34 +433,45 @@ void main() {
   });
 
   group('desktop', () {
-    testWidgets('large window: dues table beside the payment panel', (WidgetTester tester) async {
-      await pumpApp(
-        tester,
-        const FeesScreen(selectedStudentId: kStuRahim),
-        viewport: TestViewport.desktop,
-        overrides: seedFakes().overrides,
-      );
-      final AppLocalizations l10n = _l10n(Lang.bn);
-      expect(find.byType(DuesTable), findsOneWidget);
-      expect(find.byType(CollectPaymentPanel), findsOneWidget);
-      expect(find.text(l10n.duesColName), findsOneWidget);
-      expect(find.text(l10n.duesColStatus), findsOneWidget);
-      expect(find.text(l10n.duesColActions), findsOneWidget);
-      final Rect table = tester.getRect(find.byType(DuesTable));
-      final Rect panel = tester.getRect(find.byType(CollectPaymentPanel));
-      expect(table.right, lessThanOrEqualTo(panel.left + 1));
-    });
-
-    testWidgets('nothing selected: the overview fills the detail pane', (WidgetTester tester) async {
+    testWidgets('wide window: one full-width list under three summary tiles, no second pane',
+        (WidgetTester tester) async {
       await pumpApp(
         tester,
         const FeesScreen(),
         viewport: TestViewport.desktop,
         overrides: seedFakes().overrides,
       );
-      expect(find.byType(DuesOverview), findsOneWidget);
+      await tester.pump();
+      expect(find.byType(FeesSummaryTiles), findsOneWidget);
+      expect(find.byType(DuesListPane), findsOneWidget);
       expect(find.byType(CollectPaymentPanel), findsNothing);
-      expect(find.byType(BhorEscalationBar), findsOneWidget);
+      expect(find.byKey(ValueKey<String>('dues-row-$kStuRahim')), findsOneWidget);
+    });
+
+    testWidgets('a row's take-money button opens the payment side panel', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const FeesScreen(),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(ValueKey<String>('dues-collect-$kStuRahim')));
+      await tester.pumpAndSettle();
+      expect(find.byType(BhorSidePanelFrame), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
+    });
+
+    testWidgets('/fees/s/:id on a wide window opens that student's panel', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const FeesScreen(selectedStudentId: kStuRahim),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(BhorSidePanelFrame), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
     });
   });
 
@@ -506,9 +517,9 @@ void main() {
       await _tall(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
       BhorIconButton next() =>
-          tester.widget<BhorIconButton>(find.widgetWithIcon(BhorIconButton, Icons.chevron_right));
+          tester.widget<BhorIconButton>(find.widgetWithIcon(BhorIconButton, BhorIcons.chevronRight));
       expect(next().onPressed, isNull);
-      await tester.tap(find.widgetWithIcon(BhorIconButton, Icons.chevron_left));
+      await tester.tap(find.widgetWithIcon(BhorIconButton, BhorIcons.chevronLeft));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text(l10n.collBillingBlock('অক্টোবর ২০২৬')), findsOneWidget);
