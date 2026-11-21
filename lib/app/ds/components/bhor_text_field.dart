@@ -190,7 +190,7 @@ class _BhorTextFieldState extends State<BhorTextField>
         final Color labelColor = hasError ? c.danger : (focused ? c.accent : c.text2);
         final Widget text = Stack(
           children: <Widget>[
-            if (widget.hint != null)
+            if (widget.hint != null && empty)
               Positioned.fill(
                 child: IgnorePointer(
                   child: ExcludeSemantics(

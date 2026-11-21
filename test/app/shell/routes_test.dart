@@ -118,7 +118,7 @@ void main() {
     final RollCallScreen screen = tester.widget(find.byType(RollCallScreen));
     expect(screen.occ, 's.x.20261121');
     // Opened directly: the close button goes to Today.
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byIcon(BhorIcons.close));
     await tester.pumpAndSettle();
     expect(find.byType(TodayScreen), findsOneWidget);
   });
