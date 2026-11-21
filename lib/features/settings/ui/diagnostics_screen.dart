@@ -77,6 +77,7 @@ class DiagnosticsScreen extends ConsumerWidget {
                           ),
                           // Hidden: long-press opens the Bhor design-system gallery.
                           GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onLongPress: () => context.push(Routes.moreDesignSystem),
                             child: SettingRow(
                               key: const Key('diag-version'),
