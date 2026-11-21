@@ -3,7 +3,6 @@
 // :00 :15 :30 :45 and "other minute" (every 5 minutes). Desktop also accepts a
 // typed time. A bottom sheet on phones, a dialog on wide windows.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -134,11 +133,11 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
 
     final Widget readout = Semantics(
       liveRegion: true,
-      child: DecoratedBox(
+      child: AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.fast),
         decoration: BoxDecoration(
           color: b.colors.accentTint,
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: b.colors.accentLine),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: BhorSpace.s16),
@@ -204,7 +203,7 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
         SchedChip(
           label: l10n.schedOtherMinute,
           selected: _otherMinutes,
-          leading: _otherMinutes ? Icons.expand_less : Icons.expand_more,
+          leading: _otherMinutes ? BhorIcons.chevronUp : BhorIcons.chevronDown,
           onTap: () => setState(() => _otherMinutes = !_otherMinutes),
         ),
       ],
@@ -229,7 +228,7 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

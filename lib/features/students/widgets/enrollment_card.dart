@@ -1,7 +1,6 @@
 // One card per enrollment on the student profile (UX 3): batch, fee, the month
 // strip, outstanding dues, attendance summary and [টাকা নিন].
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -95,11 +94,13 @@ class EnrollmentCard extends ConsumerWidget {
                 ),
               ),
               BhorIconButton(
-                icon: Icons.more_vert,
+                icon: BhorIcons.overflowVertical,
                 semanticLabel: l10n.commonMore,
                 onPressed: () async {
-                  final _CardAction? a = await showBhorSheet<_CardAction>(
+                  final _CardAction? a = await showBhorPanel<_CardAction>(
                     context,
+                    kind: BhorPanelKind.list,
+                    width: 380,
                     builder: (BuildContext ctx) => Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -132,7 +133,7 @@ class EnrollmentCard extends ConsumerWidget {
             const SizedBox(height: BhorSpace.s4),
             Row(
               children: <Widget>[
-                Icon(Icons.person_off_outlined, size: 16, color: b.colors.text2),
+                Icon(BhorIcons.leftStudents, size: 16, color: b.colors.text2),
                 const SizedBox(width: BhorSpace.s8),
                 Expanded(
                   child: Text(
@@ -176,7 +177,7 @@ class EnrollmentCard extends ConsumerWidget {
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: BhorButton(
-                icon: Icons.payments_outlined,
+                icon: BhorIcons.takeMoney,
                 label: l10n.stuCollect,
                 onPressed: () => showCollectPaymentSheet(context,
                     studentId: student.id, enrollmentId: enrollment.id),
@@ -307,21 +308,21 @@ class _MonthTile extends StatelessWidget {
         tag = BhorTag(
           label: word,
           tone: BhorTone.ok,
-          icon: advance ? Icons.add_circle : Icons.check_circle,
+          icon: advance ? BhorIcons.addCircle : BhorIcons.checkCircleFill,
         );
       case MonthState.waived:
         word = l10n.uiStateWaived;
-        tag = BhorTag(label: word, icon: Icons.do_not_disturb_on);
+        tag = BhorTag(label: word, icon: BhorIcons.minus);
       case MonthState.free:
         word = l10n.uiStateFree;
-        tag = BhorTag(label: word, icon: Icons.circle_outlined);
+        tag = BhorTag(label: word, icon: BhorIcons.overflow);
       case MonthState.partial:
       case MonthState.unpaid:
         final DueLevel? level = due.level;
         final bool partial = due.state == MonthState.partial;
         if (level == null || level == DueLevel.upcoming) {
           word = partial ? l10n.uiPartialLeft(fmt.money(due.remaining)) : l10n.uiLevelUpcoming;
-          tag = BhorTag(label: word, icon: Icons.schedule);
+          tag = BhorTag(label: word, icon: BhorIcons.clock);
         } else {
           word = partial ? l10n.uiPartialLeft(fmt.money(due.remaining)) : level.label(l10n);
           tag = BhorTag.severity(level: level.severityLevel, label: word, icon: level.icon);

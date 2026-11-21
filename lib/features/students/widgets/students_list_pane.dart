@@ -2,7 +2,6 @@
 // either rows or, on large windows, the data table with a sticky header (UX 3b
 // columns: রোল · নাম · ব্যাচ · অভিভাবকের ফোন · হাজিরা % · বকেয়া · শেষ পেমেন্ট).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,7 @@ import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
+import 'package:attendance_alamin/features/students/ui/student_form_screen.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
 import 'package:attendance_alamin/features/students/widgets/student_row_tile.dart';
@@ -42,7 +42,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
 
   void _open(String id) => stuGo(context, Routes.student(id));
 
-  void _new() => stuPush(context, Routes.studentNew);
+  void _new() => showStudentFormPanel(context);
 
   @override
   Widget build(BuildContext context) {
@@ -60,14 +60,14 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
       autofocus: wide,
       textInputAction: TextInputAction.search,
       onChanged: (String v) => setState(() => _filter = _filter.copyWith(query: v)),
-      prefix: const Icon(Icons.search),
+      prefix: const Icon(BhorIcons.search),
       hint: l10n.stuSearchHint,
       semanticLabel: l10n.stuSearchHint,
       suffix: _query.text.isEmpty
           ? null
           : BhorIconButton(
               semanticLabel: l10n.commonClose,
-              icon: Icons.close,
+              icon: BhorIcons.close,
               size: BhorButtonSize.sm,
               onPressed: () {
                 _query.clear();
@@ -76,10 +76,11 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
             ),
     );
 
-    final Widget chips = Wrap(
-      spacing: BhorSpace.s8,
-      runSpacing: BhorSpace.s4,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    // One horizontally scrolling row (never wraps onto a second line).
+    final Widget chips = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         SizedBox(
           width: 200,
@@ -96,27 +97,30 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
                 : _filter.copyWith(batchId: id)),
           ),
         ),
+        const SizedBox(width: BhorSpace.s8),
         BhorChip(
           label: l10n.stuFilterDues,
           selected: _filter.onlyDues,
           onSelected: (bool v) => setState(() => _filter = _filter.copyWith(onlyDues: v)),
         ),
+        const SizedBox(width: BhorSpace.s8),
         BhorChip(
           label: l10n.stuFilterLeft,
           selected: _filter.onlyLeft,
           onSelected: (bool v) => setState(() => _filter = _filter.copyWith(onlyLeft: v)),
         ),
       ],
+      ),
     );
 
     final Widget body = async.when(
       loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace st) =>
-          BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed),
+          BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed),
       data: (List<StudentRow> all) {
         if (all.isEmpty) {
           return BhorEmptyState(
-            icon: Icons.group_outlined,
+            icon: BhorIcons.students,
             title: l10n.stuEmptyAll,
             action: BhorButton(label: l10n.stuNewStudent, onPressed: _new),
           );
@@ -125,7 +129,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
         if (rows.isEmpty) {
           final String q = _filter.query.trim();
           return BhorEmptyState(
-            icon: Icons.person_search_outlined,
+            icon: BhorIcons.search,
             title: q.isEmpty ? l10n.stuNoMatchFilters : l10n.stuNoMatch(q),
             action: q.isEmpty ? null : BhorButton(label: l10n.stuNewStudent, onPressed: _new),
           );
@@ -133,16 +137,21 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
         if (widget.table) {
           return _Table(rows: rows, selectedId: widget.selectedId, onOpen: _open);
         }
-        return BhorCard(
-          padding: EdgeInsets.zero,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 88),
-            itemCount: rows.length,
-            itemBuilder: (BuildContext c, int i) => StudentRowTile(
-              key: ValueKey<String>('stu-row-${rows[i].id}'),
-              row: rows[i],
-              selected: rows[i].id == widget.selectedId,
-              onTap: () => _open(rows[i].id),
+        return BhorStaggerScope(
+          child: BhorCard(
+            padding: EdgeInsets.zero,
+            child: ListView.builder(
+              padding: const EdgeInsets.only(bottom: 88),
+              itemCount: rows.length,
+              itemBuilder: (BuildContext c, int i) => BhorStagger(
+                index: i,
+                child: StudentRowTile(
+                  key: ValueKey<String>('stu-row-${rows[i].id}'),
+                  row: rows[i],
+                  selected: rows[i].id == widget.selectedId,
+                  onTap: () => _open(rows[i].id),
+                ),
+              ),
             ),
           ),
         );

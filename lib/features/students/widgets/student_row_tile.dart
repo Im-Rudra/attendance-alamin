@@ -71,18 +71,22 @@ class StudentRowTile extends StatelessWidget {
     final Student s = row.student;
     final String? roll = s.roll;
     final bool left = s.status == StudentStatus.left;
-    final String subtitle = left
-        ? (s.leftDate == null
-            ? l10n.stuStatusLeft
-            : l10n.stuLeftOn(context.fmt.date(s.leftDate!)))
-        : batchNames(row.batches);
+    final String rollText = roll == null || roll.isEmpty ? '' : context.fmt.digits(roll);
+    final String subtitle = <String>[
+      if (rollText.isNotEmpty) rollText,
+      left
+          ? (s.leftDate == null
+              ? l10n.stuStatusLeft
+              : l10n.stuLeftOn(context.fmt.date(s.leftDate!)))
+          : batchNames(row.batches),
+    ].where((String t) => t.isNotEmpty).join(' · ');
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onSecondaryTapUp: (TapUpDetails d) => showStudentContextMenu(context, d.globalPosition, row),
       child: BhorListRow(
         selected: selected,
         leading: StudentAvatar(student: s, size: 40),
-        title: roll == null || roll.isEmpty ? s.name : '${context.fmt.digits(roll)} · ${s.name}',
+        title: s.name,
         subtitle: subtitle.isEmpty ? null : subtitle,
         onTap: onTap,
         trailing: row.dues == null
@@ -113,8 +117,10 @@ Future<void> showStudentContextMenu(
   final Student s = row.student;
   final String? number = s.callNumber;
   final bool active = s.status == StudentStatus.active;
-  final _MenuAction? choice = await showBhorSheet<_MenuAction>(
+  final _MenuAction? choice = await showBhorPanel<_MenuAction>(
     context,
+    kind: BhorPanelKind.list,
+    width: 380,
     title: s.name,
     builder: (BuildContext ctx) {
       final List<(_MenuAction, String)> items = <(_MenuAction, String)>[

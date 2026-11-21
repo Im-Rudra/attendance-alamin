@@ -2,7 +2,6 @@
 // windows show list ‖ detail (‖ context at ≥ 1200) through PaneSplit; with no
 // selection the detail pane is a useful overview, never a blank area.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +15,7 @@ import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_detail_screen.dart';
+import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_card.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_overview.dart';
@@ -37,7 +37,10 @@ class BatchesScreen extends StatelessWidget {
       preferList: id == null,
       detail: id == null
           ? const BatchesOverview()
-          : BatchDetailScreen(key: ValueKey<String>(id), batchId: id),
+          : BhorPaneSwitcher(
+              paneKey: id,
+              child: BatchDetailScreen(key: ValueKey<String>(id), batchId: id),
+            ),
       contextPane: id == null ? null : BatchContextPane(batchId: id),
     );
   }
@@ -55,12 +58,18 @@ class _BatchesList extends ConsumerStatefulWidget {
 class _BatchesListState extends ConsumerState<_BatchesList> {
   final Set<String> _collapsed = <String>{};
 
-  void _new() => context.push(Routes.batchNew);
+  Future<void> _new() async {
+    final Object? r = await showBatchFormPanel(context);
+    if (!mounted || r is! String) return;
+    openPath(context, Routes.batch(r));
+  }
 
   Future<void> _menu(BatchCardData d, Offset at) async {
     final l10n = context.l10n;
-    final String? choice = await showBhorSheet<String>(
+    final String? choice = await showBhorPanel<String>(
       context,
+      kind: BhorPanelKind.list,
+      width: 380,
       title: d.batch.name,
       builder: (BuildContext ctx) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -80,7 +89,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
       case 'open':
         openPath(context, Routes.batch(d.batch.id));
       case 'edit':
-        context.push(Routes.batchEdit(d.batch.id));
+        await showBatchFormPanel(context, batchId: d.batch.id);
       case 'archive':
         await showArchiveBatchDialog(context, batchId: d.batch.id);
     }
@@ -98,7 +107,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
     final Widget body = async.when(
       loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace s) => BhorEmptyState(
-        icon: Icons.error_outline,
+        icon: BhorIcons.warning,
         title: l10n.commonLoadingFailed,
         action: BhorButton(
           label: l10n.commonRetry,
@@ -111,7 +120,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
           return BhorCard(
             padding: EdgeInsets.zero,
             child: BhorEmptyState(
-              icon: Icons.groups_outlined,
+              icon: BhorIcons.batches,
               title: l10n.batchEmptyList,
               action: BhorButton(label: l10n.batchNew, onPressed: _new),
             ),
@@ -122,7 +131,9 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
             final int cols = c.maxWidth >= 560 ? 2 : 1;
             const double gap = BhorSpace.s12;
             final double w = (c.maxWidth - gap * (cols - 1)) / cols;
-            return ListView(
+            int staggerAt = 0;
+            return BhorStaggerScope(
+              child: ListView(
               padding: EdgeInsets.only(bottom: wc.usesRail ? 96 : 168),
               children: <Widget>[
                 for (final SubjectGroup grp in loaded) ...<Widget>[
@@ -144,11 +155,14 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                           for (final BatchCardData d in grp.batches)
                             SizedBox(
                               width: w,
-                              child: BatchCard(
-                                data: d,
-                                selected: d.batch.id == widget.selectedId,
-                                onTap: () => openPath(context, Routes.batch(d.batch.id)),
-                                onSecondaryTap: (Offset at) => _menu(d, at),
+                              child: BhorStagger(
+                                index: staggerAt++,
+                                child: BatchCard(
+                                  data: d,
+                                  selected: d.batch.id == widget.selectedId,
+                                  onTap: () => openPath(context, Routes.batch(d.batch.id)),
+                                  onSecondaryTap: (Offset at) => _menu(d, at),
+                                ),
                               ),
                             ),
                         ],
@@ -156,6 +170,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                     ),
                 ],
               ],
+              ),
             );
           },
         );
@@ -174,7 +189,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
             large: true,
             actions: <Widget>[
               BhorIconButton(
-                icon: Icons.search,
+                icon: BhorIcons.search,
                 semanticLabel: l10n.commonSearch,
                 onPressed: () => context.push(Routes.search),
               ),
@@ -184,7 +199,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
               ? null
               : Padding(
                   padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
-                  child: BhorButton(icon: Icons.add, label: l10n.batchNew, onPressed: _new),
+                  child: BhorButton(icon: BhorIcons.add, label: l10n.batchNew, onPressed: _new),
                 ),
           body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
         ),
@@ -219,14 +234,24 @@ class _GroupHeader extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: BhorSize.phoneRow),
           child: Row(
             children: <Widget>[
-              Icon(collapsed ? Icons.chevron_right : Icons.expand_more, color: b.colors.text2),
-              const SizedBox(width: BhorSpace.s4),
+              AnimatedRotation(
+                turns: collapsed ? -0.25 : 0,
+                duration: BhorMotion.of(context, BhorMotion.fast),
+                curve: BhorMotion.curveOf(context, BhorMotion.spring),
+                child: Icon(BhorIcons.chevronDown, size: BhorIconSize.chip, color: b.colors.text2),
+              ),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(
-                child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.heading),
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: b.type.label.copyWith(color: b.colors.text2),
+                ),
               ),
               Text(
                 context.l10n.batchGroupCount(context.fmt.number(count)),
-                style: b.type.label.copyWith(color: b.colors.text2),
+                style: b.type.label.copyWith(color: b.colors.text3),
               ),
             ],
           ),

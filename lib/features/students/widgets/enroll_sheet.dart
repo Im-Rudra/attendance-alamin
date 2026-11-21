@@ -22,9 +22,10 @@ import 'package:attendance_alamin/features/students/controllers/student_provider
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<bool> openEnrollSheet(BuildContext context, String studentId) async {
-  final bool? done = await showBhorSheet<bool>(
+  final bool? done = await showBhorPanel<bool>(
     context,
     title: context.l10n.stuEnrollTitle,
+    kind: BhorPanelKind.form,
     builder: (BuildContext ctx) => EnrollSheet(studentId: studentId),
   );
   return done ?? false;
@@ -164,7 +165,7 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
                 BhorButton(
                   key: const ValueKey<String>('stu-enroll-confirm'),
                   label: l10n.stuEnrollConfirm,
-                  expand: true,
+                  expand: true,
                   onPressed: (_busy || _choice.batchId == null) ? null : () => _enroll(today, cutoff),
                 ),
                 if (_choice.batchId == null)

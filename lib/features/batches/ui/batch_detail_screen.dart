@@ -2,7 +2,6 @@
 // শিক্ষার্থী · হাজিরা · বেতন · সময়সূচি. The last three tabs belong to other
 // features and are reached through their entry files.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +22,7 @@ import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
+import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_card.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_students_tab.dart';
@@ -59,8 +59,10 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
 
   Future<void> _openMenu(Batch b) async {
     final l10n = context.l10n;
-    final _MenuAction? a = await showBhorSheet<_MenuAction>(
+    final _MenuAction? a = await showBhorPanel<_MenuAction>(
       context,
+      kind: BhorPanelKind.list,
+      width: 380,
       title: b.name,
       builder: (BuildContext ctx) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -105,7 +107,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
       loading: () => frame(body: const Center(child: BhorSpinner())),
       error: (Object e, StackTrace s) => frame(
         body: BhorEmptyState(
-          icon: Icons.error_outline,
+          icon: BhorIcons.warning,
           title: l10n.commonLoadingFailed,
           action: BhorButton(
             label: l10n.commonRetry,
@@ -116,7 +118,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
       ),
       data: (Batch? b) {
         if (b == null) {
-          return frame(body: BhorEmptyState(icon: Icons.search_off, title: l10n.errNotFound));
+          return frame(body: BhorEmptyState(icon: BhorIcons.search, title: l10n.errNotFound));
         }
         final bool compact = !WindowClass.of(context).usesRail;
         final bool showFab = _tab == 0 && !b.archived;
@@ -127,17 +129,17 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
               BhorIconButton(
                 key: const Key('batch-bulk-add'),
                 semanticLabel: l10n.batchBulkAdd,
-                icon: Icons.group_add_outlined,
+                icon: BhorIcons.add,
                 onPressed: () => context.push(Routes.batchBulkAdd(b.id)),
               ),
             BhorIconButton(
               semanticLabel: l10n.commonEdit,
-              icon: Icons.edit_outlined,
-              onPressed: () => context.push(Routes.batchEdit(b.id)),
+              icon: BhorIcons.edit,
+              onPressed: () => showBatchFormPanel(context, batchId: b.id),
             ),
             BhorIconButton(
               semanticLabel: l10n.commonMore,
-              icon: Icons.more_vert,
+              icon: BhorIcons.overflowVertical,
               onPressed: () => _openMenu(b),
             ),
           ],
@@ -145,7 +147,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
               ? Padding(
                   padding: EdgeInsets.only(bottom: compact ? 84 : 0),
                   child: BhorButton(
-                    icon: Icons.person_add_alt_1,
+                    icon: BhorIcons.add,
                     label: l10n.batchAddStudent,
                     onPressed: () => showAddStudentToBatchSheet(context, batchId: b.id),
                   ),
@@ -267,7 +269,7 @@ class _BatchHeader extends ConsumerWidget {
                 _ArchivedBanner(batch: batch)
               else
                 BhorButton(
-                  icon: Icons.how_to_reg_outlined,
+                  icon: BhorIcons.rollCall,
                   label: l10n.batchTakeAttendance,
                   onPressed: () => openRollCallForBatchDate(context, batchId: batch.id, date: today),
                 ),
@@ -294,7 +296,7 @@ class _ArchivedBanner extends StatelessWidget {
       runSpacing: BhorSpace.s8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        Icon(Icons.inventory_2_outlined, color: th.colors.text2),
+        Icon(BhorIcons.archive, color: th.colors.text2),
         if (on != null)
           Text(
             l10n.batchArchivedBanner(context.fmt.date(on)),

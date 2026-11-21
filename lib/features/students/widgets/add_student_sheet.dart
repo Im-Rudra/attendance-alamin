@@ -2,7 +2,6 @@
 // existing students are offered first ("এই ব্যাচে যোগ করুন"), so nobody is added
 // twice. A new student needs only a name and a guardian phone.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,9 +28,12 @@ import 'package:attendance_alamin/features/students/widgets/student_dialogs.dart
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<String?> openAddStudentSheet(BuildContext context, String batchId) {
-  return showBhorSheet<String>(
+  return showBhorPanel<String>(
     context,
     title: context.l10n.stuAddTitle,
+    kind: BhorPanelKind.list,
+    expand: true,
+    width: 720,
     builder: (BuildContext ctx) => AddStudentSheet(batchId: batchId),
   );
 }
@@ -223,7 +225,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
               controller: _query,
               autofocus: true,
               onChanged: (_) => setState(() => _error = null),
-              prefix: const Icon(Icons.search),
+              prefix: const Icon(BhorIcons.search),
               label: l10n.stuSearchFirstHint,
             ),
             const SizedBox(height: BhorSpace.s8),
@@ -268,7 +270,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: <Widget>[
-                            Icon(Icons.check_circle, size: 18, color: th.colors.text2),
+                            Icon(BhorIcons.checkCircleFill, size: 18, color: th.colors.text2),
                             const SizedBox(width: BhorSpace.s8),
                             Text(l10n.stuAlreadyInBatch, style: th.type.label.copyWith(color: th.colors.text2)),
                           ],
@@ -291,7 +293,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                 key: const ValueKey<String>('stu-add-new'),
                 variant: BhorButtonVariant.secondary,
                 expand: true,
-                icon: Icons.person_add_alt_1_outlined,
+                icon: BhorIcons.add,
                 label: l10n.stuNewStudentNamed(q),
                 onPressed: _busy ? null : _startCreating,
               ),
@@ -301,7 +303,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                 Expanded(child: Text(l10n.stuNewStudent, style: th.type.heading)),
                 BhorIconButton(
                   semanticLabel: l10n.commonBack,
-                  icon: Icons.arrow_back,
+                  icon: BhorIcons.back,
                   onPressed: _busy ? null : _stopCreating,
                 ),
               ],
@@ -321,7 +323,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
             BhorButton(
               key: const ValueKey<String>('stu-add-save'),
               label: l10n.stuSave,
-              expand: true,
+              expand: true,
               onPressed: _busy ? null : _saveNew,
             ),
           ],

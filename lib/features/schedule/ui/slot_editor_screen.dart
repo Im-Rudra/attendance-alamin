@@ -4,7 +4,6 @@
 // ever a lonely card in a sea of space. Save is blocked, with the reason under
 // the button, until the live check is clear; saving asks "কবে থেকে নতুন সময়?".
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +19,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/schedule/controllers/schedule_tab_providers.dart';
 import 'package:attendance_alamin/features/schedule/controllers/slot_editor_controller.dart';
 import 'package:attendance_alamin/features/schedule/widgets/effective_from_sheet.dart';
@@ -27,10 +27,29 @@ import 'package:attendance_alamin/features/schedule/widgets/slot_clash_card.dart
 import 'package:attendance_alamin/features/schedule/widgets/slot_editor_body.dart';
 import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
 
+/// Opens the weekly slot editor in the adaptive panel (sheet on phones, a
+/// 560 px side panel on desktop). True when saved, null when dismissed.
+Future<bool?> showSlotEditorPanel(BuildContext context, {required String batchId}) {
+  final PanelFooterSlot slot = PanelFooterSlot();
+  return showBhorPanel<bool>(
+    context,
+    title: context.l10n.shellTitleSlotEditor,
+    kind: BhorPanelKind.form,
+    expand: true,
+    width: 560,
+    footer: slot.build,
+    builder: (BuildContext c) => SlotEditorScreen(batchId: batchId, embedded: true, footerSlot: slot),
+  );
+}
+
 class SlotEditorScreen extends ConsumerStatefulWidget {
-  const SlotEditorScreen({super.key, required this.batchId});
+  const SlotEditorScreen({super.key, required this.batchId, this.embedded = false, this.footerSlot});
 
   final String batchId;
+
+  /// Hosted inside [showBhorPanel]: no scaffold; the save bar goes to [footerSlot].
+  final bool embedded;
+  final PanelFooterSlot? footerSlot;
 
   @override
   ConsumerState<SlotEditorScreen> createState() => _SlotEditorScreenState();
@@ -71,6 +90,10 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
   }
 
   void _close() {
+    if (widget.embedded) {
+      Navigator.of(context).maybePop();
+      return;
+    }
     final GoRouter? router = GoRouter.maybeOf(context);
     if (router == null) {
       Navigator.of(context).maybePop();
@@ -109,6 +132,10 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           .replaceSlots(widget.batchId, c.slots, from: from);
       if (!mounted) return;
       setState(() => _leaving = true);
+      if (widget.embedded) {
+        await showBhorSuccess<bool>(context, result: true, toast: l10n.schedSaved);
+        return;
+      }
       BhorToast.show(context, message: l10n.schedSaved);
       _close();
     } on ScheduleClashException catch (e) {
@@ -134,19 +161,27 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
     }
 
     if (schedule == null) {
+      if (widget.embedded) {
+        return Padding(
+          padding: const EdgeInsets.all(BhorSpace.s32),
+          child: async.isLoading
+              ? const Center(child: BhorSpinner())
+              : BhorEmptyState(icon: BhorIcons.clock, title: l10n.errNotFound),
+        );
+      }
       // Loading, or no such batch: the shell's plain chrome.
       return BhorScaffold(
         header: BhorHeader(title: l10n.shellTitleSlotEditor, onBack: _close),
         body: async.isLoading
             ? const Center(child: BhorSpinner())
-            : BhorEmptyState(icon: Icons.schedule, title: l10n.errNotFound),
+            : BhorEmptyState(icon: BhorIcons.clock, title: l10n.errNotFound),
       );
     }
 
     final BatchSchedule found = schedule;
     final SlotEditorController c = _ensureController(found);
     final double gutter = WindowClass.of(context).gutter;
-    final bool wide = WindowClass.of(context).isWide;
+    final bool wide = !widget.embedded && WindowClass.of(context).isWide;
     final bool archived = found.batch.archived;
     final int weekStart = ref.watch(weekStartProvider).value ?? 6;
 
@@ -194,34 +229,54 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           ),
         );
 
-        final Widget bar = DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.bhor.colors.surface,
-            border: Border(top: BorderSide(color: context.bhor.colors.line)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                BhorButton(
-                  label: l10n.commonSave,
-                  expand: true,
-                  onPressed: canSave ? () => _save(c) : null,
-                  disabledReason: reason,
-                ),
-                if (reason != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: BhorSpace.s8),
-                    child: Text(reason, textAlign: TextAlign.center, style: context.bhor.type.meta),
-                  ),
-              ],
+        final Widget barBody = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            BhorButton(
+              label: l10n.commonSave,
+              expand: true,
+              onPressed: canSave ? () => _save(c) : null,
+              disabledReason: reason,
             ),
-          ),
+            if (reason != null)
+              Padding(
+                padding: const EdgeInsets.only(top: BhorSpace.s8),
+                child: Text(reason, textAlign: TextAlign.center, style: context.bhor.type.meta),
+              ),
+          ],
         );
+        final Widget bar = widget.embedded
+            ? barBody
+            : DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.bhor.colors.surface,
+                  border: Border(top: BorderSide(color: context.bhor.colors.line)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
+                  child: barBody,
+                ),
+              );
 
         final Widget body;
+        if (widget.embedded) {
+          widget.footerSlot?.publish(bar, alive: () => mounted);
+          return PopScope(
+            canPop: _leaving || !c.changed,
+            onPopInvokedWithResult: (bool didPop, Object? _) {
+              if (!didPop) _confirmLeave();
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[title, editor, saveClashCard],
+              ),
+            ),
+          );
+        }
         if (wide) {
           body = Row(
             crossAxisAlignment: CrossAxisAlignment.start,

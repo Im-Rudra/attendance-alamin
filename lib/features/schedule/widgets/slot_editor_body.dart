@@ -3,7 +3,6 @@
 // the live clash card. Shared by `SlotEditorField` (batch form, onboarding)
 // and the full-screen `SlotEditorScreen`.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -111,7 +110,7 @@ class SlotSentenceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ExcludeSemantics(
-              child: Icon(Icons.event_repeat, color: b.colors.accent, size: 24)),
+              child: Icon(BhorIcons.calendar, color: b.colors.accent, size: 24)),
           const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Semantics(
@@ -286,7 +285,7 @@ class _PerDayEditor extends StatelessWidget {
                           child: BhorButton(
                             variant: BhorButtonVariant.ghost,
                             onPressed: () => c.removeAt(r.index),
-                            icon: Icons.delete_outline,
+                            icon: BhorIcons.delete,
                             label: l10n.schedRemoveTime,
                           ),
                         ),
@@ -299,7 +298,7 @@ class _PerDayEditor extends StatelessWidget {
                       BhorIconButton(
                         semanticLabel: l10n.schedRemoveTime,
                         onPressed: () => c.removeAt(r.index),
-                        icon: Icons.delete_outline,
+                        icon: BhorIcons.delete,
                       ),
                     ],
                   );
@@ -318,7 +317,7 @@ class _PerDayEditor extends StatelessWidget {
               child: BhorButton(
                 variant: BhorButtonVariant.ghost,
                 onPressed: () => c.addTime(day),
-                icon: Icons.add,
+                icon: BhorIcons.add,
                 label: l10n.schedAddTime,
               ),
             ),
@@ -328,8 +327,10 @@ class _PerDayEditor extends StatelessWidget {
     }
 
     Future<void> pickDay() async {
-      final int? d = await showBhorSheet<int>(
+      final int? d = await showBhorPanel<int>(
         context,
+        kind: BhorPanelKind.list,
+        width: 380,
         title: l10n.schedAddDay,
         builder: (BuildContext ctx) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -350,7 +351,7 @@ class _PerDayEditor extends StatelessWidget {
         ? const SizedBox.shrink()
         : BhorButton(
             variant: BhorButtonVariant.secondary,
-            icon: Icons.add,
+            icon: BhorIcons.add,
             label: l10n.schedAddDay,
             onPressed: pickDay,
           );
@@ -477,7 +478,7 @@ class TimeButton extends StatelessWidget {
                   ),
                 ),
                 if (MediaQuery.textScalerOf(context).scale(16) < 20)
-                  Icon(Icons.schedule, size: 20, color: b.colors.accent),
+                  Icon(BhorIcons.clock, size: 20, color: b.colors.accent),
               ],
             ),
           ),
