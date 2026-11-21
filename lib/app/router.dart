@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/gallery/ds_gallery_screen.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/adaptive_detail.dart';
@@ -266,6 +267,12 @@ GoRouter buildRouter(String initialLocation) {
                   GoRoute(
                     path: 'help',
                     builder: (BuildContext context, GoRouterState state) => const HelpScreen(),
+                  ),
+                  // Lead amendment (ds/bhor-library): hidden design-system gallery.
+                  GoRoute(
+                    path: 'design-system',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (BuildContext context, GoRouterState state) => const DsGalleryScreen(),
                   ),
                 ],
               ),

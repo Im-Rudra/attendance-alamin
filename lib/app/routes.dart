@@ -48,6 +48,10 @@ abstract final class Routes {
   static const moreDiagnostics = '/more/diagnostics';
   static const moreHelp = '/more/help';
 
+  /// Hidden developer gallery of the Bhor design system (Lead amendment,
+  /// ds/bhor-library); opened by long-pressing the version row in Diagnostics.
+  static const moreDesignSystem = '/more/design-system';
+
   // ---- full-screen routes (root navigator, no navigation chrome) ----
   /// Roll call of one class occurrence (notification deep link target).
   static String rollCall(String occ) => '/rollcall/$occ';

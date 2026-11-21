@@ -5,8 +5,10 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
@@ -77,11 +79,15 @@ class DiagnosticsScreen extends ConsumerWidget {
                                 ? l10n.setDiagDeviceNameEmpty
                                 : deviceName,
                           ),
-                          SettingRow(
-                            key: const Key('diag-version'),
-                            icon: Icons.info_outline,
-                            title: l10n.setVersion,
-                            value: version,
+                          // Hidden: long-press opens the Bhor design-system gallery.
+                          GestureDetector(
+                            onLongPress: () => context.push(Routes.moreDesignSystem),
+                            child: SettingRow(
+                              key: const Key('diag-version'),
+                              icon: Icons.info_outline,
+                              title: l10n.setVersion,
+                              value: version,
+                            ),
                           ),
                         ]);
                       },

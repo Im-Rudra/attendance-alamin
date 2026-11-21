@@ -1,0 +1,17 @@
+{
+  "@@locale": "en",
+  "dsPeriodDawn": "Dawn",
+  "dsPeriodMorning": "Morning",
+  "dsPeriodNoon": "Noon",
+  "dsPeriodAfternoon": "Afternoon",
+  "dsPeriodEvening": "Evening",
+  "dsPeriodNight": "Night",
+  "dsTimePeriod": "Part of day",
+  "dsTimeHour": "Hour",
+  "dsTimeMinute": "Minute",
+  "dsPickDate": "Pick a date",
+  "dsPickTime": "Pick a time",
+  "dsPrevMonth": "Previous month",
+  "dsNextMonth": "Next month",
+  "dsGalleryTitle": "Design system"
+}
