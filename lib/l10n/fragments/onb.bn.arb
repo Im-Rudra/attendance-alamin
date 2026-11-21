@@ -210,7 +210,7 @@
   "@onbStudentsBody": {
     "description": "Step 3 sub-heading."
   },
-  "onbStudentsIntoBatch": "{batch} ব্যাচে যোগ হচ্ছে",
+  "onbStudentsIntoBatch": "{batch}-এ যোগ হচ্ছে",
   "@onbStudentsIntoBatch": {
     "description": "Shows which batch the new students join.",
     "placeholders": {

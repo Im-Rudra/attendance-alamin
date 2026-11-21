@@ -104,9 +104,9 @@ class _CoachOverlay extends StatelessWidget {
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(BhorRadius.control),
-            border: Border.all(color: c.accent, width: 2),
+            border: Border.all(color: c.line),
             boxShadow: <BoxShadow>[
-              BoxShadow(color: c.scrim, blurRadius: 16, offset: const Offset(0, 4)),
+              BoxShadow(color: c.scrim.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 4)),
             ],
           ),
           child: Padding(
@@ -118,7 +118,7 @@ class _CoachOverlay extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(target == null ? BhorIcons.sparkle : BhorIcons.chevronDown, color: c.accent),
+                    Icon(BhorIcons.sparkle, color: c.accent),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Padding(
@@ -186,7 +186,32 @@ class _CoachOverlay extends StatelessWidget {
                 top: top,
                 bottom: bottom,
                 width: bubbleWidth,
-                child: bubble,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    bubble,
+                    // A notch on the card edge facing the target.
+                    if (target != null)
+                      Positioned(
+                        left: (target.center.dx - left - 7).clamp(20.0, bubbleWidth - 34).toDouble(),
+                        top: top != null ? -7 : null,
+                        bottom: top == null ? -7 : null,
+                        width: 14,
+                        height: 14,
+                        child: Transform.rotate(
+                          angle: math.pi / 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              border: top != null
+                                  ? Border(top: BorderSide(color: c.line), left: BorderSide(color: c.line))
+                                  : Border(bottom: BorderSide(color: c.line), right: BorderSide(color: c.line)),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
