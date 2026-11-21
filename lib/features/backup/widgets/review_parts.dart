@@ -57,14 +57,14 @@ class ReviewDangerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    final Color on = b.colors.warn;
+    final Color on = b.colors.danger;
     return Semantics(
       container: true,
       liveRegion: true,
       child: DecoratedBox(
         key: boxKey,
         decoration: BoxDecoration(
-          color: b.colors.warnBg,
+          color: b.colors.dangerBg,
           borderRadius: BorderRadius.circular(BhorRadius.card),
         ),
         child: Padding(

@@ -50,7 +50,6 @@ Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) asy
     context,
     title: context.l10n.extraIncomeTitle,
     kind: BhorPanelKind.confirm,
-    expand: true,
     builder: (BuildContext ctx) => OtherIncomeForm(
       studentId: studentId,
       onClose: () => Navigator.of(ctx).pop(),
