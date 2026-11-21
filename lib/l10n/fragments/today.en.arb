@@ -5,7 +5,7 @@
   "todayViewLabel": "View",
   "todayRoutineToday": "Today's classes",
   "todayRoutineOther": "Classes · {date}",
-  "todayAddExtra": "+ Extra class",
+  "todayAddExtra": "Add class",
   "todayNoClassesDay": "No classes on this day",
   "todayHeroNext": "Next class · {time}",
   "todayHeroNow": "In progress · {left} left",

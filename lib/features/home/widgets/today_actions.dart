@@ -2,13 +2,16 @@
 // router when there is one (widget tests pump screens without a router).
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
+import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
 
 /// Roll call of one class occurrence (full screen).
@@ -37,6 +40,17 @@ Future<void> showBatchPickerSheet(
   final l10n = context.l10n;
   final List<Batch> sorted = List<Batch>.of(batches)
     ..sort((Batch a, Batch b) => a.sortOrder.compareTo(b.sortOrder));
+  // "{subject} · {batch}" so two batches of one name stay distinguishable.
+  final Map<String, String> subjects = <String, String>{
+    for (final BatchSchedule s
+        in ProviderScope.containerOf(context, listen: false).read(schedulesProvider).value ?? const <BatchSchedule>[])
+      s.batch.id: s.subjectName,
+  };
+  String labelOf(Batch b) {
+    final String subject = subjects[b.id] ?? '';
+    return subject.isEmpty ? b.name : l10n.clsClassLabel(subject, b.name);
+  }
+
   final String? id = await showBhorPanel<String>(
     context,
     kind: BhorPanelKind.list,
@@ -48,7 +62,7 @@ Future<void> showBatchPickerSheet(
         children: <Widget>[
           for (int i = 0; i < sorted.length; i++)
             BhorListRow(
-              title: sorted[i].name,
+              title: labelOf(sorted[i]),
               trailing: const Icon(BhorIcons.chevronRight),
               divider: i < sorted.length - 1,
               onTap: () => Navigator.of(ctx).pop(sorted[i].id),

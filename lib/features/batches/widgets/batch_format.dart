@@ -15,6 +15,7 @@ import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
+import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// "শনি, সোম · বিকাল ৪:০০–৫:০০" when every slot has the same time, else one
 /// "শনি বিকাল ৪:০০–৫:০০" entry per slot. Empty for no slots.
@@ -37,6 +38,11 @@ String scheduleSummary(AppFormat fmt, List<Slot> slots) {
       .map((Slot s) => '${fmt.weekdayShort(s.weekday)} ${fmt.timeRange(s.startMin, s.endMin)}')
       .join(' · ');
 }
+
+/// "{subject} · {batch}" ("পদার্থবিজ্ঞান · ৪টার ব্যাচ"); the bare name when the
+/// batch has no subject.
+String batchLabel(AppLocalizations l10n, String subjectName, String batchName) =>
+    subjectName.trim().isEmpty ? batchName : l10n.clsClassLabel(subjectName, batchName);
 
 /// Opens [path] as the selection on wide windows, as a pushed page otherwise.
 void openPath(BuildContext context, String path) {

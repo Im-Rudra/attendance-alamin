@@ -69,7 +69,7 @@ class BatchesOverview extends ConsumerWidget {
                   children: <Widget>[
                     for (int i = 0; i < all.length; i++)
                       BhorListRow(
-                        title: all[i].batch.name,
+                        title: batchLabel(l10n, all[i].subjectName, all[i].batch.name),
                         divider: i != all.length - 1,
                         onTap: () => openPath(context, Routes.batch(all[i].batch.id)),
                         trailing: _DuesOrClear(batchId: all[i].batch.id),
@@ -89,7 +89,7 @@ class BatchesOverview extends ConsumerWidget {
                 entries: <BatchBarEntry>[
                   for (final BatchCardData b in bySize.take(8))
                     BatchBarEntry(
-                      label: b.batch.name,
+                      label: batchLabel(l10n, b.subjectName, b.batch.name),
                       value: b.studentCount,
                       valueText: fmt.number(b.studentCount),
                       onTap: () => openPath(context, Routes.batch(b.batch.id)),

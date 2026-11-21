@@ -48,8 +48,8 @@
   "clsDayChip": "{day}, {count} classes",
   "clsWeekEmpty": "No classes this week",
   "clsWeekEmptyAction": "Set a batch schedule",
-  "clsEmptyCellAction": "+ Extra class at this time",
+  "clsEmptyCellAction": "Extra class at this time",
   "clsBlockLabel": "{subject}, {batch}, {time}",
   "clsNoBatches": "No batches yet — create a batch first",
-  "clsAddExtraButton": "+ Extra class"
+  "clsAddExtraButton": "Extra class"
 }
