@@ -10,6 +10,7 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
