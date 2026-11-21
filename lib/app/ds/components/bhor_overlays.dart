@@ -349,10 +349,11 @@ class BhorToastAction {
   final Key? key;
 }
 
-/// App-level home of every [BhorToast]: put it once at the root (above the
-/// navigator) so toasts float above every route, sheet and dialog and survive
-/// route changes. Services and screens just call [BhorToast.show] with any
-/// context below it. Without a host, toasts fall back to the root Overlay.
+/// App-level home of toasts that have no navigator to sit in: put it once at
+/// the root (above the navigator). [BhorToast.show] uses the root Overlay
+/// when the context has one (so a sheet opened later covers the toast, as
+/// before) and this host otherwise: contexts above the navigator, and the
+/// [BhorToast.anchorOf] context services keep across an async gap.
 class BhorToastHost extends StatefulWidget {
   const BhorToastHost({super.key, required this.child});
 
@@ -409,17 +410,24 @@ class BhorToastInset extends InheritedWidget {
 abstract final class BhorToast {
   static _ToastViewState? _current;
 
+  /// The host at or above [context] (the anchor context is the host's own).
+  static _BhorToastHostState? _hostOf(BuildContext context) {
+    if (context is StatefulElement && context.state is _BhorToastHostState) {
+      return context.state as _BhorToastHostState;
+    }
+    return context.findAncestorStateOfType<_BhorToastHostState>();
+  }
+
   /// True when [show] has somewhere to put a toast from [context].
   static bool canShowIn(BuildContext context) =>
-      context.findAncestorStateOfType<_BhorToastHostState>() != null ||
-      Overlay.maybeOf(context, rootOverlay: true) != null;
+      Overlay.maybeOf(context, rootOverlay: true) != null || _hostOf(context) != null;
 
   /// A context that outlives [context] for showing a toast after an async
   /// gap (the host's own context; [context] itself without a host). Read
   /// `BhorToastInset.of(context)` before the gap too and pass it as
   /// `bottomOffset`.
   static BuildContext anchorOf(BuildContext context) =>
-      context.findAncestorStateOfType<_BhorToastHostState>()?.context ?? context;
+      _hostOf(context)?.context ?? context;
 
   static BhorToastHandle show(
     BuildContext context, {
@@ -438,8 +446,8 @@ abstract final class BhorToast {
       ...actions,
     ];
     assert(all.length <= 2, 'A BhorToast carries at most two actions');
-    final _BhorToastHostState? host = context.findAncestorStateOfType<_BhorToastHostState>();
-    final OverlayState? overlay = host == null ? Overlay.maybeOf(context, rootOverlay: true) : null;
+    final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
+    final _BhorToastHostState? host = overlay == null ? _hostOf(context) : null;
     if (host == null && overlay == null) return BhorToastHandle._(() {});
     final BhorThemeData theme = context.bhor;
     final double lift = bottomOffset ?? BhorToastInset.of(context);

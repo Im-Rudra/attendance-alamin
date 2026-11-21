@@ -236,7 +236,12 @@ class BhorSidebar extends StatelessWidget {
       child: SafeArea(
         right: false,
         child: ClipRect(
-          child: Column(
+          child: OverflowBox(
+            alignment: AlignmentDirectional.centerStart,
+            // Content at the target width while the box animates (clipped).
+            minWidth: (collapsed ? collapsedWidth : width) - 1,
+            maxWidth: (collapsed ? collapsedWidth : width) - 1,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               SizedBox(
@@ -337,6 +342,7 @@ class BhorSidebar extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
           ),
         ),
       ),

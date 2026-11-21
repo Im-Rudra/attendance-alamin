@@ -363,7 +363,9 @@ void main() {
       await _pumpPhone(tester, lang: Lang.en);
       final AppLocalizations l10n = _l10n(Lang.en);
       expect(find.text(l10n.todayHeroNext(l10n.todayInHours('6'))), findsOneWidget);
-      expect(_inHero('Saturday, 21 Nov'), findsOneWidget);
+      // The weekday-date line is the header's, shown once (not in the hero).
+      expect(find.text('Saturday, 21 Nov'), findsOneWidget);
+      expect(_inHero('Saturday, 21 Nov'), findsNothing);
     });
   });
 
