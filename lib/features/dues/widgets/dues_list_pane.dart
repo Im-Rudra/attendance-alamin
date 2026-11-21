@@ -161,7 +161,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     }
     // Room for the floating navigation pill, plus (on phones) the floating
     // "টাকা নিন" button: 84 lift + 56 height + margin.
-    final double tail = WindowClass.of(context).usesRail ? 112 : 168;
+    final double tail = WindowClass.of(context).usesRail ? 112 : 208;
     slivers.add(SliverToBoxAdapter(child: SizedBox(key: const ValueKey<String>('dues-list-tail'), height: tail)));
     return BhorStaggerScope(child: CustomScrollView(slivers: slivers));
   }

@@ -6,6 +6,8 @@
 // month more than it still owes. [CollectPaymentController] keeps what the
 // teacher typed; everything else is derived.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -440,9 +442,11 @@ class CollectPaymentController extends Notifier<CollectInput> {
         receiptId = editing;
       }
       if (ref.mounted) {
-        await ref
+        // Remembering the method must not delay the success moment.
+        unawaited(ref
             .read(localMetaRepositoryProvider)
-            .setRaw(LocalMetaKeys.lastMethod(args.studentId), method.code);
+            .setRaw(LocalMetaKeys.lastMethod(args.studentId), method.code)
+            .catchError((Object _) {}));
       }
       if (ref.mounted) state = state.copyWith(busy: false);
       return SavedPayment(receiptId: receiptId, total: plan.total, edited: editing != null);

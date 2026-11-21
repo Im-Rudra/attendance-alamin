@@ -354,7 +354,7 @@
   "@clsWeekEmptyAction": {
     "description": "Button on the empty week grid: go to batches."
   },
-  "clsEmptyCellAction": "+ এই সময়ে অতিরিক্ত ক্লাস",
+  "clsEmptyCellAction": "এই সময়ে অতিরিক্ত ক্লাস",
   "@clsEmptyCellAction": {
     "description": "Menu item on an empty week-grid cell."
   },
@@ -380,7 +380,7 @@
   "@clsNoBatches": {
     "description": "Extra class sheet when there is no batch to pick."
   },
-  "clsAddExtraButton": "+ অতিরিক্ত ক্লাস",
+  "clsAddExtraButton": "অতিরিক্ত ক্লাস",
   "@clsAddExtraButton": {
     "description": "Button that opens the extra class sheet."
   }

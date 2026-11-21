@@ -96,6 +96,11 @@ Future<bool> remindStudent(
     _toast(context, l10n.duesNothingToRemind);
     return false;
   }
+  final String? number = container.read(duesStudentMapProvider)[studentId]?.callNumber;
+  if (number == null || number.trim().isEmpty) {
+    // Still hand the message over (copy / share); just say there is no number.
+    _toast(context, l10n.duesRemindNoPhone);
+  }
   await ShareService.shareText(context, text);
   await markReminded(
     container.read(localMetaRepositoryProvider),

@@ -332,12 +332,12 @@ void main() {
       expect(find.text(l10n.duesNoneYet), findsOneWidget);
     });
 
-    testWidgets('a compact phone row has only "collect"; call and remind sit behind a long press',
+    testWidgets('a compact phone row shows remind next to "collect"; call sits behind a long press',
         (WidgetTester tester) async {
       await _pumpFeesPhone(tester, seedFakes());
       for (final String id in <String>[kStuRahim, kStuNila, kStuSara]) {
         expect(find.byKey(ValueKey<String>('dues-call-$id')), findsNothing);
-        expect(find.byKey(ValueKey<String>('dues-remind-$id')), findsNothing);
+        expect(find.byKey(ValueKey<String>('dues-remind-$id')), findsOneWidget);
         expect(find.byKey(ValueKey<String>('dues-collect-$id')), findsOneWidget);
       }
     });

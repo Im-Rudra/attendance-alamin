@@ -2,6 +2,7 @@
 // (extra only), date, start time, duration, a LIVE clash card with free-time
 // suggestions, and a save button that stays disabled with its reason.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
@@ -53,6 +54,13 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   int _dur = 60;
   bool _durTouched = false;
 
+  /// The teacher picked a time (or it came in pre-filled): never auto-moved.
+  bool _timeTouched = false;
+
+  /// The window an extra class defaults into (07:00 to 20:00).
+  static const int _dayStart = 420;
+  static const int _dayEnd = 1200;
+
   late LocalDate _initDate;
   late int _initStart;
 
@@ -75,7 +83,8 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
       final int now = ref.read(nowMinutesProvider);
       _batchId = widget.batchId;
       _date = widget.date ?? today;
-      _start = widget.startMin ?? math.max(360, math.min(1260, ((now + 29) ~/ 30) * 30));
+      _timeTouched = widget.startMin != null;
+      _start = widget.startMin ?? math.max(_dayStart, math.min(_dayEnd - 60, ((now + 29) ~/ 30) * 30));
       _initDate = _date;
       _initStart = _start;
       _inited = true;
@@ -114,6 +123,20 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
       return;
     }
     final int gen = ++_gen;
+    if (_isExtra && !_durTouched) {
+      for (final BatchSchedule s in _liveBatches()) {
+        if (s.batch.id == batch && s.slots.isNotEmpty) {
+          final int d = s.slots.first.durationMin;
+          if (d != _dur && mounted) {
+            setState(() {
+              _dur = d;
+              _start = math.max(0, math.min(_start, 1440 - d));
+            });
+          }
+          break;
+        }
+      }
+    }
     try {
       final SlotCheckResult r = await ref.read(scheduleRepositoryProvider).checkSingle(
             batchId: batch,
@@ -123,6 +146,17 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
             replacingOcc: _isExtra ? null : widget.occ,
           );
       if (!mounted || gen != _gen) return;
+      // A fresh form moves to the next free slot instead of opening on a clash.
+      final int? free = r.suggestion?.primaryStartMin;
+      if (!r.ok && _isExtra && !_timeTouched && free != null && free >= _dayStart && free + _dur <= _dayEnd) {
+        setState(() {
+          _start = free;
+          _initStart = free;
+          _clash = null;
+        });
+        unawaited(_recheck());
+        return;
+      }
       setState(() => _clash = r.ok ? null : r);
     } catch (_) {
       // The save itself re-checks; a failed live check must not block the form.
@@ -132,6 +166,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   void _setStart(int start) {
     final int s = math.max(0, math.min(start, 1440 - _dur));
     setState(() {
+      _timeTouched = true;
       _start = s;
       _error = null;
     });

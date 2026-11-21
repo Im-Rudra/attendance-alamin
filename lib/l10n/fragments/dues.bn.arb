@@ -132,6 +132,10 @@
   "@duesNoPhone": {
     "description": "Snackbar when the student has no phone number to call."
   },
+  "duesRemindNoPhone": "এই শিক্ষার্থীর ফোন নম্বর নেই",
+  "@duesRemindNoPhone": {
+    "description": "Toast when reminding a student with no phone number; the message can still be copied."
+  },
   "duesNothingToRemind": "এই শিক্ষার্থীর কোনো বকেয়া নেই",
   "@duesNothingToRemind": {
     "description": "Snackbar when a reminder is asked for a student without dues."

@@ -126,7 +126,7 @@ void main() {
     testScreenMatrix('BatchesScreen', () => const BatchesScreen(), overrides: fresh,
         verify: (WidgetTester tester) async {
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text(kBatches[0].name), findsWidgets);
+      expect(find.text('${kSubjects[0].name} · ${kBatches[0].name}'), findsWidgets);
       expect(find.text(kSubjects[0].name), findsOneWidget);
     });
     testScreenMatrix('BatchesScreen selected', () => const BatchesScreen(selectedId: kBatPhysA),

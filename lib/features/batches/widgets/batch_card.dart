@@ -109,7 +109,7 @@ class BatchCard extends ConsumerWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        data.batch.name,
+                        batchLabel(l10n, data.subjectName, data.batch.name),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: th.type.heading,
