@@ -8,18 +8,19 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/dashed_border.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/classes/widgets/class_actions_sheet.dart';
@@ -169,12 +170,14 @@ class _WeekGridState extends State<WeekGrid> {
   Future<void> _emptyCellTap(TapUpDetails details, LocalDate date, int startMin) async {
     _focus.requestFocus();
     final String label = context.l10n.clsEmptyCellAction;
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final Offset p = details.globalPosition;
-    final bool? choice = await showMenu<bool>(
-      context: context,
-      position: RelativeRect.fromRect(Rect.fromLTWH(p.dx, p.dy, 1, 1), Offset.zero & overlay.size),
-      items: <PopupMenuEntry<bool>>[PopupMenuItem<bool>(value: true, child: Text(label))],
+    final bool? choice = await showBhorSheet<bool>(
+      context,
+      builder: (BuildContext ctx) => BhorListRow(
+        leading: const Icon(Icons.add),
+        title: label,
+        divider: false,
+        onTap: () => Navigator.of(ctx).pop(true),
+      ),
     );
     if (choice == true && mounted) {
       await showExtraClassSheet(context, date: date, startMin: startMin);
@@ -199,42 +202,43 @@ class _WeekGridState extends State<WeekGrid> {
   Widget _header(BuildContext context, LocalDate today) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final LocalDate start = _start;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: BhorSpace.s4),
       child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
+        spacing: BhorSpace.s4,
+        runSpacing: BhorSpace.s4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
-          IconButton(
-            tooltip: l10n.clsPrevWeek,
-            icon: const Icon(Icons.chevron_left),
+          BhorIconButton(
+            semanticLabel: l10n.clsPrevWeek,
+            icon: Icons.chevron_left,
             onPressed: () => _shiftWeek(-1),
           ),
           Text(
             '${fmt.dateShort(start)} – ${fmt.dateShort(start.addDays(6))}',
-            style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+            style: b.type.heading,
           ),
-          IconButton(
-            tooltip: l10n.clsNextWeek,
-            icon: const Icon(Icons.chevron_right),
+          BhorIconButton(
+            semanticLabel: l10n.clsNextWeek,
+            icon: Icons.chevron_right,
             onPressed: () => _shiftWeek(1),
           ),
-          TextButton(
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+          BhorButton(
+            label: l10n.commonToday,
+            variant: BhorButtonVariant.ghost,
+            size: BhorButtonSize.sm,
             onPressed: () => setState(() {
               _offset = (widget.weekStart.daysUntil(today) / 7).floor();
               _selectedOcc = null;
             }),
-            child: Text(l10n.commonToday),
           ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+          BhorButton(
+            label: l10n.clsAddExtraButton,
+            variant: BhorButtonVariant.secondary,
+            size: BhorButtonSize.sm,
             onPressed: _newExtra,
-            child: Text(l10n.clsAddExtraButton),
           ),
         ],
       ),
@@ -243,7 +247,7 @@ class _WeekGridState extends State<WeekGrid> {
 
   Widget _buildGrid(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorColors colors = context.bhor.colors;
     final LocalDate today = ref.watch(todayProvider);
     _today = today;
     final int nowMin = ref.watch(nowMinutesProvider);
@@ -255,7 +259,7 @@ class _WeekGridState extends State<WeekGrid> {
     }
     if (!async.hasValue) {
       return Column(
-        children: <Widget>[header, const Expanded(child: Center(child: CircularProgressIndicator()))],
+        children: <Widget>[header, const Expanded(child: Center(child: BhorSpinner(size: 28)))],
       );
     }
     final List<DayPlan> plans = async.requireValue;
@@ -281,11 +285,13 @@ class _WeekGridState extends State<WeekGrid> {
         children: <Widget>[
           header,
           Expanded(
-            child: EmptyState(
+            child: BhorEmptyState(
               icon: Icons.calendar_view_week_outlined,
-              message: l10n.clsWeekEmpty,
-              actionLabel: l10n.clsWeekEmptyAction,
-              onAction: () => GoRouter.maybeOf(context)?.go(Routes.batches),
+              title: l10n.clsWeekEmpty,
+              action: BhorButton(
+                label: l10n.clsWeekEmptyAction,
+                onPressed: () => GoRouter.maybeOf(context)?.go(Routes.batches),
+              ),
             ),
           ),
         ],
@@ -330,7 +336,7 @@ class _WeekGridState extends State<WeekGrid> {
                   plans: plans,
                   todayIdx: todayIdx,
                   nowMin: nowMin,
-                  tokens: tokens,
+                  colors: colors,
                 ),
               ),
             );
@@ -348,11 +354,10 @@ class _WeekGridState extends State<WeekGrid> {
   }
 
   Widget _dayHeaders(BuildContext context, List<DayPlan> plans, LocalDate today) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: BhorSpace.s4),
       child: Row(
         children: <Widget>[
           const SizedBox(width: _kLabelWidth),
@@ -360,10 +365,10 @@ class _WeekGridState extends State<WeekGrid> {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
                 decoration: BoxDecoration(
-                  color: p.date == today ? tokens.accentContainer : null,
-                  borderRadius: BorderRadius.circular(AuroraMetrics.radiusChip),
+                  color: p.date == today ? b.colors.accentTint : null,
+                  borderRadius: BorderRadius.circular(BhorRadius.chip),
                 ),
                 child: Column(
                   children: <Widget>[
@@ -371,14 +376,12 @@ class _WeekGridState extends State<WeekGrid> {
                       fmt.weekdayShort(p.date.isoWeekday),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                      style: b.type.label.copyWith(color: b.colors.text2),
                     ),
                     Text(
                       fmt.digits('${p.date.day}'),
-                      style: tt.titleSmall?.copyWith(
-                        color: p.date == today ? tokens.onAccentContainer : tokens.textPrimary,
-                        fontWeight: p.date == today ? FontWeight.w700 : FontWeight.w500,
-                      ),
+                      style: (p.date == today ? b.type.heading : b.type.body)
+                          .copyWith(color: p.date == today ? b.colors.accent : b.colors.text),
                     ),
                   ],
                 ),
@@ -399,11 +402,11 @@ class _WeekGridState extends State<WeekGrid> {
     required List<DayPlan> plans,
     required int todayIdx,
     required int nowMin,
-    required AuroraTokens tokens,
+    required BhorColors colors,
   }) {
     final fmt = context.fmt;
     final l10n = context.l10n;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final double totalH = hourH * (toH - fromH);
     double yOf(int minute) => (minute - fromH * 60) / 60 * hourH;
 
@@ -419,8 +422,8 @@ class _WeekGridState extends State<WeekGrid> {
                 hourH: hourH,
                 labelW: _kLabelWidth,
                 colW: colW,
-                hour: tokens.hairline,
-                quarter: tokens.hairline.withValues(alpha: tokens.hairline.a * 0.5),
+                hour: colors.line,
+                quarter: colors.line.withValues(alpha: colors.line.a * 0.5),
               ),
             ),
           ),
@@ -434,7 +437,7 @@ class _WeekGridState extends State<WeekGrid> {
                 textAlign: TextAlign.end,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.labelSmall?.copyWith(color: tokens.textSecondary),
+                style: b.type.caption,
               ),
             ),
           // Empty-cell hit areas (blocks sit above and take their own taps).
@@ -484,7 +487,7 @@ class _WeekGridState extends State<WeekGrid> {
               top: yOf(nowMin) - 1,
               width: colW,
               height: 2,
-              child: IgnorePointer(child: ColoredBox(color: tokens.accent)),
+              child: IgnorePointer(child: ColoredBox(color: colors.accent)),
             ),
         ];
         return Stack(clipBehavior: Clip.hardEdge, children: children);
@@ -554,20 +557,20 @@ class _ClassBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final bool cancelled = dc.cancelled;
-    final Color fg = cancelled ? tokens.textSecondary : tokens.onAccentContainer;
-    final TextStyle? base = tt.labelMedium?.copyWith(
+    final Color fg = cancelled ? c.text2 : c.accent;
+    final TextStyle base = b.type.label.copyWith(
       color: fg,
       decoration: cancelled ? TextDecoration.lineThrough : null,
       decorationColor: fg,
     );
     // State marks are Material icons: Hind Siliguri has no ＋ ↻ ✓ glyphs
     // (they rendered as tofu boxes, QA-17).
-    final double iconSize = (base?.fontSize ?? 12) + 2;
+    final double iconSize = (base.fontSize ?? 12) + 2;
     final List<InlineSpan> marks = <InlineSpan>[
       if (!cancelled && dc.state == ClassState.extra)
         _mark(Icons.add, fg, iconSize, const Key('week-block-extra')),
@@ -583,18 +586,21 @@ class _ClassBlock extends StatelessWidget {
         ? ''
         : ', ${st == ClassState.cancelled ? l10n.uiClassCancelled : st == ClassState.moved ? l10n.uiClassMoved : l10n.uiClassExtra}';
 
-    final Widget content = Material(
-      color: cancelled ? Colors.transparent : tokens.accentContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusChip),
-        side: selected ? BorderSide(color: tokens.accent, width: 2) : BorderSide.none,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: ClipRect(
+    final Widget content = BhorPressable(
+      onTap: onTap,
+      radius: BhorRadius.chip,
+      scaleOnPress: false,
+      showFocusRing: false,
+      builder: (BuildContext context, BhorStates s) => Container(
+        padding: const EdgeInsets.all(BhorSpace.s4),
+        decoration: BoxDecoration(
+          color: cancelled ? null : c.accentTint,
+          borderRadius: BorderRadius.circular(BhorRadius.chip),
+          border: selected
+              ? Border.all(color: c.accent, width: 2)
+              : (cancelled ? null : Border.all(color: c.accentLine)),
+        ),
+        child: ClipRect(
             child: OverflowBox(
               alignment: Alignment.topLeft,
               minHeight: 0,
@@ -616,7 +622,6 @@ class _ClassBlock extends StatelessWidget {
                 ],
               ),
             ),
-          ),
         ),
       ),
     );
@@ -627,7 +632,7 @@ class _ClassBlock extends StatelessWidget {
       label: '$label$stateLabel',
       excludeSemantics: true,
       child: cancelled
-          ? DashedBorder(color: tokens.textSecondary, radius: AuroraMetrics.radiusChip, child: content)
+          ? DashedBorder(color: c.text2, radius: BhorRadius.chip, child: content)
           : content,
     );
   }
@@ -649,15 +654,15 @@ class _GhostBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextStyle? style = Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.textSecondary);
+    final BhorThemeData b = context.bhor;
+    final TextStyle style = b.type.caption;
     return ExcludeSemantics(
       child: IgnorePointer(
         child: DashedBorder(
-          color: tokens.textSecondary,
-          radius: AuroraMetrics.radiusChip,
+          color: b.colors.text2,
+          radius: BhorRadius.chip,
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(BhorSpace.s4),
             child: ClipRect(
               child: OverflowBox(
                 alignment: Alignment.topLeft,
@@ -667,7 +672,7 @@ class _GhostBlock extends StatelessWidget {
                 // Siliguri, QA-17).
                 child: Text.rich(
                   TextSpan(children: <InlineSpan>[
-                    _mark(Icons.arrow_forward, tokens.textSecondary, (style?.fontSize ?? 11) + 2,
+                    _mark(Icons.arrow_forward, b.colors.text2, (style.fontSize ?? 11) + 2,
                         const Key('week-ghost-arrow')),
                     TextSpan(text: text),
                   ]),

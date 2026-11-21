@@ -2,7 +2,7 @@
 // check with suggestions; allowed even when the batch already has a class that
 // day (only the no-overlap rule applies).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/widgets/one_off_form.dart';

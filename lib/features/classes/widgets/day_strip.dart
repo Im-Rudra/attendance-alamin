@@ -3,13 +3,14 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
 
@@ -26,8 +27,7 @@ class DayStrip extends StatelessWidget {
       builder: (BuildContext context, WidgetRef ref, Widget? _) {
         final l10n = context.l10n;
         final fmt = context.fmt;
-        final tokens = context.aurora;
-        final TextTheme tt = Theme.of(context).textTheme;
+        final BhorThemeData b = context.bhor;
         final int weekStart = ref.watch(weekStartProvider).value ?? 6;
         final LocalDate today = ref.watch(todayProvider);
         final LocalDate first = weekStartOf(selected, weekStart);
@@ -49,9 +49,9 @@ class DayStrip extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  IconButton(
-                    tooltip: l10n.clsPrevWeek,
-                    icon: const Icon(Icons.chevron_left),
+                  BhorIconButton(
+                    semanticLabel: l10n.clsPrevWeek,
+                    icon: Icons.chevron_left,
                     onPressed: () => onSelected(selected.addDays(-7)),
                   ),
                   Expanded(
@@ -60,19 +60,20 @@ class DayStrip extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: tt.labelLarge?.copyWith(color: tokens.textSecondary),
+                      style: b.type.label.copyWith(color: b.colors.text2),
                     ),
                   ),
-                  IconButton(
-                    tooltip: l10n.clsNextWeek,
-                    icon: const Icon(Icons.chevron_right),
+                  BhorIconButton(
+                    semanticLabel: l10n.clsNextWeek,
+                    icon: Icons.chevron_right,
                     onPressed: () => onSelected(selected.addDays(7)),
                   ),
                   if (!atToday)
-                    TextButton(
-                      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    BhorButton(
+                      label: l10n.commonToday,
+                      variant: BhorButtonVariant.ghost,
+                      size: BhorButtonSize.sm,
                       onPressed: () => onSelected(today),
-                      child: Text(l10n.commonToday),
                     ),
                 ],
               ),
@@ -118,66 +119,58 @@ class _DayChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final Color fg = selected ? tokens.onAccentContainer : (isToday ? tokens.accent : tokens.textPrimary);
+    final Color fg = selected ? c.accent : (isToday ? c.accent : c.text);
     final int dots = math.min(count, 3);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: Semantics(
-        button: true,
+      child: BhorPressable(
+        onTap: onTap,
         selected: selected,
-        label: context.l10n.clsDayChip(fmt.weekdayName(date.isoWeekday), fmt.digits('$count')),
-        excludeSemantics: true,
-        child: Material(
-          color: selected ? tokens.accentContainer : Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-            side: isToday && !selected ? BorderSide(color: tokens.accent) : BorderSide.none,
+        semanticLabel: context.l10n.clsDayChip(fmt.weekdayName(date.isoWeekday), fmt.digits('$count')),
+        excludeChildSemantics: true,
+        radius: BhorRadius.control,
+        builder: (BuildContext context, BhorStates s) => Container(
+          constraints: const BoxConstraints(minHeight: 56, minWidth: 40),
+          padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+          decoration: BoxDecoration(
+            color: selected ? c.accentTint : (s.hovered ? c.surface2 : null),
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: (selected || isToday)
+                ? Border.all(color: selected ? c.accentLine : c.accent)
+                : null,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 56, minWidth: 40),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                fmt.weekdayShort(date.isoWeekday),
+                maxLines: 1,
+                style: b.type.label.copyWith(color: fg),
+              ),
+              Text(
+                fmt.digits('${date.day}'),
+                style: (selected ? b.type.heading : b.type.body).copyWith(color: fg),
+              ),
+              SizedBox(
+                height: 8,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text(
-                      fmt.weekdayShort(date.isoWeekday),
-                      maxLines: 1,
-                      style: tt.labelMedium?.copyWith(color: fg),
-                    ),
-                    Text(
-                      fmt.digits('${date.day}'),
-                      style: tt.titleMedium?.copyWith(
-                        color: fg,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    for (int k = 0; k < dots; k++)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+                          child: const SizedBox(width: 6, height: 6),
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 8,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          for (int k = 0; k < dots; k++)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(color: tokens.accent, shape: BoxShape.circle),
-                                child: const SizedBox(width: 6, height: 6),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),

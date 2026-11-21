@@ -2,14 +2,15 @@
 // number of classes of each day and a marker for cancelled / extra classes.
 // Tapping it opens the full week grid.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
@@ -22,7 +23,7 @@ class WeekGlanceTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
     final int weekStart = ref.watch(weekStartProvider).value ?? 6;
     final LocalDate first = weekStartFor(today, weekStart);
@@ -31,9 +32,9 @@ class WeekGlanceTile extends ConsumerWidget {
     final Widget header = TileHeader(
       icon: Icons.calendar_view_week_outlined,
       title: l10n.todayWeekTitle,
-      trailing: Tooltip(
+      trailing: BhorTooltip(
         message: l10n.todayWeekOpen,
-        child: Icon(Icons.chevron_right, color: tokens.textSecondary),
+        child: Icon(Icons.chevron_right, color: b.colors.text2),
       ),
     );
     if (plans == null) {
@@ -49,7 +50,7 @@ class WeekGlanceTile extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             for (int i = 0; i < plans.length; i++) ...<Widget>[
-              if (i > 0) const SizedBox(width: 6),
+              if (i > 0) const SizedBox(width: BhorSpace.s4),
               Expanded(child: _DayColumn(plan: plans[i], isToday: plans[i].date == today)),
             ],
           ],
@@ -69,8 +70,7 @@ class _DayColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     int count = 0, cancelled = 0, extra = 0;
     for (final DayClass c in plan.classes) {
       if (c.cancelled) {
@@ -80,14 +80,14 @@ class _DayColumn extends StatelessWidget {
         if (c.state == ClassState.extra) extra++;
       }
     }
-    final Color fg = isToday ? tokens.onAccentContainer : tokens.textPrimary;
-    final Color sub = isToday ? tokens.onAccentContainer : tokens.textSecondary;
+    final Color fg = isToday ? b.colors.accent : b.colors.text;
+    final Color sub = isToday ? b.colors.accent : b.colors.text2;
     Widget marker(IconData icon, String text) => Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Icon(icon, size: 12, color: sub),
-            const SizedBox(width: 2),
-            Text(text, maxLines: 1, style: tt.labelSmall?.copyWith(color: sub)),
+            const SizedBox(width: BhorSpace.s4),
+            Text(text, maxLines: 1, style: b.type.caption.copyWith(color: sub)),
           ],
         );
     return Semantics(
@@ -96,12 +96,12 @@ class _DayColumn extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isToday ? tokens.accentContainer : tokens.surfaceDense,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-          border: Border.all(color: tokens.hairline),
+          color: isToday ? b.colors.accentTint : b.colors.surface2,
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+          border: Border.all(color: isToday ? b.colors.accentLine : b.colors.line),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+          padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8, horizontal: BhorSpace.s4),
           child: Center(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -111,17 +111,17 @@ class _DayColumn extends StatelessWidget {
                   Text(
                     fmt.weekdayShort(plan.date.isoWeekday),
                     maxLines: 1,
-                    style: tt.labelMedium?.copyWith(color: sub),
+                    style: b.type.label.copyWith(color: sub),
                   ),
                   Text(
                     fmt.number(count),
                     maxLines: 1,
-                    style: tt.headlineSmall?.copyWith(color: fg, fontWeight: FontWeight.w700),
+                    style: BhorType.tabular(b.type.display).copyWith(color: fg),
                   ),
                   Text(
                     fmt.digits('${plan.date.day}'),
                     maxLines: 1,
-                    style: tt.labelSmall?.copyWith(color: sub),
+                    style: b.type.caption.copyWith(color: sub),
                   ),
                   if (cancelled > 0) marker(Icons.block, fmt.number(cancelled)),
                   if (extra > 0) marker(Icons.add, fmt.number(extra)),

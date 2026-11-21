@@ -5,11 +5,13 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -17,8 +19,7 @@ import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
@@ -34,9 +35,9 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_call_controller.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
-import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
 
 enum _LeaveChoice { save, discard }
@@ -316,12 +317,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   Future<void> _pickTime({required bool start}) async {
     final RollTarget? t = _target;
     if (t == null) return;
-    final l10n = context.l10n;
-    final int? m = await showTimePickerSheet(
-      context,
-      initialMin: start ? t.startMin : t.endMin,
-      title: start ? l10n.rollPickStart : l10n.rollPickEnd,
-    );
+    final int? m = await showBhorTimePicker(context, initial: start ? t.startMin : t.endMin);
     if (m == null || !mounted) return;
     if (start) {
       final int duration = t.endMin - t.startMin;
@@ -364,7 +360,6 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     }
     if (!_canSave(t, c)) return;
     final l10n = context.l10n;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AttendanceRepository attendance = ref.read(attendanceRepositoryProvider);
     final ScheduleRepository scheduleRepo = ref.read(scheduleRepositoryProvider);
     final bool wasSaved = c.saved;
@@ -374,33 +369,26 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     if (!mounted || !ok) return;
     if (!wasSaved) {
       final String? occ = _target?.occurrence?.occ;
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            duration: const Duration(seconds: 8),
-            // A snackbar with an action would otherwise never time out.
-            persist: false,
-            content: Text(l10n.rollSavedSnack),
-            action: occ == null
-                ? null
-                : SnackBarAction(
-                    label: l10n.commonUndo,
-                    onPressed: () async {
-                      try {
-                        await attendance.deleteSession(occ);
-                        if (wasAdHoc) {
-                          await scheduleRepo.deleteExtra(occ);
-                        } else if (wasCancelled) {
-                          await scheduleRepo.cancel(occ);
-                        }
-                      } on Object {
-                        // The roll call stays as saved; nothing else to do.
-                      }
-                    },
-                  ),
-          ),
-        );
+      BhorToast.show(
+        context,
+        message: l10n.rollSavedSnack,
+        duration: const Duration(seconds: 8),
+        actionLabel: occ == null ? null : l10n.commonUndo,
+        onAction: occ == null
+            ? null
+            : () async {
+                try {
+                  await attendance.deleteSession(occ);
+                  if (wasAdHoc) {
+                    await scheduleRepo.deleteExtra(occ);
+                  } else if (wasCancelled) {
+                    await scheduleRepo.cancel(occ);
+                  }
+                } on Object {
+                  // The roll call stays as saved; nothing else to do.
+                }
+              },
+      );
     }
     _finish();
   }
@@ -430,20 +418,19 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final RollCallController? c = _c;
     if (c == null) return;
     final l10n = context.l10n;
-    final _LeaveChoice? choice = await showDialog<_LeaveChoice>(
-      context: context,
-      builder: (BuildContext ctx) => AlertDialog(
-        title: Text(l10n.rollLeaveTitle),
+    final _LeaveChoice? choice = await showBhorDialog<_LeaveChoice>(
+      context,
+      builder: (BuildContext ctx) => BhorDialog(
+        title: l10n.rollLeaveTitle,
         actions: <Widget>[
-          TextButton(
+          BhorButton(
+            label: l10n.rollLeaveDiscard,
+            variant: BhorButtonVariant.ghost,
             onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.discard),
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            child: Text(l10n.rollLeaveDiscard),
           ),
-          FilledButton(
+          BhorButton(
+            label: l10n.rollLeaveSave,
             onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.save),
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-            child: Text(l10n.rollLeaveSave),
           ),
         ],
       ),
@@ -463,12 +450,11 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final String? occ = t?.occurrence?.occ;
     if (occ == null) return;
     final l10n = context.l10n;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AttendanceRepository attendance = ref.read(attendanceRepositoryProvider);
-    final bool yes = await showConfirmDialog(
+    final bool yes = await showBhorConfirm(
       context,
       title: l10n.rollDeleteTitle,
-      body: l10n.rollDeleteBody,
+      message: l10n.rollDeleteBody,
       confirmLabel: l10n.rollDeleteConfirm,
       destructive: true,
     );
@@ -477,23 +463,20 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       await attendance.deleteSession(occ);
     } on Object catch (e) {
       if (mounted) {
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+        BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
       }
       return;
     }
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.rollDeletedSnack)));
-    if (mounted) _finish();
+    if (!mounted) return;
+    BhorToast.show(context, message: l10n.rollDeletedSnack);
+    _finish();
   }
 
   Future<void> _editNote() async {
     final RollCallController? c = _c;
     if (c == null || c.readOnly) return;
-    final String? value = await showDialog<String>(
-      context: context,
+    final String? value = await showBhorDialog<String>(
+      context,
       builder: (BuildContext ctx) => _NoteDialog(initial: c.note ?? ''),
     );
     if (value == null || !mounted) return;
@@ -667,7 +650,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   Widget _loaded(BuildContext context, RollCallController c, RollTarget initialTarget, LocalDate today, WindowClass wc) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final RollTarget t = _target ?? initialTarget;
     final bool wide = wc.isWide;
     final bool dense = wc.usesRail;
@@ -694,7 +677,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       }
     }
     final String saveLabel = (c.saved || c.readOnly) ? l10n.rollDone : l10n.rollSaveButton(fmt.number(c.students.length));
-    final Widget bar = StickyActionBar(
+    final Widget bar = RollSaveBar(
       label: saveLabel,
       onPressed: canSave ? () => unawaited(_save()) : null,
       disabledReason: reason,
@@ -745,31 +728,32 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final Widget roster;
     if (c.students.isEmpty) {
       roster = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: EmptyState(
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
+        child: BhorEmptyState(
           icon: Icons.groups_outlined,
-          message: l10n.rollEmptyBatch,
-          actionLabel: (archived || c.readOnly) ? null : l10n.rollAddStudent,
-          onAction: (archived || c.readOnly)
+          title: l10n.rollEmptyBatch,
+          action: (archived || c.readOnly)
               ? null
-              : () async {
-                  await showAddStudentToBatchSheet(context, batchId: t.batch.id);
-                  if (!mounted) return;
-                  _reloadRoster();
-                },
-          fill: false,
+              : BhorButton(
+                  label: l10n.rollAddStudent,
+                  onPressed: () async {
+                    await showAddStudentToBatchSheet(context, batchId: t.batch.id);
+                    if (!mounted) return;
+                    _reloadRoster();
+                  },
+                ),
         ),
       );
     } else if (rows.isEmpty) {
       roster = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: Text(l10n.rollNoMatch, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: tokens.textSecondary))),
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
+        child: Center(child: Text(l10n.rollNoMatch, style: b.type.body.copyWith(color: b.colors.text2))),
       );
     } else {
       roster = _Roster(
         rows: rows,
         columns: wide || wc == WindowClass.medium ? _columns(wc) : 1,
-        gap: 8,
+        gap: BhorSpace.s8,
         builder: (int i) => _row(context, c, rows[i], i, dense: dense, keyed: wide || wc == WindowClass.medium),
       );
     }
@@ -782,23 +766,16 @@ class _RollEditorState extends ConsumerState<RollEditor> {
           l10n.rollTitle(t.subjectName, t.batch.name),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleMedium,
+          style: b.type.title,
         ),
         stateLine,
       ],
     );
 
-    final PopupMenuButton<String> menu = PopupMenuButton<String>(
-      tooltip: l10n.commonMore,
-      onSelected: (String v) {
-        if (v == 'note') unawaited(_editNote());
-        if (v == 'delete') unawaited(_deleteSession());
-      },
-      itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-        if (!c.readOnly) PopupMenuItem<String>(value: 'note', child: Text(l10n.rollMenuNote)),
-        if (!c.readOnly && c.saved && !t.adHoc)
-          PopupMenuItem<String>(value: 'delete', child: Text(l10n.rollMenuDelete)),
-      ],
+    final Widget menu = BhorIconButton(
+      semanticLabel: l10n.commonMore,
+      icon: Icons.more_vert,
+      onPressed: () => unawaited(_openMenu(c, t)),
     );
     final bool hasMenu = !c.readOnly;
 
@@ -810,17 +787,17 @@ class _RollEditorState extends ConsumerState<RollEditor> {
           Expanded(
             child: SingleChildScrollView(
               controller: _scroll,
-              padding: EdgeInsets.fromLTRB(gutter, 4, gutter, gutter),
+              padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, gutter),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[...header, const SizedBox(height: 12), roster],
+                children: <Widget>[...header, const SizedBox(height: BhorSpace.s12), roster],
               ),
             ),
           ),
           SizedBox(
             width: 300,
             child: DecoratedBox(
-              decoration: BoxDecoration(border: Border(left: BorderSide(color: tokens.hairline))),
+              decoration: BoxDecoration(border: Border(left: BorderSide(color: b.colors.line))),
               child: Column(
                 children: <Widget>[
                   Expanded(
@@ -847,7 +824,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
               controller: _scroll,
               slivers: <Widget>[
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(gutter, 4, gutter, 12),
+                  padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, BhorSpace.s12),
                   sliver: SliverToBoxAdapter(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: header),
                   ),
@@ -862,7 +839,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
                     padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
                     sliver: SliverList.separated(
                       itemCount: rows.length,
-                      separatorBuilder: (BuildContext _, int __) => const SizedBox(height: 8),
+                      separatorBuilder: (BuildContext _, int __) => const SizedBox(height: BhorSpace.s8),
                       itemBuilder: (BuildContext ctx, int i) => _row(ctx, c, rows[i], i, dense: false, keyed: false),
                     ),
                   ),
@@ -885,32 +862,61 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         onKeyEvent: _onKey,
         child: IgnorePointer(
           ignoring: _leaving && GoRouter.maybeOf(context) != null,
-          child: Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              tooltip: l10n.commonClose,
-              icon: const Icon(Icons.close),
-              onPressed: _close,
+          child: BhorScaffold(
+            header: _RollHeader(
+              closeLabel: l10n.commonClose,
+              onClose: _close,
+              title: Semantics(header: true, child: title),
+              actions: <Widget>[
+                if (!c.readOnly)
+                  BhorIconButton(
+                    semanticLabel: l10n.commonUndo,
+                    icon: Icons.undo,
+                    onPressed: c.canUndo ? c.undo : null,
+                  ),
+                if (hasMenu) menu,
+              ],
             ),
-            title: Semantics(header: true, child: title),
-            actions: <Widget>[
-              if (!c.readOnly)
-                IconButton(
-                  tooltip: l10n.commonUndo,
-                  icon: const Icon(Icons.undo),
-                  onPressed: c.canUndo ? c.undo : null,
-                ),
-              if (hasMenu) menu,
-            ],
+            body: body,
           ),
-          body: SafeArea(top: false, child: body),
-        ),
         ),
       ),
     );
   }
 
-  Widget _gap(Widget child) => Padding(padding: const EdgeInsets.only(top: 8), child: child);
+  /// The "more" sheet: edit the class note, delete a saved roll call.
+  Future<void> _openMenu(RollCallController c, RollTarget t) async {
+    final l10n = context.l10n;
+    final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
+    final String? v = await showBhorSheet<String>(
+      context,
+      builder: (BuildContext ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          BhorListRow(
+            leading: const Icon(Icons.edit_note),
+            title: l10n.rollMenuNote,
+            divider: canDelete,
+            onTap: () => Navigator.of(ctx).pop('note'),
+          ),
+          if (canDelete)
+            BhorListRow(
+              leading: const Icon(Icons.delete_outline),
+              title: l10n.rollMenuDelete,
+              divider: false,
+              onTap: () => Navigator.of(ctx).pop('delete'),
+            ),
+          const SizedBox(height: BhorSpace.s8),
+        ],
+      ),
+    );
+    if (!mounted || v == null) return;
+    if (v == 'note') unawaited(_editNote());
+    if (v == 'delete') unawaited(_deleteSession());
+  }
+
+  Widget _gap(Widget child) => Padding(padding: const EdgeInsets.only(top: BhorSpace.s8), child: child);
 
   void _reloadRoster() {
     final RollCallController? old = _c;
@@ -951,78 +957,74 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final l10n = context.l10n;
     final bool wide = WindowClass.of(context).isWide;
     final Widget buttons = Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: BhorSpace.s8,
+      runSpacing: BhorSpace.s8,
       children: <Widget>[
-        OutlinedButton.icon(
+        BhorButton(
+          label: l10n.rollAllPresent,
+          icon: AttendanceStatus.present.icon,
+          variant: BhorButtonVariant.secondary,
           onPressed: () => c.markAll(AttendanceStatus.present),
-          icon: Icon(AttendanceStatus.present.icon),
-          label: Text(l10n.rollAllPresent),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
         ),
-        OutlinedButton.icon(
+        BhorButton(
+          label: l10n.rollAllAbsent,
+          icon: AttendanceStatus.absent.icon,
+          variant: BhorButtonVariant.secondary,
           onPressed: () => c.markAll(AttendanceStatus.absent),
-          icon: Icon(AttendanceStatus.absent.icon),
-          label: Text(l10n.rollAllAbsent),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
         ),
       ],
     );
-    final Widget search = TextField(
+    final Widget search = BhorTextField(
       controller: _search,
       textInputAction: TextInputAction.search,
       onChanged: (String _) => setState(() => _cursor = -1),
-      decoration: InputDecoration(
-        hintText: l10n.rollSearchHint,
-        prefixIcon: const Icon(Icons.search),
-        isDense: true,
-      ),
+      hint: l10n.rollSearchHint,
+      prefix: const Icon(Icons.search),
     );
     if (wide) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Flexible(flex: 3, child: buttons),
-          const SizedBox(width: 12),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(flex: 2, child: search),
         ],
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[buttons, const SizedBox(height: 8), search],
+      children: <Widget>[buttons, const SizedBox(height: BhorSpace.s8), search],
     );
   }
 
   Widget _errorCard(RollCallController c) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Semantics(
       liveRegion: true,
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.errorContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: Border.all(color: tokens.errorContainerBorder),
+          color: b.colors.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: b.colors.danger.withValues(alpha: 0.35)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: tokens.onErrorContainer),
-              const SizedBox(width: 8),
+              Icon(Icons.error_outline, color: b.colors.danger),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(
                 child: Text(
                   errorText(l10n, c.error!),
-                  style: tt.bodyMedium?.copyWith(color: tokens.onErrorContainer),
+                  style: b.type.body.copyWith(color: b.colors.danger),
                 ),
               ),
-              TextButton(
+              BhorButton(
+                label: l10n.commonRetry,
+                variant: BhorButtonVariant.ghost,
                 onPressed: () => unawaited(_save()),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48), foregroundColor: tokens.onErrorContainer),
-                child: Text(l10n.commonRetry),
               ),
             ],
           ),
@@ -1046,18 +1048,18 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     ];
     final int duration = t.endMin - t.startMin;
     final FreeSuggestion? s = r.suggestion;
-    final List<ConflictFix> fixes = <ConflictFix>[];
+    final List<RollClashFix> fixes = <RollClashFix>[];
     if (s != null) {
       final int? primary = s.primaryStartMin;
       if (primary != null) {
-        fixes.add(ConflictFix(
+        fixes.add(RollClashFix(
           label: l10n.rollFixUse(fmt.timeRange(primary, primary + duration)),
           onTap: () => _setTimes(primary, primary + duration),
           primary: true,
         ));
       }
     }
-    return ConflictCard(
+    return RollClashCard(
       lines: lines,
       moreCount: r.groups.length > 3 ? r.groups.length - 3 : 0,
       fixes: fixes,
@@ -1075,8 +1077,7 @@ class _StateLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String text = saving ? l10n.rollStateSaving : (saved ? l10n.rollStateSaved : l10n.rollStateUnsaved);
     final IconData icon = saving ? Icons.sync : (saved ? Icons.check : Icons.edit_outlined);
     return Semantics(
@@ -1085,14 +1086,14 @@ class _StateLine extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: tokens.textSecondary),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: b.colors.text2),
+          const SizedBox(width: BhorSpace.s4),
           Flexible(
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: tt.labelSmall?.copyWith(color: tokens.textSecondary),
+              style: b.type.caption,
             ),
           ),
         ],
@@ -1125,7 +1126,7 @@ class _Roster extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         for (var col = 0; col < cols; col++) ...<Widget>[
-          if (col > 0) SizedBox(width: gap + 4),
+          if (col > 0) SizedBox(width: gap + BhorSpace.s4),
           Expanded(
             child: Column(
               children: <Widget>[
@@ -1161,28 +1162,59 @@ class _NoteDialogState extends State<_NoteDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AlertDialog(
-      title: Text(l10n.rollNoteTitle),
-      content: TextField(
+    return BhorDialog(
+      title: l10n.rollNoteTitle,
+      body: BhorTextField(
         controller: _controller,
         autofocus: true,
         maxLength: 200,
         minLines: 1,
         maxLines: 4,
-        decoration: InputDecoration(hintText: l10n.rollNoteHint),
+        hint: l10n.rollNoteHint,
       ),
       actions: <Widget>[
-        TextButton(
+        BhorButton(
+          label: l10n.commonCancel,
+          variant: BhorButtonVariant.ghost,
           onPressed: () => Navigator.of(context).pop(),
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-          child: Text(l10n.commonCancel),
         ),
-        FilledButton(
+        BhorButton(
+          label: l10n.commonSave,
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-          child: Text(l10n.commonSave),
         ),
       ],
+    );
+  }
+}
+
+/// The roll call's top bar: close, title with the save state, actions.
+class _RollHeader extends StatelessWidget {
+  const _RollHeader({
+    required this.closeLabel,
+    required this.onClose,
+    required this.title,
+    required this.actions,
+  });
+
+  final String closeLabel;
+  final VoidCallback onClose;
+  final Widget title;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.line))),
+      child: Row(
+        children: <Widget>[
+          BhorIconButton(semanticLabel: closeLabel, icon: Icons.close, color: c.text, onPressed: onClose),
+          Expanded(child: title),
+          ...actions,
+        ],
+      ),
     );
   }
 }

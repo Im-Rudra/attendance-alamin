@@ -2,14 +2,14 @@
 // countdown, and the near-white pill that opens its roll call. Also the
 // no-class, all-done, other-day and no-batch variants.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
@@ -40,18 +40,16 @@ class HeroClassCard extends ConsumerWidget {
     }
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final g = context.gradients;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final Color heroText = b.colors.onHero;
+    final Color heroText2 = heroText.withValues(alpha: 0.8);
 
-    final TextStyle? small =
-        tt.labelLarge?.copyWith(color: g.heroTextSecondary);
-    final TextStyle? status =
-        tt.titleMedium?.copyWith(color: g.heroText, fontWeight: FontWeight.w600);
-    final TextStyle? title =
-        tt.headlineSmall?.copyWith(color: g.heroText, fontWeight: FontWeight.w700);
-    final TextStyle? line = tt.bodyLarge?.copyWith(color: g.heroTextSecondary);
+    final TextStyle small = b.type.label.copyWith(color: heroText2);
+    final TextStyle status = b.type.heading.copyWith(color: heroText);
+    final TextStyle title = b.type.display.copyWith(color: heroText);
+    final TextStyle line = b.type.body.copyWith(color: heroText2);
 
-    Widget t(String text, TextStyle? style, {int maxLines = 2}) => Text(
+    Widget t(String text, TextStyle style, {int maxLines = 2}) => Text(
           text,
           maxLines: maxLines,
           overflow: TextOverflow.ellipsis,
@@ -66,19 +64,19 @@ class HeroClassCard extends ConsumerWidget {
       case HeroKind.noBatches:
         texts
           ..add(t(l10n.todaySetupTitle, title))
-          ..add(const SizedBox(height: 6))
+          ..add(const SizedBox(height: BhorSpace.s8))
           ..add(t(l10n.todaySetupBody, line, maxLines: 3));
-        actions.add(HeroPillButton(
+        actions.add(_HeroPill(
           label: l10n.todaySetupButton,
           onPressed: () => pushRoute(context, Routes.batchNew),
         ));
       case HeroKind.noClasses:
         texts
           ..add(t(fmt.weekdayDate(date), small, maxLines: 1))
-          ..add(const SizedBox(height: 6))
+          ..add(const SizedBox(height: BhorSpace.s8))
           ..add(t(l10n.todayHeroRest, title));
         actions
-          ..add(HeroPillButton(
+          ..add(_HeroPill(
             label: l10n.todayAddExtraLong,
             onPressed: () => showExtraClassSheet(context, date: date),
           ))
@@ -89,11 +87,11 @@ class HeroClassCard extends ConsumerWidget {
       case HeroKind.allDone:
         texts
           ..add(t(fmt.weekdayDate(date), small, maxLines: 1))
-          ..add(const SizedBox(height: 6))
+          ..add(const SizedBox(height: BhorSpace.s8))
           ..add(Row(
             children: <Widget>[
-              Icon(Icons.check_circle, color: g.heroText, size: 28),
-              const SizedBox(width: 8),
+              Icon(Icons.check_circle, color: heroText, size: 28),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(child: t(l10n.todayHeroDone, title)),
             ],
           ))
@@ -124,7 +122,7 @@ class HeroClassCard extends ConsumerWidget {
         }
         if (focus != null) {
           actions.add(CoachMarkAnchor(
-            child: HeroPillButton(
+            child: _HeroPill(
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -134,16 +132,16 @@ class HeroClassCard extends ConsumerWidget {
       case HeroKind.next:
       case HeroKind.pending:
         texts.add(t(fmt.weekdayDate(date), small, maxLines: 1));
-        texts.add(const SizedBox(height: 6));
+        texts.add(const SizedBox(height: BhorSpace.s8));
         texts.add(t(_statusText(l10n, fmt, hero), status, maxLines: 1));
         if (focus != null) {
           texts
             ..add(const SizedBox(height: 4))
             ..add(t(l10n.clsClassLabel(focus.subjectName, focus.batch.name), title))
-            ..add(const SizedBox(height: 2))
+            ..add(const SizedBox(height: BhorSpace.s4))
             ..add(t(fmt.timeRange(focus.startMin, focus.endMin), line, maxLines: 1));
           actions.add(CoachMarkAnchor(
-            child: HeroPillButton(
+            child: _HeroPill(
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -192,7 +190,7 @@ String _leftText(AppLocalizations l10n, AppFormat fmt, int minutes) {
   return l10n.todayLeftHoursMinutes(fmt.number(h), fmt.number(m));
 }
 
-/// Lays the hero texts and actions out inside the [HeroCard]. On a phone the
+/// Lays the hero texts and actions out inside the hero card. On a phone the
 /// card wraps its content with the actions below; in the bento it fills the
 /// tile (actions beside the text when the tile is short).
 class _HeroShell extends StatelessWidget {
@@ -210,25 +208,33 @@ class _HeroShell extends StatelessWidget {
       children: texts,
     );
     final Widget actionWrap = Wrap(
-      spacing: 12,
-      runSpacing: 4,
+      spacing: BhorSpace.s12,
+      runSpacing: BhorSpace.s4,
       alignment: WrapAlignment.end,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: actions,
     );
 
     if (!fill) {
-      return HeroCard(
-        cta: actions.isEmpty
-            ? null
-            : Align(alignment: AlignmentDirectional.centerEnd, child: actionWrap),
-        child: textColumn,
+      return BhorCard.hero(
+        padding: const EdgeInsets.all(BhorSpace.s20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            textColumn,
+            if (actions.isNotEmpty) ...<Widget>[
+              const SizedBox(height: BhorSpace.s16),
+              Align(alignment: AlignmentDirectional.centerEnd, child: actionWrap),
+            ],
+          ],
+        ),
       );
     }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) {
-        // HeroCard pads its content by 20 on every side.
+        // The hero card pads its content by 20 on every side.
         final double inner = c.hasBoundedHeight && c.maxHeight > 40 ? c.maxHeight - 40 : 0;
         final bool beside = inner < 190 && actions.isNotEmpty;
         final Widget body = beside
@@ -236,7 +242,7 @@ class _HeroShell extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Expanded(child: textColumn),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: BhorSpace.s12),
                   Flexible(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -252,7 +258,7 @@ class _HeroShell extends StatelessWidget {
                 children: <Widget>[
                   textColumn,
                   if (actions.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: BhorSpace.s12),
                     Align(alignment: AlignmentDirectional.centerEnd, child: actionWrap),
                   ],
                 ],
@@ -261,7 +267,8 @@ class _HeroShell extends StatelessWidget {
         // the content scales down just enough to fit (QA-10).
         final double innerWidth = c.hasBoundedWidth ? c.maxWidth - 40 : 0;
         if (innerWidth <= 0) {
-          return HeroCard(
+          return BhorCard.hero(
+            padding: const EdgeInsets.all(BhorSpace.s20),
             child: SizedBox(
               height: inner,
               width: double.infinity,
@@ -275,7 +282,8 @@ class _HeroShell extends StatelessWidget {
             ),
           );
         }
-        return HeroCard(
+        return BhorCard.hero(
+          padding: const EdgeInsets.all(BhorSpace.s20),
           child: SizedBox(
             height: inner,
             width: double.infinity,
@@ -307,14 +315,63 @@ class _HeroTextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.gradients;
-    return TextButton(
-      style: TextButton.styleFrom(
-        foregroundColor: g.heroText,
-        minimumSize: const Size(48, 48),
+    final BhorThemeData b = context.bhor;
+    return BhorPressable(
+      onTap: onPressed,
+      semanticLabel: label,
+      isButton: true,
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates states) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: BhorSize.phoneRow, minWidth: BhorSize.phoneRow),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+          child: Center(
+            widthFactor: 1,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: b.type.bodyStrong.copyWith(color: b.colors.onHero),
+            ),
+          ),
+        ),
       ),
-      onPressed: onPressed,
-      child: Text(label, textAlign: TextAlign.center),
+    );
+  }
+}
+
+/// Near-white pill on the hero card (the one saturated surface of the page).
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return BhorPressable(
+      onTap: onPressed,
+      semanticLabel: label,
+      isButton: true,
+      excludeChildSemantics: true,
+      radius: BhorSize.phoneRow,
+      builder: (BuildContext context, BhorStates states) => AnimatedOpacity(
+        opacity: onPressed == null ? 0.5 : 1,
+        duration: BhorMotion.fast,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: BhorSize.phoneRow, minWidth: 64),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s24),
+          decoration: BoxDecoration(
+            color: b.colors.onHero,
+            borderRadius: BorderRadius.circular(BhorSize.phoneRow),
+          ),
+          child: Center(
+            widthFactor: 1,
+            child: Text(label, style: b.type.bodyStrong.copyWith(color: b.colors.heroEnd)),
+          ),
+        ),
+      ),
     );
   }
 }

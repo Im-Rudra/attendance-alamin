@@ -4,16 +4,18 @@
 // rows all sum to 12 with equal-height tiles, plus a দিন/সপ্তাহ toggle that
 // swaps the bento for the real week grid.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/language_chip.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/bento_grid.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/bento_layout.dart';
@@ -52,36 +54,40 @@ class TodayScreen extends ConsumerWidget {
     final List<Widget> actions = <Widget>[
       if (wide)
         Padding(
-          padding: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.only(left: BhorSpace.s8),
           child: SizedBox(
             width: 190,
             child: Semantics(
               container: true,
               label: l10n.todayViewLabel,
-              child: SegmentedChoice<TodayView>(
-                options: TodayView.values,
-                selected: view,
+              child: BhorSegmented<TodayView>(
+                compact: true,
+                segments: <BhorSegment<TodayView>>[
+                  BhorSegment<TodayView>(TodayView.day, l10n.todayViewDay),
+                  BhorSegment<TodayView>(TodayView.week, l10n.todayViewWeek),
+                ],
+                value: view,
                 onChanged: (TodayView v) => ref.read(todayViewProvider.notifier).set(v),
-                labelOf: (TodayView v) =>
-                    v == TodayView.day ? l10n.todayViewDay : l10n.todayViewWeek,
               ),
             ),
           ),
         ),
       if (quickActionsInTopBar(wc)) ..._topBarQuick(context, today),
-      IconButton(
-        tooltip: l10n.commonSearch,
-        icon: const Icon(Icons.search),
+      BhorIconButton(
+        semanticLabel: l10n.commonSearch,
+        icon: Icons.search,
         onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
       ),
       const LanguageChip(),
-      const SizedBox(width: 8),
+      const SizedBox(width: BhorSpace.s8),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Semantics(header: true, child: Text(l10n.navToday)),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: l10n.navToday,
+        subtitle: context.fmt.weekdayDate(today),
+        large: true,
+        showBack: false,
         actions: actions,
       ),
       body: wide
@@ -98,9 +104,10 @@ class TodayScreen extends ConsumerWidget {
     }
     return <Widget>[
       for (final QuickAction q in quickActionsOf(context, today).take(3))
-        IconButton.filledTonal(
-          tooltip: q.label,
-          icon: Icon(q.icon),
+        BhorIconButton(
+          semanticLabel: q.label,
+          icon: q.icon,
+          variant: BhorButtonVariant.secondary,
           onPressed: q.onTap,
         ),
     ];
@@ -120,7 +127,7 @@ class _WideBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final double g = wc.gutter;
     return Padding(
-      padding: EdgeInsets.fromLTRB(g, 4, g, g),
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -134,9 +141,8 @@ class _WideBody extends ConsumerWidget {
 
   Widget _weekBody(WidgetRef ref) {
     final int weekStart = ref.watch(weekStartProvider).value ?? 6;
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.all(12),
+    return BhorCard(
+      padding: const EdgeInsets.all(BhorSpace.s12),
       child: WeekGrid(weekStart: weekStartFor(today, weekStart)),
     );
   }
@@ -208,7 +214,7 @@ class _StackedBody extends ConsumerWidget {
           ref.read(todaySelectedDateProvider.notifier).select(d == today ? null : d),
     );
 
-    const Widget gap = SizedBox(height: 12);
+    const Widget gap = SizedBox(height: BhorSpace.s12);
 
     Widget pair(double height, Widget a, Widget b) => SizedBox(
           height: height,
@@ -231,14 +237,14 @@ class _StackedBody extends ConsumerWidget {
         HeroClassCard(date: selected),
       gap,
       if (!medium && isToday) ...<Widget>[const DuesCard(), gap],
-      const BackupNudgeTile(onlyWhenDue: true, gapBelow: 12),
-      if (!medium) const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: 12),
+      const BackupNudgeTile(onlyWhenDue: true, gapBelow: BhorSpace.s12),
+      if (!medium) const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: BhorSpace.s12),
       TodayTimeline(date: selected, strip: strip),
       gap,
       if (medium) ...<Widget>[
         pair(_kMediumStatRow, const CollectionTile(), const AttendanceTodayTile()),
         gap,
-        const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: 12),
+        const AbsenceAlertsTile(maxItems: 3, hideWhenEmpty: true, gapBelow: BhorSpace.s12),
       ] else ...<Widget>[
         const CollectionTile(),
         gap,
@@ -249,7 +255,7 @@ class _StackedBody extends ConsumerWidget {
     ];
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(g, 4, g, g + bottom),
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g + bottom),
       children: children,
     );
   }

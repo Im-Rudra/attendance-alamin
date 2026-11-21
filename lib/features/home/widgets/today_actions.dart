@@ -1,9 +1,11 @@
 // Navigation helpers shared by the Today tiles. Every route goes through the
 // router when there is one (widget tests pump screens without a router).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -36,39 +38,20 @@ Future<void> showBatchPickerSheet(
   final l10n = context.l10n;
   final List<Batch> sorted = List<Batch>.of(batches)
     ..sort((Batch a, Batch b) => a.sortOrder.compareTo(b.sortOrder));
-  final String? id = await showModalBottomSheet<String>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    builder: (BuildContext ctx) => SafeArea(
+  final String? id = await showBhorSheet<String>(
+    context,
+    title: l10n.todayPickBatchTitle,
+    builder: (BuildContext ctx) => SingleChildScrollView(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Semantics(
-              header: true,
-              child: Text(
-                l10n.todayPickBatchTitle,
-                style: Theme.of(ctx).textTheme.titleLarge,
-              ),
+          for (int i = 0; i < sorted.length; i++)
+            BhorListRow(
+              title: sorted[i].name,
+              trailing: const Icon(Icons.chevron_right),
+              divider: i < sorted.length - 1,
+              onTap: () => Navigator.of(ctx).pop(sorted[i].id),
             ),
-          ),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: <Widget>[
-                for (final Batch b in sorted)
-                  ListTile(
-                    minVerticalPadding: 12,
-                    title: Text(b.name),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(ctx).pop(b.id),
-                  ),
-              ],
-            ),
-          ),
         ],
       ),
     ),

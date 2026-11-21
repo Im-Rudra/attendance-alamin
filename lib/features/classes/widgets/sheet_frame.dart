@@ -1,12 +1,12 @@
-// Shared chrome of the class sheets: a title row with a close button, and the
-// modal bottom sheet launcher (root navigator, max 560 wide on desktop).
+// Shared chrome of the class sheets: a title block over a scrolling body with
+// a pinned footer, a tappable labelled row (date, time, batch) and the sheet
+// launcher. The drag handle and close button come from the Bhor sheet itself.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 
-/// Title, close button and a scrolling [child]; [footer] stays pinned below.
+/// Title (and subtitle) and a scrolling [child]; [footer] stays pinned below.
 class SheetFrame extends StatelessWidget {
   const SheetFrame({super.key, required this.title, required this.child, this.subtitle, this.footer});
 
@@ -17,48 +17,55 @@ class SheetFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
-          child: Row(
+          padding: const EdgeInsets.only(top: BhorSpace.s8),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Semantics(
-                        header: true,
-                        child: Text(title, style: tt.titleLarge?.copyWith(color: tokens.textPrimary)),
-                      ),
-                      if (subtitle != null)
-                        Text(subtitle!, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: context.l10n.a11yCloseSheet,
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
+              Semantics(header: true, child: Text(title, style: b.type.title)),
+              if (subtitle != null) Text(subtitle!, style: b.type.meta),
             ],
           ),
         ),
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.only(top: BhorSpace.s12, bottom: BhorSpace.s16),
             child: child,
           ),
         ),
         if (footer != null) footer!,
+      ],
+    );
+  }
+}
+
+/// The save button pinned under a class sheet, with the reason when disabled.
+class ClassSaveBar extends StatelessWidget {
+  const ClassSaveBar({super.key, required this.label, required this.onPressed, this.disabledReason});
+
+  final String label;
+
+  /// Null disables the button.
+  final VoidCallback? onPressed;
+  final String? disabledReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorButton(label: label, expand: true, onPressed: onPressed, disabledReason: disabledReason),
+        if (onPressed == null && disabledReason != null) ...<Widget>[
+          const SizedBox(height: BhorSpace.s8),
+          Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
+        ],
       ],
     );
   }
@@ -85,63 +92,49 @@ class FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return Semantics(
-      button: onTap != null,
-      label: '$label, $value',
-      excludeSemantics: true,
-      child: Material(
-        color: tokens.surfaceDense,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-          side: BorderSide(color: tokens.hairline),
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return BhorPressable(
+      onTap: onTap,
+      semanticLabel: '$label, $value',
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      scaleOnPress: false,
+      builder: (BuildContext context, BhorStates s) => Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.all(BhorSpace.s4),
+        decoration: BoxDecoration(
+          color: s.hovered ? c.surface2 : c.surface,
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+          border: Border.all(color: s.hovered ? c.accentLine : c.line),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Row(
+        child: Row(
+          children: <Widget>[
+            if (leading != null) leading! else const SizedBox(width: BhorSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  if (leading != null) leading! else const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(label, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
-                        Text(value, style: tt.bodyLarge?.copyWith(color: tokens.textPrimary)),
-                      ],
-                    ),
-                  ),
-                  if (trailing != null)
-                    trailing!
-                  else if (icon != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Icon(icon, color: tokens.textSecondary),
-                    ),
+                  Text(label, style: b.type.meta),
+                  Text(value, style: b.type.body),
                 ],
               ),
             ),
-          ),
+            if (trailing != null)
+              trailing!
+            else if (icon != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+                child: Icon(icon, color: c.text2),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Shows [builder] as a modal bottom sheet above the whole shell.
+/// Shows [builder] as a Bhor sheet above the whole shell.
 Future<T?> showClassSheet<T>(BuildContext context, WidgetBuilder builder) {
-  return showModalBottomSheet<T>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    useRootNavigator: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
-    builder: builder,
-  );
+  return showBhorSheet<T>(context, builder: builder);
 }
