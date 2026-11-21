@@ -190,6 +190,18 @@ jobs:
           # View locally: unzip the artifact, run from the unzip root:
           #   python -c "import http.server as h; h.SimpleHTTPRequestHandler.extensions_map['.wasm']='application/wasm'; h.test(h.SimpleHTTPRequestHandler, port=8080)"
           # then open http://localhost:8080/attendance-alamin/
+      - name: Size table
+        run: |
+          {
+            echo "### Web build size (unchanged by the size work: web has no R8/ABI split)"
+            echo
+            bash tool/size_table.sh \
+              "build/web (all files)|-|build/web" \
+              "main.dart.js|-|build/web/main.dart.js" \
+              "canvaskit + wasm (if any)|-|build/web/canvaskit" \
+              "sqlite3.wasm|-|build/web/sqlite3.wasm" \
+              "assets/ (fonts, AssetManifest)|-|build/web/assets"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: web-${{ github.sha }}
@@ -247,28 +259,99 @@ jobs:
               echo "storeFile=upload.jks"
             } > android/key.properties
             echo "label=signed" >> "$GITHUB_OUTPUT"
+            echo "suffix=signed" >> "$GITHUB_OUTPUT"
             echo "Release keystore configured."
           else
             echo "label=UNSIGNED-DEBUGKEY" >> "$GITHUB_OUTPUT"
+            echo "suffix=TEST-DEBUGKEY" >> "$GITHUB_OUTPUT"
             echo "::warning title=Android signing::No keystore secrets; APK is signed with this runner's DEBUG key. Never give it to the teacher (run keystore.yml first)."
           fi
-      - name: Build APK
-        run: flutter build apk --release --build-number=${{ github.run_number }}
+      - id: ver
+        name: App version (pubspec)
+        run: |
+          ver="$(sed -n 's/^version:[[:space:]]*\([0-9][0-9.]*\).*/\1/p' pubspec.yaml | head -n1)"
+          echo "name=${ver}-b${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      # BASELINE for the size table: the old way (one universal APK, then split-per-abi with no
+      # obfuscation), built with the size settings of android/app/build.gradle.kts stripped
+      # (no explicit R8 flags, no packaging block). The file is restored afterwards.
+      - name: Baseline build (before-sizes only, never published)
+        run: |
+          cp android/app/build.gradle.kts "$RUNNER_TEMP/build.gradle.kts.new"
+          sed -i -e '/^    packaging {/,/^    }$/d' \
+                 -e '/isMinifyEnabled/d' -e '/isShrinkResources/d' -e '/proguardFiles(/d' \
+                 android/app/build.gradle.kts
+          mkdir -p baseline
+          flutter build apk --release --build-number=${{ github.run_number }}
+          cp build/app/outputs/flutter-apk/app-release.apk baseline/universal.apk
+          flutter build apk --release --split-per-abi --build-number=${{ github.run_number }}
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-${abi}-release.apk" "baseline/${abi}.apk"
+          done
+          cp "$RUNNER_TEMP/build.gradle.kts.new" android/app/build.gradle.kts
+          ls -l baseline
+      # Flutter has no 32-bit x86 release target, so the ABIs are armeabi-v7a, arm64-v8a, x86_64.
+      # Flutter adds an ABI offset (v7a +1000, arm64 +2000, x86_64 +4000) to the versionCode.
+      - name: Build split APKs (R8 + obfuscation + icon tree-shaking)
+        run: >
+          flutter build apk --release --split-per-abi
+          --obfuscate --split-debug-info=build/symbols --tree-shake-icons
+          --build-number=${{ github.run_number }}
       - name: Remove signing material
         if: always()
         run: rm -f android/app/upload.jks android/key.properties
+      - name: Name the APKs
+        run: |
+          mkdir -p dist
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-${abi}-release.apk" \
+               "dist/HajiraKhata-${{ steps.ver.outputs.name }}-${abi}-${{ steps.signing.outputs.suffix }}.apk"
+          done
+          ls -l dist
+      - name: Size table
+        run: |
+          {
+            echo "### Android APK sizes (before = old build config, after = R8 + obfuscate + packaging)"
+            echo
+            bash tool/size_table.sh \
+              "Universal APK (old single APK, now not shipped)|baseline/universal.apk|-" \
+              "armeabi-v7a (32-bit ARM phones)|baseline/armeabi-v7a.apk|build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" \
+              "arm64-v8a (almost all modern phones)|baseline/arm64-v8a.apk|build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" \
+              "x86_64 (emulators, Chromebooks)|baseline/x86_64.apk|build/app/outputs/flutter-apk/app-x86_64-release.apk" \
+              "Debug symbols (separate artifact, not shipped)|-|build/symbols"
+            echo
+            echo "Per-phone download: the universal APK was ~$(awk -v b="$(stat -c%s baseline/universal.apk)" 'BEGIN{printf "%.1f", b/1048576}') MB; an arm64-v8a phone now downloads only its own APK."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
-          name: android-apk-${{ steps.signing.outputs.label }}-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: HajiraKhata-${{ steps.ver.outputs.name }}-armeabi-v7a-${{ steps.signing.outputs.suffix }}
+          path: dist/HajiraKhata-${{ steps.ver.outputs.name }}-armeabi-v7a-${{ steps.signing.outputs.suffix }}.apk
           if-no-files-found: error
           retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: HajiraKhata-${{ steps.ver.outputs.name }}-arm64-v8a-${{ steps.signing.outputs.suffix }}
+          path: dist/HajiraKhata-${{ steps.ver.outputs.name }}-arm64-v8a-${{ steps.signing.outputs.suffix }}.apk
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: HajiraKhata-${{ steps.ver.outputs.name }}-x86_64-${{ steps.signing.outputs.suffix }}
+          path: dist/HajiraKhata-${{ steps.ver.outputs.name }}-x86_64-${{ steps.signing.outputs.suffix }}.apk
+          if-no-files-found: error
+          retention-days: 14
+      # Needed to de-obfuscate crash stack traces (flutter symbolize). Not shipped to users.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-symbols-${{ github.run_number }}
+          path: build/symbols
+          if-no-files-found: error
+          retention-days: 30
 
   windows:
-    name: windows zip
+    name: windows zip + installer
     needs: check
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -285,8 +368,31 @@ jobs:
           pub-cache: true
       - name: Prepare
         run: bash tool/ci_prepare.sh
-      - name: Build Windows
+      - id: ver
+        name: App version (pubspec)
+        run: |
+          ver="$(sed -n 's/^version:[[:space:]]*\([0-9][0-9.]*\).*/\1/p' pubspec.yaml | head -n1)"
+          echo "base=${ver}" >> "$GITHUB_OUTPUT"
+          echo "name=${ver}-b${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      # BASELINE for the size table: old build (no obfuscation). Never published.
+      - name: Baseline build (before-sizes only)
         run: flutter build windows --release --build-number=${{ github.run_number }}
+      - name: Baseline zip (before-sizes only)
+        shell: pwsh
+        run: |
+          $dest = "build\windows\x64\runner\Release"
+          foreach ($dll in @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")) {
+            Copy-Item -Path (Join-Path $env:WINDIR "System32\$dll") -Destination $dest -Force
+          }
+          New-Item -ItemType Directory -Force baseline | Out-Null
+          Compress-Archive -Path "$dest\*" -DestinationPath "baseline\windows.zip" -Force
+          $dirBytes = (Get-ChildItem $dest -Recurse -File | Measure-Object Length -Sum).Sum
+          "$dirBytes" | Out-File -FilePath baseline\windows-folder-bytes.txt -Encoding ascii
+      - name: Build Windows (obfuscated)
+        run: >
+          flutter build windows --release
+          --obfuscate --split-debug-info=build/symbols --tree-shake-icons
+          --build-number=${{ github.run_number }}
       - name: Bundle VC++ runtime DLLs
         shell: pwsh
         run: |
@@ -296,16 +402,68 @@ jobs:
           }
           Get-ChildItem $dest
       - id: zip
-        name: Zip
+        name: Zip (portable)
         shell: pwsh
         run: |
-          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*([0-9.]+)').Matches[0].Groups[1].Value
-          $name = "attendance-alamin-windows-$ver+${{ github.run_number }}.zip"
+          $name = "attendance-alamin-windows-${{ steps.ver.outputs.name }}.zip"
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $name -Force
           "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      # Inno Setup is preinstalled on some runner images; install it with choco otherwise.
+      # MSI (WiX) is intentionally not built: Inno's setup.exe covers install/uninstall/shortcuts.
+      - id: setup
+        name: Windows installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = $null
+          foreach ($p in @("C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "C:\Program Files\Inno Setup 6\ISCC.exe")) {
+            if (Test-Path $p) { $iscc = $p; break }
+          }
+          if (-not $iscc) {
+            $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+            if ($cmd) { $iscc = $cmd.Source }
+          }
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            foreach ($p in @("C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "C:\Program Files\Inno Setup 6\ISCC.exe")) {
+              if (Test-Path $p) { $iscc = $p; break }
+            }
+          }
+          if (-not $iscc) { throw "Inno Setup (ISCC.exe) not found and choco install failed" }
+          Write-Host "Using $iscc"
+          $out = "HajiraKhata-${{ steps.ver.outputs.name }}-windows-setup"
+          & $iscc "/DAppVersion=${{ steps.ver.outputs.base }}" `
+            "/DSourceDir=$((Resolve-Path 'build\windows\x64\runner\Release').Path)" `
+            "/DOutputDir=$((Resolve-Path '.').Path)\installer-out" `
+            "/DOutputName=$out" `
+            "windows\installer\hajira_khata.iss"
+          if ($LASTEXITCODE -ne 0) { throw "iscc failed with exit code $LASTEXITCODE" }
+          "name=$out.exe" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Size table
+        run: |
+          {
+            echo "### Windows sizes (before = no obfuscation, after = --obfuscate)"
+            echo
+            bash tool/size_table.sh \
+              "Release folder (unzipped)|$(cat baseline/windows-folder-bytes.txt | tr -d '\r\n ')|build/windows/x64/runner/Release" \
+              "Portable zip|baseline/windows.zip|${{ steps.zip.outputs.name }}" \
+              "Installer (setup .exe, LZMA2 ultra)|-|installer-out/${{ steps.setup.outputs.name }}" \
+              "Debug symbols (separate artifact, not shipped)|-|build/symbols"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: windows-${{ github.run_number }}
           path: ${{ steps.zip.outputs.name }}
           if-no-files-found: error
           retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: HajiraKhata-${{ steps.ver.outputs.name }}-windows-setup
+          path: installer-out/${{ steps.setup.outputs.name }}
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-symbols-${{ github.run_number }}
+          path: build/symbols
+          if-no-files-found: error
+          retention-days: 30

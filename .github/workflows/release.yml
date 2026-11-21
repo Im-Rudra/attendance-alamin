@@ -87,38 +87,65 @@ jobs:
             echo "keyAlias=$KEY_ALIAS"
             echo "storeFile=upload.jks"
           } > android/key.properties
-      - name: Build APK
+      # Flutter has no 32-bit x86 release target: armeabi-v7a, arm64-v8a, x86_64.
+      # Flutter adds an ABI offset to the versionCode (v7a +1000, arm64 +2000, x86_64 +4000).
+      - name: Build split APKs (R8 + obfuscation)
         run: >
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
+          --obfuscate --split-debug-info=build/symbols --tree-shake-icons
           --build-name=${{ needs.version.outputs.name }}
           --build-number=${{ github.run_number }}
-      - name: Verify the APK is release-signed (not the debug key)
+      - name: Verify every APK is release-signed (not the debug key)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           apksigner="$(ls "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/*/apksigner | sort -V | tail -n1)"
-          apk=build/app/outputs/flutter-apk/app-release.apk
-          "$apksigner" verify --print-certs "$apk" | tee certs.txt
-          if grep -qi "Android Debug" certs.txt; then
-            echo "::error::APK is signed with the Android debug key. Refusing to release."
-            exit 1
-          fi
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            apk="build/app/outputs/flutter-apk/app-${abi}-release.apk"
+            "$apksigner" verify --print-certs "$apk" | tee "certs-${abi}.txt"
+            if grep -qi "Android Debug" "certs-${abi}.txt"; then
+              echo "::error::${abi} APK is signed with the Android debug key. Refusing to release."
+              exit 1
+            fi
+          done
           keytool -list -keystore android/app/upload.jks -storepass "$KEYSTORE_PASSWORD" 2>/dev/null \
             | grep -i "SHA-256\|SHA256" | head -1 || true
-      - name: Name the APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk "attendance-alamin-${{ needs.version.outputs.name }}.apk"
+      - name: Name the APKs
+        run: |
+          mkdir -p dist
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-${abi}-release.apk" \
+               "dist/HajiraKhata-${{ needs.version.outputs.name }}-${abi}.apk"
+          done
+          ls -l dist
+          {
+            echo "### Android APK sizes (release-signed)"
+            echo
+            bash tool/size_table.sh \
+              "armeabi-v7a|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-armeabi-v7a.apk" \
+              "arm64-v8a|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-arm64-v8a.apk" \
+              "x86_64|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-x86_64.apk"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Remove signing material
         if: always()
         run: rm -f android/app/upload.jks android/key.properties
       - uses: actions/upload-artifact@v7
         with:
           name: rel-android
-          path: attendance-alamin-${{ needs.version.outputs.name }}.apk
+          path: dist/HajiraKhata-${{ needs.version.outputs.name }}-*.apk
           if-no-files-found: error
           retention-days: 7
+      # Not named rel-*: the publish job attaches every rel-* artifact to the Release, and the
+      # symbols must not ship. Keep them to de-obfuscate crash traces (flutter symbolize).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: symbols-android-${{ needs.version.outputs.name }}
+          path: build/symbols
+          if-no-files-found: error
+          retention-days: 90
 
   windows:
-    name: windows zip
+    name: windows zip + installer
     needs: version
     runs-on: windows-latest
     timeout-minutes: 45
@@ -140,6 +167,7 @@ jobs:
       - name: Build Windows
         run: >
           flutter build windows --release
+          --obfuscate --split-debug-info=build/symbols --tree-shake-icons
           --build-name=${{ needs.version.outputs.name }}
           --build-number=${{ github.run_number }}
       - name: Bundle VC++ runtime DLLs
@@ -149,16 +177,62 @@ jobs:
           foreach ($dll in @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")) {
             Copy-Item -Path (Join-Path $env:WINDIR "System32\$dll") -Destination $dest -Force
           }
-      - name: Zip
+      - name: Zip (portable)
         shell: pwsh
         run: |
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "attendance-alamin-windows-${{ needs.version.outputs.name }}.zip" -Force
+      # Inno Setup is preinstalled on some runner images; install it with choco otherwise.
+      # MSI (WiX) is intentionally not built: the Inno setup.exe covers install/uninstall/shortcuts.
+      - name: Windows installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = $null
+          foreach ($p in @("C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "C:\Program Files\Inno Setup 6\ISCC.exe")) {
+            if (Test-Path $p) { $iscc = $p; break }
+          }
+          if (-not $iscc) {
+            $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+            if ($cmd) { $iscc = $cmd.Source }
+          }
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            foreach ($p in @("C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "C:\Program Files\Inno Setup 6\ISCC.exe")) {
+              if (Test-Path $p) { $iscc = $p; break }
+            }
+          }
+          if (-not $iscc) { throw "Inno Setup (ISCC.exe) not found and choco install failed" }
+          & $iscc "/DAppVersion=${{ needs.version.outputs.name }}" `
+            "/DSourceDir=$((Resolve-Path 'build\windows\x64\runner\Release').Path)" `
+            "/DOutputDir=$((Resolve-Path '.').Path)\installer-out" `
+            "/DOutputName=HajiraKhata-${{ needs.version.outputs.name }}-windows-setup" `
+            "windows\installer\hajira_khata.iss"
+          if ($LASTEXITCODE -ne 0) { throw "iscc failed with exit code $LASTEXITCODE" }
+      - name: Size table
+        run: |
+          {
+            echo "### Windows sizes"
+            echo
+            bash tool/size_table.sh \
+              "Release folder (unzipped)|-|build/windows/x64/runner/Release" \
+              "Portable zip|-|attendance-alamin-windows-${{ needs.version.outputs.name }}.zip" \
+              "Installer (setup .exe)|-|installer-out/HajiraKhata-${{ needs.version.outputs.name }}-windows-setup.exe"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          # Flat layout so the publish job sees plain files (no installer-out/ sub-folder).
+          cp "installer-out/HajiraKhata-${{ needs.version.outputs.name }}-windows-setup.exe" .
       - uses: actions/upload-artifact@v7
         with:
           name: rel-windows
-          path: attendance-alamin-windows-${{ needs.version.outputs.name }}.zip
+          path: |
+            attendance-alamin-windows-${{ needs.version.outputs.name }}.zip
+            HajiraKhata-${{ needs.version.outputs.name }}-windows-setup.exe
           if-no-files-found: error
           retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: symbols-windows-${{ needs.version.outputs.name }}
+          path: build/symbols
+          if-no-files-found: error
+          retention-days: 90
 
   web:
     name: web zip
@@ -219,4 +293,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Hajira Khata ${{ needs.version.outputs.name }}" \
-            --notes "Version ${{ needs.version.outputs.name }}+${{ github.run_number }}. Android APK (release-signed, installs over the previous version and keeps data), Windows zip (unzip and run; VC++ runtime included), web zip. Verify downloads with SHA256SUMS.txt."
+            --notes "Version ${{ needs.version.outputs.name }}+${{ github.run_number }}. Android: install the APK for your phone (arm64-v8a for almost all modern phones, armeabi-v7a for old 32-bit phones, x86_64 for emulators and Chromebooks); release-signed, installs over the previous version and keeps data. Windows: HajiraKhata-...-windows-setup.exe installer (or the portable zip; VC++ runtime included). Web zip. Verify downloads with SHA256SUMS.txt."
