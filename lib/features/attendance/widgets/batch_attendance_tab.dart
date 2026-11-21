@@ -167,7 +167,7 @@ class _TabContentState extends State<_TabContent> {
 
   Future<void> _pickDate() async {
     final LocalDate today = widget.today;
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: DateTime(today.year, today.month, today.day),
       firstDate: DateTime(today.year - 2, today.month, today.day),

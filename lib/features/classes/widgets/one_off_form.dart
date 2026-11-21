@@ -136,7 +136,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     final LocalDate today = ref.read(todayProvider);
     final LocalDate lo = (_initDate.isBefore(today) ? _initDate : today).addDays(-365);
     final LocalDate hi = (_initDate.isAfter(today) ? _initDate : today).addDays(730);
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: DateTime(_date.year, _date.month, _date.day),
       firstDate: DateTime(lo.year, lo.month, lo.day),

@@ -176,7 +176,7 @@ void main() {
       final SeededFakes f = await _openCollect(tester);
       expect(_amountText(tester), '১০০০');
       expect(_monthsText(tester), 'নভেম্বর');
-      expect(_label(tester), 'নভেম্বরের ৳১,০০০ জমা করুন');
+      expect(_label(tester), 'নভেম্বরের ৳ ১,০০০ জমা করুন');
       expect(find.text('ক্যাশ'), findsOneWidget);
       expect(find.text('নগদ'), findsOneWidget);
 
@@ -187,31 +187,31 @@ void main() {
       expect(added.amount, 1000);
       expect(added.method, PaymentMethod.cash);
       expect(added.paidOn, kToday);
-      expect(find.text('৳১,০০০ জমা হয়েছে'), findsOneWidget);
+      expect(find.text('৳ ১,০০০ জমা হয়েছে'), findsOneWidget);
       expect(find.text('রসিদ পাঠান'), findsOneWidget);
     });
 
     testWidgets('English: Latin digits and wording', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester, lang: Lang.en);
       expect(_amountText(tester), '1000');
-      expect(_label(tester), 'Record ৳1,000 for November');
+      expect(_label(tester), 'Record ৳ 1,000 for November');
       expect(find.text('Cash'), findsOneWidget);
       await _save(tester);
       expect(_receipts(f).length, 3);
-      expect(find.text('৳1,000 recorded'), findsOneWidget);
+      expect(find.text('৳ 1,000 recorded'), findsOneWidget);
     });
 
     testWidgets('scenario 4: partial payment, then the rest', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester);
       await _type(tester, 'pay-amount', '600');
-      expect(_label(tester), 'নভেম্বরের ৳৬০০ জমা করুন');
-      expect(find.text('আংশিক — ৳৪০০ বাকি থাকবে'), findsOneWidget);
+      expect(_label(tester), 'নভেম্বরের ৳ ৬০০ জমা করুন');
+      expect(find.text('আংশিক — ৳ ৪০০ বাকি থাকবে'), findsOneWidget);
       await _save(tester);
       expect(_receipts(f).where((Payment p) => p.billingMonth == _nov).single.amount, 600);
 
       await _open(tester);
       expect(_amountText(tester), '৪০০');
-      expect(_label(tester), 'নভেম্বরের ৳৪০০ জমা করুন');
+      expect(_label(tester), 'নভেম্বরের ৳ ৪০০ জমা করুন');
       expect(_key('pay-partial-note'), findsNothing);
       await _save(tester);
       expect(
@@ -223,15 +223,15 @@ void main() {
       // November is settled: the next month opens as an advance.
       await _open(tester);
       expect(_monthsText(tester), 'ডিসেম্বর');
-      expect(_label(tester), 'ডিসেম্বরের ৳১,০০০ অগ্রিম জমা করুন');
+      expect(_label(tester), 'ডিসেম্বরের ৳ ১,০০০ অগ্রিম জমা করুন');
     });
 
     testWidgets('scenario 5: 2,500 over three unpaid months', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester, withPayments: false);
       await _type(tester, 'pay-amount', '2500');
       expect(_monthsText(tester), 'সেপ্টেম্বর, অক্টোবর, নভেম্বর (আংশিক)');
-      expect(_label(tester), 'সেপ্টেম্বর–নভেম্বরের ৳২,৫০০ জমা করুন');
-      expect(find.text('আংশিক — ৳৫০০ বাকি থাকবে'), findsOneWidget);
+      expect(_label(tester), 'সেপ্টেম্বর–নভেম্বরের ৳ ২,৫০০ জমা করুন');
+      expect(find.text('আংশিক — ৳ ৫০০ বাকি থাকবে'), findsOneWidget);
       await _save(tester);
       final Map<YearMonth, int> byMonth = <YearMonth, int>{
         for (final Payment p in _receipts(f)) p.billingMonth: p.amount,
@@ -248,13 +248,13 @@ void main() {
       await _openCollect(tester);
       await _type(tester, 'pay-amount', '1500');
       expect(_key('pay-advance-note'), findsOneWidget);
-      expect(find.text('৳৫০০ অগ্রিম হিসেবে যাবে (ডিসেম্বর)'), findsOneWidget);
+      expect(find.text('৳ ৫০০ অগ্রিম হিসেবে যাবে (ডিসেম্বর)'), findsOneWidget);
     });
 
     testWidgets('more than 12 months ahead is refused with the most that fits', (WidgetTester tester) async {
       await _openCollect(tester);
       await _type(tester, 'pay-amount', '20000');
-      expect(find.text('১২ মাসের বেশি অগ্রিম নেওয়া যায় না। সর্বোচ্চ ৳১৩,০০০ নিতে পারেন।'), findsOneWidget);
+      expect(find.text('১২ মাসের বেশি অগ্রিম নেওয়া যায় না। সর্বোচ্চ ৳ ১৩,০০০ নিতে পারেন।'), findsOneWidget);
       expect(_enabled(tester), isFalse);
       expect(find.text('পরিমাণ কমান'), findsOneWidget);
       await _type(tester, 'pay-amount', '13000');
@@ -329,7 +329,7 @@ void main() {
       expect(copied, isNotNull);
       expect(copied, contains('মাস: সেপ্টেম্বর, অক্টোবর, নভেম্বর (আংশিক)'));
       expect(copied, contains('জমা: ৳২,৫০০ (ক্যাশ), তারিখ ২১ নভেম্বর ২০২৬'));
-      expect(copied, contains('বাকি: ৳৫০০'));
+      expect(copied, contains('বাকি: ৳ ৫০০'));
       expect(RegExp(r'[0-9]').hasMatch(copied!), isFalse);
     });
 
@@ -363,14 +363,14 @@ void main() {
       await tester.pumpAndSettle();
 
       await _type(tester, 'pay-split-${_nov.toInt()}', '1500');
-      expect(find.text('সর্বোচ্চ ৳১,০০০'), findsOneWidget);
+      expect(find.text('সর্বোচ্চ ৳ ১,০০০'), findsOneWidget);
       expect(_enabled(tester), isFalse);
       expect(find.text('মাস ভাগ ঠিক করুন'), findsOneWidget);
 
       await _type(tester, 'pay-split-${_nov.toInt()}', '400');
       await _type(tester, 'pay-split-202612', '1000');
       expect(_amountText(tester), '১৪০০');
-      expect(_label(tester), 'নভেম্বর–ডিসেম্বরের ৳১,৪০০ জমা করুন');
+      expect(_label(tester), 'নভেম্বর–ডিসেম্বরের ৳ ১,৪০০ জমা করুন');
       expect(_enabled(tester), isTrue);
 
       // Back to automatic: the total is kept and allocated oldest first.
@@ -428,7 +428,7 @@ void main() {
       final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
       expect(plain, contains('Months: October'));
       expect(plain, contains('Paid: ৳1,000 (Cash), date 4 Oct 2026'));
-      expect(plain, contains('Remaining: ৳1,000'));
+      expect(plain, contains('Remaining: ৳ 1,000'));
       expect(RegExp(r'[০-৯]').hasMatch(plain), isFalse);
     });
 
@@ -444,7 +444,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(_key('pay-receipt-delete'));
       await tester.pumpAndSettle();
-      expect(find.text('এই পেমেন্ট (৳১,০০০, অক্টোবর) মুছে ফেলবেন?'), findsOneWidget);
+      expect(find.text('এই পেমেন্ট (৳ ১,০০০, অক্টোবর) মুছে ফেলবেন?'), findsOneWidget);
       // Cancel keeps it.
       await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)));
       await tester.pumpAndSettle();
@@ -496,7 +496,7 @@ void main() {
       await tester.pumpAndSettle();
       await _type(tester, 'pay-split-${_oct.toInt()}', '1200');
       expect(_enabled(tester), isFalse);
-      expect(find.text('সর্বোচ্চ ৳১,০০০'), findsOneWidget);
+      expect(find.text('সর্বোচ্চ ৳ ১,০০০'), findsOneWidget);
     });
   });
 

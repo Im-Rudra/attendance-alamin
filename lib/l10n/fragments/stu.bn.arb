@@ -557,5 +557,13 @@
   "stuLeftEmpty": "ছেড়ে যাওয়া কোনো শিক্ষার্থী নেই",
   "@stuLeftEmpty": {
     "description": "Empty list of students who left."
+  },
+  "stuOverviewByBatch": "ব্যাচ অনুযায়ী শিক্ষার্থী",
+  "@stuOverviewByBatch": {
+    "description": "Overview card title: students per batch."
+  },
+  "stuOverviewRecent": "সম্প্রতি ভর্তি",
+  "@stuOverviewRecent": {
+    "description": "Overview card title: newest students."
   }
 }

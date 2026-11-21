@@ -6,9 +6,10 @@ import 'package:attendance_alamin/core/format/lexicon.dart';
 
 /// Minutes past midnight for [input], or `null` when it cannot be read.
 ///
-/// A bare 12-hour time without am/pm or a Bangla period word ("7:30") is
-/// ambiguous: it takes the half of the day of [hintMin] (the time currently
-/// shown), and is `null` when there is no hint. 24-hour times ("19:30",
+/// A bare 12-hour time without am/pm or a Bangla period word ("10:30") is
+/// resolved inside the coaching window 07:00-20:59: 7-11 are mornings, 12 is
+/// noon, 1-6 are afternoons; 7 and 8 become evening only when [hintMin] (the
+/// time currently shown) is already in the afternoon. 24-hour times ("19:30",
 /// "07:30", "0:15", "13") never need a hint.
 int? parseTimeInput(String input, {int? hintMin}) {
   var s = AppFormat.toAsciiDigits(input).trim().toLowerCase();
@@ -80,8 +81,12 @@ int? parseTimeInput(String input, {int? hintMin}) {
     return ((h % 12) + (pm ? 12 : 0)) * 60 + m;
   }
   if (twentyFourHour) return h * 60 + m;
-  // Ambiguous 1..12: follow the hint's half of the day.
-  if (hintMin == null) return null;
-  final hintPm = (hintMin % 1440) >= 720;
-  return ((h % 12) + (hintPm ? 12 : 0)) * 60 + m;
+  // Ambiguous 1..12 resolves inside the coaching window 07:00-20:59 (QA-07):
+  // 7-8 are mornings unless the time on screen is already in the evening,
+  // 9-11 are mornings, 12 is noon, 1-6 are afternoons.
+  if (h == 12) return 12 * 60 + m;
+  if (h >= 1 && h <= 6) return (h + 12) * 60 + m;
+  if (h >= 9) return h * 60 + m;
+  final hintPm = hintMin != null && (hintMin % 1440) >= 720;
+  return (hintPm ? h + 12 : h) * 60 + m;
 }

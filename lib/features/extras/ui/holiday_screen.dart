@@ -56,7 +56,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
     DateTime initial = _dt(current);
     if (initial.isBefore(first)) initial = first;
     if (initial.isAfter(last)) initial = last;
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: initial,
       firstDate: first,

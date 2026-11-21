@@ -107,7 +107,7 @@ void main() {
         save = c.l10n.commonSave;
       });
       expect(lang, Lang.bn);
-      expect(money, '৳১,২০,০০০');
+      expect(money, '৳ ১,২০,০০০');
       expect(save, 'সংরক্ষণ');
     });
 
@@ -121,7 +121,7 @@ void main() {
         save = c.l10n.commonSave;
       });
       expect(lang, Lang.en);
-      expect(money, '৳1,20,000');
+      expect(money, '৳ 1,20,000');
       expect(save, 'Save');
     });
   });

@@ -14,7 +14,7 @@
   "shellStartupErrorTitle": "Data storage couldn't start",
   "shellStartupErrorBody": "Please try again. If it keeps happening, close the app and open it again, or use another browser.",
   "shellNumberCopied": "Copied {phone}",
-  "shellTextCopied": "Text copied — paste it into any app",
+  "shellTextCopied": "Text copied — paste it anywhere",
   "shellRailCollapse": "Collapse menu",
   "shellRailExpand": "Expand menu",
   "shellShortcutsTitle": "Keyboard shortcuts",

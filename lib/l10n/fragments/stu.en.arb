@@ -100,5 +100,7 @@
   "stuRemoveFromBatchTitle": "Remove from this batch",
   "stuRemoveFromBatchBody": "Has {name} left {batch}? They stay in their other batches.",
   "stuRemoveConfirm": "Remove",
-  "stuLeftEmpty": "No student has left"
+  "stuLeftEmpty": "No student has left",
+  "stuOverviewByBatch": "Students per batch",
+  "stuOverviewRecent": "Recently joined"
 }

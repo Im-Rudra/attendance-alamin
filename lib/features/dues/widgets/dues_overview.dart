@@ -85,7 +85,7 @@ class DuesSummaryCard extends ConsumerWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
-            child: Text(
+            child: MoneyText(
               fmt.money(report.totalOutstandingActive),
               maxLines: 1,
               style: context.statNumber,

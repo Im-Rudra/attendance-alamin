@@ -21,20 +21,28 @@ abstract final class ShareService {
   /// Open the share sheet at all (not on desktop browsers).
   static bool get _openSheet => !kIsWeb || _isMobilePlatform;
 
+  /// Shares [text]; whenever the share API is missing or fails, the text is
+  /// copied and the teacher is told so, so a tap always gives feedback (QA-06).
   static Future<void> shareText(BuildContext context, String text) async {
     if (text.trim().isEmpty) return;
     final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     final String copiedMessage = context.l10n.shellTextCopied;
 
     Future<void> copy() async {
-      await Clipboard.setData(ClipboardData(text: text));
+      try {
+        await Clipboard.setData(ClipboardData(text: text));
+      } catch (_) {
+        // Still tell the teacher: the snackbar below is the feedback.
+      }
+      messenger?.hideCurrentSnackBar();
       messenger?.showSnackBar(SnackBar(content: Text(copiedMessage)));
     }
 
     if (_alsoCopy) await copy();
     if (!_openSheet) return;
     try {
-      await SharePlus.instance.share(ShareParams(text: text));
+      final ShareResult result = await SharePlus.instance.share(ShareParams(text: text));
+      if (!_alsoCopy && result.status == ShareResultStatus.unavailable) await copy();
     } catch (_) {
       if (!_alsoCopy) await copy();
     }

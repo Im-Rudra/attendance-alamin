@@ -89,6 +89,26 @@ void main() {
     expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNotNull);
   });
 
+  testWidgets('an amount above the maximum shows an inline message (QA-13)', (WidgetTester tester) async {
+    await pumpApp(tester, _host(), overrides: seedFakes().overrides);
+    await _open(tester);
+    await tester.enterText(find.byKey(_label), 'পরীক্ষার ফি');
+    await tester.enterText(find.byKey(_amount), '9999999999');
+    await tester.pump();
+    expect(find.text(bn.errAmountTooLarge), findsOneWidget);
+    await tester.ensureVisible(find.byKey(_save));
+    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNull);
+
+    await tester.enterText(find.byKey(_amount), '2000000');
+    await tester.pump();
+    expect(find.text(bn.errAmountTooLarge), findsOneWidget);
+
+    await tester.enterText(find.byKey(_amount), '500');
+    await tester.pump();
+    expect(find.text(bn.errAmountTooLarge), findsNothing);
+    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNotNull);
+  });
+
   testWidgets('saving records a labelled one-off payment with no dues, undo removes it',
       (WidgetTester tester) async {
     final SeededFakes f = seedFakes();
@@ -114,7 +134,7 @@ void main() {
     expect(saved.paidOn, kToday);
 
     // Snackbar names the amount and label; it never touches payments.
-    expect(find.text(bn.extraIncomeSaved('৳৫০০', 'ভর্তি ফি')), findsOneWidget);
+    expect(find.text(bn.extraIncomeSaved('৳ ৫০০', 'ভর্তি ফি')), findsOneWidget);
     expect(f.payments.payments.length, kPayments.length);
 
     await tester.tap(find.text(bn.commonUndo));
@@ -155,7 +175,7 @@ void main() {
       final List<String> lines = text.split('\n');
       expect(lines.first, 'আলো কোচিং');
       expect(lines[1], 'রসিদ — পরীক্ষার ফি');
-      expect(lines[2], 'টাকা: ৳১,২০০');
+      expect(lines[2], 'টাকা: ৳ ১,২০০');
       expect(lines[3], 'তারিখ: ২০ নভেম্বর ২০২৬');
       expect(lines[4], 'পদ্ধতি: নগদ টাকা');
       expect(lines[5], 'শিক্ষার্থী: সারা আক্তার');
@@ -172,7 +192,7 @@ void main() {
       );
       expect(text.split('\n'), <String>[
         'Receipt — পরীক্ষার ফি',
-        'Amount: ৳1,200',
+        'Amount: ৳ 1,200',
         'Date: 20 Nov 2026',
         'Method: Cash',
         'Thank you',

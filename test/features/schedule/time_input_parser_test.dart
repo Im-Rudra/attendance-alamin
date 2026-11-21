@@ -40,12 +40,22 @@ void main() {
       expect(parseTimeInput('১৯:৩০'), m(19, 30));
     });
 
-    test('a bare 12-hour time follows the hint half of the day', () {
-      expect(parseTimeInput('7:30'), isNull);
-      expect(parseTimeInput('7:30', hintMin: m(19, 0)), m(19, 30));
-      expect(parseTimeInput('7:30', hintMin: m(9, 0)), m(7, 30));
+    test('a bare 12-hour time resolves inside the coaching window', () {
+      // QA-07: "10:00" typed after a PM time is 10 AM, not 10 PM.
+      expect(parseTimeInput('10:00', hintMin: m(19, 0)), m(10, 0));
+      expect(parseTimeInput('10:30', hintMin: m(16, 0)), m(10, 30));
+      expect(parseTimeInput('9', hintMin: m(16, 0)), m(9, 0));
+      expect(parseTimeInput('11:15'), m(11, 15));
+      expect(parseTimeInput('12:10', hintMin: m(8, 0)), m(12, 10));
       expect(parseTimeInput('12:10', hintMin: m(16, 0)), m(12, 10));
-      expect(parseTimeInput('12:10', hintMin: m(8, 0)), m(0, 10));
+      expect(parseTimeInput('1:30'), m(13, 30));
+      expect(parseTimeInput('4:15', hintMin: m(9, 0)), m(16, 15));
+      expect(parseTimeInput('6'), m(18, 0));
+      // 7 and 8 are mornings unless the previous value was in the evening.
+      expect(parseTimeInput('7:30'), m(7, 30));
+      expect(parseTimeInput('7:30', hintMin: m(9, 0)), m(7, 30));
+      expect(parseTimeInput('7:30', hintMin: m(19, 0)), m(19, 30));
+      expect(parseTimeInput('8', hintMin: m(16, 0)), m(20, 0));
     });
 
     test('rejects what is not a time', () {

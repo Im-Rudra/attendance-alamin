@@ -56,6 +56,68 @@ class BatchesOverview extends ConsumerWidget {
           builder: (BuildContext context, BoxConstraints c) {
             final int cols = c.maxWidth >= 560 ? 4 : 2;
             final double w = (c.maxWidth - 2 * g - 12 * (cols - 1)) / cols;
+            final Widget pickHint = GlassCard(
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.touch_app_outlined, color: tokens.accent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.batchOverviewPick,
+                      style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            final Widget duesByBatch = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SectionHeader(title: l10n.batchOverviewDuesByBatch),
+                for (final BatchCardData b in all)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GlassCard(
+                      dense: true,
+                      onTap: () => openPath(context, Routes.batch(b.batch.id)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              b.batch.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _DuesOrClear(batchId: b.batch.id),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            );
+            final List<BatchCardData> bySize = <BatchCardData>[...all]
+              ..sort((BatchCardData a, BatchCardData b) => b.studentCount.compareTo(a.studentCount));
+            final Widget studentsByBatch = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SectionHeader(title: l10n.batchOverviewByStudents),
+                BarListCard(
+                  entries: <BarEntry>[
+                    for (final BatchCardData b in bySize.take(8))
+                      BarEntry(
+                        label: b.batch.name,
+                        value: b.studentCount,
+                        valueText: fmt.number(b.studentCount),
+                        onTap: () => openPath(context, Routes.batch(b.batch.id)),
+                      ),
+                  ],
+                ),
+              ],
+            );
             return ListView(
               padding: EdgeInsets.fromLTRB(g, 4, g, g),
               children: <Widget>[
@@ -70,47 +132,22 @@ class BatchesOverview extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                GlassCard(
-                  child: Row(
+                if (all.isNotEmpty && c.maxWidth >= 640)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Icon(Icons.touch_app_outlined, color: tokens.accent),
+                      Expanded(child: duesByBatch),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          l10n.batchOverviewPick,
-                          style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                        ),
-                      ),
+                      Expanded(child: studentsByBatch),
                     ],
-                  ),
-                ),
-                if (all.isNotEmpty) ...<Widget>[
+                  )
+                else if (all.isNotEmpty) ...<Widget>[
+                  duesByBatch,
                   const SizedBox(height: 8),
-                  SectionHeader(title: l10n.batchOverviewDuesByBatch),
-                  for (final BatchCardData b in all)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: GlassCard(
-                        dense: true,
-                        onTap: () => openPath(context, Routes.batch(b.batch.id)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                b.batch.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _DuesOrClear(batchId: b.batch.id),
-                          ],
-                        ),
-                      ),
-                    ),
+                  studentsByBatch,
                 ],
+                const SizedBox(height: 12),
+                pickHint,
               ],
             );
           },

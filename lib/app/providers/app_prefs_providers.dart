@@ -122,3 +122,20 @@ class ReducedEffectsController extends Notifier<bool> {
     await ref.read(localMetaRepositoryProvider).setRaw(kEffectsRasterMetaKey, slow ? 'slow' : 'ok');
   }
 }
+
+/// First route of the app. Onboarding wins while it is not done, then a tapped
+/// reminder; otherwise a deep link / reload lands on its own route and only a
+/// bare "/" falls back to Today (QA-11).
+String pickInitialLocation({
+  required String entryRoute,
+  required bool onboardingDone,
+  String? launchRoute,
+}) {
+  if (launchRoute != null) return launchRoute;
+  if (!onboardingDone) return Routes.onboarding;
+  final Uri? uri = Uri.tryParse(entryRoute);
+  if (uri == null || !entryRoute.startsWith('/') || uri.path == '/' || uri.path.isEmpty) {
+    return Routes.today;
+  }
+  return entryRoute;
+}

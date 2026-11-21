@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/widgets/money_text.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
@@ -36,7 +37,11 @@ class CollectionTile extends ConsumerWidget {
     }
 
     final int? percent = c.percent;
-    return TileFrame(
+    return LayoutBuilder(builder: (BuildContext context, BoxConstraints box) {
+      // In a short bento tile the method chips would be cut at the edge, so
+      // they only show when there is room (QA-10).
+      final bool roomy = !box.hasBoundedHeight || box.maxHeight >= 230;
+      return TileFrame(
       onTap: () => goRoute(context, Routes.feesCollection),
       header: header,
       child: Column(
@@ -49,7 +54,7 @@ class CollectionTile extends ConsumerWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: Text(fmt.money(c.collected), maxLines: 1, style: context.statNumber),
+                child: MoneyText(fmt.money(c.collected), maxLines: 1, style: context.statNumber),
               ),
               Text(
                 c.expected > 0
@@ -76,7 +81,7 @@ class CollectionTile extends ConsumerWidget {
                     semanticsLabel: l10n.todayCollectionProgress(fmt.percent(percent ?? 0)),
                   ),
                 ),
-              if (c.byMethod.isNotEmpty) ...<Widget>[
+              if (roomy && c.byMethod.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -102,5 +107,6 @@ class CollectionTile extends ConsumerWidget {
         ],
       ),
     );
+    });
   }
 }

@@ -247,9 +247,11 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
       ],
     );
 
+    // Title, readout and buttons stay pinned; only the pickers scroll, so the
+    // title never slides out of a short desktop dialog (QA-07).
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -261,34 +263,48 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
             ),
             const SizedBox(height: 12),
             readout,
-            const SizedBox(height: 16),
-            periodBar,
             const SizedBox(height: 12),
-            hourGrid,
-            const SizedBox(height: 12),
-            minuteRow,
-            if (_otherMinutes) ...<Widget>[
-              const SizedBox(height: 8),
-              fiveMinuteGrid,
-            ],
-            if (widget.allowTyping) ...<Widget>[
-              const SizedBox(height: 16),
-              TextField(
-                controller: _typed,
-                onChanged: _onTyped,
-                onSubmitted: (_) {
-                  if (!_typedBad) widget.onDone(_min);
-                },
-                decoration: InputDecoration(
-                  labelText: l10n.schedTypeTime,
-                  hintText: l10n.schedTypeHint,
-                  errorText: _typedBad ? l10n.schedTypeError : null,
-                  helperText: !_typedBad && _typed.text.trim().isNotEmpty
-                      ? l10n.schedTypeEcho(fmt.time(_min))
-                      : null,
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    periodBar,
+                    const SizedBox(height: 12),
+                    hourGrid,
+                    const SizedBox(height: 12),
+                    minuteRow,
+                    if (_otherMinutes) ...<Widget>[
+                      const SizedBox(height: 8),
+                      fiveMinuteGrid,
+                    ],
+                    if (widget.allowTyping) ...<Widget>[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _typed,
+                        onChanged: _onTyped,
+                        onSubmitted: (_) {
+                          if (!_typedBad) widget.onDone(_min);
+                        },
+                        decoration: InputDecoration(
+                          labelText: l10n.schedTypeTime,
+                          hintText: l10n.schedTypeHint,
+                          errorText: _typedBad ? l10n.schedTypeError : null,
+                          helperText: !_typedBad && _typed.text.trim().isNotEmpty
+                              ? l10n.schedTypeEcho(fmt.time(_min))
+                              : null,
+                          helperStyle: tt.bodyMedium?.copyWith(
+                            color: tokens.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
