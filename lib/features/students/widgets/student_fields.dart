@@ -275,7 +275,7 @@ class MonthDropdown extends StatelessWidget {
       label: label,
       value: value,
       options: <BhorOption<YearMonth>>[
-        for (final YearMonth m in months) BhorOption<YearMonth>(value: m, label: fmt.monthYear(m)),
+        for (final YearMonth m in months) BhorOption<YearMonth>(m, fmt.monthYear(m)),
       ],
       onChanged: onChanged,
     );
@@ -321,8 +321,8 @@ class StartMonthFeeFields extends StatelessWidget {
               BhorSegmented<bool>(
                 key: const ValueKey<String>('stu-billing-toggle'),
                 segments: <BhorSegment<bool>>[
-                  BhorSegment<bool>(value: true, label: l10n.stuStartThisMonth),
-                  BhorSegment<bool>(value: false, label: l10n.stuStartNextMonth),
+                  BhorSegment<bool>(true, l10n.stuStartThisMonth),
+                  BhorSegment<bool>(false, l10n.stuStartNextMonth),
                 ],
                 value: start == base,
                 onChanged: (bool thisMonth) => choice.setStart(thisMonth ? base : base.addMonths(1)),

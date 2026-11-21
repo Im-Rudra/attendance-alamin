@@ -85,10 +85,10 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
             const SizedBox(height: BhorSpace.s16),
             BhorSegmented<bool>(
               segments: <BhorSegment<bool>>[
-                BhorSegment<bool>(value: true, label: l10n.schedFromToday),
+                BhorSegment<bool>(true, l10n.schedFromToday),
                 BhorSegment<bool>(
-                  value: false,
-                  label: picked == null ? l10n.schedFromPick : l10n.schedFromPicked(fmt.date(picked)),
+                  false,
+                  picked == null ? l10n.schedFromPick : l10n.schedFromPicked(fmt.date(picked)),
                 ),
               ],
               value: _useToday,

@@ -108,7 +108,7 @@ class _FeeChangeSheetState extends State<FeeChangeSheet> {
               value: _older.contains(_month) ? _month : null,
               hint: l10n.batchFeeEarlierMonth,
               options: <BhorOption<YearMonth>>[
-                for (final YearMonth m in _older) BhorOption<YearMonth>(value: m, label: fmt.monthYear(m)),
+                for (final YearMonth m in _older) BhorOption<YearMonth>(m, fmt.monthYear(m)),
               ],
               onChanged: _pick,
             ),

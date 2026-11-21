@@ -88,8 +88,8 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
             hint: l10n.stuFilterBatch,
             value: batches.any((Batch b) => b.id == _filter.batchId) ? _filter.batchId : null,
             options: <BhorOption<String>>[
-              BhorOption<String>(value: '', label: l10n.commonAll),
-              for (final Batch b in batches) BhorOption<String>(value: b.id, label: b.name),
+              BhorOption<String>('', l10n.commonAll),
+              for (final Batch b in batches) BhorOption<String>(b.id, b.name),
             ],
             onChanged: (String id) => setState(() => _filter = id.isEmpty
                 ? _filter.copyWith(clearBatch: true)

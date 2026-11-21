@@ -254,11 +254,11 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                                         label: l10n.stuBatchOptional,
                                         value: batches.any((Batch b) => b.id == chosen) ? chosen : '',
                                         options: <BhorOption<String>>[
-                                          BhorOption<String>(value: '', label: l10n.stuNoBatch),
+                                          BhorOption<String>('', l10n.stuNoBatch),
                                           for (final Batch b in batches)
                                             BhorOption<String>(
-                                              value: b.id,
-                                              label: subjectOf(b).isEmpty
+                                              b.id,
+                                              subjectOf(b).isEmpty
                                                   ? b.name
                                                   : '${subjectOf(b)} · ${b.name}',
                                             ),
