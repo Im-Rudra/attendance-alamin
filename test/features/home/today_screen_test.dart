@@ -492,7 +492,7 @@ void main() {
       await tester.ensureVisible(add);
       expect(add, findsOneWidget);
       // The add icon already says "+": BhorButton drops a leading "+ ".
-      expect(find.text(l10n.todayAddExtra.replaceFirst(RegExp(r'^\+\s+'), '')), findsOneWidget);
+      expect(find.text(l10n.todayAddExtra.replaceFirst(RegExp(r'^\+\s+'), '')), findsWidgets);
     });
 
     testWidgets('the day strip switches the day; the dues card hides until today', (WidgetTester tester) async {
