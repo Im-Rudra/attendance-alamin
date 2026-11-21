@@ -201,7 +201,7 @@ jobs:
               "canvaskit + wasm (if any)|-|build/web/canvaskit" \
               "sqlite3.wasm|-|build/web/sqlite3.wasm" \
               "assets/ (fonts, AssetManifest)|-|build/web/assets"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: web-${{ github.sha }}
@@ -320,7 +320,7 @@ jobs:
               "Debug symbols (separate artifact, not shipped)|-|build/symbols"
             echo
             echo "Per-phone download: the universal APK was ~$(awk -v b="$(stat -c%s baseline/universal.apk)" 'BEGIN{printf "%.1f", b/1048576}') MB; an arm64-v8a phone now downloads only its own APK."
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: HajiraKhata-${{ steps.ver.outputs.name }}-armeabi-v7a-${{ steps.signing.outputs.suffix }}
@@ -448,7 +448,7 @@ jobs:
               "Portable zip|baseline/windows.zip|${{ steps.zip.outputs.name }}" \
               "Installer (setup .exe, LZMA2 ultra)|-|installer-out/${{ steps.setup.outputs.name }}" \
               "Debug symbols (separate artifact, not shipped)|-|build/symbols"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: windows-${{ github.run_number }}

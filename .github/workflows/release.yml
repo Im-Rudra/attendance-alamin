@@ -125,7 +125,7 @@ jobs:
               "armeabi-v7a|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-armeabi-v7a.apk" \
               "arm64-v8a|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-arm64-v8a.apk" \
               "x86_64|-|dist/HajiraKhata-${{ needs.version.outputs.name }}-x86_64.apk"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Remove signing material
         if: always()
         run: rm -f android/app/upload.jks android/key.properties
@@ -216,7 +216,7 @@ jobs:
               "Release folder (unzipped)|-|build/windows/x64/runner/Release" \
               "Portable zip|-|attendance-alamin-windows-${{ needs.version.outputs.name }}.zip" \
               "Installer (setup .exe)|-|installer-out/HajiraKhata-${{ needs.version.outputs.name }}-windows-setup.exe"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           # Flat layout so the publish job sees plain files (no installer-out/ sub-folder).
           cp "installer-out/HajiraKhata-${{ needs.version.outputs.name }}-windows-setup.exe" .
       - uses: actions/upload-artifact@v7
