@@ -219,6 +219,10 @@ void main() {
       expect(find.text('আংশিক — ৳ ৪০০ বাকি থাকবে'), findsOneWidget);
       await _save(tester);
       expect(_receipts(f).where((Payment p) => p.billingMonth == _nov).single.amount, 600);
+      // Let the 8 s "recorded" toast go: without the shell's nav inset it
+      // would sit over the next sheet's save bar.
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
 
       await _open(tester);
       expect(_amountText(tester), '৪০০');
