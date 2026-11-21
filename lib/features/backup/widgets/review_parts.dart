@@ -2,7 +2,6 @@
 // summary screen"): backup info, headline, the Added/Updated/Deleted table,
 // deletions (red, first), samples, explanations and the bottom action bar.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -45,7 +44,7 @@ class ReviewDangerCard extends StatelessWidget {
     required this.lines,
     this.footer,
     this.footerStyle,
-    this.icon = Icons.warning_amber_rounded,
+    this.icon = BhorIcons.warning,
   });
 
   final Key? boxKey;
@@ -67,7 +66,6 @@ class ReviewDangerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: b.colors.dangerBg,
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: on.withValues(alpha: 0.35)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(BhorSpace.s16),
@@ -128,7 +126,7 @@ class ReviewInfoCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.inventory_2_outlined, color: b.colors.accent),
+              Icon(BhorIcons.archive, color: b.colors.accent),
               const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(
@@ -495,10 +493,10 @@ class ExplainCard extends StatelessWidget {
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     final List<(IconData, String)> items = <(IconData, String)>[
-      (Icons.touch_app_outlined, l10n.backupExplainNothing),
-      (Icons.history, l10n.backupExplainSafety),
-      (Icons.update, l10n.backupExplainNewer),
-      (Icons.shield_outlined, l10n.backupExplainAbsent),
+      (BhorIcons.check, l10n.backupExplainNothing),
+      (BhorIcons.clock, l10n.backupExplainSafety),
+      (BhorIcons.refresh, l10n.backupExplainNewer),
+      (BhorIcons.info, l10n.backupExplainAbsent),
     ];
     return BhorCard(
       key: const Key('review-explain'),
@@ -686,19 +684,19 @@ class ReviewResult extends StatelessWidget {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
     return ReviewNotice(
-      icon: Icons.check_circle_outline,
+      icon: BhorIcons.checkCircle,
       title: l10n.backupDoneTitle(fmt.number(state.changes)),
       message: l10n.backupDoneSafety,
       actions: <Widget>[
         if (state.overfilled > 0)
           ReviewNote(
-            icon: Icons.info_outline,
+            icon: BhorIcons.info,
             text: l10n.backupOverfilled(fmt.number(state.overfilled)),
           ),
         BhorButton(
           key: const Key('review-undo'),
           variant: BhorButtonVariant.secondary,
-          icon: Icons.undo,
+          icon: BhorIcons.undo,
           label: l10n.backupUndo,
           expand: true,
           onPressed: busy ? null : onUndo,

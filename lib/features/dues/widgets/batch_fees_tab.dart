@@ -1,7 +1,6 @@
 // Batch detail › বেতন (UX 3 "Batch detail"): a month picker, the month's
 // totals, and one row per student with the month's state and a Collect button.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,34 +73,36 @@ class _BatchFeesPanelState extends ConsumerState<BatchFeesPanel> {
           child: async.when(
             loading: () => const Center(child: BhorSpinner()),
             error: (Object e, StackTrace s) => BhorEmptyState(
-              icon: Icons.error_outline,
+              icon: BhorIcons.warning,
               title: l10n.commonLoadingFailed,
             ),
             data: (List<LedgerLine> lines) {
               if (lines.isEmpty) {
-                return BhorEmptyState(icon: Icons.receipt_long_outlined, title: l10n.duesFeesEmpty);
+                return BhorEmptyState(icon: BhorIcons.receipt, title: l10n.duesFeesEmpty);
               }
               final List<LedgerLine> rows = sortLedger(lines);
               final MonthTotals t = totalsOf(lines);
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(0, BhorSpace.s4, 0, 112),
-                children: <Widget>[
-                  _TotalsStrip(totals: t),
-                  const SizedBox(height: BhorSpace.s8),
-                  BhorCard(
-                    padding: EdgeInsets.zero,
-                    child: Column(
+              return BhorStaggerScope(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(0, BhorSpace.s4, 0, 112),
+                  children: <Widget>[
+                    _TotalsStrip(totals: t),
+                    const SizedBox(height: BhorSpace.s12),
+                    BhorList(
                       children: <Widget>[
                         for (int i = 0; i < rows.length; i++)
-                          _LedgerRow(
-                            key: ValueKey<String>('fees-row-${rows[i].terms.enrollmentId}'),
-                            line: rows[i],
-                            divider: i < rows.length - 1,
+                          BhorStagger(
+                            index: i,
+                            child: _LedgerRow(
+                              key: ValueKey<String>('fees-row-${rows[i].terms.enrollmentId}'),
+                              line: rows[i],
+                              divider: i < rows.length - 1,
+                            ),
                           ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -151,7 +152,7 @@ class _Mini extends StatelessWidget {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: AlignmentDirectional.centerStart,
-          child: BhorMoney(amount, style: b.type.heading),
+          child: BhorCountUp.money(amount: amount, style: b.type.heading, muteSign: true),
         ),
       ],
     );
@@ -170,6 +171,7 @@ class _LedgerRow extends StatelessWidget {
     final fmt = context.fmt;
     final MonthDue d = line.due;
     return BhorListRow(
+      leading: BhorAvatar(name: line.terms.studentName, size: 36),
       title: line.terms.studentName,
       subtitle: d.state == MonthState.free ? l10n.uiStateFree : fmt.money(d.fee),
       divider: divider,
@@ -184,9 +186,10 @@ class _LedgerRow extends StatelessWidget {
             const SizedBox(width: BhorSpace.s8),
             BhorIconButton(
               key: ValueKey<String>('fees-collect-${line.terms.enrollmentId}'),
-              icon: Icons.payments_outlined,
+              icon: BhorIcons.takeMoney,
               semanticLabel: l10n.duesCollect,
               variant: BhorButtonVariant.secondary,
+              size: BhorButtonSize.sm,
               onPressed: () => showCollectPaymentSheet(
                 context,
                 studentId: line.terms.studentId,

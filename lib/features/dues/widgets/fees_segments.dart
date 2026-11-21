@@ -1,7 +1,6 @@
 // The two segments of the Fees tab (UX 1: বকেয়া · আদায়) and the month picker
 // row shared by the collection screen and the batch fees tab.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -63,7 +62,7 @@ class MonthPickerRow extends StatelessWidget {
     return Row(
       children: <Widget>[
         BhorIconButton(
-          icon: Icons.chevron_left,
+          icon: BhorIcons.chevronLeft,
           semanticLabel: l10n.collPrevMonth,
           onPressed: canPrev ? () => onChanged(month.addMonths(-1)) : null,
         ),
@@ -80,7 +79,7 @@ class MonthPickerRow extends StatelessWidget {
           ),
         ),
         BhorIconButton(
-          icon: Icons.chevron_right,
+          icon: BhorIcons.chevronRight,
           semanticLabel: l10n.collNextMonth,
           onPressed: canNext ? () => onChanged(month.addMonths(1)) : null,
         ),

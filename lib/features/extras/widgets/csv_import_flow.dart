@@ -5,7 +5,6 @@
 
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,7 +28,7 @@ class CsvImportButton extends StatelessWidget {
     return BhorButton(
       key: const ValueKey<String>('csv-import-button'),
       variant: BhorButtonVariant.secondary,
-      icon: Icons.upload_file_outlined,
+      icon: BhorIcons.backupUp,
       label: context.l10n.extraImportButton,
       expand: true,
       onPressed: onPressed,
@@ -66,8 +65,11 @@ Future<void> startCsvStudentImport(
   }
   if (!context.mounted) return;
 
-  final CsvImportResult? result = await showBhorSheet<CsvImportResult>(
+  final CsvImportResult? result = await showBhorPanel<CsvImportResult>(
     context,
+    kind: BhorPanelKind.list,
+    width: 560,
+    scroll: false,
     dismissible: false,
     builder: (BuildContext ctx) => CsvPreviewSheet(
       rows: rows,
@@ -159,7 +161,7 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
             Text(
               l10n.extraImportSkipped(fmt.number(skipped)),
               key: const ValueKey<String>('csv-skipped'),
-              style: b.type.body.copyWith(color: b.colors.danger),
+              style: b.type.body.copyWith(color: b.colors.warn),
             ),
           ],
           const SizedBox(height: BhorSpace.s4),
@@ -184,8 +186,8 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Icon(
-                        p == null ? Icons.check_circle_outline : Icons.block,
-                        color: p == null ? b.colors.accent : b.colors.danger,
+                        p == null ? BhorIcons.checkCircle : BhorIcons.minus,
+                        color: p == null ? b.colors.accent : b.colors.text3,
                       ),
                       const SizedBox(width: BhorSpace.s12),
                       Expanded(
@@ -199,7 +201,7 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
                               style: p == null ? b.type.bodyStrong : b.type.bodyStrong.copyWith(color: b.colors.text2),
                             ),
                             if (p != null)
-                              Text(_problemText(l10n, p), style: b.type.meta.copyWith(color: b.colors.danger))
+                              Text(_problemText(l10n, p), style: b.type.meta.copyWith(color: b.colors.warn))
                             else ...<Widget>[
                               if (detail.isNotEmpty) Text(detail, style: b.type.meta),
                               if (r.note != null)

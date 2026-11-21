@@ -3,7 +3,8 @@
 // collection summary's "অন্যান্য" line (read from the same repository) and can
 // be shared as a receipt.
 
-import 'package:flutter/material.dart' show Icons;
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,14 +44,16 @@ class SavedOtherIncome {
 /// snackbar (with undo) on the caller's screen.
 Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) async {
   final ProviderContainer container = ProviderScope.containerOf(context);
-  final SavedOtherIncome? saved = await showBhorSheet<SavedOtherIncome>(
+  // Sheet on phones, centred dialog on desktop (root navigator: above the
+  // bottom navigation, never behind it). A save plays the success moment.
+  final SavedOtherIncome? saved = await showBhorPanel<SavedOtherIncome>(
     context,
     title: context.l10n.extraIncomeTitle,
-    // Root navigator: above the bottom navigation, never behind it (C15).
+    kind: BhorPanelKind.confirm,
     builder: (BuildContext ctx) => OtherIncomeForm(
       studentId: studentId,
       onClose: () => Navigator.of(ctx).pop(),
-      onSaved: (SavedOtherIncome s) => Navigator.of(ctx).pop(s),
+      onSaved: (SavedOtherIncome s) => unawaited(showBhorSuccess<SavedOtherIncome>(ctx, result: s)),
     ),
   );
   if (saved == null || !context.mounted) return saved != null;
@@ -294,7 +297,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
           BhorButton(
             key: const ValueKey<String>('income-date'),
             variant: BhorButtonVariant.secondary,
-            icon: Icons.calendar_today_outlined,
+            icon: BhorIcons.calendar,
             label: '${l10n.payDateLabel}: ${fmt.date(date)}',
             expand: true,
             onPressed: () => _pickDate(today, date),

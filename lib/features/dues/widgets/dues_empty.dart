@@ -2,7 +2,6 @@
 // month really had fees and nothing is owed; when billing simply has not
 // started yet it says when it will, with a link to the students.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +29,7 @@ class DuesEmptyState extends ConsumerWidget {
     final BillingStatus? status = ref.watch(billingStatusProvider).value;
     final bool notStarted = status != null && status.notStarted;
     return BhorEmptyState(
-      icon: notStarted ? Icons.schedule : Icons.check_circle_outline,
+      icon: notStarted ? BhorIcons.clock : BhorIcons.checkCircle,
       title: duesEmptyMessage(context, status),
       action: notStarted
           ? BhorButton(

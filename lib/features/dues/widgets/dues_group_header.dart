@@ -2,7 +2,6 @@
 // student count, or the grey "ছেড়ে যাওয়া / আর্কাইভ" header with its
 // expand / collapse toggle.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -51,7 +50,7 @@ class DuesGroupHeader extends StatelessWidget {
     } else {
       title = Row(
         children: <Widget>[
-          Icon(Icons.inventory_2_outlined, size: 20, color: b.colors.text2),
+          Icon(BhorIcons.archive, size: 20, color: b.colors.text2),
           const SizedBox(width: BhorSpace.s8),
           Flexible(
             child: Semantics(
@@ -75,7 +74,7 @@ class DuesGroupHeader extends StatelessWidget {
         if (onToggle != null)
           BhorIconButton(
             key: const ValueKey<String>('dues-group-toggle'),
-            icon: expanded ? Icons.expand_less : Icons.expand_more,
+            icon: expanded ? BhorIcons.chevronUp : BhorIcons.chevronDown,
             semanticLabel: expanded ? l10n.duesCollapse : l10n.duesExpand,
             onPressed: onToggle,
           ),

@@ -1,7 +1,6 @@
 // The receipt: in-app preview (the "✓" of the template is drawn as an icon),
 // the receipt sheet (send / edit / delete) and sharing the text.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -101,7 +100,7 @@ class ReceiptCard extends StatelessWidget {
       if (i < parts.length - 1) {
         spans.add(WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: Icon(Icons.check, size: 20, color: b.colors.accent),
+          child: Icon(BhorIcons.check, size: 20, color: b.colors.accent),
         ));
       }
     }
@@ -153,9 +152,11 @@ class ReceiptPreview extends ConsumerWidget {
 
 /// Receipt sheet: the preview with send, edit and delete.
 Future<void> showReceiptSheet(BuildContext context, {required String receiptId}) async {
-  final String? action = await showBhorSheet<String>(
+  final String? action = await showBhorPanel<String>(
     context,
     title: context.l10n.payReceiptTitle,
+    kind: BhorPanelKind.confirm,
+    scroll: false,
     builder: (BuildContext ctx) => _ReceiptSheet(receiptId: receiptId),
   );
   if (action == null || !context.mounted) return;
@@ -208,7 +209,7 @@ class _ReceiptSheet extends ConsumerWidget {
           const SizedBox(height: BhorSpace.s16),
           BhorButton(
             key: const ValueKey<String>('pay-receipt-share'),
-            icon: Icons.share,
+            icon: BhorIcons.share,
             label: l10n.paySendReceipt,
             expand: true,
             onPressed: m == null ? null : () => shareReceiptNow(context, receiptId: receiptId),
@@ -220,7 +221,7 @@ class _ReceiptSheet extends ConsumerWidget {
                 child: BhorButton(
                   key: const ValueKey<String>('pay-receipt-edit'),
                   variant: BhorButtonVariant.secondary,
-                  icon: Icons.edit,
+                  icon: BhorIcons.edit,
                   label: l10n.commonEdit,
                   onPressed: m == null ? null : () => Navigator.of(context).pop('edit:${m.studentId}'),
                 ),
@@ -230,7 +231,7 @@ class _ReceiptSheet extends ConsumerWidget {
                 child: BhorButton(
                   key: const ValueKey<String>('pay-receipt-delete'),
                   variant: BhorButtonVariant.danger,
-                  icon: Icons.delete_outline,
+                  icon: BhorIcons.delete,
                   label: l10n.commonDelete,
                   onPressed: m == null ? null : () => _delete(context, ref, m),
                 ),

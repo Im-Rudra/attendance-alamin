@@ -2,7 +2,6 @@
 // sheet) and one per waived month (with "মাফ তুলে নিন"). Shrink-wrapped: it sits
 // inside the profile's scroll view.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -144,7 +143,7 @@ class _HistoryTile extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         child: Row(
           children: <Widget>[
-            Icon(Icons.do_not_disturb_on, color: b.colors.text2),
+            Icon(BhorIcons.minus, color: b.colors.text2),
             const SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Column(
@@ -183,7 +182,7 @@ class _HistoryTile extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         child: Row(
           children: <Widget>[
-            Icon(Icons.receipt_long, color: b.colors.accent),
+            Icon(BhorIcons.receipt, color: b.colors.accent),
             const SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Column(
@@ -197,7 +196,7 @@ class _HistoryTile extends StatelessWidget {
             ),
             const SizedBox(width: BhorSpace.s8),
             Text(amount, style: b.type.bodyStrong),
-            Icon(Icons.chevron_right, color: b.colors.text2),
+            Icon(BhorIcons.chevronRight, color: b.colors.text2),
           ],
         ),
       ),

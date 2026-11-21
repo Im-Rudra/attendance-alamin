@@ -4,7 +4,6 @@
 // back in the name field. A phone that already belongs to someone only asks
 // once (siblings share a guardian number).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,11 +183,11 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
 
     Widget body;
     if (batch.hasError) {
-      body = BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed);
+      body = BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed);
     } else if (!batch.hasValue) {
       body = const Center(child: BhorSpinner());
     } else if (batch.value == null) {
-      body = BhorEmptyState(icon: Icons.layers_clear_outlined, title: l10n.extraBulkBatchMissing);
+      body = BhorEmptyState(icon: BhorIcons.delete, title: l10n.extraBulkBatchMissing);
     } else {
       final Widget form = _form(context, batch.value!);
       final Widget list = _addedList(context, scrollable: wide);
@@ -208,6 +207,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.extraBulkTitle,
+        large: true,
         showBack: true,
         onBack: _close,
         actions: <Widget>[
@@ -293,7 +293,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             const SizedBox(height: BhorSpace.s12),
             _Note(
               key: const ValueKey<String>('bulk-duplicate'),
-              icon: Icons.info_outline,
+              icon: BhorIcons.info,
               text: l10n.extraBulkDuplicate(_phoneOwner!.name),
               fill: b.colors.accentTint,
               color: b.colors.accent,
@@ -303,7 +303,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             const SizedBox(height: BhorSpace.s12),
             _Note(
               key: const ValueKey<String>('bulk-error'),
-              icon: Icons.error_outline,
+              icon: BhorIcons.warning,
               text: _error!,
               fill: b.colors.dangerBg,
               color: b.colors.danger,
@@ -353,24 +353,23 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           BhorButton(
             key: const ValueKey<String>('bulk-undo-last'),
             variant: BhorButtonVariant.ghost,
-            icon: Icons.undo,
+            icon: BhorIcons.undo,
             label: l10n.extraBulkUndoLast,
             onPressed: _busy ? null : _removeLast,
           ),
         ],
       ),
     );
+    if (!scrollable) return BhorList(header: header, children: rows);
     return BhorCard(
       padding: EdgeInsets.zero,
-      child: scrollable
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                header,
-                Expanded(child: ListView(padding: EdgeInsets.zero, children: rows)),
-              ],
-            )
-          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[header, ...rows]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          header,
+          Expanded(child: ListView(padding: EdgeInsets.zero, children: rows)),
+        ],
+      ),
     );
   }
 }

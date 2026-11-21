@@ -4,7 +4,6 @@
 // snackbar offers undo. A second mode brings a range back later. Reminders
 // replan on their own: the reminder service listens to the schedules.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -270,8 +269,8 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
             Row(
               children: <Widget>[
                 Icon(
-                  !rangeOk ? Icons.error_outline : (cancelMode ? Icons.event_busy_outlined : Icons.event_available_outlined),
-                  color: !rangeOk ? th.colors.danger : th.colors.accent,
+                  !rangeOk ? BhorIcons.warning : (cancelMode ? BhorIcons.holiday : BhorIcons.calendar),
+                  color: !rangeOk ? th.colors.warn : th.colors.accent,
                 ),
                 const SizedBox(width: BhorSpace.s12),
                 Expanded(
@@ -298,7 +297,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
 
     final bool canRun = rangeOk && !preview.isEmpty && !_busy && data != null;
     return BhorScaffold(
-      header: BhorHeader(title: l10n.shellTitleHolidays),
+      header: BhorHeader(title: l10n.shellTitleHolidays, large: true),
       body: Padding(
         padding: EdgeInsets.fromLTRB(g, 4, g, g),
         child: Center(
@@ -337,12 +336,13 @@ class _DateTile extends StatelessWidget {
       onTap: onTap,
       semanticLabel: '$label, $value',
       excludeChildSemantics: true,
-      builder: (BuildContext context, BhorStates s) => Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
+      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.fast),
+        curve: BhorMotion.ease,
+        constraints: const BoxConstraints(minHeight: BhorSize.field),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s8),
         decoration: BoxDecoration(
-          color: b.colors.surface,
-          border: Border.all(color: s.hovered ? b.colors.accentLine : b.colors.line),
+          color: s.hovered || s.pressed ? b.colors.soft2 : b.colors.soft,
           borderRadius: BorderRadius.circular(BhorRadius.control),
         ),
         child: Row(
@@ -357,7 +357,7 @@ class _DateTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.calendar_today_outlined, size: 18, color: b.colors.accent),
+            Icon(BhorIcons.calendar, size: 18, color: b.colors.accent),
           ],
         ),
       ),

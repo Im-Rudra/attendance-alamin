@@ -2,7 +2,6 @@
 // phone in Bangla or ASCII digits; most-owing first) that hands the chosen
 // student to the existing collect-payment sheet.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,11 +62,14 @@ bool pickerMatches(Student s, String query) {
 }
 
 
-/// Opens the picker, then the collect-payment sheet of the chosen student.
+/// Opens the picker (sheet on phones, centred dialog on desktop), then the
+/// collect-payment sheet / side panel of the chosen student.
 Future<void> showTakeMoneyPicker(BuildContext context) async {
-  final String? id = await showBhorSheet<String>(
+  final String? id = await showBhorPanel<String>(
     context,
     title: context.l10n.duesPickerTitle,
+    kind: BhorPanelKind.list,
+    scroll: false,
     builder: (BuildContext ctx) => const TakeMoneyPicker(),
   );
   if (id == null || !context.mounted) return;
@@ -106,14 +108,14 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
             key: const ValueKey<String>('picker-search'),
             semanticLabel: l10n.duesPickerSearch,
             textInputAction: TextInputAction.search,
-            prefix: const Icon(Icons.search),
+            prefix: const Icon(BhorIcons.search),
             hint: l10n.duesPickerSearch,
             onChanged: (String v) => setState(() => _query = v),
           ),
           const SizedBox(height: BhorSpace.s8),
           Expanded(
             child: rows.isEmpty
-                ? BhorEmptyState(icon: Icons.search_off, title: l10n.duesPickerNone)
+                ? BhorEmptyState(icon: BhorIcons.search, title: l10n.duesPickerNone)
                 : ListView.builder(
                     padding: EdgeInsets.zero,
                     itemCount: rows.length,
