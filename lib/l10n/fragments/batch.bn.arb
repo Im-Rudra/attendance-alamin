@@ -561,5 +561,9 @@
         "example": "২"
       }
     }
+  },
+  "batchBulkAdd": "একসাথে অনেক যোগ করুন",
+  "@batchBulkAdd": {
+    "description": "Batch detail action: open the bulk add students screen."
   }
 }

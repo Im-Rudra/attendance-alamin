@@ -655,5 +655,13 @@
   "setHelpA6": "বেতনের তালিকা বা শিক্ষার্থীর পাতা থেকে মনে করিয়ে দিন চাপুন। বার্তার ভাষা আরও পাতার বার্তা অংশে বদলানো যায়।",
   "@setHelpA6": {
     "description": "Settings and More screens: help a6."
+  },
+  "setCsvExport": "CSV ফাইল (এক্সেল)",
+  "@setCsvExport": {
+    "description": "More > Backup row: export a month as CSV."
+  },
+  "setCsvExportValue": "এই মাসের শিক্ষার্থী, বেতন, হাজিরা",
+  "@setCsvExportValue": {
+    "description": "Subtitle of the CSV export row."
   }
 }

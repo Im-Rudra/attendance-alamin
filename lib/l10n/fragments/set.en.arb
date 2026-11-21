@@ -141,5 +141,7 @@
   "setHelpQ5": "Why are reminders not arriving?",
   "setHelpA5": "On the More page, check the reminder switch and permission, then send a test reminder.",
   "setHelpQ6": "How do I message a guardian?",
-  "setHelpA6": "Tap remind on the fees list or a student's page. You can edit the wording under Messages on the More page."
+  "setHelpA6": "Tap remind on the fees list or a student's page. You can edit the wording under Messages on the More page.",
+  "setCsvExport": "CSV export (Excel)",
+  "setCsvExportValue": "This month's students, fees, attendance"
 }

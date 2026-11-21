@@ -113,6 +113,13 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
         return frame(
           title: b.name,
           actions: <Widget>[
+            if (!b.archived)
+              IconButton(
+                key: const Key('batch-bulk-add'),
+                tooltip: l10n.batchBulkAdd,
+                icon: const Icon(Icons.group_add_outlined),
+                onPressed: () => context.push(Routes.batchBulkAdd(b.id)),
+              ),
             IconButton(
               tooltip: l10n.commonEdit,
               icon: const Icon(Icons.edit_outlined),

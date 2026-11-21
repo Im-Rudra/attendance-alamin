@@ -2,7 +2,12 @@
 
 Builders of later modules must follow these (they are not all in 04-plan.md).
 
-## Bugs found by the Chair's live walk-through on Pages (2026-11-21, fix before the Judge)
+## Unwired M9-B extras (wire after M9-A merges, before QA)
+- Nothing calls `showOtherIncomeSheet` (extras_entry) — add an action on the collection screen ("অন্যান্য আয় যোগ করুন").
+- Nothing calls `runCsvExport` — add a More row (Backup group) or a collection-screen action.
+- Nothing links to `Routes.batchBulkAdd(id)` — add "একসাথে অনেক যোগ করুন" on the batch detail Students tab / add-student sheet.
+
+## Bugs found by the Chair's live walk-through on Pages (2026-11-21, fixed in #31 — verified live)
 1. **Today doesn't reflect a saved roll call** (BUG): after saving attendance for today's class (before its start time), the hero still says "হাজিরা নিন" and the routine row shows no "✓ x/y", even after a full reload. The roll call itself IS persisted (reopening shows "✓ সংরক্ষিত"). Check how M8-A/M5-B derive the taken state (session summaries keyed by occ) — must show taken for any class with a saved session, started or not.
 2. **Roll call layout jump** (UX BUG): the "সবাই উপস্থিত ধরা হয়েছে…" info banner disappears on the first tap and the roster jumps up ~60px, so fast taps hit the wrong row. Keep the banner's space (or animate it out without shifting rows / move the hint into the counts bar).
 3. **Default class time** in the onboarding batch step (SlotEditorField initial) is "next full hour" → "ভোর ৫:০০" when used early morning. Default to a sensible coaching hour: next full hour clamped to 07:00–20:00, else বিকাল ৪:০০.
