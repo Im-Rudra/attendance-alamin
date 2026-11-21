@@ -21,8 +21,20 @@ class DuesFilters extends ConsumerWidget {
     final List<Batch> batches = ref.watch(duesBatchesProvider).value ?? const <Batch>[];
     final bool monthSet = filter.month != null;
 
-    // One scrolling line (chips + batch select) instead of a wrapping block.
-    return SingleChildScrollView(
+    final Widget batchSelect = BhorSelect<String>(
+      key: const ValueKey<String>('dues-filter-batch'),
+      semanticLabel: l10n.duesFilterBatch,
+      hint: l10n.duesFilterBatch,
+      value: filter.batchId ?? '',
+      options: <BhorOption<String>>[
+        BhorOption<String>('', l10n.commonAll, icon: BhorIcons.batches),
+        for (final Batch b in batches) BhorOption<String>(b.id, b.name, icon: BhorIcons.batches),
+      ],
+      onChanged: (String id) => ctl.setBatch(id.isEmpty ? null : id),
+    );
+    final bool wide = context.bhorIsWide;
+
+    final Widget chips = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.none,
       child: Row(
@@ -62,23 +74,23 @@ class DuesFilters extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(width: BhorSpace.s8),
-          SizedBox(
-            width: 168,
-            child: BhorSelect<String>(
-              key: const ValueKey<String>('dues-filter-batch'),
-              semanticLabel: l10n.duesFilterBatch,
-              hint: l10n.duesFilterBatch,
-              value: filter.batchId ?? '',
-              options: <BhorOption<String>>[
-                BhorOption<String>('', l10n.commonAll, icon: BhorIcons.batches),
-                for (final Batch b in batches) BhorOption<String>(b.id, b.name, icon: BhorIcons.batches),
-              ],
-              onChanged: (String id) => ctl.setBatch(id.isEmpty ? null : id),
-            ),
-          ),
+          if (wide) ...<Widget>[
+            const SizedBox(width: BhorSpace.s8),
+            SizedBox(width: 168, child: batchSelect),
+          ],
         ],
       ),
+    );
+    if (wide) return chips;
+    // Phones: the batch select gets its own row so it is never cut off at the
+    // screen edge (visual QA F30).
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        chips,
+        const SizedBox(height: BhorSpace.s8),
+        batchSelect,
+      ],
     );
   }
 }

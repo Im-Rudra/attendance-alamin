@@ -26,5 +26,6 @@
   "collProgressLabel": "Received {received}, expected {expected}",
   "collAddOtherIncome": "Add other income",
   "collExportCsv": "Export CSV",
-  "collOtherIncomeMenu": "Other income (admission/exam fee)"
+  "collOtherIncomeMenu": "Other income (admission/exam fee)",
+  "collOtherIncomeShort": "Other income"
 }

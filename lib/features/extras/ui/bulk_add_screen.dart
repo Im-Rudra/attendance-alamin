@@ -204,6 +204,15 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
     }
 
     final bool ready = batch.value != null;
+    final Widget? bar = ready
+        ? BhorActionBar(
+            buttonKey: const ValueKey<String>('bulk-save'),
+            label: _phoneOwner != null ? l10n.extraBulkSaveAnyway : l10n.extraBulkSaveNext,
+            onPressed: _canSave ? _save : null,
+            disabledReason: _name.text.trim().isEmpty ? l10n.extraBulkDisabledName : null,
+            summary: l10n.extraBulkAddedCount(context.fmt.digits(_added.length.toString())),
+          )
+        : null;
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.extraBulkTitle,
@@ -220,24 +229,44 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           const SizedBox(width: BhorSpace.s8),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.fromLTRB(g, 4, g, g),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: body,
-          ),
-        ),
-      ),
-      bottomNav: ready
-          ? BhorActionBar(
-              buttonKey: const ValueKey<String>('bulk-save'),
-              label: _phoneOwner != null ? l10n.extraBulkSaveAnyway : l10n.extraBulkSaveNext,
-              onPressed: _canSave ? _save : null,
-              disabledReason: _name.text.trim().isEmpty ? l10n.extraBulkDisabledName : null,
-              summary: l10n.extraBulkAddedCount(context.fmt.digits(_added.length.toString())),
+      // Wide windows: a centred 720 dialog-style panel (2 columns: form left,
+      // added list right) with the save bar inside it, never a full-width bar.
+      body: wide
+          ? Padding(
+              padding: EdgeInsets.fromLTRB(g, BhorSpace.s16, g, g),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720, maxHeight: 640),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.bhor.colors.surface,
+                      borderRadius: BorderRadius.circular(BhorRadius.card),
+                      border: Border.all(color: context.bhor.colors.line),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(BhorRadius.card),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(BhorSpace.s16),
+                              child: body,
+                            ),
+                          ),
+                          if (bar != null) bar,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             )
-          : null,
+          : Padding(
+              padding: EdgeInsets.fromLTRB(g, 4, g, g),
+              child: body,
+            ),
+      bottomNav: wide ? null : bar,
     );
   }
 

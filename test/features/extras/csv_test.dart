@@ -54,7 +54,8 @@ Future<void> _pumpMany(WidgetTester tester) async {
 Future<void> _press(WidgetTester tester, String key) async {
   final Finder f = find.byKey(ValueKey<String>(key));
   expect(f, findsOneWidget);
-  final VoidCallback? onPressed = tester.widget<BhorButton>(f).onPressed;
+  final Widget w = tester.widget(f);
+  final VoidCallback? onPressed = w is BhorIconButton ? w.onPressed : (w as BhorButton).onPressed;
   expect(onPressed, isNotNull, reason: 'button is enabled');
   onPressed!();
   await tester.pump();

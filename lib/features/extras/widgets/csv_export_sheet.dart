@@ -142,9 +142,8 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
               onSave: () => _run(r.kind, share: false),
               onShare: () => _run(r.kind, share: true),
             ),
-            const SizedBox(height: BhorSpace.s8),
           ],
-          const SizedBox(height: BhorSpace.s4),
+          const SizedBox(height: BhorSpace.s8),
           Text(l10n.extraCsvPrivacy, style: b.type.meta),
         ],
       ),
@@ -180,47 +179,41 @@ class _CsvRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    return BhorCard(
-      padding: const EdgeInsets.all(BhorSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    // A light list row: icon, title and hint, a ghost "save" and a share icon.
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+      child: Row(
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(icon, color: b.colors.accent),
-              const SizedBox(width: BhorSpace.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(title, style: b.type.bodyStrong),
-                    Text(hint, style: b.type.meta),
-                  ],
-                ),
-              ),
-              if (busy) const BhorSpinner(size: 24),
-            ],
+          Icon(icon, color: b.colors.accent),
+          const SizedBox(width: BhorSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: b.type.bodyStrong),
+                Text(hint, style: b.type.meta),
+              ],
+            ),
           ),
-          const SizedBox(height: BhorSpace.s8),
-          Wrap(
-            spacing: BhorSpace.s8,
-            runSpacing: BhorSpace.s8,
-            children: <Widget>[
-              BhorButton(
-                key: ValueKey<String>('csv-save-${kind.name}'),
-                icon: BhorIcons.backupDown,
-                label: saveLabel,
-                onPressed: enabled ? onSave : null,
-              ),
-              BhorButton(
-                key: ValueKey<String>('csv-share-${kind.name}'),
-                variant: BhorButtonVariant.secondary,
-                icon: BhorIcons.share,
-                label: shareLabel,
-                onPressed: enabled ? onShare : null,
-              ),
-            ],
-          ),
+          if (busy)
+            const BhorSpinner(size: 24)
+          else ...<Widget>[
+            BhorButton(
+              key: ValueKey<String>('csv-save-${kind.name}'),
+              variant: BhorButtonVariant.ghost,
+              size: BhorButtonSize.sm,
+              icon: BhorIcons.backupDown,
+              label: saveLabel,
+              onPressed: enabled ? onSave : null,
+            ),
+            BhorIconButton(
+              key: ValueKey<String>('csv-share-${kind.name}'),
+              icon: BhorIcons.share,
+              semanticLabel: shareLabel,
+              size: BhorButtonSize.sm,
+              onPressed: enabled ? onShare : null,
+            ),
+          ],
         ],
       ),
     );
