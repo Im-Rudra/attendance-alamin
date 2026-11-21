@@ -336,11 +336,12 @@ void main() {
       expect(find.text(l10n.duesNoneYet), findsOneWidget);
     });
 
-    testWidgets('call and collect are on every row', (WidgetTester tester) async {
+    testWidgets('a compact phone row has only "collect"; call and remind sit behind a long press',
+        (WidgetTester tester) async {
       await _pumpFeesPhone(tester, seedFakes());
       for (final String id in <String>[kStuRahim, kStuNila, kStuSara]) {
-        expect(find.byKey(ValueKey<String>('dues-call-$id')), findsOneWidget);
-        expect(find.byKey(ValueKey<String>('dues-remind-$id')), findsOneWidget);
+        expect(find.byKey(ValueKey<String>('dues-call-$id')), findsNothing);
+        expect(find.byKey(ValueKey<String>('dues-remind-$id')), findsNothing);
         expect(find.byKey(ValueKey<String>('dues-collect-$id')), findsOneWidget);
       }
     });
@@ -422,13 +423,24 @@ void main() {
       expect(pickerMatches(rahim, '9'), isFalse);
     });
 
-    testWidgets('the other-income action lives in a labelled menu', (WidgetTester tester) async {
+    testWidgets('the other-income action is a header button, not a one-item menu', (WidgetTester tester) async {
       await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byIcon(BhorIcons.takeMoney), findsNothing);
-      await tester.tap(find.byKey(const Key('coll-menu')));
+      expect(find.byKey(const Key('coll-menu')), findsNothing);
+      expect(find.text(l10n.collOtherIncomeShort), findsOneWidget);
+    });
+
+    testWidgets('Fees and Collection are one page: the segment swaps the body in place',
+        (WidgetTester tester) async {
+      await pumpApp(tester, const FeesScreen(), overrides: seedFakes().overrides);
+      await tester.pump();
+      expect(find.byKey(const Key('coll-export-csv')), findsNothing);
+      await tester.tap(find.text(_l10n(Lang.bn).duesSegCollection));
       await tester.pumpAndSettle();
-      expect(find.text(l10n.collOtherIncomeMenu), findsOneWidget);
+      expect(find.byKey(const Key('coll-export-csv')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('fees-take-money')), findsNothing);
+      expect(find.byIcon(BhorIcons.back), findsNothing);
     });
   });
 

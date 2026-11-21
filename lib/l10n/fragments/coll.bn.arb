@@ -159,5 +159,9 @@
   "collOtherIncomeMenu": "অন্যান্য আয় (ভর্তি/পরীক্ষা ফি)",
   "@collOtherIncomeMenu": {
     "description": "Overflow menu item that opens the other-income sheet; clearly not a fee payment."
+  },
+  "collOtherIncomeShort": "অন্য আয়",
+  "@collOtherIncomeShort": {
+    "description": "Short header button on the collection segment that opens the other-income sheet."
   }
 }
