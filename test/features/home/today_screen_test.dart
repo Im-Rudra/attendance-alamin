@@ -637,9 +637,9 @@ void main() {
       }
     });
 
-    testWidgets('the language chip is on the top bar once', (WidgetTester tester) async {
+    testWidgets('the language chip lives in More, not on the Today header', (WidgetTester tester) async {
       await _pumpPhone(tester);
-      expect(find.byKey(const Key('language-chip')), findsOneWidget);
+      expect(find.byKey(const Key('language-chip')), findsNothing);
     });
   });
 
@@ -738,13 +738,16 @@ void main() {
       expect(find.byType(WeekGrid), findsOneWidget);
     });
 
-    testWidgets('large: quick actions sit in the top bar, not in a tile', (WidgetTester tester) async {
+    testWidgets('large: quick actions sit behind one "New…" menu, not in a tile', (WidgetTester tester) async {
       await _pumpDesktop(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byType(QuickActionsTile), findsNothing);
-      expect(_byLabel(l10n.todayQuickCollect), findsOneWidget);
-      expect(_byLabel(l10n.todayQuickAddStudent), findsOneWidget);
-      expect(_byLabel(l10n.todayQuickExtra), findsOneWidget);
+      expect(find.byKey(const Key('language-chip')), findsNothing);
+      await tester.tap(find.widgetWithText(BhorButton, l10n.todayNewMenu));
+      await _settle(tester);
+      expect(find.text(l10n.todayQuickCollect), findsOneWidget);
+      expect(find.text(l10n.todayQuickAddStudent), findsOneWidget);
+      expect(find.text(l10n.todayQuickExtra), findsOneWidget);
     });
 
     testWidgets('medium window: stacked cards, paired tiles of equal height', (WidgetTester tester) async {

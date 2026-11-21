@@ -52,10 +52,13 @@ class _DuesBody extends StatelessWidget {
     final fmt = context.fmt;
     final BhorThemeData b = context.bhor;
 
-    // The worst few students: tapping a row opens the payment flow.
-    final List<StudentDues> top = report.active.take(3).toList();
+    final List<StudentDues> all = report.active;
+    // The bar only means something with a ringed day; past day 10 every
+    // segment is filled (day 11 = "beyond").
+    final int barDay = escalationDayOf(today) ?? 11;
 
     return TileFrame(
+      scroll: false,
       onTap: () => goRoute(context, Routes.fees),
       header: TileHeader(
         icon: BhorIcons.fees,
@@ -65,42 +68,92 @@ class _DuesBody extends StatelessWidget {
           child: Icon(BhorIcons.chevronRight, color: b.colors.text2),
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Column(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          // Rows that fit below the figure, headline and bar (never clip
+          // mid-row): 3 on a scrolling page, else whatever the tile allows.
+          int cap = 3;
+          if (c.hasBoundedHeight) {
+            cap = ((c.maxHeight - _kDuesFixed) / _kDueRowHeight).floor().clamp(0, 3);
+          }
+          final bool more = all.length > cap && cap > 0;
+          final int shown = more ? cap - 1 : (all.length < cap ? all.length : cap);
+          final List<StudentDues> rows = all.take(shown).toList();
+          final int rest = all.length - rows.length;
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: AlignmentDirectional.centerStart,
-                child: BhorCountUp.money(amount: report.totalOutstandingActive, style: b.type.display),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: BhorCountUp.money(amount: report.totalOutstandingActive, style: b.type.display),
+                  ),
+                  Text(
+                    l10n.todayDuesHeadline(
+                      fmt.number(report.studentsWithDues),
+                      fmt.number(report.overdueStudents),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: b.type.meta,
+                  ),
+                ],
               ),
-              Text(
-                l10n.todayDuesHeadline(
-                  fmt.number(report.studentsWithDues),
-                  fmt.number(report.overdueStudents),
-                ),
-                maxLines: 2,
+              const SizedBox(height: BhorSpace.s12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  // The rows below already carry each student's level (QA-18).
+                  BhorEscalationBar(day: barDay),
+                  if (rows.isNotEmpty || (more && rest > 0)) const SizedBox(height: BhorSpace.s8),
+                  for (final StudentDues d in rows) _DueRow(dues: d),
+                  if (more && rest > 0) _MoreRow(count: rest),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Height reserved above the rows: figure, headline, gaps and the bar.
+const double _kDuesFixed = 120;
+
+/// One [_DueRow] (min height 52).
+const double _kDueRowHeight = 52;
+
+/// "আরও N জন →": the tail of the list when more students owe than fit.
+class _MoreRow extends StatelessWidget {
+  const _MoreRow({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 40),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                context.l10n.todayDuesMore(context.fmt.number(count)),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: b.type.meta,
+                style: b.type.label.copyWith(color: b.colors.accent),
               ),
-            ],
-          ),
-          const SizedBox(height: BhorSpace.s12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // The rows below already carry each student's level (QA-18).
-              BhorEscalationBar(day: escalationDayOf(today) ?? 0),
-              if (top.isNotEmpty) ...<Widget>[
-                const SizedBox(height: BhorSpace.s8),
-                for (final StudentDues d in top) _DueRow(dues: d),
-              ],
-            ],
-          ),
-        ],
+            ),
+            Icon(BhorIcons.chevronRight, size: 18, color: b.colors.accent),
+          ],
+        ),
       ),
     );
   }

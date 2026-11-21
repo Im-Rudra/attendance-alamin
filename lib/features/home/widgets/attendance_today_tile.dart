@@ -41,6 +41,14 @@ class AttendanceTodayTile extends ConsumerWidget {
       );
     }
 
+    if (a.taken == 0 || a.percent == null) {
+      // Nothing taken yet: the shared empty state, no lone "—" or grey dots.
+      return TileFrame(
+        header: header,
+        child: TileMessage(icon: BhorIcons.rollCall, message: l10n.todayAttendanceNotYet),
+      );
+    }
+
     final int? percent = a.percent;
     final Color on = b.colors.ok;
     final int pips = a.total > 12 ? 12 : a.total;

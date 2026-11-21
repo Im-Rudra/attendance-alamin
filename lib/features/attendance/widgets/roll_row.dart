@@ -1,8 +1,9 @@
 // One roll-call row (UX 2b): a surface card with the student and the gliding
 // attendance toggle (present / absent / late). Tapping the name still flips
 // present/absent for speed; long-press / right-click / the options button open
-// the status panel (excused, note). Absent and late tint the row and add a
-// 3 px edge stripe, so the state never relies on colour alone.
+// the status panel (excused, note). Absent and late tint the row (the toggle
+// and tag carry the state too, so it never relies on colour alone). Rows sit
+// inside one grouped list, so a row has no border or stripe of its own.
 
 import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/semantics.dart';
@@ -62,12 +63,12 @@ class RollRow extends StatelessWidget {
     final String hint = status == AttendanceStatus.absent ? l10n.a11yHintMarkPresent : l10n.a11yHintMarkAbsent;
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
-    // Row tint and edge stripe per status; the row stays a surface card.
-    final (Color fill, Color stripe) = switch (status) {
-      AttendanceStatus.present => (c.surface, c.surface.withValues(alpha: 0)),
-      AttendanceStatus.absent => (c.absentBg, c.absentText),
-      AttendanceStatus.late => (c.lateBg, c.late),
-      AttendanceStatus.leave => (c.soft, c.text3),
+    // Row tint per status.
+    final Color fill = switch (status) {
+      AttendanceStatus.present => c.surface,
+      AttendanceStatus.absent => c.absentBg,
+      AttendanceStatus.late => c.lateBg,
+      AttendanceStatus.leave => c.soft,
     };
 
     return LayoutBuilder(
@@ -132,7 +133,7 @@ class RollRow extends StatelessWidget {
             child: BhorPressable(
               onTap: tap,
               onLongPress: menu,
-              radius: BhorRadius.card,
+              radius: 0,
               scaleOnPress: false,
               showFocusRing: false,
               builder: (BuildContext context, BhorStates s) => Padding(
@@ -167,35 +168,20 @@ class RollRow extends StatelessWidget {
           constraints: BoxConstraints(minHeight: height),
           decoration: BoxDecoration(
             color: fill,
-            borderRadius: BorderRadius.circular(BhorRadius.card),
-            border: Border.all(color: focused ? c.accent : c.line, width: focused ? 2 : 1),
+            border: focused ? Border.all(color: c.accent, width: 2) : null,
           ),
-          child: Stack(
+          child: Row(
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(child: main),
-                  if (menuButton)
-                    BhorIconButton(
-                      semanticLabel: l10n.rollRowMenu,
-                      icon: BhorIcons.overflow,
-                      size: BhorButtonSize.sm,
-                      color: c.text2,
-                      onPressed: menu,
-                    ),
-                  toggle,
-                ],
-              ),
-              Positioned(
-                left: 0,
-                top: 12,
-                bottom: 12,
-                width: 3,
-                child: AnimatedContainer(
-                  duration: fast,
-                  decoration: BoxDecoration(color: stripe, borderRadius: BorderRadius.circular(2)),
+              Expanded(child: main),
+              if (menuButton)
+                BhorIconButton(
+                  semanticLabel: l10n.rollRowMenu,
+                  icon: BhorIcons.overflow,
+                  size: BhorButtonSize.sm,
+                  color: c.text2,
+                  onPressed: menu,
                 ),
-              ),
+              toggle,
             ],
           ),
         );
