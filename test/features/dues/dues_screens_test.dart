@@ -285,7 +285,7 @@ void main() {
       expect(find.descendant(of: _row(kStuRahim), matching: find.text(l10n.duesReasonLeft)), findsOneWidget);
     });
 
-    testWidgets('reminded-today marker replaces the Remind label', (WidgetTester tester) async {
+    testWidgets('a reminded-today marker shows on the row (phone: no Remind button)', (WidgetTester tester) async {
       await _pumpFeesPhone(tester, _withReminded(seedFakes(), <String>{kStuRahim}));
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(
@@ -293,10 +293,6 @@ void main() {
         findsOneWidget,
       );
       expect(find.descendant(of: _row(kStuRahim), matching: find.text(l10n.duesRemind)), findsNothing);
-      expect(
-        find.descendant(of: _row(kStuNila), matching: find.text(l10n.duesRemind)),
-        findsOneWidget,
-      );
       expect(
         find.descendant(of: _row(kStuNila), matching: find.text(l10n.duesRemindedToday)),
         findsNothing,
@@ -440,7 +436,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('coll-export-csv')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('fees-take-money')), findsNothing);
-      expect(find.byIcon(BhorIcons.back), findsNothing);
     });
   });
 

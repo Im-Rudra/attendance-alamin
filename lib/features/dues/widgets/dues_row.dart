@@ -166,6 +166,10 @@ class DuesRowTile extends ConsumerWidget {
         name,
         const SizedBox(height: 2),
         Align(alignment: AlignmentDirectional.centerStart, child: DuesStatusBadge(row: row)),
+        if (reminded && !wide) ...<Widget>[
+          const SizedBox(height: 2),
+          Text(remindLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+        ],
         if (subtitle.isNotEmpty) ...<Widget>[
           const SizedBox(height: 2),
           Text(subtitle, maxLines: wide ? 1 : 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
