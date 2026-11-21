@@ -88,5 +88,34 @@ void main() {
       expect(contrast(c.accent, c.bg, c.bg), greaterThanOrEqualTo(3.0));
       expect(contrast(c.accent, c.surface, c.surface), greaterThanOrEqualTo(3.0));
     });
+
+    // Visual QA (docs/council/14-visual-qa.md C2, C3): selected states.
+    test('$theme attendance toggle: the selected thumb ring stands out from the track (>= 3:1)', () {
+      for (final (String n, Color tone, Color tint) in <(String, Color, Color)>[
+        ('present', c.ok, c.okBg),
+        ('absent', c.absentText, c.absentBg),
+        ('late', c.late, c.lateBg),
+      ]) {
+        final double ring = contrast(tone, c.soft, c.soft);
+        expect(ring, greaterThanOrEqualTo(3.0), reason: '$theme $n ring = ${ring.toStringAsFixed(2)}:1');
+        // The label / icon on the thumb (surface + a light tint) stays AA.
+        final Color thumb = Color.alphaBlend(tint.withValues(alpha: tint.a * 0.6), c.surface);
+        final double label = contrast(tone, thumb, thumb);
+        expect(label, greaterThanOrEqualTo(4.5), reason: '$theme $n label = ${label.toStringAsFixed(2)}:1');
+      }
+    });
+
+    test('$theme segmented: selected text is AA; dark thumb edge >= 3:1 on the track', () {
+      final Color thumb = t.isDark ? c.soft2 : c.surface;
+      expect(contrast(c.text, thumb, thumb), greaterThanOrEqualTo(4.5));
+      if (t.isDark) expect(contrast(c.segmentEdge, c.soft, c.soft), greaterThanOrEqualTo(3.0));
+    });
+
+    test('$theme overdue tag is the tinted pill and AA', () {
+      final (Color bg, Color fg) = BhorTag.severityColorsOf(c, SeverityLevel.overdue);
+      expect(bg, c.overdueBg);
+      expect(fg, c.overdue);
+      expect(contrast(fg, bg, c.surface), greaterThanOrEqualTo(4.5));
+    });
   }
 }

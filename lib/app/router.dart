@@ -1,7 +1,8 @@
 // The one GoRouter (Arch 1.4, plan M5-A route table). Frozen after M5-A.
 //
 // Five shell branches (আজ · ব্যাচ · শিক্ষার্থী · বেতন · আরও) in a
-// StatefulShellRoute.indexedStack, so each tab keeps its own stack. Detail
+// StatefulShellRoute (branches in BhorBranchFadeThrough: every tab keeps its
+// own stack, switches fade through). Detail
 // routes (`/batches/:batchId`, `/students/:studentId`, `/fees/s/:studentId`)
 // go through AdaptiveDetail: list ‖ detail on wide windows, the detail alone
 // on phones. Forms, the roll call and the other full-screen flows sit on the
@@ -61,37 +62,44 @@ final routerProvider = Provider<GoRouter>((ref) {
 String _param(GoRouterState state, String name) => state.pathParameters[name]!;
 
 /// Detail page: instant on wide windows (the list stays put and only the
-/// detail pane changes), a short slide + fade on phones.
+/// detail pane changes); on phones the Bhor push (parallax, fade-through:
+/// never two pages legible at once).
 Page<void> _detailPage(GoRouterState state, Widget child) => CustomTransitionPage<void>(
       key: state.pageKey,
       child: child,
-      transitionDuration: const Duration(milliseconds: 260),
-      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
       transitionsBuilder: (BuildContext context, Animation<double> animation,
           Animation<double> secondary, Widget child) {
         if (WindowClass.of(context).isWide) return child;
-        final Animation<double> curved =
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0.08, 0), end: Offset.zero).animate(curved),
-            child: child,
-          ),
-        );
+        return bhorPageTransition(context, animation, secondary, child);
       },
     );
 
-/// Every other page: the Bhor fade + rise (200 ms, ease-out), the same on
-/// every platform (WidgetsApp has no Material page transitions).
+/// Every other page: the Bhor push (fade-through with parallax on phones,
+/// fade-through + scale on desktop), the same on every platform (WidgetsApp
+/// has no Material page transitions).
 Page<void> _page(GoRouterState state, Widget child) => CustomTransitionPage<void>(
       key: state.pageKey,
       name: state.name,
       arguments: state.extra,
       child: child,
-      transitionDuration: BhorMotion.slow,
-      reverseTransitionDuration: const Duration(milliseconds: 160),
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
       transitionsBuilder: bhorPageTransition,
+    );
+
+/// Full-screen flows (roll call, search, onboarding, reminder priming):
+/// rise in; on close they drop 24 px and fade out over 220 ms on their own
+/// opaque background, so the page below never shows through their text.
+Page<void> _fullPage(GoRouterState state, Widget child) => CustomTransitionPage<void>(
+      key: state.pageKey,
+      name: state.name,
+      arguments: state.extra,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: BhorMotion.exit,
+      transitionsBuilder: bhorFullscreenTransition,
     );
 
 GoRouter buildRouter(String initialLocation) {
@@ -101,9 +109,12 @@ GoRouter buildRouter(String initialLocation) {
     errorBuilder: (BuildContext context, GoRouterState state) => const NotFoundScreen(),
     routes: <RouteBase>[
       GoRoute(path: '/', redirect: (BuildContext context, GoRouterState state) => Routes.today),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (BuildContext context, GoRouterState state, StatefulNavigationShell shell) =>
             AdaptiveScaffold(navigationShell: shell),
+        // Tabs fade through: the old branch is gone before the new one shows.
+        navigatorContainerBuilder: (BuildContext context, StatefulNavigationShell shell, List<Widget> children) =>
+            BhorBranchFadeThrough(index: shell.currentIndex, children: children),
         branches: <StatefulShellBranch>[
           // 0 · আজ
           StatefulShellBranch(
@@ -153,7 +164,7 @@ GoRouter buildRouter(String initialLocation) {
                         pageBuilder: (BuildContext context, GoRouterState state) {
                           final LocalDate? date = LocalDate.tryParse(state.pathParameters['date']);
                           if (date == null) return _page(state, const NotFoundScreen());
-                          return _page(state, BatchRollCallLauncher(batchId: _param(state, 'batchId'), date: date));
+                          return _fullPage(state, BatchRollCallLauncher(batchId: _param(state, 'batchId'), date: date));
                         },
                       ),
                       GoRoute(
@@ -291,22 +302,22 @@ GoRouter buildRouter(String initialLocation) {
       // Full-screen routes: top-level, so they live on the root navigator.
       GoRoute(
         path: '/rollcall/:occ',
-        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, RollCallScreen(
+        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, RollCallScreen(
           occ: _param(state, 'occ'),
           returnTo: state.extra is String ? state.extra! as String : null,
         )),
       ),
       GoRoute(
         path: Routes.search,
-        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const SearchScreen()),
+        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, const SearchScreen()),
       ),
       GoRoute(
         path: Routes.onboarding,
-        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const OnboardingScreen()),
+        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, const OnboardingScreen()),
       ),
       GoRoute(
         path: Routes.reminderPriming,
-        pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const ReminderPrimingScreen()),
+        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, const ReminderPrimingScreen()),
       ),
     ],
   );

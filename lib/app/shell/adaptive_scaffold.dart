@@ -6,7 +6,9 @@
 // - medium / expanded (600–1199): BhorSidebar collapsed to icons (72).
 // - large / extra-large (≥ 1200): the full BhorSidebar (brand mark, search,
 //   labels, badges, 248), collapsible to icons.
-// Branch switches fade through (BhorFadeThrough.replay). On desktop the body
+// Branch switches fade through (BhorBranchFadeThrough, in the router's
+// navigator container: the old tab is gone before the new one shows). The
+// nav pill is a BhorBottomObstruction, so no toast covers it. On desktop the body
 // carries BhorChromeInset so side panels (showBhorPanel) dim only the
 // content and keep the sidebar in view. Icons are Phosphor (BhorIcons).
 // The বেতন item carries the number of overdue students. Desktop keys:
@@ -63,7 +65,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
         wash: false,
         body: BhorToastInset(
           bottom: keyboardOpen ? 0 : AdaptiveScaffold.bottomNavHeight,
-          child: BhorFadeThrough.replay(trigger: index, child: _shell),
+          child: _shell,
         ),
         bottomNav: keyboardOpen
             ? null
@@ -99,7 +101,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
         // Side panels opened from the body dim the content only.
         body: BhorChromeInset(
           start: collapsed ? BhorSidebar.collapsedWidth : BhorSidebar.width,
-          child: BhorFadeThrough.replay(trigger: index, child: _shell),
+          child: _shell,
         ),
       );
     }

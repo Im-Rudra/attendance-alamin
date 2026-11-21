@@ -429,9 +429,18 @@ void main() {
       await tester.tap(find.text('বদলান'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-      // Both are on screen mid-switch.
+      // Both are mounted mid-switch, but never both visible (fade-through).
       expect(find.text('ট্যাব 0'), findsOneWidget);
       expect(find.text('ট্যাব 1'), findsOneWidget);
+      for (int f = 0; f < 20; f++) {
+        final double a = visibleOpacity(tester, find.text('ট্যাব 0'));
+        final double b = visibleOpacity(tester, find.text('ট্যাব 1'));
+        expect(a > 0.02 && b > 0.02, isFalse, reason: 'frame $f: old $a, new $b');
+        final double pa = visibleOpacity(tester, find.text('প্যান 0'));
+        final double pb = visibleOpacity(tester, find.text('প্যান 1'));
+        expect(pa > 0.02 && pb > 0.02, isFalse, reason: 'pane frame $f: old $pa, new $pb');
+        await tester.pump(const Duration(milliseconds: 16));
+      }
       await tester.pumpAndSettle();
       expect(find.text('ট্যাব 0'), findsNothing);
       expect(find.text('প্যান 0'), findsNothing);
@@ -555,7 +564,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('expanding sheet opens at 60% and grows when dragged up', (WidgetTester tester) async {
+    testWidgets('expanding sheet opens at its content height and grows when dragged up', (WidgetTester tester) async {
       await pumpDs(
         tester,
         _opener('খুলুন', (BuildContext context) {
@@ -564,14 +573,14 @@ void main() {
       );
       await tester.tap(find.text('খুলুন'));
       await tester.pumpAndSettle();
-      final double h0 = tester.getSize(find.byType(BhorSheetFrame)).height;
       final double sheet0 = tester.getRect(find.byKey(const ValueKey<String>('bhor-sheet-handle'))).top;
-      expect(800 - sheet0, closeTo(800 * 0.94 * BhorSheetFrame.minExtent, 4));
-      await tester.drag(find.byKey(const ValueKey<String>('bhor-sheet-handle')), const Offset(0, -300));
+      // Content height (handle + title + 40 + padding), not a fixed 60%.
+      expect(800 - sheet0, lessThan(200));
+      await tester.drag(find.byKey(const ValueKey<String>('bhor-sheet-handle')), const Offset(0, -500));
       await tester.pumpAndSettle();
       final double sheet1 = tester.getRect(find.byKey(const ValueKey<String>('bhor-sheet-handle'))).top;
       expect(sheet1, lessThan(sheet0));
-      expect(h0, greaterThan(0));
+      expect(800 - sheet1, closeTo(800 * BhorSheetFrame.maxFraction, 4));
       expectClean(tester);
     });
 

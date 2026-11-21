@@ -72,6 +72,9 @@ class BhorSegmented<T> extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: c.isDark ? c.soft2 : c.surface,
                       borderRadius: BorderRadius.circular(BhorRadius.control - 4),
+                      // Dark: a 1 px edge at >= 3:1 so the selected segment
+                      // is easy to find on the dark track.
+                      border: c.isDark ? Border.all(color: c.segmentEdge) : null,
                       boxShadow: c.thumbShadow,
                     ),
                   ),
@@ -173,7 +176,9 @@ class BhorChip extends StatelessWidget {
             duration: fast,
             curve: BhorMotion.ease,
             height: BhorSize.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            // The check slot (20) is paid for by the side padding, so a chip
+            // keeps its width when selected and the row never re-wraps.
+            padding: EdgeInsets.symmetric(horizontal: selected || icon != null ? 14 : 24),
             decoration: BoxDecoration(
               color: selected ? c.accentTint : (s.hovered || s.pressed ? c.soft2 : c.soft),
               borderRadius: BorderRadius.circular(BhorRadius.pill),

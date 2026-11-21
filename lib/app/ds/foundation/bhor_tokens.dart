@@ -68,6 +68,7 @@ class BhorColors {
     required this.lateText,
     required this.scrim,
     required this.panelScrim,
+    required this.segmentEdge,
     required this.pressShade,
     required this.shadow,
     required this.highlight,
@@ -145,6 +146,9 @@ class BhorColors {
 
   /// The lighter dim behind a desktop side panel (the list stays visible).
   final Color panelScrim;
+
+  /// Edge of the selected segmented thumb (dark: >= 3:1 against the track).
+  final Color segmentEdge;
   final Color pressShade;
 
   /// Soft neutral shadow: only floating toasts, menus and panels use it.
@@ -235,6 +239,7 @@ class BhorColors {
     lateText: BhorPaletteLight.lateText,
     scrim: BhorPaletteLight.scrim,
     panelScrim: BhorPaletteLight.panelScrim,
+    segmentEdge: BhorPaletteLight.segmentEdge,
     pressShade: BhorPaletteLight.pressShade,
     shadow: BhorPaletteLight.shadow,
     highlight: BhorPaletteLight.highlight,
@@ -287,6 +292,7 @@ class BhorColors {
     lateText: BhorPaletteDark.lateText,
     scrim: BhorPaletteDark.scrim,
     panelScrim: BhorPaletteDark.panelScrim,
+    segmentEdge: BhorPaletteDark.segmentEdge,
     pressShade: BhorPaletteDark.pressShade,
     shadow: BhorPaletteDark.shadow,
     highlight: BhorPaletteDark.highlight,

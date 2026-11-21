@@ -1,6 +1,9 @@
 // BhorDatePicker (month grid, week starts on the Settings day, Bangla digits)
 // and BhorTimePicker (period first: ভোর/সকাল/দুপুর/বিকাল/সন্ধ্যা/রাত, then
-// hour, then 5-minute step), inline or in a BhorSheet.
+// hour, then 5-minute step), inline or opened by showBhorDatePicker /
+// showBhorTimePicker: a bottom sheet on phones, a popover anchored to the
+// field that opened it on desktop (>= 840; a centred dialog when there is no
+// field to anchor to). Never a sheet on desktop.
 
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -27,6 +30,7 @@ class _Cell extends StatelessWidget {
     required this.onTap,
     this.outlined = false,
     this.semanticLabel,
+    this.height = BhorSize.minTap,
   });
 
   final String label;
@@ -34,6 +38,7 @@ class _Cell extends StatelessWidget {
   final VoidCallback? onTap;
   final bool outlined;
   final String? semanticLabel;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +52,7 @@ class _Cell extends StatelessWidget {
       radius: BhorRadius.chip,
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.fast,
-        height: BhorSize.minTap,
+        height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? c.accent : (s.hovered ? c.surface2 : null),
@@ -80,6 +85,7 @@ class BhorDatePicker extends StatefulWidget {
     required this.lastDate,
     this.weekStart = DateTime.saturday,
     this.today,
+    this.cellHeight = BhorSize.minTap,
   });
 
   final DateTime? selected;
@@ -90,6 +96,9 @@ class BhorDatePicker extends StatefulWidget {
 
   /// Ringed day (pass the app clock's today; null rings nothing).
   final DateTime? today;
+
+  /// Height of a day cell (40 in the desktop popover).
+  final double cellHeight;
 
   @override
   State<BhorDatePicker> createState() => _BhorDatePickerState();
@@ -137,7 +146,7 @@ class _BhorDatePickerState extends State<BhorDatePicker> {
             Expanded(
               child: Builder(builder: (BuildContext context) {
                 final int day = r * 7 + col - offset + 1;
-                if (day < 1 || day > daysInMonth) return const SizedBox(height: BhorSize.minTap);
+                if (day < 1 || day > daysInMonth) return SizedBox(height: widget.cellHeight);
                 final DateTime d = DateTime(_shown.year, _shown.month, day);
                 return Padding(
                   padding: const EdgeInsets.all(1),
@@ -146,6 +155,7 @@ class _BhorDatePickerState extends State<BhorDatePicker> {
                     semanticLabel: '${fmt.weekdayName(d.weekday)}, ${fmt.digits('$day')} ${fmt.monthName(d.month)}',
                     selected: sel == d,
                     outlined: today == d,
+                    height: widget.cellHeight,
                     onTap: _enabled(d) ? () => widget.onChanged(d) : null,
                   ),
                 );
@@ -203,7 +213,10 @@ class _BhorDatePickerState extends State<BhorDatePicker> {
   }
 }
 
-/// Opens a [BhorDatePicker] in a sheet; resolves with the tapped date.
+/// Opens a [BhorDatePicker]; resolves with the tapped date. Phone: a
+/// bottom sheet. Desktop: a popover calendar (40 px cells) anchored to
+/// [anchor] (default: [context] when it is the date field, else the control
+/// just tapped), a centred dialog when there is nothing to anchor to.
 /// Usage: `final d = await showBhorDatePicker(context, initialDate: now, firstDate: a, lastDate: z, weekStart: ws)`.
 Future<DateTime?> showBhorDatePicker(
   BuildContext context, {
@@ -212,20 +225,32 @@ Future<DateTime?> showBhorDatePicker(
   required DateTime lastDate,
   int weekStart = DateTime.saturday,
   DateTime? today,
+  BuildContext? anchor,
 }) {
-  return showBhorSheet<DateTime>(
-    context,
-    title: context.l10n.dsPickDate,
-    builder: (BuildContext ctx) => SingleChildScrollView(
-      child: BhorDatePicker(
+  final bool wide = context.bhorIsWide;
+  Widget picker(BuildContext ctx) => BhorDatePicker(
         selected: initialDate,
         firstDate: firstDate,
         lastDate: lastDate,
         weekStart: weekStart,
         today: today,
+        cellHeight: wide ? 40 : BhorSize.minTap,
         onChanged: (DateTime d) => Navigator.of(ctx).pop(d),
-      ),
-    ),
+      );
+  if (wide) {
+    return showBhorPopover<DateTime>(
+      context,
+      anchor: anchor,
+      title: context.l10n.dsPickDate,
+      width: 336,
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s8, 0, BhorSpace.s8, BhorSpace.s8),
+      builder: picker,
+    );
+  }
+  return showBhorSheet<DateTime>(
+    context,
+    title: context.l10n.dsPickDate,
+    builder: (BuildContext ctx) => SingleChildScrollView(child: picker(ctx)),
   );
 }
 
@@ -253,10 +278,14 @@ String _periodLabel(AppLocalizations l10n, int i) => switch (i) {
 /// Inline time picker: period, then hour, then minute (5-minute steps).
 /// [value] is minutes after midnight. Usage: `BhorTimePicker(value: 960, onChanged: f)`.
 class BhorTimePicker extends StatefulWidget {
-  const BhorTimePicker({super.key, required this.value, required this.onChanged});
+  const BhorTimePicker({super.key, required this.value, required this.onChanged, this.columns = false});
 
   final int? value;
   final ValueChanged<int> onChanged;
+
+  /// Period · hour · minute side by side (the desktop popover) instead of
+  /// stacked.
+  final bool columns;
 
   @override
   State<BhorTimePicker> createState() => _BhorTimePickerState();
@@ -314,72 +343,122 @@ class _BhorTimePickerState extends State<BhorTimePicker> {
     }
 
     final int? period = _period;
+    final double cellH = widget.columns ? 40 : BhorSize.minTap;
+    final List<Widget> periods = <Widget>[
+      for (int p = 0; p < 6; p++)
+        _Cell(
+          key: ValueKey<String>('bhor-period-$p'),
+          label: _periodLabel(l10n, p),
+          selected: period == p,
+          height: cellH,
+          onTap: () => _pickPeriod(p),
+        ),
+    ];
+    final List<Widget> hours = <Widget>[
+      if (period != null)
+        for (final int h in kBhorPeriodHours[period])
+          _Cell(
+            key: ValueKey<String>('bhor-hour-$h'),
+            label: _clock(fmt, h),
+            semanticLabel: fmt.time(h * 60),
+            selected: _hour == h,
+            height: cellH,
+            onTap: () => widget.onChanged(h * 60 + _minute),
+          ),
+    ];
+    final List<Widget> minutes = <Widget>[
+      for (int m = 0; m < 60; m += 5)
+        _Cell(
+          key: ValueKey<String>('bhor-minute-$m'),
+          label: fmt.digits(m.toString().padLeft(2, '0')),
+          selected: _hour != null && _minute == m,
+          height: cellH,
+          onTap: _hour == null ? null : () => widget.onChanged(_hour! * 60 + m),
+        ),
+    ];
+    final Widget readout = Semantics(
+      liveRegion: true,
+      child: Text(
+        widget.value == null ? '—' : fmt.time(widget.value!),
+        textAlign: TextAlign.center,
+        style: BhorType.tabular(widget.columns ? b.type.title : b.type.display),
+      ),
+    );
+    if (widget.columns) {
+      Widget column(String title, Widget body) => Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[heading(title), body],
+            ),
+          );
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          readout,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              column(l10n.dsTimePeriod, grid(1, periods)),
+              const SizedBox(width: BhorSpace.s8),
+              column(l10n.dsTimeHour, grid(2, hours)),
+              const SizedBox(width: BhorSpace.s8),
+              column(l10n.dsTimeMinute, grid(3, minutes)),
+            ],
+          ),
+        ],
+      );
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Semantics(
-          liveRegion: true,
-          child: Text(
-            widget.value == null ? '—' : fmt.time(widget.value!),
-            textAlign: TextAlign.center,
-            style: BhorType.tabular(b.type.display),
-          ),
-        ),
+        readout,
         heading(l10n.dsTimePeriod),
-        grid(3, <Widget>[
-          for (int p = 0; p < 6; p++)
-            _Cell(
-              key: ValueKey<String>('bhor-period-$p'),
-              label: _periodLabel(l10n, p),
-              selected: period == p,
-              onTap: () => _pickPeriod(p),
-            ),
-        ]),
+        grid(3, periods),
         if (period != null) ...<Widget>[
           heading(l10n.dsTimeHour),
-          grid(4, <Widget>[
-            for (final int h in kBhorPeriodHours[period])
-              _Cell(
-                key: ValueKey<String>('bhor-hour-$h'),
-                label: _clock(fmt, h),
-                semanticLabel: fmt.time(h * 60),
-                selected: _hour == h,
-                onTap: () => widget.onChanged(h * 60 + _minute),
-              ),
-          ]),
+          grid(4, hours),
           heading(l10n.dsTimeMinute),
-          grid(6, <Widget>[
-            for (int m = 0; m < 60; m += 5)
-              _Cell(
-                key: ValueKey<String>('bhor-minute-$m'),
-                label: fmt.digits(m.toString().padLeft(2, '0')),
-                selected: _hour != null && _minute == m,
-                onTap: _hour == null ? null : () => widget.onChanged(_hour! * 60 + m),
-              ),
-          ]),
+          grid(6, minutes),
         ],
       ],
     );
   }
 }
 
-/// Opens a [BhorTimePicker] in a sheet with a Done button; resolves with
-/// minutes after midnight (null when dismissed).
+/// Opens a [BhorTimePicker] with a Done button; resolves with minutes
+/// after midnight (null when dismissed). Phone: a bottom sheet (title and ✕
+/// on one row). Desktop: a 3-column popover (period · hour · minute)
+/// anchored to [anchor] / the field that opened it, a centred dialog when
+/// there is nothing to anchor to.
 /// [title] names the time being picked (default "সময় বেছে নিন").
 /// Usage: `final m = await showBhorTimePicker(context, initial: 960, title: 'শুরু')`.
-Future<int?> showBhorTimePicker(BuildContext context, {int? initial, String? title}) {
+Future<int?> showBhorTimePicker(BuildContext context, {int? initial, String? title, BuildContext? anchor}) {
+  final String t = title ?? context.l10n.dsPickTime;
+  if (context.bhorIsWide) {
+    return showBhorPopover<int>(
+      context,
+      anchor: anchor,
+      title: t,
+      width: 460,
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, 0, BhorSpace.s12, BhorSpace.s12),
+      builder: (BuildContext ctx) => _TimeSheet(initial: initial, columns: true),
+    );
+  }
   return showBhorSheet<int>(
     context,
-    title: title ?? context.l10n.dsPickTime,
+    title: t,
     builder: (BuildContext ctx) => _TimeSheet(initial: initial),
   );
 }
 
 class _TimeSheet extends StatefulWidget {
-  const _TimeSheet({required this.initial});
+  const _TimeSheet({required this.initial, this.columns = false});
 
   final int? initial;
+  final bool columns;
 
   @override
   State<_TimeSheet> createState() => _TimeSheetState();
@@ -395,7 +474,7 @@ class _TimeSheetState extends State<_TimeSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          BhorTimePicker(value: _value, onChanged: (int v) => setState(() => _value = v)),
+          BhorTimePicker(value: _value, columns: widget.columns, onChanged: (int v) => setState(() => _value = v)),
           const SizedBox(height: BhorSpace.s16),
           BhorButton(
             label: context.l10n.commonDone,
