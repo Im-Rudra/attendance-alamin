@@ -169,9 +169,20 @@ class StudentsStep extends StatelessWidget {
                     InitialsAvatar(name: s.name, size: 36),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        l10n.onbStudentRow(context.fmt.digits(s.roll), s.name),
-                        style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            l10n.onbStudentRow(context.fmt.digits(s.roll), s.name),
+                            style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                          ),
+                          if (s.guardianPhone != null)
+                            Text(
+                              context.fmt.digits(s.guardianPhone!),
+                              key: Key('onb-added-phone-${s.id}'),
+                              style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                            ),
+                        ],
                       ),
                     ),
                   ],

@@ -449,6 +449,22 @@ void main() {
       expect(find.widgetWithText(FilledButton, l10n.todayTakeAttendance), findsOneWidget);
     });
 
+    testWidgets('a day without a class offers "+ extra class" right in the empty state',
+        (WidgetTester tester) async {
+      await _pumpPhone(tester);
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      final AppFormat fmt = AppFormat(Lang.bn);
+      // Friday: no class in the fixtures (strip shows 20 or 27 depending on the week start).
+      final Finder fri27 = find.text(fmt.digits('27'));
+      await tester.tap(fri27.evaluate().isNotEmpty ? fri27.first : find.text(fmt.digits('20')).first);
+      await _settle(tester);
+      expect(find.text(l10n.todayNoClassesDay), findsOneWidget);
+      final Finder add = find.byKey(const ValueKey<String>('today-empty-add-extra'));
+      await tester.ensureVisible(add);
+      expect(add, findsOneWidget);
+      expect(find.text(l10n.todayAddExtra), findsOneWidget);
+    });
+
     testWidgets('the day strip switches the day; the dues card hides until today', (WidgetTester tester) async {
       await _pumpPhone(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);

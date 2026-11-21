@@ -171,6 +171,8 @@ void main() {
       expect(f.students.students.map((Student s) => s.name),
           <String>['রহিম উদ্দিন', 'করিম হোসেন']);
       expect(f.students.students.last.guardianPhone, '01712345678');
+      // The added list echoes the phone under the student.
+      expect(find.text(fmtBn.digits('01712345678')), findsOneWidget);
       expect(f.enrollments.enrollments, hasLength(2));
       expect(f.enrollments.enrollments.every((e) => e.batchId == batch.id), isTrue);
       // Existing students: billing starts this month (the 21st is past the

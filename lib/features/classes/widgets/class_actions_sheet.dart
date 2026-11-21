@@ -27,7 +27,7 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// Opens the actions of [occ]; carries out what the sheet asks for afterwards
 /// (reschedule sheet, roll call, the undo snackbar of a cancel).
-Future<void> showClassActionsSheet(BuildContext context, {required String occ}) async {
+Future<void> showClassActionsSheet(BuildContext context, {required String occ, String? returnTo}) async {
   final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final ProviderContainer container = ProviderScope.containerOf(context);
   final AppLocalizations l10n = context.l10n;
@@ -40,7 +40,7 @@ Future<void> showClassActionsSheet(BuildContext context, {required String occ}) 
     case RescheduleRequested():
       await showRescheduleSheet(context, occ: occ);
     case RollCallRequested():
-      GoRouter.maybeOf(context)?.push(Routes.rollCall(occ));
+      GoRouter.maybeOf(context)?.push<void>(Routes.rollCall(occ), extra: returnTo);
     case final CancelDone done:
       if (messenger == null) return;
       _showCancelSnack(

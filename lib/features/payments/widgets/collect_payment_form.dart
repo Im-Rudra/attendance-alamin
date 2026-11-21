@@ -119,9 +119,21 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         .setDate(LocalDate(picked.year, picked.month, picked.day));
   }
 
+  /// Single-shot: set synchronously on the first tap and kept after a
+  /// successful save (the sheet closes / the panel builds a fresh form), so a
+  /// fast second tap can never record a second receipt, even while the
+  /// refreshed dues re-prefill the next month.
+  bool _locked = false;
+
   Future<void> _submit() async {
+    if (_locked) return;
+    setState(() => _locked = true);
     final SavedPayment? saved = await ref.read(collectPaymentControllerProvider(_args).notifier).submit();
-    if (saved != null && mounted) widget.onDone(saved);
+    if (saved != null) {
+      if (mounted) widget.onDone(saved);
+      return;
+    }
+    if (mounted) setState(() => _locked = false);
   }
 
   @override
@@ -420,7 +432,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       key: const ValueKey<String>('pay-bar'),
       child: StickyActionBar(
         label: buttonLabel,
-        onPressed: plan.ok && !input.busy ? _submit : null,
+        onPressed: plan.ok && !input.busy && !_locked ? _submit : null,
         disabledReason: disabledReason,
       ),
     );

@@ -317,6 +317,18 @@ void main() {
       expect(_key('pay-method-custom:Upay'), findsOneWidget);
     });
 
+    testWidgets('two rapid taps on confirm record exactly one receipt', (WidgetTester tester) async {
+      final SeededFakes f = await _openCollect(tester);
+      final int before = _receipts(f).length;
+      final Finder bar = _bar();
+      await tester.ensureVisible(bar);
+      await tester.tap(bar);
+      // Second tap lands in the same frame, before the sheet has closed.
+      await tester.tap(bar, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(_receipts(f).length, before + 1);
+    });
+
     testWidgets('undo from the snackbar removes the payment', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester);
       await _save(tester);

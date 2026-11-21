@@ -883,7 +883,9 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         focusNode: _focus,
         autofocus: wide,
         onKeyEvent: _onKey,
-        child: Scaffold(
+        child: IgnorePointer(
+          ignoring: _leaving && GoRouter.maybeOf(context) != null,
+          child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
               tooltip: l10n.commonClose,
@@ -902,6 +904,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
             ],
           ),
           body: SafeArea(top: false, child: body),
+        ),
         ),
       ),
     );

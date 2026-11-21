@@ -183,8 +183,10 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
         ));
       }
     }
-    // Room for the floating navigation pill.
-    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 112)));
+    // Room for the floating navigation pill, plus (on phones) the floating
+    // "টাকা নিন" button: 84 lift + 56 height + margin.
+    final double tail = WindowClass.of(context).usesRail ? 112 : 168;
+    slivers.add(SliverToBoxAdapter(child: SizedBox(key: const ValueKey<String>('dues-list-tail'), height: tail)));
     return CustomScrollView(slivers: slivers);
   }
 

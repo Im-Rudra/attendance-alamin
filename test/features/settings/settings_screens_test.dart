@@ -3,6 +3,7 @@
 // methods, reminder switch, diagnostics warning).
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -116,6 +117,18 @@ void main() {
       await tester.tap(find.text(AppFormat(Lang.bn).digits('20')));
       await tester.pumpAndSettle();
       expect(await fakes.settings.get(SettingKeys.billingCutoffDay), 20);
+    });
+
+    testWidgets('tapping a theme preview tile selects that theme', (tester) async {
+      final SeededFakes fakes = seedFakes();
+      await pumpApp(tester, const MoreScreen(),
+          viewport: TestViewport.desktop, overrides: _overrides(fakes));
+      await tester.tap(find.byKey(const Key('more-index-general')));
+      await tester.pump();
+      final ProviderContainer container = ProviderScope.containerOf(tester.element(find.byType(MoreScreen)));
+      await tester.tap(find.byKey(const ValueKey<String>('theme-swatch-dark')));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(container.read(themeModeProvider), ThemeMode.dark);
     });
 
     testWidgets('reduced effects switch is saved', (tester) async {

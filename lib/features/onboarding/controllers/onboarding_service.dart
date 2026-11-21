@@ -22,11 +22,14 @@ import 'package:attendance_alamin/domain/models/subject.dart';
 
 /// One student saved during onboarding.
 class SavedStudent {
-  const SavedStudent({required this.id, required this.name, required this.roll});
+  const SavedStudent({required this.id, required this.name, required this.roll, this.guardianPhone});
 
   final String id;
   final String name;
   final String roll;
+
+  /// Validated guardian phone, when one was given.
+  final String? guardianPhone;
 }
 
 class OnboardingService {
@@ -111,7 +114,7 @@ class OnboardingService {
         rethrow;
       }
     }
-    return SavedStudent(id: id, name: n, roll: roll);
+    return SavedStudent(id: id, name: n, roll: roll, guardianPhone: phone);
   }
 
   /// Marks onboarding as finished (the app opens on Today from now on).
