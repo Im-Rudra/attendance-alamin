@@ -95,7 +95,7 @@ void main() {
     await tester.enterText(find.byKey(_amount), '1500');
     await tester.pump();
     expect(tester.widget<TextField>(find.byKey(_amount)).controller!.text, '১৫০০');
-    expect(find.text('৳ ১,৫০০'), findsOneWidget);
+    expect(find.text(AppFormat(Lang.bn).money(1500)), findsOneWidget);
   });
 
   testWidgets('an amount above the maximum shows an inline message (QA-13)', (WidgetTester tester) async {

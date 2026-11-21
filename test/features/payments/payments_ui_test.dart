@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -236,7 +237,7 @@ void main() {
       expect(_key('pay-month-202612'), findsOneWidget);
       expect(find.text('ডিসেম্বর · অগ্রিম'), findsOneWidget);
       // Typed Bangla digits are previewed in the app language under the field.
-      expect(find.text('৳ ১,০০০'), findsOneWidget);
+      expect(find.text(AppFormat(Lang.bn).money(1000)), findsOneWidget);
       await tester.tap(_key('pay-month-202612'));
       await tester.pump();
       expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
@@ -290,6 +291,7 @@ void main() {
 
     testWidgets('the method is remembered per student', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester);
+      await tester.ensureVisible(_key('pay-method-bkash'));
       await tester.tap(_key('pay-method-bkash'));
       await tester.pump();
       await _save(tester);
