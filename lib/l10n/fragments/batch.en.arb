@@ -102,5 +102,6 @@
   "batchContextTrend": "Attendance, last 8 weeks",
   "batchContextNoAttendance": "No attendance taken yet",
   "batchContextNoDues": "No dues",
-  "batchContextStudentsOne": "{count}"
+  "batchContextStudentsOne": "{count}",
+  "batchBulkAdd": "Add many at once"
 }

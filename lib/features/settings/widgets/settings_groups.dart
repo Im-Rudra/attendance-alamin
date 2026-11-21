@@ -17,6 +17,7 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/domain/reminders/reminder_models.dart';
 import 'package:attendance_alamin/features/backup/backup_entry.dart';
+import 'package:attendance_alamin/features/extras/extras_entry.dart';
 import 'package:attendance_alamin/features/reminders/reminders_entry.dart';
 import 'package:attendance_alamin/features/settings/controllers/settings_providers.dart';
 import 'package:attendance_alamin/features/settings/data/template_logic.dart';
@@ -452,6 +453,13 @@ class SettingsGroupBody extends ConsumerWidget {
           title: l10n.setRestore,
           value: l10n.setRestoreValue,
           onTap: () => runImportBackup(context),
+        ),
+        SettingRow(
+          key: const Key('more-csv-export'),
+          icon: Icons.table_view_outlined,
+          title: l10n.setCsvExport,
+          value: l10n.setCsvExportValue,
+          onTap: () => runCsvExport(context, month: ref.read(todayProvider).yearMonth),
         ),
       ]),
       SettingsCard(children: <Widget>[

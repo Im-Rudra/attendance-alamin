@@ -17,6 +17,7 @@ import 'package:attendance_alamin/features/dues/controllers/collection_model.dar
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/widgets/collection_blocks.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
+import 'package:attendance_alamin/features/extras/extras_entry.dart';
 
 class CollectionScreen extends ConsumerWidget {
   const CollectionScreen({super.key});
@@ -39,7 +40,23 @@ class CollectionScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Semantics(header: true, child: Text(l10n.collTitle))),
+      appBar: AppBar(
+        title: Semantics(header: true, child: Text(l10n.collTitle)),
+        actions: <Widget>[
+          IconButton(
+            key: const Key('coll-add-other-income'),
+            tooltip: l10n.collAddOtherIncome,
+            icon: const Icon(Icons.add_card_outlined),
+            onPressed: () => showOtherIncomeSheet(context),
+          ),
+          IconButton(
+            key: const Key('coll-export-csv'),
+            tooltip: l10n.collExportCsv,
+            icon: const Icon(Icons.table_view_outlined),
+            onPressed: () => runCsvExport(context, month: month),
+          ),
+        ],
+      ),
       body: SafeArea(
         top: false,
         child: Column(

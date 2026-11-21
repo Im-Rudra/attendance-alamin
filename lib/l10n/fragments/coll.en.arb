@@ -23,5 +23,7 @@
   "collLogEmpty": "Nothing collected yet this month",
   "collShareReceipt": "Send receipt",
   "collNothingBilled": "No fees are billed this month",
-  "collProgressLabel": "Received {received}, expected {expected}"
+  "collProgressLabel": "Received {received}, expected {expected}",
+  "collAddOtherIncome": "Add other income",
+  "collExportCsv": "Export CSV"
 }

@@ -147,5 +147,13 @@
         "example": "1"
       }
     }
+  },
+  "collAddOtherIncome": "অন্যান্য আয় যোগ করুন",
+  "@collAddOtherIncome": {
+    "description": "Collection screen action: record admission/exam/notes fee."
+  },
+  "collExportCsv": "CSV ফাইল নামান",
+  "@collExportCsv": {
+    "description": "Collection screen action: export this month's data as CSV."
   }
 }
