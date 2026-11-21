@@ -1,5 +1,14 @@
 # Bhor migration guide (Material / Aurora → ভোর)
 
+## SHELL STEP TODO (collected from the 4 migration PRs — do these in the shell migration)
+1. **Provide BhorTheme at the app root** (and in `pumpApp`/`pumpShell` test harnesses) driven by the app's ThemeMode setting — today Bhor components fall back to platform brightness, so the in-app Light/Dark switch doesn't reach them.
+2. Replace MaterialApp with WidgetsApp.router (keep l10n delegates); AdaptiveScaffold/nav → BhorScaffold + BhorBottomNav (phone) + BhorSidebar (desktop); `stub_screen.dart`, startup/error/storage-banner screens → Bhor.
+3. `lib/app/services/share_service.dart` and `contact_actions.dart` show ScaffoldMessenger SnackBars → BhorToast via an app-level toast host; remove the test-only Scaffold wrappers in payments/home tests.
+4. BhorToast: support up to two actions; delete the local two-action toasts (payments `paid_toast.dart`, classes cancel toast) and use the library one.
+5. BhorTextField: add `textCapitalization`; BhorHeader: accept a custom title widget; BhorTimePicker: optional title. Re-unify local duplicates (clash cards in attendance/classes, sticky save bars) into `lib/app/ds` if trivial.
+6. Today on phones shows the date twice (header subtitle + hero) — show it once (header only).
+7. Remove the now-unused Aurora widgets/theme from `lib/app/widgets` + `lib/app/theme` (keep palette/tokens used by Bhor), then make `tool/check_no_material.sh` BLOCKING in ci.yml.
+
 Binding spec: `10-design-system-bhor.md`. Library: `lib/app/ds/` (import only the barrel
 `package:attendance_alamin/app/ds/ds.dart`). Live reference: the hidden gallery at
 `/more/design-system` (long-press the version row in More › Diagnostics).
