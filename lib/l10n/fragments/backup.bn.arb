@@ -1,0 +1,456 @@
+{
+  "@@locale": "bn",
+  "backupLastLine": "শেষ ব্যাকআপ: {when}",
+  "@backupLastLine": {
+    "description": "Backup screen: last backup line. when = relative time text.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "backupLastNever": "এখনো ব্যাকআপ নেওয়া হয়নি",
+  "@backupLastNever": {
+    "description": "Backup screen: shown when no backup was ever made."
+  },
+  "backupLastToday": "আজ",
+  "@backupLastToday": {
+    "description": "Backup screen: last backup was today (used inside the last-backup line)."
+  },
+  "backupLastAgo": "{n} দিন আগে",
+  "@backupLastAgo": {
+    "description": "Backup screen: last backup n days ago.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupStaleNote": "ব্যাকআপ নেওয়ার সময় হয়েছে",
+  "@backupStaleNote": {
+    "description": "Backup screen: info chip when the last backup is older than 7 days or missing."
+  },
+  "backupExportTitle": "ব্যাকআপ নিন",
+  "@backupExportTitle": {
+    "description": "Backup screen: export card title."
+  },
+  "backupExportBody": "সব তথ্যের একটি ফাইল তৈরি হবে। ফাইলটি Drive, WhatsApp বা পেনড্রাইভে রেখে দিন।",
+  "@backupExportBody": {
+    "description": "Backup screen: export card body."
+  },
+  "backupExportButton": "ব্যাকআপ ফাইল তৈরি করুন",
+  "@backupExportButton": {
+    "description": "Backup screen: export button."
+  },
+  "backupImportTitle": "ব্যাকআপ যোগ করুন",
+  "@backupImportTitle": {
+    "description": "Backup screen: import card title."
+  },
+  "backupImportBody": "অন্য ফোন বা পিসির ব্যাকআপ ফাইল বেছে নিন। আগে কী বদলাবে দেখানো হবে। আপনি অনুমতি না দিলে কিছুই বদলাবে না।",
+  "@backupImportBody": {
+    "description": "Backup screen: import card body."
+  },
+  "backupImportButton": "ব্যাকআপ ফাইল বেছে নিন",
+  "@backupImportButton": {
+    "description": "Backup screen: import button."
+  },
+  "backupSafetyTitle": "সেফটি কপি",
+  "@backupSafetyTitle": {
+    "description": "Backup screen: safety copies card title."
+  },
+  "backupSafetyBody": "ব্যাকআপ যোগ করার আগে অ্যাপ নিজেই আপনার তথ্যের একটি কপি রাখে (শেষ ৩টি)। ভুল হলে এখান থেকে ফিরে যান।",
+  "@backupSafetyBody": {
+    "description": "Backup screen: safety copies explanation."
+  },
+  "backupSafetyEmpty": "এখনো কোনো সেফটি কপি নেই। ব্যাকআপ যোগ করলে এখানে দেখা যাবে।",
+  "@backupSafetyEmpty": {
+    "description": "Backup screen: no safety copies yet."
+  },
+  "backupSafetyReasonImport": "ব্যাকআপ যোগ করার আগে",
+  "@backupSafetyReasonImport": {
+    "description": "Backup screen: reason label of a safety copy made before an import."
+  },
+  "backupSafetyReasonRestore": "ফিরিয়ে আনার আগে",
+  "@backupSafetyReasonRestore": {
+    "description": "Backup screen: reason label of a safety copy made before a restore."
+  },
+  "backupSafetyWhen": "{date}, {time}",
+  "@backupSafetyWhen": {
+    "description": "Date and time of a safety copy or backup.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupSafetyRestore": "ফিরে যান",
+  "@backupSafetyRestore": {
+    "description": "Backup screen: restore button of a safety copy."
+  },
+  "backupRestoreTitle": "এই সেফটি কপিতে ফিরে যাবেন?",
+  "@backupRestoreTitle": {
+    "description": "Restore confirmation title."
+  },
+  "backupRestoreBody": "এখনকার তথ্য আগে আরেকটি সেফটি কপিতে রাখা হবে, তাই চাইলে আবার ফিরতে পারবেন।",
+  "@backupRestoreBody": {
+    "description": "Restore confirmation body."
+  },
+  "backupRestoreConfirm": "ফিরে যান",
+  "@backupRestoreConfirm": {
+    "description": "Restore confirmation button."
+  },
+  "backupRestoreDone": "সেফটি কপি থেকে তথ্য ফিরে এসেছে",
+  "@backupRestoreDone": {
+    "description": "Snackbar after restoring a safety copy."
+  },
+  "backupExportPreparing": "ফাইল তৈরি হচ্ছে…",
+  "@backupExportPreparing": {
+    "description": "Export sheet: preparing."
+  },
+  "backupExportReadyTitle": "ফাইল তৈরি হয়েছে",
+  "@backupExportReadyTitle": {
+    "description": "Export sheet: title once the file exists."
+  },
+  "backupExportPrivacy": "এই ফাইলে সব শিক্ষার্থীর তথ্য আছে। ফাইলটি গোপন রাখুন, অচেনা কাউকে পাঠাবেন না।",
+  "@backupExportPrivacy": {
+    "description": "Export sheet: keep this file private note."
+  },
+  "backupExportSave": "সেভ করুন",
+  "@backupExportSave": {
+    "description": "Export sheet: save button."
+  },
+  "backupExportShare": "শেয়ার করুন",
+  "@backupExportShare": {
+    "description": "Export sheet: share button."
+  },
+  "backupExportSaved": "ব্যাকআপ সেভ হয়েছে",
+  "@backupExportSaved": {
+    "description": "Snackbar after the backup file was saved."
+  },
+  "backupExportShared": "ব্যাকআপ ফাইল পাঠানো হয়েছে",
+  "@backupExportShared": {
+    "description": "Snackbar after the backup file was shared."
+  },
+  "backupExportSemantics": "ব্যাকআপ ফাইলের নাম {name}",
+  "@backupExportSemantics": {
+    "description": "Accessibility label for the backup file name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReviewInfoTitle": "ব্যাকআপের তথ্য",
+  "@backupReviewInfoTitle": {
+    "description": "Review screen: info card title."
+  },
+  "backupReviewCreated": "তৈরি: {when}",
+  "@backupReviewCreated": {
+    "description": "Review screen: backup creation time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReviewDevice": "ডিভাইস: {name}",
+  "@backupReviewDevice": {
+    "description": "Review screen: device that made the backup.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReviewUnknownDevice": "অজানা ডিভাইস",
+  "@backupReviewUnknownDevice": {
+    "description": "Review screen: the backup has no device name."
+  },
+  "backupReviewVersion": "অ্যাপ সংস্করণ: {version}",
+  "@backupReviewVersion": {
+    "description": "Review screen: app version of the backup.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReviewTotals": "{subjects}টি বিষয় · {batches}টি ব্যাচ · {students} জন শিক্ষার্থী · {payments}টি পেমেন্ট",
+  "@backupReviewTotals": {
+    "description": "Review screen: totals inside the backup.",
+    "placeholders": {
+      "subjects": {
+        "type": "String"
+      },
+      "batches": {
+        "type": "String"
+      },
+      "students": {
+        "type": "String"
+      },
+      "payments": {
+        "type": "String"
+      }
+    }
+  },
+  "backupOlderBanner": "এই ব্যাকআপ আপনার বর্তমান তথ্যের চেয়ে পুরোনো। আপনার নতুন তথ্য মুছবে না। যেটা নতুন সেটাই থাকবে।",
+  "@backupOlderBanner": {
+    "description": "Review screen: older-backup banner."
+  },
+  "backupHeadline": "এই ব্যাকআপে {n}টি পরিবর্তন আছে",
+  "@backupHeadline": {
+    "description": "Review screen headline with the number of changes.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupHeadlineNone": "এই ব্যাকআপ ও আপনার তথ্য একই — কিছু করার নেই",
+  "@backupHeadlineNone": {
+    "description": "Review screen headline when there are no changes."
+  },
+  "backupColAdded": "নতুন",
+  "@backupColAdded": {
+    "description": "Change table column: added."
+  },
+  "backupColUpdated": "বদলানো",
+  "@backupColUpdated": {
+    "description": "Change table column: updated."
+  },
+  "backupColDeleted": "মুছে যাবে",
+  "@backupColDeleted": {
+    "description": "Change table column: deleted."
+  },
+  "backupEntitySubjects": "বিষয়",
+  "@backupEntitySubjects": {
+    "description": "Change table row: subjects."
+  },
+  "backupEntityBatches": "ব্যাচ",
+  "@backupEntityBatches": {
+    "description": "Change table row: batches."
+  },
+  "backupEntitySchedule": "রুটিন",
+  "@backupEntitySchedule": {
+    "description": "Change table row: schedule (weekly classes and one-off changes)."
+  },
+  "backupEntityStudents": "শিক্ষার্থী",
+  "@backupEntityStudents": {
+    "description": "Change table row: students."
+  },
+  "backupEntityEnrollments": "ভর্তি",
+  "@backupEntityEnrollments": {
+    "description": "Change table row: enrolments."
+  },
+  "backupEntityAttendance": "হাজিরা (ক্লাস)",
+  "@backupEntityAttendance": {
+    "description": "Change table row: attendance, counted in classes not marks."
+  },
+  "backupEntityPayments": "পেমেন্ট",
+  "@backupEntityPayments": {
+    "description": "Change table row: payments."
+  },
+  "backupEntitySettings": "সেটিংস",
+  "@backupEntitySettings": {
+    "description": "Change table row: settings."
+  },
+  "backupKeptTotal": "আপনার নতুন তথ্য রাখা হবে: {n}",
+  "@backupKeptTotal": {
+    "description": "Review screen: how many of this device's records are newer than the backup and are kept.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupKeptShort": "রাখা হবে {n}",
+  "@backupKeptShort": {
+    "description": "Change table: small note per row, records of this device that are kept.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeletionsTitle": "যা মুছে যাবে ({n})",
+  "@backupDeletionsTitle": {
+    "description": "Review screen: red card listing deletions.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeletionsNote": "মুছে যাওয়া তথ্য সেফটি কপিতে থাকবে, পরে ফেরানো যাবে।",
+  "@backupDeletionsNote": {
+    "description": "Review screen: reassurance under the deletions."
+  },
+  "backupDeletionLine": "{entity} · {name}",
+  "@backupDeletionLine": {
+    "description": "Review screen: one deletion line.",
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupMore": "+{n} আরও",
+  "@backupMore": {
+    "description": "Review screen: more items than the samples shown.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupClashLine": "প্রতি {day}, {range}: {a} ও {b}",
+  "@backupClashLine": {
+    "description": "Review screen: a class time clash the merge would create.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      },
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "backupSamplesTitle": "কী কী বদলাবে",
+  "@backupSamplesTitle": {
+    "description": "Review screen: samples section title."
+  },
+  "backupSamplePair": "{a} · {b}",
+  "@backupSamplePair": {
+    "description": "Review screen: sample line with two parts, for example batch and date.",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "backupSamplePayment": "{name} · {amount} · {date}",
+  "@backupSamplePayment": {
+    "description": "Review screen: sample payment line.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "backupSampleUnnamed": "(নাম নেই)",
+  "@backupSampleUnnamed": {
+    "description": "Review screen: sample without a readable name."
+  },
+  "backupExplainTitle": "প্রয়োগ করলে কী হবে",
+  "@backupExplainTitle": {
+    "description": "Review screen: explanation card title."
+  },
+  "backupExplainNothing": "প্রয়োগ করুন বোতাম না চাপা পর্যন্ত কিছুই বদলাবে না।",
+  "@backupExplainNothing": {
+    "description": "Review screen: explanation, nothing changes yet."
+  },
+  "backupExplainSafety": "প্রয়োগের আগে আপনার বর্তমান তথ্যের একটি কপি নিজে থেকেই রাখা হবে।",
+  "@backupExplainSafety": {
+    "description": "Review screen: explanation, safety copy."
+  },
+  "backupExplainNewer": "প্রতিটি তথ্যের নতুন সংস্করণটিই থাকবে। আপনার ডিভাইসে নতুন কিছু থাকলে তা হারাবে না।",
+  "@backupExplainNewer": {
+    "description": "Review screen: explanation, newer wins."
+  },
+  "backupExplainAbsent": "ব্যাকআপে নেই বলে কোনো তথ্য মুছে যাবে না।",
+  "@backupExplainAbsent": {
+    "description": "Review screen: explanation, absence never deletes."
+  },
+  "backupApply": "প্রয়োগ করুন",
+  "@backupApply": {
+    "description": "Review screen: apply button without a count."
+  },
+  "backupApplyN": "{n}টি পরিবর্তন প্রয়োগ করুন",
+  "@backupApplyN": {
+    "description": "Review screen: apply button with the number of changes.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupApplyDisabledNone": "কোনো পরিবর্তন নেই, তাই প্রয়োগ করার কিছু নেই",
+  "@backupApplyDisabledNone": {
+    "description": "Review screen: reason the apply button is disabled."
+  },
+  "backupApplying": "প্রয়োগ হচ্ছে…",
+  "@backupApplying": {
+    "description": "Review screen: applying in progress."
+  },
+  "backupLoading": "ফাইল যাচাই হচ্ছে…",
+  "@backupLoading": {
+    "description": "Review screen: checking the picked file."
+  },
+  "backupPickOther": "অন্য ফাইল বেছে নিন",
+  "@backupPickOther": {
+    "description": "Review screen: pick another file after an invalid file."
+  },
+  "backupPickFile": "ফাইল বেছে নিন",
+  "@backupPickFile": {
+    "description": "Review screen: pick a file when none was chosen."
+  },
+  "backupReviewEmpty": "কোনো ব্যাকআপ ফাইল বাছা হয়নি।",
+  "@backupReviewEmpty": {
+    "description": "Review screen: opened without a file."
+  },
+  "backupFailedTitle": "ফাইলটি যোগ করা যায়নি",
+  "@backupFailedTitle": {
+    "description": "Review screen: failure title."
+  },
+  "backupDoneTitle": "{n}টি পরিবর্তন প্রয়োগ হয়েছে",
+  "@backupDoneTitle": {
+    "description": "Result screen title.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDoneSafety": "আগের তথ্যের একটি সেফটি কপি রাখা হয়েছে।",
+  "@backupDoneSafety": {
+    "description": "Result screen: safety copy note."
+  },
+  "backupUndo": "আগের অবস্থায় ফেরান",
+  "@backupUndo": {
+    "description": "Result screen: undo the import."
+  },
+  "backupUndone": "আগের অবস্থায় ফেরানো হয়েছে",
+  "@backupUndone": {
+    "description": "Snackbar after undoing the import."
+  },
+  "backupOverfilled": "{n}টি মাসে বেশি টাকা জমা আছে। পেমেন্টগুলো দেখে নিন।",
+  "@backupOverfilled": {
+    "description": "Result screen: months paid more than the fee after the merge.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
+}
