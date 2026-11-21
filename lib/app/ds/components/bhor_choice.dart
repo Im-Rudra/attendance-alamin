@@ -176,9 +176,7 @@ class BhorChip extends StatelessWidget {
             duration: fast,
             curve: BhorMotion.ease,
             height: BhorSize.compact,
-            // The check slot (20) is paid for by the side padding, so a chip
-            // keeps its width when selected and the row never re-wraps.
-            padding: EdgeInsets.symmetric(horizontal: selected || icon != null ? 14 : 24),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: selected ? c.accentTint : (s.hovered || s.pressed ? c.soft2 : c.soft),
               borderRadius: BorderRadius.circular(BhorRadius.pill),
