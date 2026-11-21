@@ -191,7 +191,7 @@ class _AllPaid extends ConsumerWidget {
                     // "Everyone has paid" only when money came in this month;
                     // with nothing collected nobody owed anything yet.
                     notStarted
-                        ? l10n.duesNotStarted(fmt.monthYear(status!.firstUpcoming!))
+                        ? l10n.duesNotStarted(fmt.monthYear(status.firstUpcoming!))
                         : (allPaid ? l10n.todayDuesAllPaid : l10n.todayDuesNone),
                     style: tt.titleMedium?.copyWith(
                       color: tokens.textPrimary,
