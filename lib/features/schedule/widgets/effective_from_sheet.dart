@@ -1,23 +1,28 @@
 // "কবে থেকে নতুন সময়?" (UX 2g): [আজ থেকে] / [তারিখ বাছুন]. Past classes and
 // attendance never change (Product 3.9). Returns the chosen date or null.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_sheet.dart';
 
-Future<LocalDate?> askEffectiveFrom(BuildContext context, {required LocalDate today}) =>
-    showSchedSheet<LocalDate>(
-      context,
-      builder: (BuildContext ctx) => EffectiveFromPanel(
-        today: today,
-        onDone: (LocalDate d) => Navigator.of(ctx).pop(d),
-        onCancel: () => Navigator.of(ctx).pop(),
-      ),
-    );
+Future<LocalDate?> askEffectiveFrom(BuildContext context, {required LocalDate today}) {
+  final int weekStart =
+      ProviderScope.containerOf(context, listen: false).read(weekStartProvider).value ?? DateTime.saturday;
+  return showSchedSheet<LocalDate>(
+    context,
+    builder: (BuildContext ctx) => EffectiveFromPanel(
+      today: today,
+      weekStart: weekStart,
+      onDone: (LocalDate d) => Navigator.of(ctx).pop(d),
+      onCancel: () => Navigator.of(ctx).pop(),
+    ),
+  );
+}
 
 class EffectiveFromPanel extends StatefulWidget {
   const EffectiveFromPanel({
@@ -25,11 +30,15 @@ class EffectiveFromPanel extends StatefulWidget {
     required this.today,
     required this.onDone,
     required this.onCancel,
+    this.weekStart = DateTime.saturday,
   });
 
   final LocalDate today;
   final ValueChanged<LocalDate> onDone;
   final VoidCallback onCancel;
+
+  /// ISO weekday the date picker's week starts on (the app setting).
+  final int weekStart;
 
   @override
   State<EffectiveFromPanel> createState() => _EffectiveFromPanelState();
@@ -43,11 +52,13 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
 
   Future<void> _pick() async {
     final LocalDate t = widget.today;
-    final DateTime? d = await showAppDatePicker(
-      context: context,
+    final DateTime? d = await showBhorDatePicker(
+      context,
       initialDate: DateTime(_date.year, _date.month, _date.day),
       firstDate: DateTime(t.year, t.month, t.day),
       lastDate: DateTime(t.year + 2, t.month, t.day),
+      weekStart: widget.weekStart,
+      today: DateTime(t.year, t.month, t.day),
     );
     if (d == null || !mounted) return;
     setState(() {
@@ -60,22 +71,27 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final LocalDate? picked = _picked;
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s8, BhorSpace.s20, BhorSpace.s16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Semantics(header: true, child: Text(l10n.schedFromTitle, style: tt.titleLarge)),
-            const SizedBox(height: 16),
-            SegmentedChoice<bool>(
-              options: const <bool>[true, false],
-              selected: _useToday,
+            Semantics(header: true, child: Text(l10n.schedFromTitle, style: b.type.title)),
+            const SizedBox(height: BhorSpace.s16),
+            BhorSegmented<bool>(
+              segments: <BhorSegment<bool>>[
+                BhorSegment<bool>(value: true, label: l10n.schedFromToday),
+                BhorSegment<bool>(
+                  value: false,
+                  label: picked == null ? l10n.schedFromPick : l10n.schedFromPicked(fmt.date(picked)),
+                ),
+              ],
+              value: _useToday,
               onChanged: (bool today) {
                 if (today) {
                   setState(() => _useToday = true);
@@ -83,32 +99,23 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
                   _pick();
                 }
               },
-              labelOf: (bool today) => today
-                  ? l10n.schedFromToday
-                  : (picked == null
-                      ? l10n.schedFromPick
-                      : l10n.schedFromPicked(fmt.date(picked))),
             ),
-            const SizedBox(height: 12),
-            Text(l10n.schedFromHint,
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-            const SizedBox(height: 16),
+            const SizedBox(height: BhorSpace.s12),
+            Text(l10n.schedFromHint, style: b.type.body.copyWith(color: b.colors.text2)),
+            const SizedBox(height: BhorSpace.s16),
             Row(
               children: <Widget>[
                 Expanded(
-                  child: OutlinedButton(
+                  child: BhorButton(
+                    label: l10n.commonCancel,
+                    variant: BhorButtonVariant.secondary,
+                    expand: true,
                     onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonCancel),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: BhorSpace.s12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: () => widget.onDone(_date),
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonSave),
-                  ),
+                  child: BhorButton(label: l10n.commonSave, expand: true, onPressed: () => widget.onDone(_date)),
                 ),
               ],
             ),

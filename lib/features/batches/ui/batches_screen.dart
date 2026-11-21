@@ -2,17 +2,17 @@
 // windows show list ‖ detail (‖ context at ≥ 1200) through PaneSplit; with no
 // selection the detail pane is a useful overview, never a blank area.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_detail_screen.dart';
@@ -59,15 +59,21 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
 
   Future<void> _menu(BatchCardData d, Offset at) async {
     final l10n = context.l10n;
-    final RelativeRect position = RelativeRect.fromLTRB(at.dx, at.dy, at.dx, at.dy);
-    final String? choice = await showMenu<String>(
-      context: context,
-      position: position,
-      items: <PopupMenuEntry<String>>[
-        PopupMenuItem<String>(value: 'open', child: Text(l10n.batchMenuOpen)),
-        PopupMenuItem<String>(value: 'edit', child: Text(l10n.commonEdit)),
-        PopupMenuItem<String>(value: 'archive', child: Text(l10n.batchMenuArchive)),
-      ],
+    final String? choice = await showBhorSheet<String>(
+      context,
+      title: d.batch.name,
+      builder: (BuildContext ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          BhorListRow(title: l10n.batchMenuOpen, onTap: () => Navigator.of(ctx).pop('open')),
+          BhorListRow(title: l10n.commonEdit, onTap: () => Navigator.of(ctx).pop('edit')),
+          BhorListRow(
+            title: l10n.batchMenuArchive,
+            divider: false,
+            onTap: () => Navigator.of(ctx).pop('archive'),
+          ),
+        ],
+      ),
     );
     if (!mounted || choice == null) return;
     switch (choice) {
@@ -90,29 +96,31 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
     final bool empty = groups != null && groups.isEmpty;
 
     final Widget body = async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object e, StackTrace s) => EmptyState(
+      loading: () => const Center(child: BhorSpinner()),
+      error: (Object e, StackTrace s) => BhorEmptyState(
         icon: Icons.error_outline,
-        message: l10n.commonLoadingFailed,
-        actionLabel: l10n.commonRetry,
-        onAction: () => ref.invalidate(batchGroupsProvider),
+        title: l10n.commonLoadingFailed,
+        action: BhorButton(
+          label: l10n.commonRetry,
+          variant: BhorButtonVariant.secondary,
+          onPressed: () => ref.invalidate(batchGroupsProvider),
+        ),
       ),
       data: (List<SubjectGroup> loaded) {
         if (loaded.isEmpty) {
-          return GlassCard(
+          return BhorCard(
             padding: EdgeInsets.zero,
-            child: EmptyState(
+            child: BhorEmptyState(
               icon: Icons.groups_outlined,
-              message: l10n.batchEmptyList,
-              actionLabel: l10n.batchNew,
-              onAction: _new,
+              title: l10n.batchEmptyList,
+              action: BhorButton(label: l10n.batchNew, onPressed: _new),
             ),
           );
         }
         return LayoutBuilder(
           builder: (BuildContext context, BoxConstraints c) {
             final int cols = c.maxWidth >= 560 ? 2 : 1;
-            const double gap = 12;
+            const double gap = BhorSpace.s12;
             final double w = (c.maxWidth - gap * (cols - 1)) / cols;
             return ListView(
               padding: EdgeInsets.only(bottom: wc.usesRail ? 96 : 168),
@@ -128,7 +136,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                   ),
                   if (!_collapsed.contains(grp.subjectId))
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: BhorSpace.s8),
                       child: Wrap(
                         spacing: gap,
                         runSpacing: gap,
@@ -160,33 +168,25 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
       },
       child: Focus(
         autofocus: wc.isWide,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Semantics(header: true, child: Text(l10n.navBatches)),
+        child: BhorScaffold(
+          header: BhorHeader(
+            title: l10n.navBatches,
+            large: true,
             actions: <Widget>[
-              IconButton(
-                tooltip: l10n.commonSearch,
-                icon: const Icon(Icons.search),
+              BhorIconButton(
+                icon: Icons.search,
+                semanticLabel: l10n.commonSearch,
                 onPressed: () => context.push(Routes.search),
               ),
-              const SizedBox(width: 8),
             ],
           ),
-          floatingActionButton: empty
+          floating: empty
               ? null
               : Padding(
-                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
-                  child: FloatingActionButton.extended(
-                    heroTag: null,
-                    onPressed: _new,
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.batchNew),
-                  ),
+                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 64),
+                  child: BhorButton(icon: Icons.add, label: l10n.batchNew, onPressed: _new),
                 ),
-          body: SafeArea(
-            top: false,
-            child: Padding(padding: EdgeInsets.fromLTRB(g, 4, g, 0), child: body),
-          ),
+          body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
         ),
       ),
     );
@@ -208,32 +208,25 @@ class _GroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Semantics(
       header: true,
-      button: true,
       expanded: !collapsed,
-      child: InkWell(
+      child: BhorPressable(
         onTap: onToggle,
-        borderRadius: BorderRadius.circular(12),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+        semanticLabel: name,
+        builder: (BuildContext c, BhorStates st) => ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: BhorSize.phoneRow),
           child: Row(
             children: <Widget>[
-              Icon(collapsed ? Icons.chevron_right : Icons.expand_more, color: tokens.textSecondary),
-              const SizedBox(width: 4),
+              Icon(collapsed ? Icons.chevron_right : Icons.expand_more, color: b.colors.text2),
+              const SizedBox(width: BhorSpace.s4),
               Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
-                ),
+                child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.heading),
               ),
               Text(
                 context.l10n.batchGroupCount(context.fmt.number(count)),
-                style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.label.copyWith(color: b.colors.text2),
               ),
             ],
           ),

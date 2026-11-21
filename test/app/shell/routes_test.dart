@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/router.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/stub_screen.dart';
@@ -77,6 +78,12 @@ final Map<String, Type> _routes = <String, Type>{
   '/no/such/page': NotFoundScreen,
 };
 
+/// A page frame: the Material one (not yet migrated) or the Bhor one.
+Finder _anyScaffold() => find.byWidgetPredicate(
+      (Widget w) => w is Scaffold || w is BhorScaffold,
+      description: 'Scaffold or BhorScaffold',
+    );
+
 void main() {
   group('every route renders', () {
     for (final MapEntry<String, Type> r in _routes.entries) {
@@ -87,7 +94,7 @@ void main() {
       });
       testWidgets('desktop dark en ${r.key}', (WidgetTester tester) async {
         await pumpShell(tester, location: r.key, size: kDesktop, lang: Lang.en, themeMode: ThemeMode.dark);
-        expect(find.byType(Scaffold), findsWidgets);
+        expect(_anyScaffold(), findsWidgets);
         expect(tester.takeException(), isNull);
       });
     }
@@ -100,7 +107,7 @@ void main() {
           for (final Size size in <Size>[kPhone, kDesktop]) {
             testWidgets('$loc ${mode.name} ${lang.name} ${size.width.toInt()}', (WidgetTester tester) async {
               await pumpShell(tester, location: loc, size: size, lang: lang, themeMode: mode);
-              expect(find.byType(Scaffold), findsWidgets);
+              expect(_anyScaffold(), findsWidgets);
               expect(tester.takeException(), isNull);
             });
           }

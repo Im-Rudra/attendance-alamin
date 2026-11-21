@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:attendance_alamin/app/widgets/conflict_card.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
@@ -16,6 +16,7 @@ import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
 import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
 import 'package:attendance_alamin/features/schedule/widgets/effective_from_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
+import 'package:attendance_alamin/features/schedule/widgets/slot_clash_card.dart';
 import 'package:attendance_alamin/features/schedule/widgets/time_picker_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
 
@@ -73,8 +74,8 @@ List<Override> _overrides(SeededFakes f) => <Override>[
       localMetaRepositoryProvider.overrideWithValue(f.localMeta),
     ];
 
-FilledButton _saveButton(WidgetTester tester) => tester.widget<FilledButton>(
-    find.widgetWithText(FilledButton, 'সংরক্ষণ').first);
+BhorButton _saveButton(WidgetTester tester) => tester.widget<BhorButton>(
+    find.widgetWithText(BhorButton, 'সংরক্ষণ').first);
 
 Future<void> _tapText(WidgetTester tester, String text) async {
   final finder = find.text(text).first;
@@ -98,9 +99,9 @@ class _Launcher extends StatefulWidget {
 class _LauncherState extends State<_Launcher> {
   @override
   Widget build(BuildContext context) => Center(
-        child: FilledButton(
+        child: BhorButton(
+          label: 'open',
           onPressed: () async => widget.onResult(await widget.open(context)),
-          child: const Text('open'),
         ),
       );
 }
@@ -201,7 +202,7 @@ void main() {
       // Save asks "কবে থেকে নতুন সময়?" and then writes the new schedule.
       await _tapText(tester, 'সংরক্ষণ');
       expect(find.text('কবে থেকে নতুন সময়?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'সংরক্ষণ').last);
+      await tester.tap(find.widgetWithText(BhorButton, 'সংরক্ষণ').last);
       await tester.pumpAndSettle();
       final physSlots =
           f.store.slots.where((s) => s.batchId == kBatPhysA).toList();
@@ -226,7 +227,7 @@ void main() {
       expect(find.byType(TimePickerPanel), findsOneWidget);
       expect(find.text('বিকাল ৪:০০'), findsOneWidget);
       // No typed field on a phone.
-      expect(find.byType(TextField), findsNothing);
+      expect(find.byType(BhorTextField), findsNothing);
 
       await _tapText(tester, 'সন্ধ্যা');
       expect(find.text('সন্ধ্যা ৬:০০'), findsOneWidget);
@@ -283,21 +284,21 @@ void main() {
         viewport: TestViewport.desktop,
       );
       await _tapText(tester, 'open');
-      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(BhorTextField), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '7:30 pm');
+      await tester.enterText(find.byType(BhorTextField), '7:30 pm');
       await tester.pump();
       expect(find.text('বুঝেছি: সন্ধ্যা ৭:৩০'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '৭:৩০ সন্ধ্যা');
+      await tester.enterText(find.byType(BhorTextField), '৭:৩০ সন্ধ্যা');
       await tester.pump();
       expect(find.text('বুঝেছি: সন্ধ্যা ৭:৩০'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), 'blah');
+      await tester.enterText(find.byType(BhorTextField), 'blah');
       await tester.pump();
       expect(find.text('সময়টা বুঝতে পারিনি'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '19:30');
+      await tester.enterText(find.byType(BhorTextField), '19:30');
       await tester.pump();
       await _tapText(tester, 'ঠিক আছে');
       expect(result, 19 * 60 + 30);
@@ -315,7 +316,7 @@ void main() {
         viewport: TestViewport.desktop,
       );
       await _tapText(tester, 'open');
-      await tester.enterText(find.byType(TextField), '10:00');
+      await tester.enterText(find.byType(BhorTextField), '10:00');
       await tester.pump();
       expect(find.text('বুঝেছি: সকাল ১০:০০'), findsOneWidget);
       await _tapText(tester, 'ঠিক আছে');
@@ -333,7 +334,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(TimePickerPanel), findsOneWidget);
         final bool desktop = tester.view.physicalSize.width >= 840;
-        expect(find.byType(TextField), desktop ? findsOneWidget : findsNothing);
+        expect(find.byType(BhorTextField), desktop ? findsOneWidget : findsNothing);
       },
     );
   });
@@ -359,7 +360,7 @@ void main() {
         await _tapText(tester, t);
       }
       if (typed != null) {
-        await tester.enterText(find.byType(TextField), typed);
+        await tester.enterText(find.byType(BhorTextField), typed);
         await tester.pump();
       }
       await _tapText(tester, 'ঠিক আছে');
@@ -400,11 +401,11 @@ void main() {
         ),
       );
       await _tapText(tester, 'open');
-      expect(find.byType(TextField), findsOneWidget);
-      await tester.enterText(find.byType(TextField), '181');
+      expect(find.byType(BhorTextField), findsOneWidget);
+      await tester.enterText(find.byType(BhorTextField), '181');
       await tester.pump();
       expect(find.text('১ থেকে ১৮০ এর মধ্যে একটি সংখ্যা দিন'), findsOneWidget);
-      final ok = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'ঠিক আছে'));
+      final ok = tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'ঠিক আছে'));
       expect(ok.onPressed, isNull);
     });
 
@@ -489,7 +490,7 @@ void main() {
           tester
               .getBottomLeft(find.ancestor(
                 of: find.text('প্রতি সপ্তাহের সময় বদলান'),
-                matching: find.byWidgetPredicate((Widget w) => w is FilledButton),
+                matching: find.byWidgetPredicate((Widget w) => w is BhorButton),
               ))
               .dy;
       expect(buttonBottom, closeTo(weekBottom, 1.0));
@@ -538,7 +539,7 @@ void main() {
       },
       verify: (WidgetTester tester) async {
         await tester.pumpAndSettle();
-        expect(find.byType(ConflictCard), findsOneWidget);
+        expect(find.byType(SlotClashCard), findsOneWidget);
       },
     );
 

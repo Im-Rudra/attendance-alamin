@@ -3,15 +3,17 @@
 // :00 :15 :30 :45 and "other minute" (every 5 minutes). Desktop also accepts a
 // typed time. A bottom sheet on phones, a dialog on wide windows.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/format/lexicon.dart';
 import 'package:attendance_alamin/features/schedule/controllers/time_input_parser.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_chip.dart';
+import 'package:attendance_alamin/features/schedule/widgets/sched_sheet.dart';
 
 /// Hours (0..23) offered for each Bangla period, in display order.
 const List<List<int>> kBanglaPeriodHours = <List<int>>[
@@ -36,34 +38,12 @@ Future<int?> openTimePicker(
 }) {
   final bool wide = WindowClass.of(context).isWide;
   final int start = initialMin % 1440;
-  if (wide) {
-    return showDialog<int>(
-      context: context,
-      builder: (BuildContext ctx) => Dialog(
-        backgroundColor: ctx.aurora.surfaceSolid,
-        insetPadding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: TimePickerPanel(
-            initialMin: start,
-            title: title,
-            allowTyping: true,
-            onDone: (int v) => Navigator.of(ctx).pop(v),
-            onCancel: () => Navigator.of(ctx).pop(),
-          ),
-        ),
-      ),
-    );
-  }
-  return showModalBottomSheet<int>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showSchedSheet<int>(
+    context,
     builder: (BuildContext ctx) => TimePickerPanel(
       initialMin: start,
       title: title,
-      allowTyping: false,
+      allowTyping: wide,
       onDone: (int v) => Navigator.of(ctx).pop(v),
       onCancel: () => Navigator.of(ctx).pop(),
     ),
@@ -148,8 +128,7 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final fmt = context.fmt;
     final List<int> hours = _groups[_group];
 
@@ -157,18 +136,16 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
       liveRegion: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.accentContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
+          color: b.colors.accentTint,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: b.colors.accentLine),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: BhorSpace.s16),
           child: Center(
             child: Text(
               fmt.time(_min),
-              style: tt.headlineMedium?.copyWith(
-                color: tokens.onAccentContainer,
-                fontWeight: FontWeight.w700,
-              ),
+              style: BhorType.tabular(b.type.display.copyWith(color: b.colors.accent)),
             ),
           ),
         ),
@@ -259,7 +236,7 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
           children: <Widget>[
             Semantics(
               header: true,
-              child: Text(widget.title ?? l10n.schedPickTime, style: tt.titleLarge),
+              child: Text(widget.title ?? l10n.schedPickTime, style: b.type.title),
             ),
             const SizedBox(height: 12),
             readout,
@@ -281,24 +258,18 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
                     ],
                     if (widget.allowTyping) ...<Widget>[
                       const SizedBox(height: 16),
-                      TextField(
+                      BhorTextField(
                         controller: _typed,
                         onChanged: _onTyped,
                         onSubmitted: (_) {
                           if (!_typedBad) widget.onDone(_min);
                         },
-                        decoration: InputDecoration(
-                          labelText: l10n.schedTypeTime,
-                          hintText: l10n.schedTypeHint,
-                          errorText: _typedBad ? l10n.schedTypeError : null,
-                          helperText: !_typedBad && _typed.text.trim().isNotEmpty
-                              ? l10n.schedTypeEcho(fmt.time(_min))
-                              : null,
-                          helperStyle: tt.bodyMedium?.copyWith(
-                            color: tokens.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        label: l10n.schedTypeTime,
+                        hint: l10n.schedTypeHint,
+                        error: _typedBad ? l10n.schedTypeError : null,
+                        helper: !_typedBad && _typed.text.trim().isNotEmpty
+                            ? l10n.schedTypeEcho(fmt.time(_min))
+                            : null,
                       ),
                     ],
                   ],
@@ -309,18 +280,19 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: OutlinedButton(
+                  child: BhorButton(
+                    label: l10n.commonCancel,
+                    variant: BhorButtonVariant.secondary,
+                    expand: true,
                     onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonCancel),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: BhorSpace.s12),
                 Expanded(
-                  child: FilledButton(
+                  child: BhorButton(
+                    label: l10n.commonOk,
+                    expand: true,
                     onPressed: _typedBad ? null : () => widget.onDone(_min),
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonOk),
                   ),
                 ),
               ],

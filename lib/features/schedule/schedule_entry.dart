@@ -1,7 +1,7 @@
 // Public surface of the schedule feature (plan section 1 #32). Signatures are
 // the frozen M5-A ones; the bodies live in widgets/ (M6-A).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/time_picker_sheet.dart';

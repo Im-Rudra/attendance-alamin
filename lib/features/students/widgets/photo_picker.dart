@@ -2,16 +2,16 @@
 
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/data/repositories/students_repository.dart';
 
 /// The picked photo bytes, or null when cancelled or unusable (a message is
 /// shown for the latter).
 Future<Uint8List?> pickStudentPhoto(BuildContext context) async {
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final String tooLarge = context.l10n.errPhotoTooLarge;
   final String failed = context.l10n.stuPhotoFailed;
   try {
@@ -24,12 +24,12 @@ Future<Uint8List?> pickStudentPhoto(BuildContext context) async {
     if (file == null) return null;
     final Uint8List bytes = await file.readAsBytes();
     if (bytes.length > kMaxPhotoBytes) {
-      messenger?.showSnackBar(SnackBar(content: Text(tooLarge)));
+      if (context.mounted) BhorToast.show(context, message: tooLarge);
       return null;
     }
     return bytes;
   } catch (_) {
-    messenger?.showSnackBar(SnackBar(content: Text(failed)));
+    if (context.mounted) BhorToast.show(context, message: failed);
     return null;
   }
 }

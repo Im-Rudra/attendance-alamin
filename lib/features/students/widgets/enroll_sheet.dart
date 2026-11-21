@@ -2,13 +2,13 @@
 // current batches are disabled and ticked), the first billable month and an
 // optional fee override.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
@@ -22,12 +22,9 @@ import 'package:attendance_alamin/features/students/controllers/student_provider
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<bool> openEnrollSheet(BuildContext context, String studentId) async {
-  final bool? done = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  final bool? done = await showBhorSheet<bool>(
+    context,
+    title: context.l10n.stuEnrollTitle,
     builder: (BuildContext ctx) => EnrollSheet(studentId: studentId),
   );
   return done ?? false;
@@ -85,8 +82,7 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
     final int cutoff = ref.watch(stuCutoffProvider).value ?? 15;
     final Student? student = ref.watch(stuStudentProvider(widget.studentId)).value;
@@ -102,92 +98,50 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
     final List<Batch> open = <Batch>[
       for (final Batch b in batches)
         if (!b.archived) b,
-    ]..sort((Batch a, Batch b) => a.sortOrder.compareTo(b.sortOrder));
+    ]..sort((Batch x, Batch y) => x.sortOrder.compareTo(y.sortOrder));
 
     List<Widget> buildGroups() {
-    final List<Widget> groups = <Widget>[];
-    final Set<String> placed = <String>{};
-    void addGroup(String title, List<Batch> list) {
-      if (list.isEmpty) return;
-      groups.add(Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-        child: Semantics(
-          header: true,
-          child: Text(title,
-              style: tt.labelLarge?.copyWith(color: tokens.accent)),
-        ),
-      ));
-      for (final Batch b in list) {
-        placed.add(b.id);
-        final bool already = enrolled.contains(b.id);
-        final bool selected = _choice.batchId == b.id;
-        groups.add(Semantics(
-          button: true,
-          selected: selected,
-          enabled: !already,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: already ? null : () => _choice.setBatch(b.id),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      already
-                          ? Icons.check_circle
-                          : (selected
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked),
-                      color: already
-                          ? tokens.textDisabled
-                          : (selected ? tokens.accent : tokens.textSecondary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        b.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyLarge?.copyWith(
-                          color: already
-                              ? tokens.textDisabled
-                              : tokens.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (already)
-                      Text(l10n.stuAlreadyInBatch,
-                          style: tt.labelMedium
-                              ?.copyWith(color: tokens.textDisabled)),
-                  ],
-                ),
-              ),
-            ),
+      final List<Widget> groups = <Widget>[];
+      final Set<String> placed = <String>{};
+      void addGroup(String title, List<Batch> list) {
+        if (list.isEmpty) return;
+        groups.add(Padding(
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s12, BhorSpace.s4, BhorSpace.s8),
+          child: Semantics(
+            header: true,
+            child: Text(title, style: th.type.label.copyWith(color: th.colors.accent)),
           ),
         ));
+        for (final Batch bt in list) {
+          placed.add(bt.id);
+          final bool already = enrolled.contains(bt.id);
+          groups.add(Padding(
+            padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+            child: BhorRadioCard<String>(
+              value: bt.id,
+              groupValue: _choice.batchId,
+              onChanged: already ? null : _choice.setBatch,
+              title: bt.name,
+              subtitle: already ? l10n.stuAlreadyInBatch : null,
+            ),
+          ));
+        }
       }
-    }
 
-    for (final Subject s in subjects) {
-      addGroup(s.name, <Batch>[
-        for (final Batch b in open)
-          if (b.subjectId == s.id) b,
+      for (final Subject s in subjects) {
+        addGroup(s.name, <Batch>[
+          for (final Batch bt in open)
+            if (bt.subjectId == s.id) bt,
+        ]);
+      }
+      addGroup(l10n.stuBatchesOther, <Batch>[
+        for (final Batch bt in open)
+          if (!placed.contains(bt.id)) bt,
       ]);
-    }
-    addGroup(l10n.stuBatchesOther, <Batch>[
-      for (final Batch b in open)
-        if (!placed.contains(b.id)) b,
-    ]);
-    return groups;
+      return groups;
     }
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
+    return SingleChildScrollView(
         child: ListenableBuilder(
           listenable: _choice,
           builder: (BuildContext context, Widget? _) {
@@ -196,56 +150,45 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Semantics(
-                  header: true,
-                  child: Text(l10n.stuEnrollTitle, style: tt.titleLarge),
-                ),
                 if (student != null)
-                  Text(student.name,
-                      style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+                  Text(student.name, style: th.type.body.copyWith(color: th.colors.text2)),
                 if (groups.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(l10n.stuNoBatchesToJoin,
-                        textAlign: TextAlign.center, style: tt.bodyLarge),
+                    padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
+                    child: Text(l10n.stuNoBatchesToJoin, textAlign: TextAlign.center, style: th.type.body),
                   ),
                 ...groups,
-                const SizedBox(height: 16),
-                if (_choice.batchId != null)
-                  StartMonthFeeFields(
-                      choice: _choice, join: today, cutoff: cutoff),
-                const SizedBox(height: 16),
-                FilledButton(
+                const SizedBox(height: BhorSpace.s16),
+                if (_choice.batchId != null) StartMonthFeeFields(choice: _choice, join: today, cutoff: cutoff),
+                const SizedBox(height: BhorSpace.s16),
+                BhorButton(
                   key: const ValueKey<String>('stu-enroll-confirm'),
-                  style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56)),
-                  onPressed: (_busy || _choice.batchId == null)
-                      ? null
-                      : () => _enroll(today, cutoff),
-                  child: Text(l10n.stuEnrollConfirm),
+                  label: l10n.stuEnrollConfirm,
+                  expand: true,
+                  loading: _busy,
+                  onPressed: (_busy || _choice.batchId == null) ? null : () => _enroll(today, cutoff),
                 ),
                 if (_choice.batchId == null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(l10n.stuPickBatchFirst,
-                        textAlign: TextAlign.center,
-                        style:
-                            tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+                    padding: const EdgeInsets.only(top: BhorSpace.s8),
+                    child: Text(
+                      l10n.stuPickBatchFirst,
+                      textAlign: TextAlign.center,
+                      style: th.type.label.copyWith(color: th.colors.text2),
+                    ),
                   ),
                 if (_error != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: BhorSpace.s8),
                     child: Semantics(
                       liveRegion: true,
-                      child: Text(_error!,
-                          style: tt.bodyMedium?.copyWith(color: tokens.error)),
+                      child: Text(_error!, style: th.type.body.copyWith(color: th.colors.danger)),
                     ),
                   ),
               ],
             );
           },
         ),
-      ),
     );
   }
 }

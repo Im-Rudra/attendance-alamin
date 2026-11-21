@@ -2,16 +2,16 @@
 // one batch at once (`initialBatchId` comes from the route `extra`); saving
 // runs the duplicate guard (UX 2e).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
@@ -102,7 +102,6 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       _busy = true;
       _error = null;
     });
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final students = ref.read(studentsRepositoryProvider);
       final String? editId = widget.studentId;
@@ -112,8 +111,8 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
           await students.setPhoto(editId, model.photo);
           if (mounted) ref.invalidate(stuPhotoProvider((id: editId, has: true)));
         }
-        messenger?.showSnackBar(SnackBar(content: Text(l10n.stuSaved(draft.name))));
         if (!mounted) return;
+        BhorToast.show(context, message: l10n.stuSaved(draft.name));
         stuClose(context, fallback: Routes.student(editId));
         return;
       }
@@ -139,9 +138,8 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                   startMonth: choice!.startFor(draft.admissionDate, cutoffDay),
                   feeOverride: fee.amount,
                 );
-            messenger?.showSnackBar(
-                SnackBar(content: Text(l10n.stuAddedToBatch(existing.name))));
             if (!mounted) return;
+            BhorToast.show(context, message: l10n.stuAddedToBatch(existing.name));
             stuClose(context);
           } else {
             if (!mounted) return;
@@ -160,8 +158,8 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         startMonth: choice?.startFor(draft.admissionDate, startCutoff),
         feeOverride: fee.amount,
       );
-      messenger?.showSnackBar(SnackBar(content: Text(l10n.stuSaved(draft.name))));
       if (!mounted) return;
+      BhorToast.show(context, message: l10n.stuSaved(draft.name));
       stuClose(context);
     } on AppException catch (e) {
       if (!mounted) return;
@@ -175,8 +173,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final double gutter = WindowClass.of(context).gutter;
     final LocalDate today = ref.watch(todayProvider);
     final int cutoff = ref.watch(stuCutoffProvider).value ?? 15;
@@ -195,137 +192,109 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       return '';
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.commonClose,
-          icon: const Icon(Icons.close),
-          onPressed: () => stuClose(context),
-        ),
-        title: Semantics(
-          header: true,
-          child: Text(_isNew
-              ? l10n.shellTitleStudentNew
-              : l10n.shellTitleStudentEdit),
-        ),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: _isNew ? l10n.shellTitleStudentNew : l10n.shellTitleStudentEdit,
+        onBack: () => stuClose(context),
       ),
-      bottomNavigationBar: model == null
+      bottomNav: model == null
           ? null
-          : StickyActionBar(
-              label: l10n.stuSave,
-              onPressed: _busy ? null : _save,
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                color: th.colors.surface,
+                border: Border(top: BorderSide(color: th.colors.line)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
+                  child: BhorButton(
+                    label: l10n.stuSave,
+                    expand: true,
+                    loading: _busy,
+                    onPressed: _busy ? null : _save,
+                  ),
+                ),
+              ),
             ),
-      body: SafeArea(
-        top: false,
-        child: _missing
-            ? EmptyState(
-                icon: Icons.person_off_outlined, message: l10n.stuNotFound)
-            : model == null
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(gutter, 8, gutter, gutter),
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 640),
-                        child: GlassCard(
-                          dense: true,
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              StudentFieldsView(
-                                model: model,
-                                today: today,
-                                autofocusName: _isNew,
-                                moreExpanded: !_isNew,
-                              ),
-                              if (_isNew && choice != null) ...<Widget>[
-                                const SizedBox(height: 16),
-                                Text(l10n.stuEnrollSection,
-                                    style: tt.titleMedium),
-                                const SizedBox(height: 8),
-                                ListenableBuilder(
-                                  listenable: choice,
-                                  builder: (BuildContext context, Widget? _) {
-                                    final String? chosen = choice.batchId;
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: <Widget>[
-                                        InputDecorator(
-                                          decoration: InputDecoration(
-                                              labelText: l10n.stuBatchOptional),
-                                          child: DropdownButtonHideUnderline(
-                                            child: DropdownButton<String>(
-                                              key: const ValueKey<String>(
-                                                  'stu-form-batch'),
-                                              value: batches.any((Batch b) =>
-                                                      b.id == chosen)
-                                                  ? chosen
-                                                  : '',
-                                              isExpanded: true,
-                                              isDense: true,
-                                              items: <DropdownMenuItem<String>>[
-                                                DropdownMenuItem<String>(
-                                                  value: '',
-                                                  child: Text(l10n.stuNoBatch),
-                                                ),
-                                                for (final Batch b in batches)
-                                                  DropdownMenuItem<String>(
-                                                    value: b.id,
-                                                    child: Text(
-                                                      subjectOf(b).isEmpty
-                                                          ? b.name
-                                                          : '${subjectOf(b)} · ${b.name}',
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                              ],
-                                              onChanged: (String? v) =>
-                                                  choice.setBatch(
-                                                      (v == null || v.isEmpty)
-                                                          ? null
-                                                          : v),
+      body: _missing
+          ? BhorEmptyState(icon: Icons.person_off_outlined, title: l10n.stuNotFound)
+          : model == null
+              ? const Center(child: BhorSpinner())
+              : SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s8, gutter, gutter),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: BhorCard(
+                        padding: const EdgeInsets.all(BhorSpace.s16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            StudentFieldsView(
+                              model: model,
+                              today: today,
+                              autofocusName: _isNew,
+                              moreExpanded: !_isNew,
+                            ),
+                            if (_isNew && choice != null) ...<Widget>[
+                              const SizedBox(height: BhorSpace.s16),
+                              Text(l10n.stuEnrollSection, style: th.type.heading),
+                              const SizedBox(height: BhorSpace.s8),
+                              ListenableBuilder(
+                                listenable: choice,
+                                builder: (BuildContext context, Widget? _) {
+                                  final String? chosen = choice.batchId;
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: <Widget>[
+                                      BhorSelect<String>(
+                                        key: const ValueKey<String>('stu-form-batch'),
+                                        label: l10n.stuBatchOptional,
+                                        value: batches.any((Batch b) => b.id == chosen) ? chosen : '',
+                                        options: <BhorOption<String>>[
+                                          BhorOption<String>(value: '', label: l10n.stuNoBatch),
+                                          for (final Batch b in batches)
+                                            BhorOption<String>(
+                                              value: b.id,
+                                              label: subjectOf(b).isEmpty
+                                                  ? b.name
+                                                  : '${subjectOf(b)} · ${b.name}',
                                             ),
+                                        ],
+                                        onChanged: (String v) => choice.setBatch(v.isEmpty ? null : v),
+                                      ),
+                                      if (chosen != null) ...<Widget>[
+                                        const SizedBox(height: BhorSpace.s12),
+                                        ListenableBuilder(
+                                          listenable: model,
+                                          builder: (BuildContext context, Widget? _) => StartMonthFeeFields(
+                                            choice: choice,
+                                            join: model.admissionDate,
+                                            cutoff: cutoff,
                                           ),
                                         ),
-                                        if (chosen != null) ...<Widget>[
-                                          const SizedBox(height: 12),
-                                          ListenableBuilder(
-                                            listenable: model,
-                                            builder: (BuildContext context,
-                                                    Widget? _) =>
-                                                StartMonthFeeFields(
-                                              choice: choice,
-                                              join: model.admissionDate,
-                                              cutoff: cutoff,
-                                            ),
-                                          ),
-                                        ],
                                       ],
-                                    );
-                                  },
-                                ),
-                              ],
-                              if (_error != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Semantics(
-                                    liveRegion: true,
-                                    child: Text(_error!,
-                                        style: tt.bodyMedium
-                                            ?.copyWith(color: tokens.error)),
-                                  ),
-                                ),
+                                    ],
+                                  );
+                                },
+                              ),
                             ],
-                          ),
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: BhorSpace.s12),
+                                child: Semantics(
+                                  liveRegion: true,
+                                  child: Text(_error!, style: th.type.body.copyWith(color: th.colors.danger)),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-      ),
+                ),
     );
   }
 }

@@ -3,7 +3,7 @@
 // `onChanged`, and the live clash check (against every other active batch and
 // future one-offs, from today) reports via `onCheck` once it finishes.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/providers/core_providers.dart';

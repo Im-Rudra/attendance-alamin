@@ -3,13 +3,13 @@
 // the live clash card. Shared by `SlotEditorField` (batch form, onboarding)
 // and the full-screen `SlotEditorScreen`.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/schedule/controllers/slot_editor_controller.dart';
@@ -80,10 +80,7 @@ class SlotEditorBody extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             l10n.schedSentenceEmpty,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: context.aurora.textSecondary),
+            style: context.bhor.type.body.copyWith(color: context.bhor.colors.text2),
           ),
         ],
       ],
@@ -108,15 +105,14 @@ class SlotSentenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final l10n = context.l10n;
     final Widget content = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ExcludeSemantics(
-              child: Icon(Icons.event_repeat, color: tokens.accent, size: 24)),
-          const SizedBox(width: 12),
+              child: Icon(Icons.event_repeat, color: b.colors.accent, size: 24)),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Semantics(
               liveRegion: true,
@@ -125,7 +121,7 @@ class SlotSentenceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(l10n.schedSentenceTitle,
-                      style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+                      style: b.type.label.copyWith(color: b.colors.text2)),
                   const SizedBox(height: 2),
                   Text(
                     scheduleSentence(
@@ -134,7 +130,7 @@ class SlotSentenceCard extends StatelessWidget {
                       weekStart: weekStart,
                       andWord: l10n.schedAnd,
                     ),
-                    style: tt.bodyLarge,
+                    style: b.type.body,
                   ),
                 ],
               ),
@@ -142,8 +138,7 @@ class SlotSentenceCard extends StatelessWidget {
           ),
         ],
       );
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       child: fill ? Align(alignment: AlignmentDirectional.centerStart, child: content) : content,
     );
   }
@@ -156,23 +151,21 @@ class _SameAllRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String label = context.l10n.schedSameAllDays;
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: MergeSemantics(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Row(
-            children: <Widget>[
-              Expanded(child: Text(label, style: tt.titleMedium)),
-              Switch(
-                value: controller.sameAll,
-                onChanged: controller.setSameAll,
-              ),
-            ],
-          ),
+    return BhorCard(
+      padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s4),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Row(
+          children: <Widget>[
+            Expanded(child: Text(label, style: b.type.heading)),
+            BhorSwitch(
+              value: controller.sameAll,
+              semanticLabel: label,
+              onChanged: controller.setSameAll,
+            ),
+          ],
         ),
       ),
     );
@@ -195,19 +188,17 @@ class _SameTimeEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final c = controller;
     final List<int> order = <int>[
       for (var i = 0; i < 7; i++) ((weekStart - 1 + i) % 7) + 1,
     ];
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(l10n.schedPickDays, style: tt.titleMedium),
-          const SizedBox(height: 12),
+          Text(l10n.schedPickDays, style: b.type.heading),
+          const SizedBox(height: BhorSpace.s12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -223,7 +214,7 @@ class _SameTimeEditor extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(l10n.schedClassTime, style: tt.titleMedium),
+          Text(l10n.schedClassTime, style: b.type.heading),
           const SizedBox(height: 12),
           _TimePair(
             start: c.commonStart,
@@ -235,7 +226,7 @@ class _SameTimeEditor extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(l10n.schedReasonBadTime,
-                  style: tt.bodyMedium?.copyWith(color: tokens.error)),
+                  style: b.type.body.copyWith(color: b.colors.danger)),
             ),
           clash,
         ],
@@ -260,22 +251,20 @@ class _PerDayEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final c = controller;
     final List<int> days = c.orderedDays(weekStart);
     final List<int> missing = c.missingDays(weekStart);
 
     Widget groupFor(int day) {
       final List<SlotRow> rows = c.rowsOf(day);
-      return GlassCard(
-        dense: true,
+      return BhorCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Semantics(
               header: true,
-              child: Text(fmt.weekdayName(day), style: tt.titleMedium),
+              child: Text(fmt.weekdayName(day), style: b.type.heading),
             ),
             const SizedBox(height: 8),
             for (final SlotRow r in rows) ...<Widget>[
@@ -294,11 +283,11 @@ class _PerDayEditor extends StatelessWidget {
                         pair,
                         Align(
                           alignment: AlignmentDirectional.centerEnd,
-                          child: TextButton.icon(
+                          child: BhorButton(
+                            variant: BhorButtonVariant.ghost,
                             onPressed: () => c.removeAt(r.index),
-                            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                            icon: const Icon(Icons.delete_outline),
-                            label: Text(l10n.schedRemoveTime),
+                            icon: Icons.delete_outline,
+                            label: l10n.schedRemoveTime,
                           ),
                         ),
                       ],
@@ -307,11 +296,10 @@ class _PerDayEditor extends StatelessWidget {
                   return Row(
                     children: <Widget>[
                       Expanded(child: pair),
-                      IconButton(
-                        tooltip: l10n.schedRemoveTime,
-                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      BhorIconButton(
+                        semanticLabel: l10n.schedRemoveTime,
                         onPressed: () => c.removeAt(r.index),
-                        icon: const Icon(Icons.delete_outline),
+                        icon: Icons.delete_outline,
                       ),
                     ],
                   );
@@ -321,17 +309,17 @@ class _PerDayEditor extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(l10n.schedReasonBadTime,
-                      style: tt.bodyMedium?.copyWith(color: tokens.error)),
+                      style: b.type.body.copyWith(color: b.colors.danger)),
                 ),
               const SizedBox(height: 4),
             ],
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
+              child: BhorButton(
+                variant: BhorButtonVariant.ghost,
                 onPressed: () => c.addTime(day),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.schedAddTime),
+                icon: Icons.add,
+                label: l10n.schedAddTime,
               ),
             ),
           ],
@@ -339,47 +327,38 @@ class _PerDayEditor extends StatelessWidget {
       );
     }
 
+    Future<void> pickDay() async {
+      final int? d = await showBhorSheet<int>(
+        context,
+        title: l10n.schedAddDay,
+        builder: (BuildContext ctx) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (var i = 0; i < missing.length; i++)
+              BhorListRow(
+                title: fmt.weekdayName(missing[i]),
+                divider: i != missing.length - 1,
+                onTap: () => Navigator.of(ctx).pop(missing[i]),
+              ),
+          ],
+        ),
+      );
+      if (d != null) c.addDay(d);
+    }
+
     final Widget addDay = missing.isEmpty
         ? const SizedBox.shrink()
-        : PopupMenuButton<int>(
-            tooltip: l10n.schedAddDay,
-            onSelected: c.addDay,
-            itemBuilder: (BuildContext _) => <PopupMenuEntry<int>>[
-              for (final int d in missing)
-                PopupMenuItem<int>(
-                  value: d,
-                  height: 48,
-                  child: Text(fmt.weekdayName(d)),
-                ),
-            ],
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-                  border: Border.all(color: tokens.hairline),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(Icons.add, color: tokens.accent),
-                      const SizedBox(width: 8),
-                      Text(l10n.schedAddDay,
-                          style: tt.labelLarge?.copyWith(color: tokens.accent)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+        : BhorButton(
+            variant: BhorButtonVariant.secondary,
+            icon: Icons.add,
+            label: l10n.schedAddDay,
+            onPressed: pickDay,
           );
 
     return LayoutBuilder(
       builder: (BuildContext _, BoxConstraints box) {
         final bool twoCols = box.maxWidth >= 640 && days.length > 1;
-        const double gap = 12;
+        const double gap = BhorSpace.s12;
         final double w = twoCols ? (box.maxWidth - gap) / 2 : box.maxWidth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -464,50 +443,42 @@ class TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String time = context.fmt.time(minutes);
-    final BorderRadius br = BorderRadius.circular(AuroraMetrics.radiusField);
-    return Semantics(
-      button: true,
-      label: '$label: $time',
-      excludeSemantics: true,
+    return BhorPressable(
       onTap: () => _open(context),
-      child: Material(
-        color: tokens.surfaceSolid,
-        shape: RoundedRectangleBorder(
-          borderRadius: br,
-          side: BorderSide(color: tokens.hairline),
-        ),
-        child: InkWell(
-          customBorder: RoundedRectangleBorder(borderRadius: br),
-          onTap: () => _open(context),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tt.labelSmall?.copyWith(color: tokens.textSecondary)),
-                        Text(time,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tt.titleMedium),
-                      ],
-                    ),
+      semanticLabel: '$label: $time',
+      excludeChildSemantics: true,
+      builder: (BuildContext c, BhorStates st) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: b.colors.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: Border.all(color: st.hovered ? b.colors.accentLine : b.colors.line),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: 6),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.caption),
+                      Text(
+                        time,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: BhorType.tabular(b.type.heading),
+                      ),
+                    ],
                   ),
-                  if (MediaQuery.textScalerOf(context).scale(16) < 20)
-                    Icon(Icons.schedule, size: 20, color: tokens.accent),
-                ],
-              ),
+                ),
+                if (MediaQuery.textScalerOf(context).scale(16) < 20)
+                  Icon(Icons.schedule, size: 20, color: b.colors.accent),
+              ],
             ),
           ),
         ),

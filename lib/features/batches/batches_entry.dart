@@ -1,10 +1,12 @@
 // Public surface of the batches feature (plan section 1 #32). Signatures are
 // frozen; other features (more, search, today) call these.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -22,7 +24,7 @@ import 'package:attendance_alamin/features/batches/controllers/batch_providers.d
 import 'package:attendance_alamin/features/batches/widgets/archive_dialogs.dart';
 
 void _toast(BuildContext context, String message) {
-  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(message)));
+  BhorToast.show(context, message: message);
 }
 
 /// Archive dialog (asks the last billable month); true when archived.
@@ -32,8 +34,8 @@ Future<bool> showArchiveBatchDialog(BuildContext context, {required String batch
   final Batch? batch = await repo.getById(batchId);
   if (batch == null || batch.archived || !context.mounted) return false;
   final LocalDate today = container.read(todayProvider);
-  final YearMonth? lbm = await showDialog<YearMonth>(
-    context: context,
+  final YearMonth? lbm = await showBhorDialog<YearMonth>(
+    context,
     builder: (BuildContext ctx) => ArchiveBatchDialog(
       batchName: batch.name,
       initial: DuesEngine.defaultLastBillableMonth(today),
@@ -103,8 +105,8 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
   }
   if (!context.mounted) return false;
 
-  final UnarchiveChoice? choice = await showDialog<UnarchiveChoice>(
-    context: context,
+  final UnarchiveChoice? choice = await showBhorDialog<UnarchiveChoice>(
+    context,
     builder: (BuildContext ctx) => UnarchiveBatchDialog(
       batchName: batch.name,
       clashLines: clashLines,

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -47,13 +48,13 @@ Widget slotStub(
   String? batchId,
   ValueChanged<SlotCheckResult>? onCheck,
 }) =>
-    TextButton(
+    BhorButton(
       key: const Key('slot-stub'),
+      label: 'slot',
       onPressed: () {
         onChanged(const <SlotDraft>[SlotDraft(weekday: 4, startMin: 1080, endMin: 1140)]);
         onCheck?.call(const SlotCheckResult());
       },
-      child: const Text('slot'),
     );
 
 /// Remembers the last billable month the archive dialog chose.
@@ -138,7 +139,7 @@ void main() {
     testScreenMatrix('BatchDetailScreen', () => const BatchDetailScreen(batchId: kBatPhysA),
         overrides: fresh, verify: (WidgetTester tester) async {
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(TabBar), findsOneWidget);
+      expect(find.byType(BhorTabs), findsOneWidget);
     });
     testScreenMatrix('BatchDetailScreen archived', () => const BatchDetailScreen(batchId: kBatPhysA),
         overrides: () {
@@ -201,7 +202,7 @@ void main() {
       await tester.pump();
       expect(find.text(bn.batchReasonSlots), findsNothing);
 
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
 
       expect(fakes.store.subjects.length, subjectsBefore + 1);
@@ -230,7 +231,7 @@ void main() {
       expect(find.text(bn.batchSubjectNew('রসায়ন')), findsNothing);
       await tester.tap(find.byKey(const Key('slot-stub')));
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
 
       expect(fakes.store.subjects.length, subjectsBefore);
@@ -265,7 +266,7 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('batch-form-fee')), '1200');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
 
       expect(find.text(bn.batchFeeFromTitle), findsOneWidget);
@@ -275,7 +276,7 @@ void main() {
       // Choose December; earlier months keep the old fee.
       await tester.tap(find.text(fmtBn.monthYear(const YearMonth(2026, 12))));
       await settleSome(tester);
-      await tester.tap(find.widgetWithText(FilledButton, bn.batchFeeConfirm));
+      await tester.tap(find.widgetWithText(BhorButton, bn.batchFeeConfirm));
       await settleSome(tester, 10);
 
       final List<FeePeriod> fees = fakes.store.fees[kBatPhysA]!;
@@ -293,7 +294,7 @@ void main() {
       await settleSome(tester);
       await tester.enterText(find.byKey(const Key('batch-form-fee')), '1200');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
 
       expect(find.text(bn.batchFeeEarlierMonth), findsOneWidget);
@@ -301,7 +302,7 @@ void main() {
       await settleSome(tester);
       await tester.tap(find.text(fmtBn.monthYear(const YearMonth(2026, 8))).last);
       await settleSome(tester);
-      await tester.tap(find.widgetWithText(FilledButton, bn.batchFeeConfirm));
+      await tester.tap(find.widgetWithText(BhorButton, bn.batchFeeConfirm));
       await settleSome(tester, 10);
 
       final List<FeePeriod> fees = fakes.store.fees[kBatPhysA]!;
@@ -319,7 +320,7 @@ void main() {
       await settleSome(tester);
       await tester.enterText(find.byKey(const Key('batch-form-fee')), '900');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
       expect(find.text(bn.batchFeeNoPartial), findsOneWidget);
       // Dismiss the sheet by tapping the scrim.
@@ -337,7 +338,7 @@ void main() {
       await settleSome(tester);
       await tester.enterText(find.byKey(const Key('batch-form-name')), 'ফিজিক্স সি');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
       await settleSome(tester);
       expect(find.text(bn.batchFeeFromTitle), findsNothing);
       expect(fakes.store.batches.firstWhere((Batch b) => b.id == kBatPhysA).name, 'ফিজিক্স সি');
@@ -347,7 +348,9 @@ void main() {
 
   group('archive and unarchive', () {
     Future<void> openMenu(WidgetTester tester, String item) async {
-      await tester.tap(find.byTooltip(bn.commonMore));
+      await tester.tap(find.byWidgetPredicate(
+        (Widget w) => w is BhorIconButton && w.semanticLabel == bn.commonMore,
+      ));
       await settleSome(tester, 8);
       await tester.tap(find.text(item));
       await settleSome(tester, 6);
@@ -375,7 +378,7 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BhorDialog),
         matching: find.text(bn.batchArchiveConfirm),
       ));
       await settleSome(tester, 8);
@@ -412,7 +415,7 @@ void main() {
       expect(find.text(bn.batchUnarchiveTitle(kBatches[0].name)), findsOneWidget);
       expect(find.text(bn.batchUnarchiveClash), findsNothing);
       await tester.tap(find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BhorDialog),
         matching: find.text(bn.batchUnarchiveConfirm),
       ));
       await settleSome(tester, 8);
@@ -455,7 +458,7 @@ void main() {
       expect(find.text(line), findsOneWidget);
       // The plain confirm is replaced by the fix-the-schedule one.
       expect(
-        find.descendant(of: find.byType(AlertDialog), matching: find.text(bn.batchUnarchiveConfirm)),
+        find.descendant(of: find.byType(BhorDialog), matching: find.text(bn.batchUnarchiveConfirm)),
         findsNothing,
       );
       await tester.tap(find.text(bn.batchUnarchiveFix));

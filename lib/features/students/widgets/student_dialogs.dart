@@ -1,8 +1,9 @@
 // Small text dialogs of the students feature: duplicate guard, rejoin gap
-// waiver, delete. Text only, so AlertDialog is safe.
+// waiver, delete. Text only.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 
@@ -16,22 +17,22 @@ Future<DuplicateChoice?> showDuplicateDialog(
   required Student existing,
   required bool hasBatch,
 }) {
-  return showDialog<DuplicateChoice>(
-    context: context,
+  return showBhorDialog<DuplicateChoice>(
+    context,
     builder: (BuildContext ctx) {
       final l10n = ctx.l10n;
-      return AlertDialog(
-        title: Text(l10n.stuDuplicateTitle),
-        content: Text(l10n.stuDuplicateBody(existing.name)),
+      return BhorDialog(
+        title: l10n.stuDuplicateTitle,
+        message: l10n.stuDuplicateBody(existing.name),
         actions: <Widget>[
-          TextButton(
+          BhorButton(
+            label: l10n.stuDuplicateNew,
+            variant: BhorButtonVariant.ghost,
             onPressed: () => Navigator.of(ctx).pop(DuplicateChoice.createNew),
-            child: Text(l10n.stuDuplicateNew),
           ),
-          FilledButton(
+          BhorButton(
+            label: hasBatch ? l10n.stuDuplicateUse : l10n.stuDuplicateOpen,
             onPressed: () => Navigator.of(ctx).pop(DuplicateChoice.useExisting),
-            child: Text(
-                hasBatch ? l10n.stuDuplicateUse : l10n.stuDuplicateOpen),
           ),
         ],
       );
@@ -42,25 +43,27 @@ Future<DuplicateChoice?> showDuplicateDialog(
 /// "মাঝের {n} মাস মাফ করবেন?" Returns true to waive, false to keep the months
 /// owed, null when cancelled.
 Future<bool?> showRejoinGapDialog(BuildContext context, {required int months}) {
-  return showDialog<bool>(
-    context: context,
+  return showBhorDialog<bool>(
+    context,
     builder: (BuildContext ctx) {
       final l10n = ctx.l10n;
-      return AlertDialog(
-        title: Text(l10n.stuRejoinTitle),
-        content: Text(l10n.stuRejoinGapBody(ctx.fmt.number(months))),
+      return BhorDialog(
+        title: l10n.stuRejoinTitle,
+        message: l10n.stuRejoinGapBody(ctx.fmt.number(months)),
         actions: <Widget>[
-          TextButton(
+          BhorButton(
+            label: l10n.commonCancel,
+            variant: BhorButtonVariant.ghost,
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.commonCancel),
           ),
-          TextButton(
+          BhorButton(
+            label: l10n.stuRejoinKeepDues,
+            variant: BhorButtonVariant.secondary,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.stuRejoinKeepDues),
           ),
-          FilledButton(
+          BhorButton(
+            label: l10n.stuRejoinWaive,
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.stuRejoinWaive),
           ),
         ],
       );

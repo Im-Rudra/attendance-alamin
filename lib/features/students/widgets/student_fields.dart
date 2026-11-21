@@ -1,10 +1,13 @@
 // Form fields shared by the full-screen student form and the add sheet.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
@@ -13,7 +16,7 @@ import 'package:attendance_alamin/features/students/widgets/photo_picker.dart';
 
 /// Name and guardian phone, then "আরও তথ্য" (roll, student phone, guardian
 /// name, admission date, photo, notes).
-class StudentFieldsView extends StatelessWidget {
+class StudentFieldsView extends StatefulWidget {
   const StudentFieldsView({
     super.key,
     required this.model,
@@ -30,96 +33,102 @@ class StudentFieldsView extends StatelessWidget {
   final bool moreExpanded;
 
   @override
+  State<StudentFieldsView> createState() => _StudentFieldsViewState();
+}
+
+class _StudentFieldsViewState extends State<StudentFieldsView> {
+  late bool _open = widget.moreExpanded;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final StudentFormModel model = widget.model;
     return ListenableBuilder(
       listenable: model,
       builder: (BuildContext context, Widget? _) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            TextField(
+            BhorTextField(
               key: const ValueKey<String>('stu-field-name'),
               controller: model.name,
-              autofocus: autofocusName,
+              autofocus: widget.autofocusName,
               textInputAction: TextInputAction.next,
-              textCapitalization: TextCapitalization.words,
               onChanged: (_) => model.clearError('name'),
-              decoration: InputDecoration(
-                labelText: l10n.stuFieldName,
-                errorText: model.errors['name'],
-              ),
+              label: l10n.stuFieldName,
+              error: model.errors['name'],
             ),
-            const SizedBox(height: 12),
-            TextField(
+            const SizedBox(height: BhorSpace.s12),
+            BhorTextField(
               key: const ValueKey<String>('stu-field-guardian-phone'),
               controller: model.guardianPhone,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
               onChanged: (_) => model.clearError('guardianPhone'),
-              decoration: InputDecoration(
-                labelText: l10n.stuFieldGuardianPhone,
-                errorText: model.errors['guardianPhone'],
+              label: l10n.stuFieldGuardianPhone,
+              error: model.errors['guardianPhone'],
+            ),
+            const SizedBox(height: BhorSpace.s4),
+            BhorPressable(
+              key: const ValueKey<String>('stu-more-info'),
+              onTap: () => setState(() => _open = !_open),
+              semanticLabel: l10n.stuMoreInfo,
+              builder: (BuildContext c, BhorStates st) => ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: BhorSize.minTap),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(child: Text(l10n.stuMoreInfo, style: b.type.bodyStrong)),
+                    Icon(_open ? Icons.expand_less : Icons.expand_more, color: b.colors.text2),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            // ListTile (inside ExpansionTile) paints on the nearest Material,
-            // so give it its own above the dense card behind it.
-            Material(
-              type: MaterialType.transparency,
-              child: Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                key: const ValueKey<String>('stu-more-info'),
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 8),
-                initiallyExpanded: moreExpanded,
-                title: Text(l10n.stuMoreInfo),
-                children: <Widget>[
-                  TextField(
-                    controller: model.roll,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(labelText: l10n.stuFieldRoll),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: model.phone,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    onChanged: (_) => model.clearError('phone'),
-                    decoration: InputDecoration(
-                      labelText: l10n.stuFieldStudentPhone,
-                      errorText: model.errors['phone'],
+            if (_open)
+              Padding(
+                padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    BhorTextField(
+                      controller: model.roll,
+                      textInputAction: TextInputAction.next,
+                      label: l10n.stuFieldRoll,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: model.guardianName,
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                    decoration:
-                        InputDecoration(labelText: l10n.stuFieldGuardianName),
-                  ),
-                  const SizedBox(height: 12),
-                  DateField(
-                    label: l10n.stuFieldAdmissionDate,
-                    value: model.admissionDate,
-                    lastDate: today.addDays(366),
-                    onChanged: model.setAdmission,
-                  ),
-                  const SizedBox(height: 12),
-                  _PhotoRow(model: model),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: model.notes,
-                    maxLines: 3,
-                    minLines: 2,
-                    decoration: InputDecoration(labelText: l10n.commonNotes),
-                  ),
-                ],
+                    const SizedBox(height: BhorSpace.s12),
+                    BhorTextField(
+                      controller: model.phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => model.clearError('phone'),
+                      label: l10n.stuFieldStudentPhone,
+                      error: model.errors['phone'],
+                    ),
+                    const SizedBox(height: BhorSpace.s12),
+                    BhorTextField(
+                      controller: model.guardianName,
+                      textInputAction: TextInputAction.next,
+                      label: l10n.stuFieldGuardianName,
+                    ),
+                    const SizedBox(height: BhorSpace.s12),
+                    DateField(
+                      label: l10n.stuFieldAdmissionDate,
+                      value: model.admissionDate,
+                      lastDate: widget.today.addDays(366),
+                      onChanged: model.setAdmission,
+                    ),
+                    const SizedBox(height: BhorSpace.s12),
+                    _PhotoRow(model: model),
+                    const SizedBox(height: BhorSpace.s12),
+                    BhorTextField(
+                      controller: model.notes,
+                      maxLines: 3,
+                      minLines: 2,
+                      label: l10n.commonNotes,
+                    ),
+                  ],
+                ),
               ),
-              ),
-            ),
           ],
         );
       },
@@ -135,37 +144,36 @@ class _PhotoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
     final bool has = model.photoChanged ? model.photo != null : model.hadPhoto;
     return Row(
       children: <Widget>[
         ExcludeSemantics(
-          child: model.photo != null
-              ? ClipOval(
-                  child: Image.memory(model.photo!,
-                      width: 48, height: 48, fit: BoxFit.cover),
-                )
-              : InitialsAvatar(name: model.name.text, size: 48),
+          child: BhorAvatar(
+            name: model.name.text,
+            size: 48,
+            image: model.photo != null ? MemoryImage(model.photo!) : null,
+          ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: BhorSpace.s12),
         Expanded(
           child: Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s4,
             children: <Widget>[
-              OutlinedButton.icon(
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: Text(has ? l10n.stuPhotoChange : l10n.stuPhotoAdd),
+              BhorButton(
+                variant: BhorButtonVariant.secondary,
+                icon: Icons.photo_camera_outlined,
+                label: has ? l10n.stuPhotoChange : l10n.stuPhotoAdd,
                 onPressed: () async {
                   final bytes = await pickStudentPhoto(context);
                   if (bytes != null) model.setPhoto(bytes);
                 },
               ),
               if (has)
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: tokens.error),
+                BhorButton(
+                  variant: BhorButtonVariant.ghost,
+                  label: l10n.stuPhotoRemove,
                   onPressed: () => model.setPhoto(null),
-                  child: Text(l10n.stuPhotoRemove),
                 ),
             ],
           ),
@@ -176,7 +184,7 @@ class _PhotoRow extends StatelessWidget {
 }
 
 /// A date shown like a field; tapping opens the date picker.
-class DateField extends StatelessWidget {
+class DateField extends ConsumerWidget {
   const DateField({
     super.key,
     required this.label,
@@ -193,25 +201,53 @@ class DateField extends StatelessWidget {
   final LocalDate? lastDate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final BhorThemeData b = context.bhor;
     final LocalDate last = lastDate ?? value.addDays(366);
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
+    final String shown = context.fmt.date(value);
+    return BhorPressable(
+      semanticLabel: '$label: $shown',
+      excludeChildSemantics: true,
       onTap: () async {
-        final DateTime? d = await showAppDatePicker(
-          context: context,
+        final LocalDate today = ref.read(todayProvider);
+        final int weekStart = ref.read(weekStartProvider).value ?? DateTime.saturday;
+        final DateTime? d = await showBhorDatePicker(
+          context,
           initialDate: DateTime(value.year, value.month, value.day),
           firstDate: DateTime(firstDate.year, firstDate.month, firstDate.day),
           lastDate: DateTime(last.year, last.month, last.day),
+          weekStart: weekStart,
+          today: DateTime(today.year, today.month, today.day),
         );
         if (d != null) onChanged(LocalDate(d.year, d.month, d.day));
       },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
+      builder: (BuildContext c, BhorStates st) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: BhorSize.control + BhorSpace.s12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: b.colors.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: Border.all(color: st.hovered ? b.colors.accentLine : b.colors.line),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(label, style: b.type.caption),
+                      Text(shown, style: b.type.body),
+                    ],
+                  ),
+                ),
+                Icon(Icons.calendar_today_outlined, size: 20, color: b.colors.text2),
+              ],
+            ),
+          ),
         ),
-        child: Text(context.fmt.date(value)),
       ),
     );
   }
@@ -235,25 +271,13 @@ class MonthDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = context.fmt;
-    return InputDecorator(
-      decoration: InputDecoration(labelText: label),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<YearMonth>(
-          value: value,
-          isExpanded: true,
-          isDense: true,
-          items: <DropdownMenuItem<YearMonth>>[
-            for (final YearMonth m in months)
-              DropdownMenuItem<YearMonth>(
-                value: m,
-                child: Text(fmt.monthYear(m), overflow: TextOverflow.ellipsis),
-              ),
-          ],
-          onChanged: (YearMonth? m) {
-            if (m != null) onChanged(m);
-          },
-        ),
-      ),
+    return BhorSelect<YearMonth>(
+      label: label,
+      value: value,
+      options: <BhorOption<YearMonth>>[
+        for (final YearMonth m in months) BhorOption<YearMonth>(value: m, label: fmt.monthYear(m)),
+      ],
+      onChanged: onChanged,
     );
   }
 }
@@ -275,6 +299,7 @@ class StartMonthFeeFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
     return ListenableBuilder(
       listenable: choice,
       builder: (BuildContext context, Widget? _) {
@@ -288,52 +313,41 @@ class StartMonthFeeFields extends StatelessWidget {
               child: Text(
                 l10n.stuBillingStartLine(context.fmt.monthYear(start)),
                 key: const ValueKey<String>('stu-billing-start-line'),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(
-                        color: context.aurora.textPrimary,
-                        fontWeight: FontWeight.w700),
+                style: b.type.heading,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: BhorSpace.s8),
             if (start == base || start == base.addMonths(1)) ...<Widget>[
-              SegmentedChoice<bool>(
+              BhorSegmented<bool>(
                 key: const ValueKey<String>('stu-billing-toggle'),
-                options: const <bool>[true, false],
-                selected: start == base,
-                onChanged: (bool thisMonth) =>
-                    choice.setStart(thisMonth ? base : base.addMonths(1)),
-                labelOf: (bool thisMonth) =>
-                    thisMonth ? l10n.stuStartThisMonth : l10n.stuStartNextMonth,
+                segments: <BhorSegment<bool>>[
+                  BhorSegment<bool>(value: true, label: l10n.stuStartThisMonth),
+                  BhorSegment<bool>(value: false, label: l10n.stuStartNextMonth),
+                ],
+                value: start == base,
+                onChanged: (bool thisMonth) => choice.setStart(thisMonth ? base : base.addMonths(1)),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: BhorSpace.s12),
             ],
             MonthDropdown(
               label: l10n.stuBillingStart,
               value: start,
-              months: monthChoices(
-                  base.addMonths(-12), base.addMonths(7), start),
+              months: monthChoices(base.addMonths(-12), base.addMonths(7), start),
               onChanged: choice.setStart,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: BhorSpace.s4),
             Text(
               l10n.stuBillingStartHint(cutoffDayText(context, cutoff)),
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: context.aurora.textSecondary),
+              style: b.type.label.copyWith(color: b.colors.text2),
             ),
-            const SizedBox(height: 12),
-            TextField(
+            const SizedBox(height: BhorSpace.s12),
+            BhorTextField(
               key: const ValueKey<String>('stu-field-fee-override'),
               controller: choice.fee,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: l10n.stuFeeOverride,
-                helperText: l10n.stuFeeOverrideHint,
-                errorText: choice.feeError,
-              ),
+              label: l10n.stuFeeOverride,
+              helper: l10n.stuFeeOverrideHint,
+              error: choice.feeError,
             ),
           ],
         );

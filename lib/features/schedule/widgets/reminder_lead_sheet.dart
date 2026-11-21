@@ -2,11 +2,12 @@
 // 5 / 10 / 15 / 20 / 30 / 60 minutes, "other" 1..180 (Bangla or ASCII digits)
 // or off for this batch (0).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_chip.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_sheet.dart';
@@ -106,8 +107,7 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final int? result = _result;
 
     String minutesBefore(int n) => l10n.schedMinutesBefore(fmt.digits('$n'));
@@ -115,16 +115,14 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-            20, 8, 20, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s8, BhorSpace.s20, BhorSpace.s16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Semantics(header: true, child: Text(l10n.schedLeadTitle, style: tt.titleLarge)),
+            Semantics(header: true, child: Text(l10n.schedLeadTitle, style: b.type.title)),
             const SizedBox(height: 4),
-            Text(l10n.schedLeadSubtitle,
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+            Text(l10n.schedLeadSubtitle, style: b.type.body.copyWith(color: b.colors.text2)),
             const SizedBox(height: 12),
             _RadioRow(
               label: l10n.schedLeadUseDefault(
@@ -157,7 +155,7 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
             if (_choice == _Choice.other)
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 4, 0, 4),
-                child: TextField(
+                child: BhorTextField(
                   controller: _custom,
                   autofocus: true,
                   keyboardType: TextInputType.number,
@@ -166,10 +164,8 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
                     LengthLimitingTextInputFormatter(3),
                   ],
                   onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: l10n.schedLeadCustomLabel,
-                    errorText: _customInvalid ? l10n.schedLeadCustomError : null,
-                  ),
+                  label: l10n.schedLeadCustomLabel,
+                  error: _customInvalid ? l10n.schedLeadCustomError : null,
                 ),
               ),
             const SizedBox(height: 8),
@@ -182,18 +178,19 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: OutlinedButton(
+                  child: BhorButton(
+                    label: l10n.commonCancel,
+                    variant: BhorButtonVariant.secondary,
+                    expand: true,
                     onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonCancel),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: BhorSpace.s12),
                 Expanded(
-                  child: FilledButton(
+                  child: BhorButton(
+                    label: l10n.commonOk,
+                    expand: true,
                     onPressed: result == null ? null : () => widget.onDone(result),
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    child: Text(l10n.commonOk),
                   ),
                 ),
               ],
@@ -214,37 +211,26 @@ class _RadioRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return Semantics(
-      inMutuallyExclusiveGroup: true,
-      checked: selected,
-      label: label,
-      excludeSemantics: true,
+    final BhorThemeData b = context.bhor;
+    return BhorPressable(
       onTap: onTap,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Row(
-            children: <Widget>[
-              const SizedBox(width: 8),
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: selected ? tokens.accent : tokens.textSecondary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: tt.bodyLarge?.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      semanticLabel: label,
+      checked: selected,
+      isButton: false,
+      inMutuallyExclusiveGroup: true,
+      excludeChildSemantics: true,
+      builder: (BuildContext c, BhorStates st) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: BhorSize.minTap),
+        child: Row(
+          children: <Widget>[
+            const SizedBox(width: BhorSpace.s8),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: selected ? b.colors.accent : b.colors.text2,
+            ),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(child: Text(label, style: selected ? b.type.bodyStrong : b.type.body)),
+          ],
         ),
       ),
     );

@@ -2,17 +2,17 @@
 // row (UX 2h) and the button into the slot editor. Two columns when the pane
 // is wide, so a desktop detail pane is filled, not stretched.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
@@ -37,10 +37,10 @@ class BatchScheduleTab extends StatelessWidget {
     final l10n = context.l10n;
     final AsyncValue<List<BatchSchedule>> async = ref.watch(schedulesProvider);
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object e, StackTrace _) => EmptyState(
+      loading: () => const Center(child: BhorSpinner()),
+      error: (Object e, StackTrace _) => BhorEmptyState(
         icon: Icons.error_outline,
-        message: errorText(l10n, e),
+        title: errorText(l10n, e),
       ),
       data: (List<BatchSchedule> all) {
         BatchSchedule? mine;
@@ -48,9 +48,9 @@ class BatchScheduleTab extends StatelessWidget {
           if (s.batch.id == batchId) mine = s;
         }
         if (mine == null) {
-          return EmptyState(
+          return BhorEmptyState(
             icon: Icons.search_off,
-            message: l10n.commonLoadingFailed,
+            title: l10n.commonLoadingFailed,
           );
         }
         return _Content(schedule: mine);
@@ -76,14 +76,12 @@ class _Content extends ConsumerWidget {
     void openEditor() => context.push(Routes.batchSlots(batch.id));
 
     if (slots.isEmpty) {
-      final Widget card = GlassCard(
-        dense: true,
+      final Widget card = BhorCard(
         padding: EdgeInsets.zero,
-        child: EmptyState(
+        child: BhorEmptyState(
           icon: Icons.event_busy_outlined,
-          message: l10n.schedTabEmpty,
-          actionLabel: archived ? null : l10n.schedTabAddFirst,
-          onAction: archived ? null : openEditor,
+          title: l10n.schedTabEmpty,
+          action: archived ? null : BhorButton(label: l10n.schedTabAddFirst, onPressed: openEditor),
         ),
       );
       return LayoutBuilder(
@@ -120,11 +118,11 @@ class _Content extends ConsumerWidget {
           const SizedBox(height: 12),
           if (fill) Expanded(child: sentence) else sentence,
           const SizedBox(height: 12),
-          FilledButton.icon(
+          BhorButton(
             onPressed: archived ? null : openEditor,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            icon: const Icon(Icons.edit_calendar_outlined),
-            label: Text(l10n.schedChangeWeekly),
+            expand: true,
+            icon: Icons.edit_calendar_outlined,
+            label: l10n.schedChangeWeekly,
           ),
         ],
       );
@@ -164,19 +162,20 @@ class _Note extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.infoContainer,
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
+        color: b.colors.accentTint,
+        borderRadius: BorderRadius.circular(BhorRadius.control),
+        border: Border.all(color: b.colors.accentLine),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(BhorSpace.s12),
         child: Row(
           children: <Widget>[
-            Icon(Icons.info_outline, color: tokens.info),
-            const SizedBox(width: 12),
-            Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+            Icon(Icons.info_outline, color: b.colors.accent),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(child: Text(text, style: b.type.body)),
           ],
         ),
       ),
@@ -194,8 +193,7 @@ class _ReminderRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final bool masterOn = ref.watch(classRemindersOnProvider).value ?? true;
     final int defaultLead = ref.watch(defaultReminderLeadProvider).value ?? 15;
     final int? lead = batch.reminderLeadMin;
@@ -224,62 +222,49 @@ class _ReminderRow extends ConsumerWidget {
             .read(batchesRepositoryProvider)
             .setReminderLead(batch.id, storedLeadOf(picked));
       } on Object catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(errorText(context.l10n, e))));
-        }
+        if (context.mounted) BhorToast.show(context, message: errorText(context.l10n, e));
       }
     }
 
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       padding: EdgeInsets.zero,
       onTap: !enabled
           ? null
           : masterOn
               ? change
               : () => context.go(Routes.more),
+      semanticLabel: text,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s8),
         child: Row(
           children: <Widget>[
             ExcludeSemantics(
               child: Icon(
                 masterOn ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
-                color: masterOn ? tokens.accent : tokens.textSecondary,
+                color: masterOn ? b.colors.accent : b.colors.text2,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
                     text,
-                    style: tt.bodyLarge?.copyWith(
-                      color: masterOn ? tokens.textPrimary : tokens.textSecondary,
-                    ),
+                    style: b.type.body.copyWith(color: masterOn ? b.colors.text : b.colors.text2),
                   ),
                   if (lead != null && masterOn && enabled)
-                    TextButton.icon(
+                    BhorButton(
+                      variant: BhorButtonVariant.ghost,
                       onPressed: () async {
                         try {
-                          await ref
-                              .read(batchesRepositoryProvider)
-                              .setReminderLead(batch.id, null);
+                          await ref.read(batchesRepositoryProvider).setReminderLead(batch.id, null);
                         } on Object catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(errorText(context.l10n, e))));
-                          }
+                          if (context.mounted) BhorToast.show(context, message: errorText(context.l10n, e));
                         }
                       },
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        padding: EdgeInsets.zero,
-                      ),
-                      icon: const Icon(Icons.restart_alt, size: 18),
-                      label: Text(l10n.schedLeadReset),
+                      icon: Icons.restart_alt,
+                      label: l10n.schedLeadReset,
                     ),
                 ],
               ),
