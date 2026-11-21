@@ -1,18 +1,19 @@
 // Batch detail › বেতন (UX 3 "Batch detail"): a month picker, the month's
 // totals, and one row per student with the month's state and a Collect button.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/widgets/collection_blocks.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_tags.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 
@@ -71,36 +72,33 @@ class _BatchFeesPanelState extends ConsumerState<BatchFeesPanel> {
         ),
         Expanded(
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object e, StackTrace s) => EmptyState(
+            loading: () => const Center(child: BhorSpinner()),
+            error: (Object e, StackTrace s) => BhorEmptyState(
               icon: Icons.error_outline,
-              message: l10n.commonLoadingFailed,
+              title: l10n.commonLoadingFailed,
             ),
             data: (List<LedgerLine> lines) {
               if (lines.isEmpty) {
-                return EmptyState(icon: Icons.receipt_long_outlined, message: l10n.duesFeesEmpty);
+                return BhorEmptyState(icon: Icons.receipt_long_outlined, title: l10n.duesFeesEmpty);
               }
               final List<LedgerLine> rows = sortLedger(lines);
               final MonthTotals t = totalsOf(lines);
               return ListView(
-                padding: const EdgeInsets.fromLTRB(0, 4, 0, 112),
+                padding: const EdgeInsets.fromLTRB(0, BhorSpace.s4, 0, 112),
                 children: <Widget>[
                   _TotalsStrip(totals: t),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-                    child: Material(
-                      color: context.aurora.surfaceDense,
-                      child: Column(
-                        children: <Widget>[
-                          for (int i = 0; i < rows.length; i++)
-                            _LedgerRow(
-                              key: ValueKey<String>('fees-row-${rows[i].terms.enrollmentId}'),
-                              line: rows[i],
-                              divider: i > 0,
-                            ),
-                        ],
-                      ),
+                  const SizedBox(height: BhorSpace.s8),
+                  BhorCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: <Widget>[
+                        for (int i = 0; i < rows.length; i++)
+                          _LedgerRow(
+                            key: ValueKey<String>('fees-row-${rows[i].terms.enrollmentId}'),
+                            line: rows[i],
+                            divider: i < rows.length - 1,
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -121,15 +119,14 @@ class _TotalsStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final fmt = context.fmt;
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    return BhorCard(
+      padding: const EdgeInsets.all(BhorSpace.s12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(child: _Mini(label: l10n.collExpected, value: fmt.money(totals.expected))),
-          Expanded(child: _Mini(label: l10n.collReceived, value: fmt.money(totals.received))),
-          Expanded(child: _Mini(label: l10n.collOutstanding, value: fmt.money(totals.outstanding))),
+          Expanded(child: _Mini(label: l10n.collExpected, amount: totals.expected)),
+          Expanded(child: _Mini(label: l10n.collReceived, amount: totals.received)),
+          Expanded(child: _Mini(label: l10n.collOutstanding, amount: totals.outstanding)),
         ],
       ),
     );
@@ -137,32 +134,24 @@ class _TotalsStrip extends StatelessWidget {
 }
 
 class _Mini extends StatelessWidget {
-  const _Mini({required this.label, required this.value});
+  const _Mini({required this.label, required this.amount});
 
   final String label;
-  final String value;
+  final int amount;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(label, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: AlignmentDirectional.centerStart,
-          child: Text(
-            value,
-            maxLines: 1,
-            style: tt.titleMedium?.copyWith(
-              color: tokens.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          child: BhorMoney(amount, style: b.type.heading),
         ),
       ],
     );
@@ -179,53 +168,33 @@ class _LedgerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
     final MonthDue d = line.due;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: divider ? Border(top: BorderSide(color: tokens.hairline)) : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    line.terms.studentName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.titleSmall?.copyWith(color: tokens.textPrimary),
-                  ),
-                  Text(
-                    d.state == MonthState.free ? l10n.uiStateFree : fmt.money(d.fee),
-                    maxLines: 1,
-                    style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                  ),
-                ],
+    return BhorListRow(
+      title: line.terms.studentName,
+      subtitle: d.state == MonthState.free ? l10n.uiStateFree : fmt.money(d.fee),
+      divider: divider,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: monthStateTag(context, d),
+          ),
+          if (d.isOpen) ...<Widget>[
+            const SizedBox(width: BhorSpace.s8),
+            BhorIconButton(
+              key: ValueKey<String>('fees-collect-${line.terms.enrollmentId}'),
+              icon: Icons.payments_outlined,
+              semanticLabel: l10n.duesCollect,
+              variant: BhorButtonVariant.secondary,
+              onPressed: () => showCollectPaymentSheet(
+                context,
+                studentId: line.terms.studentId,
+                enrollmentId: line.terms.enrollmentId,
               ),
             ),
-            const SizedBox(width: 8),
-            MonthStateChip(due: d),
-            if (d.isOpen) ...<Widget>[
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                key: ValueKey<String>('fees-collect-${line.terms.enrollmentId}'),
-                tooltip: l10n.duesCollect,
-                icon: const Icon(Icons.payments_outlined),
-                onPressed: () => showCollectPaymentSheet(
-                  context,
-                  studentId: line.terms.studentId,
-                  enrollmentId: line.terms.enrollmentId,
-                ),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }

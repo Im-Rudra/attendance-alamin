@@ -16,7 +16,7 @@ import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/dues_entry.dart';
@@ -181,7 +181,7 @@ void main() {
 
   testScreenMatrix(
     'batch fees tab',
-    () => const Scaffold(
+    () => const BhorScaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: BatchFeesTab(batchId: kBatPhysA),
@@ -192,7 +192,7 @@ void main() {
 
   testScreenMatrix(
     'batch fees tab, no students',
-    () => const Scaffold(
+    () => const BhorScaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: BatchFeesTab(batchId: 'empty-batch'),
@@ -207,7 +207,7 @@ void main() {
       await _pumpFeesPhone(tester, seedFakes());
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.text(l10n.duesHeadline('৩', '৩')), findsWidgets, reason: '3 unpaid, 3 overdue');
-      expect(find.byType(SeverityBadge), findsWidgets);
+      expect(find.byType(BhorTag), findsWidgets);
       // All three owe one overdue month: Rahim 1000 and Nila 1000 (name order),
       // then Sara's 800.
       final double nila = tester.getTopLeft(_row(kStuNila)).dy;
@@ -275,11 +275,11 @@ void main() {
       expect(_row(kStuRahim), findsNothing, reason: 'collapsed by default');
       // He is no longer counted as unpaid (2) / overdue (2).
       expect(find.text(l10n.duesHeadline('২', '২')), findsWidgets);
-      await tester.tap(find.byTooltip(l10n.duesExpand));
+      await tester.tap(find.byKey(const ValueKey<String>('dues-group-toggle')));
       await tester.pump();
       expect(_row(kStuRahim), findsOneWidget);
       expect(
-        find.descendant(of: _row(kStuRahim), matching: find.byType(SeverityBadge)),
+        find.descendant(of: _row(kStuRahim), matching: find.byType(BhorTag)),
         findsNothing,
       );
       expect(find.descendant(of: _row(kStuRahim), matching: find.text(l10n.duesReasonLeft)), findsOneWidget);
@@ -460,7 +460,7 @@ void main() {
       );
       expect(find.byType(DuesOverview), findsOneWidget);
       expect(find.byType(CollectPaymentPanel), findsNothing);
-      expect(find.byType(EscalationBar), findsOneWidget);
+      expect(find.byType(BhorEscalationBar), findsOneWidget);
     });
   });
 
@@ -505,10 +505,10 @@ void main() {
       await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
       await _tall(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
-      IconButton next() =>
-          tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_right));
+      BhorIconButton next() =>
+          tester.widget<BhorIconButton>(find.widgetWithIcon(BhorIconButton, Icons.chevron_right));
       expect(next().onPressed, isNull);
-      await tester.tap(find.byTooltip(l10n.collPrevMonth));
+      await tester.tap(find.widgetWithIcon(BhorIconButton, Icons.chevron_left));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text(l10n.collBillingBlock('অক্টোবর ২০২৬')), findsOneWidget);

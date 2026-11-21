@@ -4,10 +4,12 @@
 // large windows turn the list into the dues data table, extra-large ones add
 // the level rail. `/fees/s/:studentId` passes [selectedStudentId].
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
@@ -99,56 +101,51 @@ class _FeesListScaffold extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints c) {
         final bool table =
             wc.index >= WindowClass.large.index && c.maxWidth >= FeesScreen.tableMinPaneWidth;
-        return Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: !PaneScope.isEmbedded(context),
-            title: Semantics(header: true, child: Text(l10n.navFees)),
+        return BhorScaffold(
+          header: BhorHeader(
+            title: l10n.navFees,
+            showBack: PaneScope.isEmbedded(context) ? false : null,
             actions: <Widget>[
               if (wc.usesRail)
-                FilledButton.icon(
+                BhorButton(
                   key: const ValueKey<String>('fees-take-money'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                  icon: Icons.payments_outlined,
+                  label: l10n.payTitle,
                   onPressed: () => showTakeMoneyPicker(context),
-                  icon: const Icon(Icons.payments_outlined),
-                  label: Text(l10n.payTitle),
                 ),
-              if (wc.usesRail) const SizedBox(width: 12),
-              IconButton(
-                tooltip: l10n.commonSearch,
-                icon: const Icon(Icons.manage_search),
+              if (wc.usesRail) const SizedBox(width: BhorSpace.s12),
+              BhorIconButton(
+                icon: Icons.manage_search,
+                semanticLabel: l10n.commonSearch,
                 onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
             ],
           ),
-          floatingActionButton: wc.usesRail
+          floating: wc.usesRail
               ? null
               : Padding(
-                  // Lift the button above the floating nav pill.
-                  padding: const EdgeInsets.only(bottom: 84),
-                  child: FloatingActionButton.extended(
+                  // Lift the button above the bottom navigation.
+                  padding: const EdgeInsets.only(bottom: 64),
+                  child: BhorButton(
                     key: const ValueKey<String>('fees-take-money'),
-                    heroTag: null,
+                    icon: Icons.payments_outlined,
+                    label: l10n.payTitle,
                     onPressed: () => showTakeMoneyPicker(context),
-                    icon: const Icon(Icons.payments_outlined),
-                    label: Text(l10n.payTitle),
                   ),
                 ),
-          body: SafeArea(
-            top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const FeesSegments(selected: FeesSegment.dues),
-                Expanded(
-                  child: DuesListPane(
-                    selectedId: selectedId,
-                    table: table,
-                    showSummary: !wc.isWide,
-                  ),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const FeesSegments(selected: FeesSegment.dues),
+              Expanded(
+                child: DuesListPane(
+                  selectedId: selectedId,
+                  table: table,
+                  showSummary: !wc.isWide,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

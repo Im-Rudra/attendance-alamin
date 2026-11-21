@@ -2,17 +2,15 @@
 // side panel (UX 2c): batch, months, amount, method, date, note and one big
 // button that repeats the months and the amount.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/app_date_picker.dart';
-import 'package:attendance_alamin/app/widgets/initials_avatar.dart';
-import 'package:attendance_alamin/app/widgets/sticky_action_bar.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -102,16 +100,36 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     });
   }
 
+  /// The ⋮ menu: waive the first open month.
+  Future<void> _openMenu(String enrollmentId, YearMonth month) async {
+    final bool? waive = await showBhorSheet<bool>(
+      context,
+      builder: (BuildContext ctx) => BhorCard(
+        padding: EdgeInsets.zero,
+        child: BhorListRow(
+          key: const ValueKey<String>('pay-menu-waive'),
+          title: context.l10n.payWaiveMenu,
+          divider: false,
+          onTap: () => Navigator.of(ctx).pop(true),
+        ),
+      ),
+    );
+    if (waive != true || !mounted) return;
+    await runWaiveDialog(context, enrollmentId: enrollmentId, month: month);
+  }
+
   Future<void> _pickDate(LocalDate current, LocalDate today) async {
     final DateTime last = DateTime(today.year, today.month, today.day);
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
-    final DateTime? picked = await showAppDatePicker(
-      context: context,
+    final DateTime? picked = await showBhorDatePicker(
+      context,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,
       lastDate: last,
+      weekStart: ref.read(weekStartProvider).value ?? DateTime.saturday,
+      today: last,
     );
     if (picked == null || !mounted) return;
     ref
@@ -186,8 +204,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     _showAmount(fmt, shownAmount);
 
     final notifier = ref.read(collectPaymentControllerProvider(args).notifier);
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final EnrollmentTerms terms = dues.terms;
     final bool chooser = choices.length > 1 && widget.enrollmentId == null && !editing;
 
@@ -209,19 +226,19 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     final List<Widget> body = <Widget>[
       Row(
         children: <Widget>[
-          InitialsAvatar(name: terms.studentName, size: 40),
-          const SizedBox(width: 12),
+          BhorAvatar(name: terms.studentName, size: 40),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Semantics(
                   header: true,
-                  child: Text(editing ? l10n.payTitleEdit : l10n.payTitle, style: tt.titleMedium),
+                  child: Text(editing ? l10n.payTitleEdit : l10n.payTitle, style: b.type.heading),
                 ),
                 Text(
                   _subtitle(terms),
-                  style: tt.bodySmall?.copyWith(color: tokens.textSecondary),
+                  style: b.type.meta,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -229,38 +246,28 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
             ),
           ),
           if (!editing)
-            PopupMenuButton<String>(
+            BhorIconButton(
               key: const ValueKey<String>('pay-menu'),
-              tooltip: l10n.payMenuTooltip,
-              enabled: plan.openMonths.isNotEmpty,
-              onSelected: (String v) {
-                if (v == 'waive' && plan.openMonths.isNotEmpty) {
-                  runWaiveDialog(context, enrollmentId: enrollmentId, month: plan.openMonths.first.month);
-                }
-              },
-              itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  key: const ValueKey<String>('pay-menu-waive'),
-                  value: 'waive',
-                  child: Text(l10n.payWaiveMenu),
-                ),
-              ],
+              icon: Icons.more_vert,
+              semanticLabel: l10n.payMenuTooltip,
+              onPressed: plan.openMonths.isEmpty
+                  ? null
+                  : () => _openMenu(enrollmentId, plan.openMonths.first.month),
             ),
           if (widget.onClose != null)
-            IconButton(
-              tooltip: l10n.commonClose,
+            BhorIconButton(
+              icon: Icons.close,
+              semanticLabel: l10n.commonClose,
               onPressed: widget.onClose,
-              icon: const Icon(Icons.close),
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
         ],
       ),
       if (chooser) ...<Widget>[
-        const SizedBox(height: 16),
+        const SizedBox(height: BhorSpace.s16),
         _Label(l10n.payBatchLabel),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: BhorSpace.s8,
+          runSpacing: BhorSpace.s8,
           children: <Widget>[
             for (final EnrollmentDues c in choices)
               _Pill(
@@ -305,29 +312,27 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
                     ))
                   : fmt.monthList(plan.months, currentYear: today.year, partial: plan.partialMonths.toSet())),
           key: const ValueKey<String>('pay-months'),
-          style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          style: b.type.bodyStrong,
         ),
       ),
       const SizedBox(height: 16),
       _Label(l10n.payAmountLabel),
-      TextField(
+      BhorTextField(
         key: const ValueKey<String>('pay-amount'),
         controller: _amount,
         focusNode: _amountFocus,
         readOnly: manual,
         keyboardType: TextInputType.number,
         inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
-        style: tt.titleLarge,
+        tabular: true,
+        semanticLabel: l10n.payAmountLabel,
         onChanged: (String t) => notifier.setAmount(parseDigits(t).toString()),
-        decoration: InputDecoration(
-          prefixText: '৳ ',
-          // The amount in the app language (grouped), so a typo is obvious.
-          helperText: manual
-              ? l10n.payAmountFromSplit
-              : (shownAmount > 0 && plan.problem == PlanProblem.none ? fmt.money(shownAmount) : null),
-          errorText: problemMessage,
-          errorMaxLines: 3,
-        ),
+        prefix: Text('৳', style: b.type.body.copyWith(color: b.colors.text2)),
+        // The amount in the app language (grouped), so a typo is obvious.
+        helper: manual
+            ? l10n.payAmountFromSplit
+            : (shownAmount > 0 && plan.problem == PlanProblem.none ? fmt.money(shownAmount) : null),
+        error: problemMessage,
       ),
       if (plan.ok && plan.partialLeft > 0)
         _Note(
@@ -387,50 +392,49 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
                 Text(
                   paidOn == today ? l10n.payDateToday(fmt.date(paidOn)) : fmt.date(paidOn),
                   key: const ValueKey<String>('pay-date'),
-                  style: tt.bodyLarge,
+                  style: b.type.body,
                 ),
               ],
             ),
           ),
-          IconButton(
+          BhorIconButton(
             key: const ValueKey<String>('pay-date-edit'),
-            tooltip: l10n.payDateEdit,
+            icon: Icons.edit_calendar,
+            semanticLabel: l10n.payDateEdit,
             onPressed: () => _pickDate(paidOn, today),
-            icon: const Icon(Icons.edit_calendar),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           ),
         ],
       ),
       if (_showNote)
-        TextField(
+        BhorTextField(
           key: const ValueKey<String>('pay-note'),
           controller: _note,
           maxLength: 120,
           onChanged: notifier.setNote,
-          decoration: InputDecoration(labelText: l10n.payNoteLabel),
+          label: l10n.payNoteLabel,
         )
       else
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
+          child: BhorButton(
             key: const ValueKey<String>('pay-note-add'),
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+            variant: BhorButtonVariant.ghost,
+            icon: Icons.edit_note,
+            label: l10n.payNoteAdd,
             onPressed: () => setState(() => _showNote = true),
-            icon: const Icon(Icons.edit_note),
-            label: Text(l10n.payNoteAdd),
           ),
         ),
       if (errorMessage != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text(errorMessage, style: tt.bodyMedium?.copyWith(color: tokens.error)),
+          child: Text(errorMessage, style: b.type.body.copyWith(color: b.colors.danger)),
         ),
       const SizedBox(height: 8),
     ];
 
     final Widget bar = KeyedSubtree(
       key: const ValueKey<String>('pay-bar'),
-      child: StickyActionBar(
+      child: _ActionBar(
         label: buttonLabel,
         onPressed: plan.ok && !input.busy && !_locked ? _submit : null,
         disabledReason: disabledReason,
@@ -440,7 +444,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final Widget scroll = SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(BhorSpace.s4, 4, BhorSpace.s4, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
         );
         return Column(
@@ -497,7 +501,7 @@ class _Loading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const SizedBox(
         height: 160,
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: BhorSpinner()),
       );
 }
 
@@ -508,9 +512,9 @@ class _Message extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(BhorSpace.s24),
         child: Center(
-          child: Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
+          child: Text(text, textAlign: TextAlign.center, style: context.bhor.type.body),
         ),
       );
 }
@@ -523,10 +527,7 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.aurora.textSecondary),
-        ),
+        child: Text(text, style: context.bhor.type.label.copyWith(color: context.bhor.colors.text2)),
       );
 }
 
@@ -538,20 +539,15 @@ class _Note extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: BhorSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, size: 18, color: tokens.info),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textPrimary),
-            ),
-          ),
+          Icon(icon, size: 18, color: b.colors.accent),
+          const SizedBox(width: BhorSpace.s8),
+          Expanded(child: Text(text, style: b.type.body)),
         ],
       ),
     );
@@ -567,28 +563,21 @@ class _SplitHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Semantics(
-      button: true,
       expanded: open,
-      label: title,
-      excludeSemantics: true,
-      onTap: onTap,
-      child: InkWell(
+      child: BhorPressable(
         key: const ValueKey<String>('pay-split-toggle'),
-        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+        semanticLabel: title,
+        excludeChildSemantics: true,
+        radius: BhorRadius.control,
+        builder: (BuildContext context, BhorStates s) => ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: BhorSize.minTap),
           child: Row(
             children: <Widget>[
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens.accent),
-                ),
-              ),
-              Icon(open ? Icons.expand_less : Icons.expand_more, color: tokens.accent),
+              Expanded(child: Text(title, style: b.type.label.copyWith(color: b.colors.accent))),
+              Icon(open ? Icons.expand_less : Icons.expand_more, color: b.colors.accent),
             ],
           ),
         ),
@@ -597,6 +586,7 @@ class _SplitHeader extends StatelessWidget {
   }
 }
 
+/// A single-choice pill (batch, month, method).
 class _Pill extends StatelessWidget {
   const _Pill({
     super.key,
@@ -613,45 +603,70 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final Color fg = selected ? tokens.onAccentContainer : tokens.textPrimary;
-    return Semantics(
-      button: true,
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    final Color fg = selected ? c.accent : c.text;
+    return BhorPressable(
+      onTap: onTap,
+      semanticLabel: semanticsLabel ?? label,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: semanticsLabel ?? label,
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Material(
-        color: selected ? tokens.accentContainer : tokens.surfaceDense,
-        shape: StadiumBorder(side: BorderSide(color: selected ? tokens.accent : tokens.hairline)),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48, minWidth: 64),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (selected) ...<Widget>[
-                    Icon(Icons.check, size: 18, color: fg),
-                    const SizedBox(width: 4),
-                  ],
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: fg,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                    ),
-                  ),
-                ],
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+        duration: BhorMotion.fast,
+        constraints: const BoxConstraints(minHeight: BhorSize.control, minWidth: 64),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
+        decoration: BoxDecoration(
+          color: selected ? c.accentTint : (s.hovered ? c.surface2 : c.surface),
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+          border: Border.all(color: selected ? c.accentLine : c.line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (selected) ...<Widget>[
+              Icon(Icons.check, size: 18, color: fg),
+              const SizedBox(width: BhorSpace.s4),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                style: b.type.label.copyWith(color: fg, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The big save button pinned under the form, with the reason it is disabled.
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({required this.label, required this.onPressed, this.disabledReason});
+
+  final String label;
+  final VoidCallback? onPressed;
+  final String? disabledReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return DecoratedBox(
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: b.colors.line))),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s12, BhorSpace.s4, BhorSpace.s12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            BhorButton(label: label, onPressed: onPressed, expand: true),
+            if (onPressed == null && disabledReason != null) ...<Widget>[
+              const SizedBox(height: BhorSpace.s8),
+              Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
+            ],
+          ],
         ),
       ),
     );

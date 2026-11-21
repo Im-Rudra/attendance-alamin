@@ -4,24 +4,25 @@
 // back in the name field. A phone that already belongs to someone only asks
 // once (siblings share a guardian number).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/controllers/extra_providers.dart';
 import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
+import 'package:attendance_alamin/features/extras/widgets/extras_action_bar.dart';
 
 class BulkAddScreen extends ConsumerStatefulWidget {
   const BulkAddScreen({super.key, required this.batchId});
@@ -184,11 +185,11 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
 
     Widget body;
     if (batch.hasError) {
-      body = EmptyState(icon: Icons.error_outline, message: l10n.commonLoadingFailed);
+      body = BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed);
     } else if (!batch.hasValue) {
-      body = const Center(child: CircularProgressIndicator());
+      body = const Center(child: BhorSpinner());
     } else if (batch.value == null) {
-      body = EmptyState(icon: Icons.layers_clear_outlined, message: l10n.extraBulkBatchMissing);
+      body = BhorEmptyState(icon: Icons.layers_clear_outlined, title: l10n.extraBulkBatchMissing);
     } else {
       final Widget form = _form(context, batch.value!);
       final Widget list = _addedList(context, scrollable: wide);
@@ -201,42 +202,37 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
                 Expanded(flex: 4, child: list),
               ],
             )
-          : ListView(children: <Widget>[form, const SizedBox(height: 12), list]);
+          : ListView(children: <Widget>[form, const SizedBox(height: BhorSpace.s12), list]);
     }
 
     final bool ready = batch.value != null;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.commonClose,
-          icon: const Icon(Icons.close),
-          onPressed: _close,
-        ),
-        title: Semantics(header: true, child: Text(l10n.extraBulkTitle)),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: l10n.extraBulkTitle,
+        showBack: true,
+        onBack: _close,
         actions: <Widget>[
-          TextButton(
+          BhorButton(
             key: const ValueKey<String>('bulk-finish'),
+            variant: BhorButtonVariant.ghost,
+            label: l10n.extraBulkFinish,
             onPressed: _close,
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            child: Text(l10n.extraBulkFinish),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: BhorSpace.s8),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(g, 4, g, g),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: body,
-            ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(g, 4, g, g),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: body,
           ),
         ),
       ),
-      bottomNavigationBar: ready
-          ? StickyActionBar(
+      bottomNav: ready
+          ? ExtrasActionBar(
+              buttonKey: const ValueKey<String>('bulk-save'),
               label: _phoneOwner != null ? l10n.extraBulkSaveAnyway : l10n.extraBulkSaveNext,
               onPressed: _canSave ? _save : null,
               disabledReason: _name.text.trim().isEmpty ? l10n.extraBulkDisabledName : null,
@@ -248,46 +244,44 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
 
   Widget _form(BuildContext context, Batch batch) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return GlassCard(
-      dense: true,
+    final BhorThemeData b = context.bhor;
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
             l10n.extraBulkIntoBatch(batch.name),
-            style: tt.titleSmall?.copyWith(color: tokens.accent),
+            style: b.type.bodyStrong.copyWith(color: b.colors.accent),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: BhorSpace.s4),
           Text(
             l10n.onbBillingStartNote(context.fmt.monthYear(ref.watch(todayProvider).yearMonth)),
             key: const ValueKey<String>('bulk-billing-note'),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: b.type.body.copyWith(color: b.colors.text2),
           ),
-          const SizedBox(height: 12),
-          TextField(
+          const SizedBox(height: BhorSpace.s12),
+          BhorTextField(
             key: const ValueKey<String>('bulk-name'),
             controller: _name,
             focusNode: _nameFocus,
             autofocus: true,
             textInputAction: TextInputAction.next,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(labelText: l10n.extraBulkNameLabel),
+            label: l10n.extraBulkNameLabel,
             onChanged: (_) => setState(() => _removedNote = null),
             onSubmitted: (_) => _phoneFocus.requestFocus(),
           ),
-          const SizedBox(height: 12),
-          TextField(
+          const SizedBox(height: BhorSpace.s12),
+          BhorTextField(
             key: const ValueKey<String>('bulk-phone'),
             controller: _phone,
             focusNode: _phoneFocus,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.done,
+            tabular: true,
             inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯+\-\s]')),
             ],
-            decoration: InputDecoration(labelText: l10n.extraBulkPhoneLabel),
+            label: l10n.extraBulkPhoneLabel,
             onChanged: (_) => setState(() {
               _phoneOwner = null;
               _confirmedPhone = null;
@@ -296,32 +290,32 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             onSubmitted: (_) => _save(),
           ),
           if (_phoneOwner != null) ...<Widget>[
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
             _Note(
               key: const ValueKey<String>('bulk-duplicate'),
               icon: Icons.info_outline,
               text: l10n.extraBulkDuplicate(_phoneOwner!.name),
-              fill: tokens.infoContainer,
-              color: tokens.info,
+              fill: b.colors.accentTint,
+              color: b.colors.accent,
             ),
           ],
           if (_error != null) ...<Widget>[
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
             _Note(
               key: const ValueKey<String>('bulk-error'),
               icon: Icons.error_outline,
               text: _error!,
-              fill: tokens.errorContainer,
-              color: tokens.onErrorContainer,
+              fill: b.colors.dangerBg,
+              color: b.colors.danger,
             ),
           ],
           if (_removedNote != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(_removedNote!, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
+            const SizedBox(height: BhorSpace.s12),
+            Text(_removedNote!, style: b.type.meta),
           ],
-          const SizedBox(height: 12),
-          Text(l10n.extraBulkHint, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
+          Text(l10n.extraBulkHint, style: b.type.meta),
+          const SizedBox(height: BhorSpace.s12),
           CsvImportButton(onPressed: _busy ? null : _importCsv),
         ],
       ),
@@ -330,52 +324,50 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
 
   Widget _addedList(BuildContext context, {required bool scrollable}) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     if (_added.isEmpty) return const SizedBox.shrink();
     // A phone shows the newest rows only; the counter in the action bar has
     // the full number.
     final List<BulkAdded> shown = scrollable || _added.length <= 30 ? _added : _added.sublist(0, 30);
     final List<Widget> rows = <Widget>[
-      for (final BulkAdded a in shown)
-        ListTile(
-          key: ValueKey<String>('bulk-added-${a.id}'),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          leading: InitialsAvatar(name: a.name),
-          title: Text(a.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: a.guardianPhone == null ? null : Text(context.fmt.digits(a.guardianPhone!)),
-          trailing: Text(
-            l10n.extraBulkRoll(context.fmt.digits(a.roll)),
-            style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-          ),
+      for (int i = 0; i < shown.length; i++)
+        BhorListRow(
+          key: ValueKey<String>('bulk-added-${shown[i].id}'),
+          leading: BhorAvatar(name: shown[i].name, size: 32),
+          title: shown[i].name,
+          subtitle: shown[i].guardianPhone == null ? null : context.fmt.digits(shown[i].guardianPhone!),
+          divider: i < shown.length - 1,
+          trailing: Text(l10n.extraBulkRoll(context.fmt.digits(shown[i].roll)), style: b.type.meta),
         ),
     ];
-    final Widget header = Row(
-      children: <Widget>[
-        Expanded(
-          child: Semantics(
-            header: true,
-            child: Text(l10n.extraBulkAddedTitle, style: tt.titleSmall),
+    final Widget header = Padding(
+      padding: const EdgeInsets.only(left: BhorSpace.s16, right: BhorSpace.s8),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(l10n.extraBulkAddedTitle, style: b.type.heading),
+            ),
           ),
-        ),
-        TextButton.icon(
-          key: const ValueKey<String>('bulk-undo-last'),
-          onPressed: _busy ? null : _removeLast,
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-          icon: const Icon(Icons.undo, size: 18),
-          label: Text(l10n.extraBulkUndoLast),
-        ),
-      ],
+          BhorButton(
+            key: const ValueKey<String>('bulk-undo-last'),
+            variant: BhorButtonVariant.ghost,
+            icon: Icons.undo,
+            label: l10n.extraBulkUndoLast,
+            onPressed: _busy ? null : _removeLast,
+          ),
+        ],
+      ),
     );
-    return GlassCard(
-      dense: true,
+    return BhorCard(
+      padding: EdgeInsets.zero,
       child: scrollable
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 header,
-                Expanded(child: ListView(children: rows)),
+                Expanded(child: ListView(padding: EdgeInsets.zero, children: rows)),
               ],
             )
           : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[header, ...rows]),
@@ -396,15 +388,15 @@ class _Note extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: DecoratedBox(
-        decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(BhorRadius.control)),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Icon(icon, size: 20, color: color),
-              const SizedBox(width: 8),
-              Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color))),
+              const SizedBox(width: BhorSpace.s8),
+              Expanded(child: Text(text, style: context.bhor.type.body.copyWith(color: color))),
             ],
           ),
         ),

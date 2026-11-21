@@ -1,16 +1,17 @@
 // Add students from a CSV file (shared by onboarding and the bulk-add
 // screen): pick the file, show a preview sheet (problem rows flagged and
 // skipped), save everything in one go with a progress bar, then report the
-// count in a snackbar.
+// count in a toast.
 
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/controllers/csv_import_service.dart';
@@ -25,12 +26,13 @@ class CsvImportButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
+    return BhorButton(
       key: const ValueKey<String>('csv-import-button'),
+      variant: BhorButtonVariant.secondary,
+      icon: Icons.upload_file_outlined,
+      label: context.l10n.extraImportButton,
+      expand: true,
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      icon: const Icon(Icons.upload_file_outlined),
-      label: Text(context.l10n.extraImportButton),
     );
   }
 }
@@ -44,10 +46,9 @@ Future<void> startCsvStudentImport(
   required void Function(List<BulkAdded> added) onAdded,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-  void say(String text) => messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(text), persist: false));
+  void say(String text) {
+    if (context.mounted) BhorToast.show(context, message: text);
+  }
 
   List<CsvStudentRow> rows;
   try {
@@ -65,13 +66,9 @@ Future<void> startCsvStudentImport(
   }
   if (!context.mounted) return;
 
-  final CsvImportResult? result = await showModalBottomSheet<CsvImportResult>(
-    context: context,
-    isScrollControlled: true,
-    isDismissible: false,
-    enableDrag: false,
-    useSafeArea: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  final CsvImportResult? result = await showBhorSheet<CsvImportResult>(
+    context,
+    dismissible: false,
     builder: (BuildContext ctx) => CsvPreviewSheet(
       rows: rows,
       save: (List<CsvStudentRow> r, void Function(int) progress) => importStudentRows(
@@ -139,114 +136,116 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final int okCount = _ok.length;
     final int skipped = widget.rows.length - okCount;
-    final double maxH = MediaQuery.sizeOf(context).height * 0.9;
+    final double maxH = MediaQuery.sizeOf(context).height * 0.8;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxH),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                l10n.extraImportFound(fmt.number(widget.rows.length)),
-                key: const ValueKey<String>('csv-found'),
-                style: tt.titleLarge,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.extraImportFound(fmt.number(widget.rows.length)),
+              key: const ValueKey<String>('csv-found'),
+              style: b.type.title,
             ),
-            if (skipped > 0) ...<Widget>[
-              const SizedBox(height: 4),
-              Text(
-                l10n.extraImportSkipped(fmt.number(skipped)),
-                key: const ValueKey<String>('csv-skipped'),
-                style: tt.bodyMedium?.copyWith(color: tokens.onErrorContainer),
-              ),
-            ],
-            const SizedBox(height: 4),
-            Text(l10n.extraImportHint, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: widget.rows.length,
-                itemBuilder: (BuildContext _, int i) {
-                  final CsvStudentRow r = widget.rows[i];
-                  final CsvProblem? p = r.problem;
-                  final String detail = <String>[
-                    if (r.roll != null) l10n.extraBulkRoll(fmt.digits(r.roll!)),
-                    if (r.phone != null) fmt.digits(r.phone!),
-                  ].join('  ·  ');
-                  return ListTile(
-                    key: ValueKey<String>('csv-row-$i'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      p == null ? Icons.check_circle_outline : Icons.block,
-                      color: p == null ? tokens.accent : tokens.onErrorContainer,
-                    ),
-                    title: Text(
-                      r.name.isEmpty ? '—' : r.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: p == null ? null : TextStyle(color: tokens.textSecondary),
-                    ),
-                    subtitle: p != null
-                        ? Text(
-                            _problemText(l10n, p),
-                            style: TextStyle(color: tokens.onErrorContainer),
-                          )
-                        : (detail.isEmpty && r.note == null)
-                            ? null
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  if (detail.isNotEmpty) Text(detail),
-                                  if (r.note != null)
-                                    Text(
-                                      _noteText(l10n, r.note!),
-                                      key: ValueKey<String>('csv-note-$i'),
-                                      style: TextStyle(color: tokens.textSecondary),
-                                    ),
-                                ],
-                              ),
-                  );
-                },
-              ),
+          ),
+          if (skipped > 0) ...<Widget>[
+            const SizedBox(height: BhorSpace.s4),
+            Text(
+              l10n.extraImportSkipped(fmt.number(skipped)),
+              key: const ValueKey<String>('csv-skipped'),
+              style: b.type.body.copyWith(color: b.colors.danger),
             ),
-            const SizedBox(height: 12),
-            if (_saving) ...<Widget>[
-              LinearProgressIndicator(
-                key: const ValueKey<String>('csv-progress'),
-                value: okCount == 0 ? null : _done / okCount,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.extraImportSaving(fmt.number(_done), fmt.number(okCount)),
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-              ),
-            ] else ...<Widget>[
-              FilledButton(
-                key: const ValueKey<String>('csv-add-all'),
-                onPressed: okCount == 0 ? null : _save,
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                child: Text(l10n.extraImportAddAll(fmt.number(okCount))),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                key: const ValueKey<String>('csv-cancel'),
-                onPressed: () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                child: Text(l10n.commonCancel),
-              ),
-            ],
           ],
-        ),
+          const SizedBox(height: BhorSpace.s4),
+          Text(l10n.extraImportHint, style: b.type.meta),
+          const SizedBox(height: BhorSpace.s8),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              itemCount: widget.rows.length,
+              itemBuilder: (BuildContext _, int i) {
+                final CsvStudentRow r = widget.rows[i];
+                final CsvProblem? p = r.problem;
+                final String detail = <String>[
+                  if (r.roll != null) l10n.extraBulkRoll(fmt.digits(r.roll!)),
+                  if (r.phone != null) fmt.digits(r.phone!),
+                ].join('  ·  ');
+                return Padding(
+                  key: ValueKey<String>('csv-row-$i'),
+                  padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        p == null ? Icons.check_circle_outline : Icons.block,
+                        color: p == null ? b.colors.accent : b.colors.danger,
+                      ),
+                      const SizedBox(width: BhorSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              r.name.isEmpty ? '—' : r.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: p == null ? b.type.bodyStrong : b.type.bodyStrong.copyWith(color: b.colors.text2),
+                            ),
+                            if (p != null)
+                              Text(_problemText(l10n, p), style: b.type.meta.copyWith(color: b.colors.danger))
+                            else ...<Widget>[
+                              if (detail.isNotEmpty) Text(detail, style: b.type.meta),
+                              if (r.note != null)
+                                Text(
+                                  _noteText(l10n, r.note!),
+                                  key: ValueKey<String>('csv-note-$i'),
+                                  style: b.type.meta,
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          if (_saving) ...<Widget>[
+            BhorProgress(
+              key: const ValueKey<String>('csv-progress'),
+              value: okCount == 0 ? 0 : _done / okCount,
+            ),
+            const SizedBox(height: BhorSpace.s8),
+            Text(
+              l10n.extraImportSaving(fmt.number(_done), fmt.number(okCount)),
+              style: b.type.body.copyWith(color: b.colors.text2),
+            ),
+          ] else ...<Widget>[
+            BhorButton(
+              key: const ValueKey<String>('csv-add-all'),
+              label: l10n.extraImportAddAll(fmt.number(okCount)),
+              expand: true,
+              onPressed: okCount == 0 ? null : _save,
+            ),
+            const SizedBox(height: BhorSpace.s4),
+            BhorButton(
+              key: const ValueKey<String>('csv-cancel'),
+              variant: BhorButtonVariant.ghost,
+              label: l10n.commonCancel,
+              expand: true,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ],
       ),
     );
   }

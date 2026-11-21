@@ -2,15 +2,15 @@
 // backup" and the safety copies (last 3) with a one-tap way back. On wide
 // windows the three cards stand side by side and fill the height.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/center_time.dart';
 import 'package:attendance_alamin/data/backup/backup_providers.dart';
@@ -34,21 +34,22 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
 
   Future<void> _restore(SafetyCopyInfo copy) async {
     final l10n = context.l10n;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final bool ok = await showConfirmDialog(
+    final bool ok = await showBhorConfirm(
       context,
       title: l10n.backupRestoreTitle,
-      body: l10n.backupRestoreBody,
+      message: l10n.backupRestoreBody,
       confirmLabel: l10n.backupRestoreConfirm,
     );
     if (!ok || !mounted) return;
     setState(() => _restoring = true);
     try {
       await ref.read(backupRepositoryProvider).restoreSafetyCopy(copy.id);
-      if (mounted) requestRemindersReplan(context);
-      messenger.showSnackBar(SnackBar(content: Text(l10n.backupRestoreDone)));
+      if (mounted) {
+        requestRemindersReplan(context);
+        BhorToast.show(context, message: l10n.backupRestoreDone, tone: BhorTone.ok, bottomOffset: 64);
+      }
     } on Object catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      if (mounted) BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger, bottomOffset: 64);
     } finally {
       if (mounted) setState(() => _restoring = false);
     }
@@ -85,72 +86,69 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       onPressed: () => runImportBackup(context),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !embedded,
-        title: Semantics(header: true, child: Text(l10n.shellTitleBackup)),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: l10n.shellTitleBackup,
+        showBack: embedded ? false : null,
       ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints c) {
-            final double w = c.maxWidth;
-            if (w >= WindowClass.expandedMin && c.hasBoundedHeight) {
-              // Three columns that fill the height; the copies list scrolls.
-              return Padding(
-                padding: EdgeInsets.fromLTRB(g, 8, g, g),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    status,
-                    SizedBox(height: g),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Expanded(flex: 5, child: exportCard(true)),
-                          SizedBox(width: g),
-                          Expanded(flex: 5, child: importCard(true)),
-                          SizedBox(width: g),
-                          Expanded(
-                            flex: 6,
-                            child: _SafetyCard(copies: copies, restoring: _restoring, onRestore: _restore, fill: true),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            final bool twoUp = w >= WindowClass.mediumMin;
-            return ListView(
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          final double w = c.maxWidth;
+          if (w >= WindowClass.expandedMin && c.hasBoundedHeight) {
+            // Three columns that fill the height; the copies list scrolls.
+            return Padding(
               padding: EdgeInsets.fromLTRB(g, 8, g, g),
-              children: <Widget>[
-                status,
-                SizedBox(height: g),
-                if (twoUp)
-                  IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  status,
+                  SizedBox(height: g),
+                  Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        Expanded(child: exportCard(false)),
+                        Expanded(flex: 5, child: exportCard(true)),
                         SizedBox(width: g),
-                        Expanded(child: importCard(false)),
+                        Expanded(flex: 5, child: importCard(true)),
+                        SizedBox(width: g),
+                        Expanded(
+                          flex: 6,
+                          child: _SafetyCard(copies: copies, restoring: _restoring, onRestore: _restore, fill: true),
+                        ),
                       ],
                     ),
-                  )
-                else ...<Widget>[
-                  exportCard(false),
-                  SizedBox(height: g),
-                  importCard(false),
+                  ),
                 ],
-                SizedBox(height: g),
-                _SafetyCard(copies: copies, restoring: _restoring, onRestore: _restore, fill: false),
-              ],
+              ),
             );
-          },
-        ),
+          }
+          final bool twoUp = w >= WindowClass.mediumMin;
+          return ListView(
+            padding: EdgeInsets.fromLTRB(g, 8, g, g),
+            children: <Widget>[
+              status,
+              SizedBox(height: g),
+              if (twoUp)
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(child: exportCard(false)),
+                      SizedBox(width: g),
+                      Expanded(child: importCard(false)),
+                    ],
+                  ),
+                )
+              else ...<Widget>[
+                exportCard(false),
+                SizedBox(height: g),
+                importCard(false),
+              ],
+              SizedBox(height: g),
+              _SafetyCard(copies: copies, restoring: _restoring, onRestore: _restore, fill: false),
+            ],
+          );
+        },
       ),
     );
   }
@@ -164,8 +162,7 @@ class _LastBackupCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final int? days = ref.watch(backupDaysSinceProvider);
     final bool stale = days == null || days > kBackupStaleDays;
     final String line = days == null
@@ -173,32 +170,30 @@ class _LastBackupCard extends ConsumerWidget {
         : l10n.backupLastLine(
             days == 0 ? l10n.backupLastToday : l10n.backupLastAgo(fmt.number(days)),
           );
-    return GlassCard(
+    return BhorCard(
       key: const Key('backup-last-card'),
-      dense: true,
       child: Row(
         children: <Widget>[
-          Icon(stale ? Icons.info_outline : Icons.check_circle_outline,
-              color: stale ? tokens.info : tokens.accent),
-          const SizedBox(width: 12),
+          Icon(stale ? Icons.info_outline : Icons.check_circle_outline, color: b.colors.accent),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(line, key: const Key('backup-last-line'), style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+                Text(line, key: const Key('backup-last-line'), style: b.type.heading),
                 if (stale) ...<Widget>[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: BhorSpace.s8),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: tokens.infoContainer,
-                      borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
+                      color: b.colors.accentTint,
+                      borderRadius: BorderRadius.circular(BhorRadius.chip),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       child: Text(
                         l10n.backupStaleNote,
                         key: const Key('backup-stale-chip'),
-                        style: tt.labelMedium?.copyWith(color: tokens.info),
+                        style: b.type.label.copyWith(color: b.colors.accent),
                       ),
                     ),
                   ),
@@ -238,23 +233,16 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final Widget action = outlined
-        ? OutlinedButton(
-            key: buttonKey,
-            onPressed: onPressed,
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-            child: Text(button),
-          )
-        : FilledButton(
-            key: buttonKey,
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-            child: Text(button),
-          );
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
+    final BhorThemeData b = context.bhor;
+    final Widget action = BhorButton(
+      key: buttonKey,
+      variant: outlined ? BhorButtonVariant.secondary : BhorButtonVariant.primary,
+      label: button,
+      expand: true,
+      onPressed: onPressed,
+    );
+    return BhorCard(
+      padding: const EdgeInsets.all(BhorSpace.s20),
       child: Builder(
         builder: (BuildContext context) {
           final Widget column = Column(
@@ -263,19 +251,19 @@ class _ActionCard extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(icon, color: tokens.accent, size: 28),
-                  const SizedBox(width: 12),
+                  Icon(icon, color: b.colors.accent, size: 28),
+                  const SizedBox(width: BhorSpace.s12),
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text(title, style: tt.titleLarge?.copyWith(color: tokens.textPrimary)),
+                      child: Text(title, style: b.type.title),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(body, style: tt.bodyLarge?.copyWith(color: tokens.textSecondary)),
-              const SizedBox(height: 20),
+              const SizedBox(height: BhorSpace.s12),
+              Text(body, style: b.type.body.copyWith(color: b.colors.text2)),
+              const SizedBox(height: BhorSpace.s20),
               action,
             ],
           );
@@ -305,49 +293,48 @@ class _SafetyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     final Widget list = copies.isEmpty
         ? Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: BhorSpace.s16),
             child: Text(
               l10n.backupSafetyEmpty,
               key: const Key('backup-safety-empty'),
-              style: tt.bodyLarge?.copyWith(color: tokens.textSecondary),
+              style: b.type.body.copyWith(color: b.colors.text2),
             ),
           )
         : Column(
             children: <Widget>[
               for (int i = 0; i < copies.length; i++) ...<Widget>[
-                if (i > 0) Divider(height: 1, color: tokens.track),
+                if (i > 0) Container(height: 1, color: b.colors.line),
                 _SafetyRow(copy: copies[i], enabled: !restoring, onRestore: () => onRestore(copies[i])),
               ],
             ],
           );
 
-    return GlassCard(
+    return BhorCard(
       key: const Key('backup-safety-card'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(BhorSpace.s20),
       child: Column(
         mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.restore, color: tokens.accent, size: 28),
-              const SizedBox(width: 12),
+              Icon(Icons.restore, color: b.colors.accent, size: 28),
+              const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text(l10n.backupSafetyTitle, style: tt.titleLarge?.copyWith(color: tokens.textPrimary)),
+                  child: Text(l10n.backupSafetyTitle, style: b.type.title),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(l10n.backupSafetyBody, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
+          Text(l10n.backupSafetyBody, style: b.type.body.copyWith(color: b.colors.text2)),
+          const SizedBox(height: BhorSpace.s8),
           if (fill) Expanded(child: SingleChildScrollView(child: list)) else list,
         ],
       ),
@@ -366,8 +353,7 @@ class _SafetyRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final CenterTime center = ref.watch(centerTimeProvider);
     final String reason = copy.reason == SafetyCopyReason.beforeRestore
         ? l10n.backupSafetyReasonRestore
@@ -375,27 +361,24 @@ class _SafetyRow extends ConsumerWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 64),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8),
         child: Row(
           children: <Widget>[
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    backupWhenText(l10n, fmt, center, copy.createdAtMs),
-                    style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                  ),
-                  Text(reason, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+                  Text(backupWhenText(l10n, fmt, center, copy.createdAtMs), style: b.type.body),
+                  Text(reason, style: b.type.meta),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            OutlinedButton(
+            const SizedBox(width: BhorSpace.s8),
+            BhorButton(
               key: Key('backup-restore-${copy.id}'),
+              variant: BhorButtonVariant.secondary,
+              label: l10n.backupSafetyRestore,
               onPressed: enabled ? onRestore : null,
-              style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: Text(l10n.backupSafetyRestore),
             ),
           ],
         ),

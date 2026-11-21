@@ -2,11 +2,12 @@
 // share it. Three files - students, payments, attendance - each with its own
 // save and share button. The files carry a UTF-8 BOM so Excel shows Bangla.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/backup/backup_files.dart';
 import 'package:attendance_alamin/data/backup/backup_providers.dart';
@@ -17,12 +18,9 @@ import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// Opens the sheet for [month].
 Future<void> openCsvExportSheet(BuildContext context, {required YearMonth month}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  return showBhorSheet<void>(
+    context,
+    title: context.l10n.extraCsvTitle,
     builder: (BuildContext ctx) => CsvExportSheet(initialMonth: month),
   );
 }
@@ -46,7 +44,6 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
   Future<void> _run(CsvKind kind, {required bool share}) async {
     if (_busy != null) return;
     final l10n = context.l10n;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final BackupFiles files = widget.files ?? ref.read(backupFilesProvider);
     setState(() => _busy = kind);
     try {
@@ -66,16 +63,10 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
         await files.share(file.bytes, fileName: file.fileName);
       } else {
         final bool saved = await files.save(file.bytes, fileName: file.fileName);
-        if (saved) {
-          messenger
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(l10n.extraCsvSaved)));
-        }
+        if (saved && mounted) BhorToast.show(context, message: l10n.extraCsvSaved, tone: BhorTone.ok);
       }
     } on Object {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.extraCsvFailed)));
+      if (mounted) BhorToast.show(context, message: l10n.extraCsvFailed, tone: BhorTone.danger);
     } finally {
       if (mounted) setState(() => _busy = null);
     }
@@ -85,8 +76,7 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<({CsvKind kind, IconData icon, String title, String hint})> rows =
         <({CsvKind kind, IconData icon, String title, String hint})>[
       (
@@ -109,19 +99,16 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
       ),
     ];
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Semantics(header: true, child: Text(l10n.extraCsvTitle, style: tt.titleLarge)),
-          const SizedBox(height: 8),
           Row(
             children: <Widget>[
-              IconButton(
+              BhorIconButton(
                 key: const ValueKey<String>('csv-prev-month'),
-                tooltip: fmt.monthYear(_month.addMonths(-1)),
-                icon: const Icon(Icons.chevron_left),
+                icon: Icons.chevron_left,
+                semanticLabel: fmt.monthYear(_month.addMonths(-1)),
                 onPressed: () => setState(() => _month = _month.addMonths(-1)),
               ),
               Expanded(
@@ -129,18 +116,18 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
                   l10n.extraCsvMonthLine(fmt.monthYear(_month)),
                   key: const ValueKey<String>('csv-month'),
                   textAlign: TextAlign.center,
-                  style: tt.titleMedium,
+                  style: b.type.heading,
                 ),
               ),
-              IconButton(
+              BhorIconButton(
                 key: const ValueKey<String>('csv-next-month'),
-                tooltip: fmt.monthYear(_month.addMonths(1)),
-                icon: const Icon(Icons.chevron_right),
+                icon: Icons.chevron_right,
+                semanticLabel: fmt.monthYear(_month.addMonths(1)),
                 onPressed: () => setState(() => _month = _month.addMonths(1)),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           for (final r in rows) ...<Widget>[
             _CsvRow(
               kind: r.kind,
@@ -154,10 +141,10 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
               onSave: () => _run(r.kind, share: false),
               onShare: () => _run(r.kind, share: true),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: BhorSpace.s8),
           ],
-          const SizedBox(height: 4),
-          Text(l10n.extraCsvPrivacy, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
+          const SizedBox(height: BhorSpace.s4),
+          Text(l10n.extraCsvPrivacy, style: b.type.meta),
         ],
       ),
     );
@@ -191,59 +178,49 @@ class _CsvRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.surfaceDense,
-        border: Border.all(color: tokens.hairline),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(icon, color: tokens.accent),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(title, style: tt.titleSmall),
-                      Text(hint, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
-                    ],
-                  ),
+    final BhorThemeData b = context.bhor;
+    return BhorCard(
+      padding: const EdgeInsets.all(BhorSpace.s12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, color: b.colors.accent),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(title, style: b.type.bodyStrong),
+                    Text(hint, style: b.type.meta),
+                  ],
                 ),
-                if (busy)
-                  const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                FilledButton.icon(
-                  key: ValueKey<String>('csv-save-${kind.name}'),
-                  onPressed: enabled ? onSave : null,
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-                  icon: const Icon(Icons.save_alt, size: 18),
-                  label: Text(saveLabel),
-                ),
-                OutlinedButton.icon(
-                  key: ValueKey<String>('csv-share-${kind.name}'),
-                  onPressed: enabled ? onShare : null,
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: Text(shareLabel),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              if (busy) const BhorSpinner(size: 24),
+            ],
+          ),
+          const SizedBox(height: BhorSpace.s8),
+          Wrap(
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s8,
+            children: <Widget>[
+              BhorButton(
+                key: ValueKey<String>('csv-save-${kind.name}'),
+                icon: Icons.save_alt,
+                label: saveLabel,
+                onPressed: enabled ? onSave : null,
+              ),
+              BhorButton(
+                key: ValueKey<String>('csv-share-${kind.name}'),
+                variant: BhorButtonVariant.secondary,
+                icon: Icons.share_outlined,
+                label: shareLabel,
+                onPressed: enabled ? onShare : null,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

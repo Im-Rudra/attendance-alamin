@@ -3,9 +3,10 @@
 // today (`reminded:<date>`). Safe to call from rows, tables, menus and the
 // walk-through.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
@@ -25,7 +26,7 @@ import 'package:attendance_alamin/features/dues/reminder_text.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 void _toast(BuildContext context, String message) {
-  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(message)));
+  if (context.mounted) BhorToast.show(context, message: message, bottomOffset: 64);
 }
 
 /// The reminder text for [studentId] in [lang], or `null` when the student has

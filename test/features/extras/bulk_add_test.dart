@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -72,7 +73,7 @@ void main() {
     await tester.enterText(find.byKey(_name), '  আয়েশা খাতুন ');
     await tester.enterText(find.byKey(_phone), '০১৭৭৭৭৭৭৭৭৭');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
 
     expect(f.students.students.length, before + 1);
@@ -84,8 +85,8 @@ void main() {
     expect(enrolled.endDate, isNull);
 
     // Form cleared, counter and list updated.
-    expect(tester.widget<TextField>(find.byKey(_name)).controller!.text, isEmpty);
-    expect(tester.widget<TextField>(find.byKey(_phone)).controller!.text, isEmpty);
+    expect(tester.widget<BhorTextField>(find.byKey(_name)).controller!.text, isEmpty);
+    expect(tester.widget<BhorTextField>(find.byKey(_phone)).controller!.text, isEmpty);
     expect(find.text(bn.extraBulkAddedCount('১')), findsOneWidget);
     expect(find.byKey(ValueKey<String>('bulk-added-${added.id}')), findsOneWidget);
   });
@@ -93,11 +94,11 @@ void main() {
   testWidgets('the button is disabled until there is a name', (WidgetTester tester) async {
     final SeededFakes f = seedFakes();
     await pumpApp(tester, const BulkAddScreen(batchId: kBatPhysA), overrides: f.overrides);
-    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
+    expect(tester.widget<BhorButton>(find.byKey(const ValueKey<String>('bulk-save'))).onPressed, isNull);
     expect(find.text(bn.extraBulkDisabledName), findsOneWidget);
     await tester.enterText(find.byKey(_name), 'আয়েশা');
     await tester.pump();
-    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNotNull);
+    expect(tester.widget<BhorButton>(find.byKey(const ValueKey<String>('bulk-save'))).onPressed, isNotNull);
   });
 
   testWidgets('a phone that belongs to someone asks once, then adds', (WidgetTester tester) async {
@@ -109,7 +110,7 @@ void main() {
     // Rahim's guardian number.
     await tester.enterText(find.byKey(_phone), '01811223344');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
 
     expect(f.students.students.length, before, reason: 'nothing saved yet');
@@ -117,7 +118,7 @@ void main() {
     expect(find.text(bn.extraBulkDuplicate('রহিম উদ্দিন')), findsOneWidget);
     expect(find.text(bn.extraBulkSaveAnyway), findsOneWidget);
 
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
     expect(f.students.students.length, before + 1);
     expect(find.byKey(const ValueKey<String>('bulk-duplicate')), findsNothing);
@@ -130,7 +131,7 @@ void main() {
     await tester.enterText(find.byKey(_name), 'আয়েশা');
     await tester.enterText(find.byKey(_phone), '12345');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
     expect(f.students.students.length, before);
     expect(find.byKey(const ValueKey<String>('bulk-error')), findsOneWidget);
@@ -142,7 +143,7 @@ void main() {
     final int before = f.students.students.length;
     await tester.enterText(find.byKey(_name), 'ভুল নাম');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
     expect(f.students.students.length, before + 1);
 
@@ -168,7 +169,7 @@ void main() {
     );
     await tester.enterText(find.byKey(_name), 'আয়েশা খাতুন');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await _settle(tester);
     final Student added = f.students.students.firstWhere((Student s) => s.name == 'আয়েশা খাতুন');
     final Enrollment e = f.enrollments.enrollments.firstWhere((Enrollment e) => e.studentId == added.id);
@@ -185,15 +186,15 @@ void main() {
 
     await tester.enterText(find.byKey(_name), 'আয়েশা');
     await tester.pump();
-    await tester.tap(find.byType(FilledButton));
+    await tester.tap(find.byKey(const ValueKey<String>('bulk-save')));
     await tester.pump();
     expect(f.students.students.length, before, reason: 'the save is still running');
-    expect(tester.widget<TextField>(find.byKey(_name)).controller!.text, isEmpty);
+    expect(tester.widget<BhorTextField>(find.byKey(_name)).controller!.text, isEmpty);
 
     await tester.enterText(find.byKey(_name), 'বিলাল');
     gate.complete();
     await _settle(tester);
     expect(f.students.students.length, before + 1);
-    expect(tester.widget<TextField>(find.byKey(_name)).controller!.text, 'বিলাল');
+    expect(tester.widget<BhorTextField>(find.byKey(_name)).controller!.text, 'বিলাল');
   });
 }
