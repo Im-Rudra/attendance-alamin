@@ -69,16 +69,24 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
     final String? choice = await showBhorPanel<String>(
       context,
       kind: BhorPanelKind.list,
-      width: 380,
+      width: 320,
       title: d.batch.name,
       builder: (BuildContext ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          BhorListRow(title: l10n.batchMenuOpen, onTap: () => Navigator.of(ctx).pop('open')),
-          BhorListRow(title: l10n.commonEdit, onTap: () => Navigator.of(ctx).pop('edit')),
-          BhorListRow(
-            title: l10n.batchMenuArchive,
-            divider: false,
+          BatchMenuRow(
+            icon: BhorIcons.batches,
+            label: l10n.batchMenuOpen,
+            onTap: () => Navigator.of(ctx).pop('open'),
+          ),
+          BatchMenuRow(
+            icon: BhorIcons.edit,
+            label: l10n.commonEdit,
+            onTap: () => Navigator.of(ctx).pop('edit'),
+          ),
+          BatchMenuRow(
+            icon: BhorIcons.archive,
+            label: l10n.batchMenuArchive,
             onTap: () => Navigator.of(ctx).pop('archive'),
           ),
         ],
@@ -187,7 +195,15 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
           header: BhorHeader(
             title: l10n.navBatches,
             large: true,
+            showBack: false,
             actions: <Widget>[
+              if (wc.usesRail && !empty)
+                BhorButton(
+                  icon: BhorIcons.add,
+                  label: l10n.batchNew,
+                  size: BhorButtonSize.sm,
+                  onPressed: _new,
+                ),
               BhorIconButton(
                 icon: BhorIcons.search,
                 semanticLabel: l10n.commonSearch,
@@ -195,7 +211,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
               ),
             ],
           ),
-          floating: empty
+          floating: (empty || wc.usesRail)
               ? null
               : Padding(
                   padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),

@@ -569,5 +569,7 @@
   "stuStartThisMonth": "এই মাস থেকে",
   "@stuStartThisMonth": {"description": "Toggle: bill from the joining month."},
   "stuStartNextMonth": "পরের মাস থেকে",
-  "@stuStartNextMonth": {"description": "Toggle: bill from the month after joining."}
+  "@stuStartNextMonth": {"description": "Toggle: bill from the month after joining."},
+  "stuOtherMonth": "অন্য মাস বেছে নিন",
+  "@stuOtherMonth": {"description": "Ghost button that reveals the month select for a billing start other than this / next month."}
 }

@@ -94,7 +94,6 @@ class _DayRow extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: b.colors.accentTint,
                                 borderRadius: BorderRadius.circular(BhorRadius.chip),
-                                border: Border.all(color: b.colors.accentLine),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

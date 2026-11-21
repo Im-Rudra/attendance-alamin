@@ -300,12 +300,13 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
           ] else ...<Widget>[
             Row(
               children: <Widget>[
-                Expanded(child: Text(l10n.stuNewStudent, style: th.type.heading)),
                 BhorIconButton(
                   semanticLabel: l10n.commonBack,
                   icon: BhorIcons.back,
                   onPressed: _busy ? null : _stopCreating,
                 ),
+                const SizedBox(width: BhorSpace.s8),
+                Expanded(child: Text(l10n.stuNewStudent, style: th.type.heading)),
               ],
             ),
             StudentFieldsView(model: model, today: today, autofocusName: true),

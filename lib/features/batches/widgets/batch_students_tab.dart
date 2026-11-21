@@ -17,7 +17,6 @@ import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
-import 'package:attendance_alamin/features/students/students_entry.dart';
 
 /// A student enrolled (open enrollment) in the batch.
 class BatchStudentRow {
@@ -72,12 +71,6 @@ class BatchStudentsTab extends ConsumerWidget {
           return BhorEmptyState(
             icon: BhorIcons.add,
             title: l10n.batchStudentsEmpty,
-            action: archived
-                ? null
-                : BhorButton(
-                    label: l10n.batchAddStudent,
-                    onPressed: () => showAddStudentToBatchSheet(context, batchId: batchId),
-                  ),
           );
         }
         return LayoutBuilder(
@@ -116,7 +109,10 @@ class _Cards extends StatelessWidget {
         child: BhorList(
           children: <Widget>[
             for (int i = 0; i < rows.length; i++)
-              BhorStagger(index: i, child: _StudentRow(batchId: batchId, row: rows[i])),
+              BhorStagger(
+                index: i,
+                child: _StudentRow(batchId: batchId, row: rows[i], last: i == rows.length - 1),
+              ),
           ],
         ),
       ),
@@ -124,30 +120,73 @@ class _Cards extends StatelessWidget {
   }
 }
 
-class _StudentRow extends StatelessWidget {
-  const _StudentRow({required this.batchId, required this.row});
+class _StudentRow extends ConsumerWidget {
+  const _StudentRow({required this.batchId, required this.row, required this.last});
 
   final String batchId;
   final BatchStudentRow row;
+  final bool last;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final BhorThemeData th = context.bhor;
     final Student s = row.student;
     final String roll = _rollText(context, s);
-    return BhorListRow(
-      title: s.name,
-      subtitle: roll.isEmpty ? null : roll,
-      leading: BhorAvatar(name: s.name),
-      trailing: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          _DuesCell(enrollmentId: row.enrollment.id),
-          _AttendanceText(studentId: s.id, batchId: batchId),
-        ],
-      ),
-      semanticLabel: s.name,
+    final EnrollmentDues? d = ref.watch(enrollmentDuesProvider(row.enrollment.id)).value;
+    final int owed = (d == null || d.openDue.isEmpty) ? 0 : d.totalOutstanding;
+    final Widget tag = _DuesCell(enrollmentId: row.enrollment.id);
+    return BhorPressable(
       onTap: () => openPath(context, Routes.student(s.id)),
+      semanticLabel: s.name,
+      scaleOnPress: false,
+      radius: 0,
+      builder: (BuildContext c, BhorStates st) => Container(
+        constraints: const BoxConstraints(minHeight: BhorSize.phoneRow),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s8),
+        decoration: BoxDecoration(
+          color: st.hovered || st.pressed ? th.colors.soft : const Color(0x00000000),
+          border: last ? null : Border(bottom: BorderSide(color: th.colors.line)),
+        ),
+        child: Row(
+          children: <Widget>[
+            BhorAvatar(name: s.name),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: th.type.bodyStrong),
+                  const SizedBox(height: 2),
+                  // Tag on its own line so a long tag never truncates the name.
+                  Wrap(
+                    spacing: BhorSpace.s8,
+                    runSpacing: BhorSpace.s4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      if (roll.isNotEmpty) Text(roll, style: th.type.meta),
+                      tag,
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: BhorSpace.s12),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                if (owed > 0)
+                  Text(
+                    context.fmt.money(owed),
+                    style: BhorType.tabular(th.type.bodyStrong),
+                  ),
+                _AttendanceText(studentId: s.id, batchId: batchId),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -179,25 +218,10 @@ class _DuesCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final BhorThemeData th = context.bhor;
     final EnrollmentDues? d = ref.watch(enrollmentDuesProvider(enrollmentId)).value;
     final DueLevel? worst = d?.worst;
     if (d == null || d.openDue.isEmpty || worst == null) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(BhorIcons.checkCircle, size: 16, color: th.colors.text2),
-          const SizedBox(width: BhorSpace.s4),
-          Flexible(
-            child: Text(
-              context.l10n.batchAllPaid,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: th.type.label.copyWith(color: th.colors.text2),
-            ),
-          ),
-        ],
-      );
+      return BhorTag(label: context.l10n.batchAllPaid, tone: BhorTone.ok, icon: BhorIcons.checkCircle);
     }
     return DueTag(level: worst, monthCount: d.openDue.length);
   }

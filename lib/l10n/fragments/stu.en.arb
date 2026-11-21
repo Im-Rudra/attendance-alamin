@@ -104,5 +104,6 @@
   "stuOverviewByBatch": "Students per batch",
   "stuOverviewRecent": "Recently joined",
   "stuStartThisMonth": "From this month",
-  "stuStartNextMonth": "From next month"
+  "stuStartNextMonth": "From next month",
+  "stuOtherMonth": "Pick another month"
 }

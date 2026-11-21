@@ -233,9 +233,20 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(widget.title ?? l10n.schedPickTime, style: b.type.title),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(widget.title ?? l10n.schedPickTime, style: b.type.title),
+                  ),
+                ),
+                BhorIconButton(
+                  icon: BhorIcons.close,
+                  semanticLabel: l10n.commonClose,
+                  onPressed: widget.onCancel,
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             readout,
