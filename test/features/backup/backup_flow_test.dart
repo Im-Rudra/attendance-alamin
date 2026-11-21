@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
@@ -134,7 +135,7 @@ void main() {
     // "the same").
     expect(find.text(_bn.backupHeadlineKeptOnly(_f.number(1))), findsOneWidget, reason: allTexts(tester));
     expect(find.text(_bn.backupHeadlineNone), findsNothing);
-    expect(tester.widget<FilledButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
+    expect(tester.widget<BhorButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
     expect(find.text(_bn.backupApplyDisabledNone), findsOneWidget);
     expect(repo.byId('students', 'tuhin')!['deleted_at'], 220);
   });

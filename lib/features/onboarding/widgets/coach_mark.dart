@@ -7,11 +7,12 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 
 /// `local_meta` key set once the roll-call coach mark was shown.
@@ -62,9 +63,15 @@ Future<bool> showRollCallCoach(BuildContext context) async {
   if (!context.mounted) return false;
   final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return false;
+  final BhorThemeData theme = context.bhor;
   await meta.setRaw(kRollCallCoachMetaKey, '1');
   late final OverlayEntry entry;
-  entry = OverlayEntry(builder: (BuildContext ctx) => _CoachOverlay(onDismiss: () => entry.remove()));
+  entry = OverlayEntry(
+    builder: (BuildContext ctx) => BhorTheme(
+      data: theme,
+      child: _CoachOverlay(onDismiss: () => entry.remove()),
+    ),
+  );
   overlay.insert(entry);
   return true;
 }
@@ -83,8 +90,8 @@ class _CoachOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final l10n = context.l10n;
     final Size screen = MediaQuery.sizeOf(context);
 
@@ -94,12 +101,14 @@ class _CoachOverlay extends StatelessWidget {
         final Rect? target = _rectOf(key);
         final double bubbleWidth = screen.width < 400 ? screen.width - 32 : 360;
 
-        final Widget bubble = Material(
-          color: tokens.surfaceSolid,
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-            side: BorderSide(color: tokens.accent, width: 2),
+        final Widget bubble = DecoratedBox(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+            border: Border.all(color: c.accent, width: 2),
+            boxShadow: <BoxShadow>[
+              BoxShadow(color: c.scrim, blurRadius: 16, offset: const Offset(0, 4)),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
@@ -110,26 +119,23 @@ class _CoachOverlay extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(target == null ? Icons.touch_app_outlined : Icons.arrow_downward, color: tokens.accent),
+                    Icon(target == null ? Icons.touch_app_outlined : Icons.arrow_downward, color: c.accent),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: Text(
-                          l10n.onbCoachText,
-                          style: tt.titleMedium?.copyWith(color: tokens.textPrimary, fontWeight: FontWeight.w600),
-                        ),
+                        child: Text(l10n.onbCoachText, style: b.type.heading),
                       ),
                     ),
                   ],
                 ),
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton(
+                  child: BhorButton(
                     key: const Key('onb-coach-ok'),
+                    label: l10n.onbCoachGotIt,
+                    variant: BhorButtonVariant.ghost,
                     onPressed: onDismiss,
-                    style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
-                    child: Text(l10n.onbCoachGotIt),
                   ),
                 ),
               ],
@@ -161,7 +167,7 @@ class _CoachOverlay extends StatelessWidget {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: onDismiss,
-                  child: ColoredBox(color: tokens.scrim),
+                  child: ColoredBox(color: c.scrim),
                 ),
               ),
               if (target != null)
@@ -170,8 +176,8 @@ class _CoachOverlay extends StatelessWidget {
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-                        border: Border.all(color: tokens.accent, width: 3),
+                        borderRadius: BorderRadius.circular(BhorRadius.control),
+                        border: Border.all(color: c.accent, width: 3),
                       ),
                     ),
                   ),

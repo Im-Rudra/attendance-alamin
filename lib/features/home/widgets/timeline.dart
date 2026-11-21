@@ -3,18 +3,18 @@
 // date they left, extras tagged. On a phone it sits under the day strip; in the
 // bento it is a tall tile that scrolls inside with a fade edge.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
-import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
@@ -36,7 +36,7 @@ class TodayTimeline extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
     final DayPlan? plan = ref.watch(dayPlanProvider(date)).value;
     final List<BatchSchedule> schedules =
@@ -53,20 +53,21 @@ class TodayTimeline extends ConsumerWidget {
       children: <Widget>[
         if (strip != null) ...<Widget>[
           strip!,
-          const SizedBox(height: 4),
-          Divider(height: 1, color: tokens.hairline),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s4),
+          Container(height: 1, color: b.colors.line),
+          const SizedBox(height: BhorSpace.s8),
         ],
         TileHeader(
           icon: Icons.event_note_outlined,
           title: title,
           trailing: noClasses
               ? null
-              : TextButton(
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: () => showExtraClassSheet(context, date: date),
-            child: Text(l10n.todayAddExtra),
-          ),
+              : BhorButton(
+                  label: l10n.todayAddExtra,
+                  variant: BhorButtonVariant.ghost,
+                  size: BhorButtonSize.sm,
+                  onPressed: () => showExtraClassSheet(context, date: date),
+                ),
         ),
       ],
     );
@@ -101,7 +102,7 @@ class TodayTimeline extends ConsumerWidget {
       body = const SizedBox(height: 96);
     } else if (rows.isEmpty) {
       body = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s16),
         child: _emptyDay(context, date),
       );
     } else {
@@ -109,7 +110,7 @@ class TodayTimeline extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           for (int i = 0; i < rows.length; i++) ...<Widget>[
-            if (i > 0) const SizedBox(height: 8),
+            if (i > 0) const SizedBox(height: BhorSpace.s8),
             rows[i],
           ],
         ],
@@ -125,12 +126,12 @@ Widget _emptyDay(BuildContext context, LocalDate date) {
   return TileMessage(
     icon: Icons.event_available_outlined,
     message: l10n.todayNoClassesDay,
-    action: FilledButton.tonalIcon(
+    action: BhorButton(
       key: const ValueKey<String>('today-empty-add-extra'),
-      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+      label: l10n.todayAddExtra,
+      icon: Icons.add,
+      variant: BhorButtonVariant.secondary,
       onPressed: () => showExtraClassSheet(context, date: date),
-      icon: const Icon(Icons.add),
-      label: Text(l10n.todayAddExtra),
     ),
   );
 }
@@ -144,9 +145,8 @@ class _FadingList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final Color solid = tokens.surfaceSolid;
-    final Color clear = tokens.surfaceSolid.withValues(alpha: 0);
+    final Color solid = context.bhor.colors.surface;
+    final Color clear = solid.withValues(alpha: 0);
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (Rect r) => LinearGradient(
@@ -157,9 +157,9 @@ class _FadingList extends StatelessWidget {
       ).createShader(r),
       child: ListView.separated(
         primary: false,
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: BhorSpace.s16),
         itemCount: rows.length,
-        separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 8),
+        separatorBuilder: (BuildContext context, int index) => const SizedBox(height: BhorSpace.s8),
         itemBuilder: (BuildContext context, int index) => rows[index],
       ),
     );
@@ -176,8 +176,8 @@ class _ClassRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final LocalDate today = ref.watch(todayProvider);
     final int nowMin = ref.watch(nowMinutesProvider);
 
@@ -192,50 +192,42 @@ class _ClassRow extends ConsumerWidget {
     final bool dimmed = cancelled || (taken && !running);
 
     final TextDecoration? strike = cancelled ? TextDecoration.lineThrough : null;
-    final TextStyle? titleStyle = tt.titleSmall?.copyWith(
-      color: tokens.textPrimary,
-      fontWeight: FontWeight.w600,
-      decoration: strike,
-    );
-    final TextStyle? timeStyle = tt.bodyMedium?.copyWith(
-      color: tokens.textSecondary,
-      decoration: strike,
-    );
+    final TextStyle titleStyle = b.type.heading.copyWith(decoration: strike);
+    final TextStyle timeStyle = b.type.meta.copyWith(decoration: strike);
 
-    final present = AttendanceStatus.present.kind;
     final Color leadBg;
     final Color leadFg;
     final IconData leadIcon;
     if (taken) {
-      leadBg = context.attendance.fill(present);
-      leadFg = context.attendance.text(present);
+      leadBg = c.okBg;
+      leadFg = c.ok;
       leadIcon = Icons.check;
     } else if (running) {
-      leadBg = tokens.accentContainer;
-      leadFg = tokens.onAccentContainer;
+      leadBg = c.accentTint;
+      leadFg = c.accent;
       leadIcon = Icons.fiber_manual_record;
     } else if (cancelled) {
-      leadBg = tokens.track;
-      leadFg = tokens.textSecondary;
+      leadBg = c.surface2;
+      leadFg = c.text2;
       leadIcon = Icons.block;
     } else if (dc.state == ClassState.extra) {
-      leadBg = tokens.track;
-      leadFg = tokens.textSecondary;
+      leadBg = c.surface2;
+      leadFg = c.text2;
       leadIcon = Icons.add;
     } else if (dc.state == ClassState.moved) {
-      leadBg = tokens.track;
-      leadFg = tokens.textSecondary;
+      leadBg = c.surface2;
+      leadFg = c.text2;
       leadIcon = Icons.autorenew;
     } else {
-      leadBg = tokens.track;
-      leadFg = tokens.textSecondary;
+      leadBg = c.surface2;
+      leadFg = c.text2;
       leadIcon = Icons.schedule;
     }
 
     final AttendanceTally? tally = dc.tally;
     final List<Widget> meta = <Widget>[
       Text(fmt.timeRange(dc.startMin, dc.endMin), style: timeStyle),
-      if (dc.state != null) StatePill(state: dc.state!),
+      if (dc.state != null) _classStateTag(context, dc.state!),
       if (dc.state == ClassState.moved && dc.originalStartMin != null)
         Text(l10n.todayMovedFrom(fmt.time(dc.originalStartMin!)), style: timeStyle),
       if (taken)
@@ -250,7 +242,7 @@ class _ClassRow extends ConsumerWidget {
     ];
 
     final Widget content = Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s8, BhorSpace.s4, BhorSpace.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -264,10 +256,10 @@ class _ClassRow extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.only(top: BhorSpace.s4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -277,46 +269,51 @@ class _ClassRow extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: titleStyle,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: BhorSpace.s4),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
+                    spacing: BhorSpace.s8,
+                    runSpacing: BhorSpace.s4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: meta,
                   ),
                   if (needsRoll) ...<Widget>[
-                    const SizedBox(height: 6),
-                    FilledButton.tonal(
-                      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                    const SizedBox(height: BhorSpace.s8),
+                    BhorButton(
+                      label: l10n.todayTakeAttendance,
+                      variant: BhorButtonVariant.secondary,
+                      size: BhorButtonSize.sm,
                       onPressed: () => openRollCall(context, dc.occ),
-                      child: Text(l10n.todayTakeAttendance),
                     ),
                   ],
                 ],
               ),
             ),
           ),
-          IconButton(
-            tooltip: l10n.todayClassOptions,
-            icon: const Icon(Icons.more_vert),
+          BhorIconButton(
+            semanticLabel: l10n.todayClassOptions,
+            icon: Icons.more_vert,
             onPressed: () => showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today),
           ),
         ],
       ),
     );
 
-    return Material(
-      color: running ? tokens.accentContainer.withValues(alpha: 0.5) : Colors.transparent,
-      borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          if (cancelled || isFuture) {
-            showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today);
-          } else {
-            openRollCall(context, dc.occ);
-          }
-        },
+    return BhorPressable(
+      onTap: () {
+        if (cancelled || isFuture) {
+          showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today);
+        } else {
+          openRollCall(context, dc.occ);
+        }
+      },
+      semanticLabel: l10n.clsClassLabel(dc.subjectName, dc.batch.name),
+      radius: BhorRadius.card,
+      scaleOnPress: false,
+      builder: (BuildContext context, BhorStates s) => Container(
+        decoration: BoxDecoration(
+          color: running ? c.accentTint : (s.hovered ? c.surface2 : null),
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+        ),
         child: Opacity(opacity: dimmed ? 0.62 : 1, child: content),
       ),
     );
@@ -332,27 +329,10 @@ class _RollChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final present = AttendanceStatus.present.kind;
-    final Color bg = pending ? tokens.infoContainer : context.attendance.fill(present);
-    final Color fg = pending ? tokens.info : context.attendance.text(present);
-    return DecoratedBox(
-      decoration: ShapeDecoration(color: bg, shape: const StadiumBorder()),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(pending ? Icons.pending_actions : Icons.check, size: 14, color: fg),
-            const SizedBox(width: 4),
-            Text(
-              text,
-              maxLines: 1,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: fg),
-            ),
-          ],
-        ),
-      ),
+    return BhorTag(
+      label: text,
+      tone: pending ? BhorTone.accent : BhorTone.ok,
+      icon: pending ? Icons.pending_actions : Icons.check,
     );
   }
 }
@@ -368,7 +348,7 @@ class _MovedAwayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     String label = '';
     for (final BatchSchedule s in schedules) {
       if (s.batch.id == moved.batchId) {
@@ -378,36 +358,48 @@ class _MovedAwayRow extends StatelessWidget {
     }
     final String when = '${fmt.dateShort(moved.newDate)} ${fmt.time(moved.newStartMin)}';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s8, BhorSpace.s12, BhorSpace.s8),
       child: Opacity(
         opacity: 0.75,
         child: Row(
           children: <Widget>[
             ExcludeSemantics(
               child: DecoratedBox(
-                decoration: BoxDecoration(color: tokens.track, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: b.colors.surface2, shape: BoxShape.circle),
                 child: SizedBox(
                   width: 36,
                   height: 36,
-                  child: Icon(Icons.arrow_forward, size: 20, color: tokens.textSecondary),
+                  child: Icon(Icons.arrow_forward, size: 20, color: b.colors.text2),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Text(
                 l10n.todayMovedAway(label, when),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: tokens.textSecondary),
+                style: b.type.meta,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// Class state as a Bhor tag (icon + word, never colour alone).
+Widget _classStateTag(BuildContext context, ClassState state) {
+  final l10n = context.l10n;
+  switch (state) {
+    case ClassState.now:
+      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: Icons.fiber_manual_record);
+    case ClassState.moved:
+      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: Icons.autorenew);
+    case ClassState.cancelled:
+      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: Icons.block);
+    case ClassState.extra:
+      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: Icons.add);
   }
 }

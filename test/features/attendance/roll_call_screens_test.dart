@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -21,12 +21,19 @@ import 'package:attendance_alamin/features/attendance/controllers/roll_models.da
 import 'package:attendance_alamin/features/attendance/ui/batch_roll_call_launcher.dart';
 import 'package:attendance_alamin/features/attendance/ui/roll_call_screen.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/attendance/widgets/session_chooser_sheet.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
+
+/// A Bhor icon button by its accessible name (it doubles as the tooltip).
+Finder _byLabel(String label) => find.byWidgetPredicate(
+      (Widget w) => w is BhorIconButton && w.semanticLabel == label,
+      description: 'BhorIconButton "$label"',
+    );
 
 const LocalDate _friday = LocalDate(2026, 11, 20);
 const LocalDate _sunday = LocalDate(2026, 11, 22);
@@ -119,7 +126,7 @@ void main() {
     overrides: () => seedFakes().overrides,
     verify: (WidgetTester tester) async {
       await tester.pumpAndSettle();
-      expect(find.byType(StatTile), findsNWidgets(2));
+      expect(find.byType(BhorStatText), findsNWidgets(2));
     },
   );
 
@@ -129,7 +136,7 @@ void main() {
     overrides: () => seedFakes(withAttendance: false).overrides,
     verify: (WidgetTester tester) async {
       await tester.pumpAndSettle();
-      expect(find.byType(StatTile), findsNWidgets(2));
+      expect(find.byType(BhorStatText), findsNWidgets(2));
     },
   );
 
@@ -142,7 +149,7 @@ void main() {
     overrides: () => seedFakes().overrides,
     verify: (WidgetTester tester) async {
       await tester.pumpAndSettle();
-      expect(find.byType(AttendanceStatusChip), findsNWidgets(5));
+      expect(find.byType(BhorTag), findsNWidgets(5));
     },
   );
 
@@ -206,23 +213,27 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('dark mode: an absent row is the ink-slate slab with a readable avatar', (WidgetTester tester) async {
+  testWidgets('dark mode: an absent row is the slate slab with white text', (WidgetTester tester) async {
     await pumpApp(
       tester,
-      const Scaffold(
-        body: RollRow(name: 'রহিম উদ্দিন', roll: 1, status: AttendanceStatus.absent),
+      BhorTheme(
+        data: BhorThemeData.dark(),
+        child: const Scaffold(
+          body: RollRow(name: 'রহিম উদ্দিন', roll: 1, status: AttendanceStatus.absent),
+        ),
       ),
       themeMode: ThemeMode.dark,
     );
-    final Material card = tester.widget<Material>(
-      find.descendant(of: find.byType(RollRow), matching: find.byType(Material)).first,
+    final BhorColors c = BhorColors.dark;
+    final Container card = tester.widget<Container>(
+      find.descendant(of: find.byType(RollRow), matching: find.byType(Container)).first,
     );
-    expect(card.color, const Color(0xFF3F4660));
-    // White name text on the slab (≈9:1), never dark-on-light.
+    expect((card.decoration! as BoxDecoration).color, c.absent);
+    // Light text on the slab (about 9:1), never dark-on-light.
     final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
-    expect(name.style?.color, const Color(0xFFFFFFFF));
+    expect(name.style?.color, c.onAbsent);
     final Text initials = tester.widget<Text>(find.text('রউ'));
-    expect(initials.style?.color, const Color(0xFFFFFFFF));
+    expect(initials.style?.color, c.accent);
   });
 
   testWidgets('reopening a saved day: late counts as attended and autosaves', (WidgetTester tester) async {
@@ -292,7 +303,7 @@ void main() {
 
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(_byLabel('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Attendance not saved. Save now?'), findsOneWidget);
 
@@ -306,7 +317,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(_byLabel('Close'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -325,7 +336,7 @@ void main() {
     expect(find.text('Which class?'), findsOneWidget);
     await tester.tap(find.text('4:00–5:00 PM'));
     await tester.pumpAndSettle();
-    expect(find.byType(ChoiceChip), findsNWidgets(2));
+    expect(find.byType(BhorChip), findsNWidgets(2));
     await tester.tap(find.text('Save attendance (3)'));
     await tester.pumpAndSettle();
     expect(f.attendance.sessions, hasLength(1));
@@ -334,7 +345,7 @@ void main() {
     await tester.pump(const Duration(seconds: 9));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '6:00–7:00 PM'));
+    await tester.tap(find.widgetWithText(BhorChip, '6:00–7:00 PM'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
@@ -383,9 +394,9 @@ void main() {
     ]);
     await open(tester, const BatchRollCallLauncher(batchId: kBatPhysA, date: _friday), f);
 
-    expect(find.byType(ConflictCard), findsOneWidget);
+    expect(find.byType(RollClashCard), findsOneWidget);
     expect(find.text('Fix the time clash first'), findsOneWidget);
-    final FilledButton save = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save attendance (3)'));
+    final BhorButton save = tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save attendance (3)'));
     expect(save.onPressed, isNull);
   });
 

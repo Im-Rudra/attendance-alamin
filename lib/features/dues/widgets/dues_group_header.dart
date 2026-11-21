@@ -1,14 +1,15 @@
-// Sticky group header of the dues list (UX 2d): the level badge with the
+// Sticky group header of the dues list (UX 2d): the level tag with the
 // student count, or the grey "ছেড়ে যাওয়া / আর্কাইভ" header with its
 // expand / collapse toggle.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_tags.dart';
 
 class DuesGroupHeader extends StatelessWidget {
   /// A severity group ("মেয়াদোত্তীর্ণ (৩)").
@@ -33,9 +34,8 @@ class DuesGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final l10n = context.l10n;
-    final TextTheme tt = Theme.of(context).textTheme;
     final double g = WindowClass.of(context).gutter;
     final String countText = l10n.duesGroupCount(context.fmt.number(count));
     final DueLevel? lv = level;
@@ -43,16 +43,16 @@ class DuesGroupHeader extends StatelessWidget {
     if (lv != null) {
       title = Row(
         children: <Widget>[
-          Flexible(child: SeverityBadge(level: lv)),
-          const SizedBox(width: 8),
-          Text(countText, style: tt.titleSmall?.copyWith(color: tokens.textSecondary)),
+          Flexible(child: dueLevelTag(context, lv)),
+          const SizedBox(width: BhorSpace.s8),
+          Text(countText, style: b.type.bodyStrong.copyWith(color: b.colors.text2)),
         ],
       );
     } else {
       title = Row(
         children: <Widget>[
-          Icon(Icons.inventory_2_outlined, size: 20, color: tokens.textSecondary),
-          const SizedBox(width: 8),
+          Icon(Icons.inventory_2_outlined, size: 20, color: b.colors.text2),
+          const SizedBox(width: BhorSpace.s8),
           Flexible(
             child: Semantics(
               header: true,
@@ -60,12 +60,12 @@ class DuesGroupHeader extends StatelessWidget {
                 l10n.duesInactiveGroup,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(color: tokens.textSecondary),
+                style: b.type.bodyStrong.copyWith(color: b.colors.text2),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Text(countText, style: tt.titleSmall?.copyWith(color: tokens.textSecondary)),
+          const SizedBox(width: BhorSpace.s8),
+          Text(countText, style: b.type.bodyStrong.copyWith(color: b.colors.text2)),
         ],
       );
     }
@@ -73,17 +73,18 @@ class DuesGroupHeader extends StatelessWidget {
       children: <Widget>[
         Expanded(child: Align(alignment: AlignmentDirectional.centerStart, child: title)),
         if (onToggle != null)
-          IconButton(
-            tooltip: expanded ? l10n.duesCollapse : l10n.duesExpand,
-            icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+          BhorIconButton(
+            key: const ValueKey<String>('dues-group-toggle'),
+            icon: expanded ? Icons.expand_less : Icons.expand_more,
+            semanticLabel: expanded ? l10n.duesCollapse : l10n.duesExpand,
             onPressed: onToggle,
           ),
       ],
     );
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.surfaceSolid.withValues(alpha: 0.96),
-        border: Border(bottom: BorderSide(color: tokens.hairline)),
+        color: b.colors.bg,
+        border: Border(bottom: BorderSide(color: b.colors.line)),
       ),
       child: SizedBox(
         height: extent,

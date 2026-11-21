@@ -2,13 +2,14 @@
 // overlap (legacy data, an unarchive that was accepted with clashes, an
 // import). It lists the first pairs and opens the slot editor of one batch.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
@@ -51,9 +52,8 @@ class ConflictBanner extends ConsumerWidget {
 
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final Color on = tokens.onErrorContainer;
+    final BhorThemeData b = context.bhor;
+    final Color on = b.colors.danger;
 
     String label(String batchId) {
       for (final BatchSchedule s in schedules) {
@@ -65,18 +65,18 @@ class ConflictBanner extends ConsumerWidget {
     final List<_Overlap> shown = overlaps.take(2).toList();
     final int more = overlaps.length - shown.length;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: BhorSpace.s12),
       child: Semantics(
       liveRegion: true,
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.errorContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: Border.all(color: tokens.errorContainerBorder),
+          color: b.colors.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: b.colors.danger.withValues(alpha: 0.35)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -84,14 +84,14 @@ class ConflictBanner extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Icon(Icons.warning_amber_rounded, color: on, size: 24),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: BhorSpace.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
                           l10n.todayConflictTitle,
-                          style: tt.titleSmall?.copyWith(color: on, fontWeight: FontWeight.w700),
+                          style: b.type.heading.copyWith(color: on),
                         ),
                         for (final _Overlap o in shown)
                           Text(
@@ -102,29 +102,25 @@ class ConflictBanner extends ConsumerWidget {
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: tt.bodyMedium?.copyWith(color: on),
+                            style: b.type.body.copyWith(color: on),
                           ),
                         if (more > 0)
                           Text(
                             l10n.uiConflictMore(fmt.number(more)),
-                            style: tt.labelMedium?.copyWith(color: on),
+                            style: b.type.label.copyWith(color: on),
                           ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: BhorSpace.s8),
               Align(
                 alignment: AlignmentDirectional.centerEnd,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    backgroundColor: tokens.error,
-                    foregroundColor: tokens.onError,
-                  ),
+                child: BhorButton(
+                  label: l10n.todayConflictFix,
+                  variant: BhorButtonVariant.danger,
                   onPressed: () => pushRoute(context, Routes.batchSlots(shown.first.a.batchId)),
-                  child: Text(l10n.todayConflictFix),
                 ),
               ),
             ],

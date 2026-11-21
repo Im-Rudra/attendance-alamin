@@ -4,15 +4,15 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
@@ -22,7 +22,6 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
 import 'package:attendance_alamin/features/classes/widgets/clash_panel.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
-import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 enum OneOffMode { reschedule, extra }
@@ -153,11 +152,14 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     final LocalDate today = ref.read(todayProvider);
     final LocalDate lo = (_initDate.isBefore(today) ? _initDate : today).addDays(-365);
     final LocalDate hi = (_initDate.isAfter(today) ? _initDate : today).addDays(730);
-    final DateTime? picked = await showAppDatePicker(
-      context: context,
+    final int weekStart = ref.read(weekStartProvider).value ?? DateTime.saturday;
+    final DateTime? picked = await showBhorDatePicker(
+      context,
       initialDate: DateTime(_date.year, _date.month, _date.day),
       firstDate: DateTime(lo.year, lo.month, lo.day),
       lastDate: DateTime(hi.year, hi.month, hi.day),
+      weekStart: weekStart,
+      today: DateTime(today.year, today.month, today.day),
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -168,7 +170,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   }
 
   Future<void> _pickTime() async {
-    final int? m = await showTimePickerSheet(context, initialMin: _start, title: context.l10n.clsPickTime);
+    final int? m = await showBhorTimePicker(context, initial: _start);
     if (m == null || !mounted) return;
     _setStart(m);
   }
@@ -226,8 +228,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     // A schedule change (another save, an undo) re-runs the live check.
     ref.listen<AsyncValue<List<BatchSchedule>>>(schedulesProvider, (_, _) => _recheck());
@@ -243,7 +244,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
         return SheetFrame(title: l10n.clsRescheduleTitle, child: Text(errorText(l10n, info.error!)));
       }
       if (!info.hasValue) {
-        return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+        return const SizedBox(height: 160, child: Center(child: BhorSpinner(size: 28)));
       }
       final OccurrenceInfo? i = info.value;
       final Occurrence? o = i?.occurrence;
@@ -308,7 +309,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     return SheetFrame(
       title: _isExtra ? l10n.clsExtraTitle : l10n.clsRescheduleTitle,
       subtitle: _isExtra ? null : classLabel,
-      footer: StickyActionBar(
+      footer: ClassSaveBar(
         label: _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule,
         onPressed: canSave ? () => _save(target) : null,
         disabledReason: reason,
@@ -319,21 +320,21 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
           if (_isExtra) ...<Widget>[
             _Label(l10n.clsFieldBatch),
             if (live.isEmpty)
-              Text(l10n.clsNoBatches, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary))
+              Text(l10n.clsNoBatches, style: b.type.meta)
             else
               Wrap(
-                spacing: 8,
-                runSpacing: 4,
+                spacing: BhorSpace.s8,
+                runSpacing: BhorSpace.s8,
                 children: <Widget>[
                   for (final BatchSchedule s in live)
-                    ChoiceChip(
-                      label: Text(l10n.clsClassLabel(s.subjectName, s.batch.name)),
+                    BhorChip(
+                      label: l10n.clsClassLabel(s.subjectName, s.batch.name),
                       selected: s.batch.id == batchId,
                       onSelected: (_) => _chooseBatch(s),
                     ),
                 ],
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
           ],
           FieldRow(
             label: l10n.clsFieldDate,
@@ -341,47 +342,47 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
             icon: Icons.calendar_today_outlined,
             onTap: _pickDate,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           FieldRow(
             label: l10n.clsFieldTime,
             value: fmt.timeRange(_start, _start + _dur),
             onTap: _pickTime,
-            leading: IconButton(
-              tooltip: l10n.clsEarlier,
-              icon: const Icon(Icons.remove),
+            leading: BhorIconButton(
+              semanticLabel: l10n.clsEarlier,
+              icon: Icons.remove,
               onPressed: _start - 15 >= 0 ? () => _setStart(_start - 15) : null,
             ),
-            trailing: IconButton(
-              tooltip: l10n.clsLater,
-              icon: const Icon(Icons.add),
+            trailing: BhorIconButton(
+              semanticLabel: l10n.clsLater,
+              icon: Icons.add,
               onPressed: _start + _dur + 15 <= 1440 ? () => _setStart(_start + 15) : null,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           _Label(l10n.clsFieldDuration),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s8,
             children: <Widget>[
               for (final int d in durations)
-                ChoiceChip(
-                  label: Text(durationText(l10n, fmt, d)),
+                BhorChip(
+                  label: durationText(l10n, fmt, d),
                   selected: d == _dur,
                   onSelected: (_) => _setDuration(d),
                 ),
             ],
           ),
           if (sameDayNote != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(sameDayNote, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+            const SizedBox(height: BhorSpace.s12),
+            Text(sameDayNote, style: b.type.meta),
           ],
           if (clash) ...<Widget>[
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
             ClashPanel(result: _clash!, durationMin: _dur, onPickStart: _setStart),
           ],
           if (_error != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(_error!, style: tt.bodyMedium?.copyWith(color: tokens.error)),
+            const SizedBox(height: BhorSpace.s12),
+            Text(_error!, style: b.type.body.copyWith(color: b.colors.danger)),
           ],
         ],
       ),
@@ -396,10 +397,7 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.aurora.textSecondary),
-        ),
+        padding: const EdgeInsets.only(bottom: BhorSpace.s4),
+        child: Text(text, style: context.bhor.type.label.copyWith(color: context.bhor.colors.text2)),
       );
 }

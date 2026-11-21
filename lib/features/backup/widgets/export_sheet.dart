@@ -6,12 +6,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/data/backup/backup_files.dart';
 import 'package:attendance_alamin/data/backup/backup_providers.dart';
@@ -23,12 +24,9 @@ import 'package:attendance_alamin/features/backup/controllers/backup_state.dart'
 
 /// Shows the export sheet; completes when it closes.
 Future<void> showExportSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  return showBhorSheet<void>(
+    context,
+    title: context.l10n.backupExportTitle,
     builder: (BuildContext _) => const ExportSheet(),
   );
 }
@@ -87,7 +85,6 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
     if (bytes == null || snapshot == null) return;
     final l10n = context.l10n;
     final NavigatorState navigator = Navigator.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final BackupFiles files = ref.read(backupFilesProvider);
     setState(() => _phase = _ExportPhase.busy);
     try {
@@ -104,7 +101,7 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
     } on Object catch (e) {
       if (!mounted) return;
       setState(() => _phase = _ExportPhase.ready);
-      messenger.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
       return;
     }
     try {
@@ -112,30 +109,33 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
     } on Object {
       // The file is safe; only the "last backup" note could not be updated.
     }
-    if (mounted) navigator.pop();
-    messenger.showSnackBar(
-      SnackBar(content: Text(share ? l10n.backupExportShared : l10n.backupExportSaved)),
+    if (!mounted) return;
+    // The toast lives on the root overlay: show it, then close the sheet.
+    BhorToast.show(
+      context,
+      message: share ? l10n.backupExportShared : l10n.backupExportSaved,
+      tone: BhorTone.ok,
     );
+    navigator.pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final bool busy = _phase == _ExportPhase.busy;
 
     final Widget content;
     switch (_phase) {
       case _ExportPhase.preparing:
         content = Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
+          padding: const EdgeInsets.symmetric(vertical: BhorSpace.s32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(l10n.backupExportPreparing, style: tt.bodyLarge),
+              const BhorSpinner(size: 32),
+              const SizedBox(height: BhorSpace.s16),
+              Text(l10n.backupExportPreparing, style: b.type.body),
             ],
           ),
         );
@@ -146,14 +146,14 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
           children: <Widget>[
             Text(
               errorText(l10n, _error ?? Object()),
-              style: tt.bodyLarge?.copyWith(color: tokens.error),
+              style: b.type.body.copyWith(color: b.colors.danger),
             ),
-            const SizedBox(height: 16),
-            FilledButton(
+            const SizedBox(height: BhorSpace.s16),
+            BhorButton(
               key: const Key('backup-export-retry'),
+              label: l10n.commonRetry,
+              expand: true,
               onPressed: _prepare,
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-              child: Text(l10n.commonRetry),
             ),
           ],
         );
@@ -163,102 +163,79 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: tokens.surfaceDense,
-                borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-                border: Border.all(color: tokens.hairline),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.insert_drive_file_outlined, color: tokens.accent),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Semantics(
-                        label: l10n.backupExportSemantics(_fileName),
-                        excludeSemantics: true,
-                        child: Text(
-                          _fileName,
-                          key: const Key('backup-export-filename'),
-                          style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                        ),
+            Semantics(
+              header: true,
+              child: Text(l10n.backupExportReadyTitle, style: b.type.heading),
+            ),
+            const SizedBox(height: BhorSpace.s12),
+            BhorCard(
+              padding: const EdgeInsets.all(BhorSpace.s12),
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.insert_drive_file_outlined, color: b.colors.accent),
+                  const SizedBox(width: BhorSpace.s12),
+                  Expanded(
+                    child: Semantics(
+                      label: l10n.backupExportSemantics(_fileName),
+                      excludeSemantics: true,
+                      child: Text(
+                        _fileName,
+                        key: const Key('backup-export-filename'),
+                        style: b.type.body,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
             DecoratedBox(
               decoration: BoxDecoration(
-                color: tokens.infoContainer,
-                borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
+                color: b.colors.accentTint,
+                borderRadius: BorderRadius.circular(BhorRadius.card),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(BhorSpace.s12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(Icons.lock_outline, color: tokens.info),
-                    const SizedBox(width: 12),
+                    Icon(Icons.lock_outline, color: b.colors.accent),
+                    const SizedBox(width: BhorSpace.s12),
                     Expanded(
                       child: Text(
                         l10n.backupExportPrivacy,
                         key: const Key('backup-export-privacy'),
-                        style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
+                        style: b.type.body,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
+            const SizedBox(height: BhorSpace.s16),
+            BhorButton(
               key: const Key('backup-export-save'),
+              icon: Icons.save_alt_outlined,
+              label: l10n.backupExportSave,
+              loading: busy,
+              expand: true,
               onPressed: busy ? null : () => _deliver(share: false),
-              icon: busy
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.save_alt_outlined),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-              label: Text(l10n.backupExportSave),
             ),
             if (!kIsWeb) ...<Widget>[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
+              const SizedBox(height: BhorSpace.s8),
+              BhorButton(
                 key: const Key('backup-export-share'),
+                variant: BhorButtonVariant.secondary,
+                icon: Icons.ios_share,
+                label: l10n.backupExportShare,
+                expand: true,
                 onPressed: busy ? null : () => _deliver(share: true),
-                icon: const Icon(Icons.ios_share),
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                label: Text(l10n.backupExportShare),
               ),
             ],
           ],
         );
     }
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                _phase == _ExportPhase.preparing || _phase == _ExportPhase.failed
-                    ? l10n.backupExportTitle
-                    : l10n.backupExportReadyTitle,
-                style: tt.titleLarge?.copyWith(color: tokens.textPrimary),
-              ),
-            ),
-            const SizedBox(height: 16),
-            content,
-          ],
-        ),
-      ),
-    );
+    return SingleChildScrollView(child: content);
   }
 }

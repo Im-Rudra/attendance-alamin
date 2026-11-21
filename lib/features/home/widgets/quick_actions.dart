@@ -2,11 +2,12 @@
 // search. A 2x2 tile on expanded windows, a card on phones and mediums, and
 // buttons in the top bar on large windows.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
@@ -66,17 +67,17 @@ class QuickActionsTile extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Expanded(child: _QuickPill(action: a[0])),
-                const SizedBox(width: 8),
+                const SizedBox(width: BhorSpace.s8),
                 Expanded(child: _QuickPill(action: a[1])),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Expanded(
             child: Row(
               children: <Widget>[
                 Expanded(child: _QuickPill(action: a[2])),
-                const SizedBox(width: 8),
+                const SizedBox(width: BhorSpace.s8),
                 Expanded(child: _QuickPill(action: a[3])),
               ],
             ),
@@ -103,15 +104,15 @@ class QuickActionsCard extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(child: SizedBox(height: 56, child: _QuickPill(action: a[0]))),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(child: SizedBox(height: 56, child: _QuickPill(action: a[1]))),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Row(
             children: <Widget>[
               Expanded(child: SizedBox(height: 56, child: _QuickPill(action: a[2]))),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(child: SizedBox(height: 56, child: _QuickPill(action: a[3]))),
             ],
           ),
@@ -127,12 +128,12 @@ List<Widget> quickActionBarButtons(BuildContext context, LocalDate date) {
   return <Widget>[
     for (final QuickAction q in a.take(3))
       Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: FilledButton.tonalIcon(
-          style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+        padding: const EdgeInsets.only(left: BhorSpace.s8),
+        child: BhorButton(
+          label: q.label,
+          icon: q.icon,
+          variant: BhorButtonVariant.secondary,
           onPressed: q.onTap,
-          icon: Icon(q.icon, size: 20),
-          label: Text(q.label),
         ),
       ),
   ];
@@ -145,43 +146,35 @@ class _QuickPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final BorderRadius br = BorderRadius.circular(AuroraMetrics.radiusDenseList);
-    return Semantics(
-      button: true,
-      label: action.label,
-      excludeSemantics: true,
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return BhorPressable(
       onTap: action.onTap,
-      child: Material(
-        color: tokens.surfaceDense,
-        shape: RoundedRectangleBorder(
-          borderRadius: br,
-          side: BorderSide(color: tokens.hairline),
+      semanticLabel: action.label,
+      isButton: true,
+      excludeChildSemantics: true,
+      radius: BhorRadius.card,
+      builder: (BuildContext context, BhorStates s) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+        decoration: BoxDecoration(
+          color: s.hovered ? c.surface2 : c.surface,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: s.hovered ? c.accentLine : c.line),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: action.onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(action.icon, size: 22, color: tokens.accent),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    action.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelLarge
-                        ?.copyWith(color: tokens.textPrimary),
-                  ),
-                ),
-              ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(action.icon, size: 22, color: c.accent),
+            const SizedBox(width: BhorSpace.s8),
+            Flexible(
+              child: Text(
+                action.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: b.type.label,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

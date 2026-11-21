@@ -2,11 +2,11 @@
 // summary screen"): backup info, headline, the Added/Updated/Deleted table,
 // deletions (red, first), samples, explanations and the bottom action bar.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/center_time.dart';
 import 'package:attendance_alamin/domain/sync/sync_models.dart';
@@ -27,6 +27,84 @@ int keptTotal(ChangeSummary s) {
   return n;
 }
 
+/// A hairline between table rows.
+class _Hairline extends StatelessWidget {
+  const _Hairline();
+
+  @override
+  Widget build(BuildContext context) => Container(height: 1, color: context.bhor.colors.line);
+}
+
+/// A red card: an icon and title, lines, an optional footer. [boxKey] sits on
+/// the coloured box itself.
+class ReviewDangerCard extends StatelessWidget {
+  const ReviewDangerCard({
+    super.key,
+    this.boxKey,
+    required this.title,
+    required this.lines,
+    this.footer,
+    this.footerStyle,
+    this.icon = Icons.warning_amber_rounded,
+  });
+
+  final Key? boxKey;
+  final String title;
+  final List<String> lines;
+  final String? footer;
+  final TextStyle? footerStyle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final Color on = b.colors.danger;
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: DecoratedBox(
+        key: boxKey,
+        decoration: BoxDecoration(
+          color: b.colors.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: on.withValues(alpha: 0.35)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(BhorSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(icon, color: on),
+                  const SizedBox(width: BhorSpace.s8),
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(title, style: b.type.heading.copyWith(color: on)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: BhorSpace.s8),
+              for (final String line in lines)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: BhorSpace.s4),
+                  child: Text(line, style: b.type.body.copyWith(color: on)),
+                ),
+              if (footer != null) ...<Widget>[
+                const SizedBox(height: BhorSpace.s4),
+                Text(footer!, style: footerStyle ?? b.type.meta.copyWith(color: on)),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Backup info: when, which device, which app version, how much is inside.
 class ReviewInfoCard extends StatelessWidget {
   const ReviewInfoCard({super.key, required this.snapshot, required this.center});
@@ -38,40 +116,38 @@ class ReviewInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String device =
         snapshot.deviceName.trim().isEmpty ? l10n.backupReviewUnknownDevice : snapshot.deviceName.trim();
     int count(String table) => snapshot.counts[table] ?? 0;
-    final TextStyle? line = tt.bodyLarge?.copyWith(color: tokens.textPrimary);
-    return GlassCard(
+    final TextStyle line = b.type.body;
+    return BhorCard(
       key: const Key('review-info'),
-      dense: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.inventory_2_outlined, color: tokens.accent),
-              const SizedBox(width: 12),
+              Icon(Icons.inventory_2_outlined, color: b.colors.accent),
+              const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text(l10n.backupReviewInfoTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+                  child: Text(l10n.backupReviewInfoTitle, style: b.type.heading),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Text(l10n.backupReviewCreated(backupWhenText(l10n, fmt, center, snapshot.createdAtMs)), style: line),
           const SizedBox(height: 2),
           Text(l10n.backupReviewDevice(device), style: line),
           const SizedBox(height: 2),
           Text(
             l10n.backupReviewVersion(snapshot.appVersion.isEmpty ? '-' : snapshot.appVersion),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: b.type.meta,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Text(
             l10n.backupReviewTotals(
               fmt.number(count('subjects')),
@@ -80,7 +156,7 @@ class ReviewInfoCard extends StatelessWidget {
               fmt.number(count('payments')),
             ),
             key: const Key('review-totals'),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: b.type.meta,
           ),
         ],
       ),
@@ -88,7 +164,7 @@ class ReviewInfoCard extends StatelessWidget {
   }
 }
 
-/// A neutral (info-coloured) note card with an icon.
+/// A neutral (accent-tinted) note card with an icon.
 class ReviewNote extends StatelessWidget {
   const ReviewNote({super.key, required this.icon, required this.text});
 
@@ -97,24 +173,22 @@ class ReviewNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Semantics(
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.infoContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
+          color: b.colors.accentTint,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(icon, color: tokens.info),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textPrimary)),
-              ),
+              Icon(icon, color: b.colors.accent),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(child: Text(text, style: b.type.body)),
             ],
           ),
         ),
@@ -137,7 +211,6 @@ class ReviewHeadline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
     final String text = changes > 0
         ? l10n.backupHeadline(context.fmt.number(changes))
         : kept > 0
@@ -147,15 +220,11 @@ class ReviewHeadline extends StatelessWidget {
       header: true,
       liveRegion: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
         child: Text(
           text,
           key: const Key('review-headline'),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: tokens.textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-              ),
+          style: context.bhor.type.display,
         ),
       ),
     );
@@ -177,14 +246,13 @@ class ChangeTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     Widget head(String text, {Color? color}) => SizedBox(
           width: _colWidth,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(text, style: tt.labelMedium?.copyWith(color: color ?? tokens.textSecondary)),
+            child: Text(text, style: b.type.label.copyWith(color: color ?? b.colors.text2)),
           ),
         );
     Widget cell(int n, {Color? color}) => SizedBox(
@@ -192,9 +260,11 @@ class ChangeTable extends StatelessWidget {
           child: Text(
             fmt.number(n),
             textAlign: TextAlign.center,
-            style: tt.titleMedium?.copyWith(
-              color: n == 0 ? tokens.textDisabled : (color ?? tokens.textPrimary),
-              fontWeight: n == 0 ? FontWeight.w400 : FontWeight.w600,
+            style: BhorType.tabular(
+              b.type.heading.copyWith(
+                color: n == 0 ? b.colors.text3 : (color ?? b.colors.text),
+                fontWeight: n == 0 ? FontWeight.w400 : FontWeight.w600,
+              ),
             ),
           ),
         );
@@ -206,7 +276,7 @@ class ChangeTable extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
             child: Row(
               key: Key('review-row-${e.name}'),
               children: <Widget>[
@@ -217,21 +287,18 @@ class ChangeTable extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         entityLabel(l10n, e),
-                        style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+                        style: b.type.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (c.keptLocal > 0)
-                        Text(
-                          l10n.backupKeptShort(fmt.number(c.keptLocal)),
-                          style: tt.labelSmall?.copyWith(color: tokens.textSecondary),
-                        ),
+                        Text(l10n.backupKeptShort(fmt.number(c.keptLocal)), style: b.type.caption),
                     ],
                   ),
                 ),
                 cell(c.added),
                 cell(c.updated),
-                cell(c.deleted, color: tokens.error),
+                cell(c.deleted, color: b.colors.danger),
               ],
             ),
           ),
@@ -249,26 +316,23 @@ class ChangeTable extends StatelessWidget {
             const Spacer(),
             head(l10n.backupColAdded),
             head(l10n.backupColUpdated),
-            head(l10n.backupColDeleted, color: tokens.error),
+            head(l10n.backupColDeleted, color: b.colors.danger),
           ],
         ),
-        Divider(height: 8, color: tokens.track),
+        const SizedBox(height: BhorSpace.s4),
+        const _Hairline(),
         for (int i = 0; i < rows.length; i++) ...<Widget>[
-          if (i > 0) Divider(height: 1, color: tokens.track),
+          if (i > 0) const _Hairline(),
           rows[i],
         ],
         if (fill) const Spacer(),
         if (kept > 0) ...<Widget>[
-          const SizedBox(height: 8),
-          Text(
-            l10n.backupKeptTotal(fmt.number(kept)),
-            key: const Key('review-kept'),
-            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-          ),
+          const SizedBox(height: BhorSpace.s8),
+          Text(l10n.backupKeptTotal(fmt.number(kept)), key: const Key('review-kept'), style: b.type.meta),
         ],
       ],
     );
-    return GlassCard(key: const Key('review-table'), dense: true, child: table);
+    return BhorCard(key: const Key('review-table'), child: table);
   }
 }
 
@@ -283,9 +347,6 @@ class DeletionsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final Color on = tokens.onErrorContainer;
 
     final List<String> lines = <String>[];
     int total = 0;
@@ -302,47 +363,11 @@ class DeletionsCard extends StatelessWidget {
     }
     if (total == 0) return const SizedBox.shrink();
 
-    return Semantics(
-      container: true,
-      child: DecoratedBox(
-        key: const Key('review-deletions'),
-        decoration: BoxDecoration(
-          color: tokens.errorContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: Border.all(color: tokens.errorContainerBorder),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Icon(Icons.warning_amber_rounded, color: on),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        l10n.backupDeletionsTitle(fmt.number(total)),
-                        style: tt.titleMedium?.copyWith(color: on),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              for (final String line in lines)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(line, style: tt.bodyLarge?.copyWith(color: on)),
-                ),
-              const SizedBox(height: 4),
-              Text(l10n.backupDeletionsNote, style: tt.bodySmall?.copyWith(color: on)),
-            ],
-          ),
-        ),
-      ),
+    return ReviewDangerCard(
+      boxKey: const Key('review-deletions'),
+      title: l10n.backupDeletionsTitle(fmt.number(total)),
+      lines: lines,
+      footer: l10n.backupDeletionsNote,
     );
   }
 }
@@ -371,9 +396,14 @@ class ClashesCard extends StatelessWidget {
           name(c.batchBId),
         ),
     ];
+    final int more = clashes.length > _maxLines ? clashes.length - _maxLines : 0;
     return KeyedSubtree(
       key: const Key('review-clashes'),
-      child: ConflictCard(lines: lines, moreCount: clashes.length > _maxLines ? clashes.length - _maxLines : 0),
+      child: ReviewDangerCard(
+        title: l10n.uiConflictTitle,
+        lines: lines,
+        footer: more > 0 ? l10n.uiConflictMore(fmt.number(more)) : null,
+      ),
     );
   }
 }
@@ -392,28 +422,25 @@ class SamplesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
 
     Widget bucket(String label, List<RowMap> samples, int count) {
       final int more = count - samples.length;
       return Padding(
-        padding: const EdgeInsets.only(top: 4),
+        padding: const EdgeInsets.only(top: BhorSpace.s4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             SizedBox(
               width: 64,
-              child: Text(label, style: tt.labelMedium?.copyWith(color: tokens.accent)),
+              child: Text(label, style: b.type.label.copyWith(color: b.colors.accent)),
             ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  for (final RowMap s in samples)
-                    Text(sampleText(l10n, fmt, names, s), style: tt.bodyMedium?.copyWith(color: tokens.textPrimary)),
-                  if (more > 0)
-                    Text(l10n.backupMore(fmt.number(more)), style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
+                  for (final RowMap s in samples) Text(sampleText(l10n, fmt, names, s), style: b.type.body),
+                  if (more > 0) Text(l10n.backupMore(fmt.number(more)), style: b.type.meta),
                 ],
               ),
             ),
@@ -428,11 +455,11 @@ class SamplesCard extends StatelessWidget {
       if (c == null || (c.added == 0 && c.updated == 0)) continue;
       blocks.add(
         Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: BhorSpace.s8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(entityLabel(l10n, e), style: tt.titleSmall?.copyWith(color: tokens.textPrimary)),
+              Text(entityLabel(l10n, e), style: b.type.bodyStrong),
               if (c.added > 0) bucket(l10n.backupColAdded, c.addedSamples, c.added),
               if (c.updated > 0) bucket(l10n.backupColUpdated, c.updatedSamples, c.updated),
             ],
@@ -441,15 +468,14 @@ class SamplesCard extends StatelessWidget {
       );
     }
     if (blocks.isEmpty) return const SizedBox.shrink();
-    return GlassCard(
+    return BhorCard(
       key: const Key('review-samples'),
-      dense: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Semantics(
             header: true,
-            child: Text(l10n.backupSamplesTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+            child: Text(l10n.backupSamplesTitle, style: b.type.heading),
           ),
           ...blocks,
         ],
@@ -467,35 +493,33 @@ class ExplainCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<(IconData, String)> items = <(IconData, String)>[
       (Icons.touch_app_outlined, l10n.backupExplainNothing),
       (Icons.history, l10n.backupExplainSafety),
       (Icons.update, l10n.backupExplainNewer),
       (Icons.shield_outlined, l10n.backupExplainAbsent),
     ];
-    return GlassCard(
+    return BhorCard(
       key: const Key('review-explain'),
-      dense: true,
       child: Column(
         mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Semantics(
             header: true,
-            child: Text(l10n.backupExplainTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+            child: Text(l10n.backupExplainTitle, style: b.type.heading),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           for (final (IconData, String) item in items)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(item.$1, size: 20, color: tokens.accent),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(item.$2, style: tt.bodyMedium?.copyWith(color: tokens.textPrimary))),
+                  Icon(item.$1, size: 20, color: b.colors.accent),
+                  const SizedBox(width: BhorSpace.s12),
+                  Expanded(child: Text(item.$2, style: b.type.body)),
                 ],
               ),
             ),
@@ -524,41 +548,36 @@ class ReviewNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(BhorSpace.s16),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
-          child: GlassCard(
-            padding: const EdgeInsets.all(24),
+          child: BhorCard(
+            padding: const EdgeInsets.all(BhorSpace.s24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 ExcludeSemantics(
-                  child: Icon(icon, size: 56, color: error ? tokens.error : tokens.accent),
+                  child: Icon(icon, size: 56, color: error ? b.colors.danger : b.colors.accent),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: BhorSpace.s12),
                 if (title != null) ...<Widget>[
                   Semantics(
                     header: true,
                     liveRegion: true,
-                    child: Text(
-                      title!,
-                      textAlign: TextAlign.center,
-                      style: tt.headlineSmall?.copyWith(color: tokens.textPrimary),
-                    ),
+                    child: Text(title!, textAlign: TextAlign.center, style: b.type.title),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: BhorSpace.s8),
                 ],
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: tt.bodyLarge?.copyWith(color: tokens.textSecondary),
+                  style: b.type.body.copyWith(color: b.colors.text2),
                 ),
-                for (final Widget a in actions) ...<Widget>[const SizedBox(height: 12), a],
+                for (final Widget a in actions) ...<Widget>[const SizedBox(height: BhorSpace.s12), a],
               ],
             ),
           ),
@@ -590,12 +609,11 @@ class ReviewActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.surfaceDense,
-        border: Border(top: BorderSide(color: tokens.hairline)),
+        color: b.colors.surface,
+        border: Border(top: BorderSide(color: b.colors.line)),
       ),
       child: SafeArea(
         top: false,
@@ -604,51 +622,38 @@ class ReviewActionBar extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s12, BhorSpace.s16, BhorSpace.s12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Row(
                     children: <Widget>[
-                      TextButton(
+                      BhorButton(
                         key: const Key('review-secondary'),
+                        variant: BhorButtonVariant.ghost,
+                        label: secondaryLabel,
                         onPressed: onSecondary,
-                        style: TextButton.styleFrom(minimumSize: const Size(72, 56)),
-                        child: Text(secondaryLabel),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: BhorSpace.s8),
                       Expanded(
-                        child: FilledButton(
+                        child: BhorButton(
                           key: const Key('review-apply'),
+                          label: primaryLabel,
+                          loading: busy,
+                          expand: true,
                           onPressed: onPrimary,
-                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                          child: busy
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Flexible(child: Text(primaryLabel)),
-                                  ],
-                                )
-                              : Text(primaryLabel, textAlign: TextAlign.center),
                         ),
                       ),
                     ],
                   ),
                   if (onPrimary == null && !busy && disabledReason != null) ...<Widget>[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: BhorSpace.s8),
                     Text(
                       disabledReason!,
                       key: const Key('review-disabled-reason'),
                       textAlign: TextAlign.center,
-                      style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                      style: b.type.meta,
                     ),
                   ],
                 ],
@@ -680,7 +685,6 @@ class ReviewResult extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
-    final tokens = context.aurora;
     return ReviewNotice(
       icon: Icons.check_circle_outline,
       title: l10n.backupDoneTitle(fmt.number(state.changes)),
@@ -691,21 +695,19 @@ class ReviewResult extends StatelessWidget {
             icon: Icons.info_outline,
             text: l10n.backupOverfilled(fmt.number(state.overfilled)),
           ),
-        OutlinedButton.icon(
+        BhorButton(
           key: const Key('review-undo'),
+          variant: BhorButtonVariant.secondary,
+          icon: Icons.undo,
+          label: l10n.backupUndo,
+          expand: true,
           onPressed: busy ? null : onUndo,
-          icon: const Icon(Icons.undo),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
-            foregroundColor: tokens.textPrimary,
-          ),
-          label: Text(l10n.backupUndo),
         ),
-        FilledButton(
+        BhorButton(
           key: const Key('review-done'),
+          label: l10n.commonOk,
+          expand: true,
           onPressed: busy ? null : onDone,
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-          child: Text(l10n.commonOk),
         ),
       ],
     );

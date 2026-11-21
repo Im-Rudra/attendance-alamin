@@ -1,11 +1,10 @@
-// The shell of every Today tile: a glass card with an optional header. Inside
+// The shell of every Today tile: a Bhor card with an optional header. Inside
 // the bento (bounded height) the body fills the tile and scrolls instead of
 // overflowing; inside a scrolling page (unbounded height) it wraps its content.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 
 class TileFrame extends StatelessWidget {
   const TileFrame({
@@ -13,7 +12,7 @@ class TileFrame extends StatelessWidget {
     this.header,
     required this.child,
     this.onTap,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(BhorSpace.s16),
     this.scroll = true,
   });
 
@@ -29,7 +28,7 @@ class TileFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return BhorCard(
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: LayoutBuilder(
@@ -41,7 +40,7 @@ class TileFrame extends StatelessWidget {
             body = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (head != null) ...<Widget>[head, const SizedBox(height: 8)],
+                if (head != null) ...<Widget>[head, const SizedBox(height: BhorSpace.s8)],
                 Expanded(child: fill),
               ],
             );
@@ -50,7 +49,7 @@ class TileFrame extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (head != null) ...<Widget>[head, const SizedBox(height: 8)],
+                if (head != null) ...<Widget>[head, const SizedBox(height: BhorSpace.s8)],
                 child,
               ],
             );
@@ -97,14 +96,13 @@ class TileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 28),
       child: Row(
         children: <Widget>[
-          ExcludeSemantics(child: Icon(icon, size: 20, color: tokens.accent)),
-          const SizedBox(width: 8),
+          ExcludeSemantics(child: Icon(icon, size: 20, color: b.colors.accent)),
+          const SizedBox(width: BhorSpace.s8),
           Expanded(
             child: Semantics(
               header: true,
@@ -112,14 +110,11 @@ class TileHeader extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: b.type.heading,
               ),
             ),
           ),
-          if (trailing != null) ...<Widget>[const SizedBox(width: 8), trailing!],
+          if (trailing != null) ...<Widget>[const SizedBox(width: BhorSpace.s8), trailing!],
         ],
       ),
     );
@@ -137,22 +132,19 @@ class TileMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          ExcludeSemantics(child: Icon(icon, size: 40, color: tokens.accent)),
-          const SizedBox(height: 8),
+          ExcludeSemantics(child: Icon(icon, size: 40, color: b.colors.accent)),
+          const SizedBox(height: BhorSpace.s8),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: tokens.textPrimary),
+            style: b.type.heading,
           ),
-          if (action != null) ...<Widget>[const SizedBox(height: 12), action!],
+          if (action != null) ...<Widget>[const SizedBox(height: BhorSpace.s12), action!],
         ],
       ),
     );

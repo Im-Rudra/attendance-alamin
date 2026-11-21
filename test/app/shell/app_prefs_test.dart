@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
@@ -129,7 +130,7 @@ void main() {
 
   testWidgets('theme switches instantly from the More tab and is saved', (WidgetTester tester) async {
     final ShellHarness h = await pumpShell(tester, location: Routes.more);
-    Brightness brightness() => Theme.of(tester.element(find.byType(SegmentedChoice<ThemeMode>))).brightness;
+    Brightness brightness() => Theme.of(tester.element(find.byType(BhorSegmented<ThemeMode>))).brightness;
     expect(brightness(), Brightness.light);
 
     await tester.ensureVisible(find.text(l10nOf(Lang.bn).shellThemeDark));

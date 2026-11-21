@@ -3,7 +3,8 @@
 // batch and date of the occurrence, then hands over to [RollCallPage], which
 // also serves the batch launcher (batch + date, no occurrence yet).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/l10n/error_text.dart';

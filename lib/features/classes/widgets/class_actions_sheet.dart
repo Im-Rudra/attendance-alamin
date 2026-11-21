@@ -1,18 +1,21 @@
 // Per-date actions of one class (UX 2g): "শুধু {date}" with change time,
 // cancel (undo snackbar + guardians' notice), roll call and restore.
 
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
@@ -21,6 +24,7 @@ import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
+import 'package:attendance_alamin/features/classes/widgets/clash_panel.dart';
 import 'package:attendance_alamin/features/classes/widgets/reschedule_sheet.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -28,7 +32,6 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 /// Opens the actions of [occ]; carries out what the sheet asks for afterwards
 /// (reschedule sheet, roll call, the undo snackbar of a cancel).
 Future<void> showClassActionsSheet(BuildContext context, {required String occ, String? returnTo}) async {
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final ProviderContainer container = ProviderScope.containerOf(context);
   final AppLocalizations l10n = context.l10n;
   final ClassSheetResult? result = await showClassSheet<ClassSheetResult>(
@@ -42,10 +45,9 @@ Future<void> showClassActionsSheet(BuildContext context, {required String occ, S
     case RollCallRequested():
       GoRouter.maybeOf(context)?.push<void>(Routes.rollCall(occ), extra: returnTo);
     case final CancelDone done:
-      if (messenger == null) return;
-      _showCancelSnack(
+      if (Overlay.maybeOf(context, rootOverlay: true) == null) return;
+      _showCancelToast(
         context: context,
-        messenger: messenger,
         repo: container.read(scheduleRepositoryProvider),
         l10n: l10n,
         done: done,
@@ -53,58 +55,177 @@ Future<void> showClassActionsSheet(BuildContext context, {required String occ, S
   }
 }
 
-void _showCancelSnack({
+void _showCancelToast({
   required BuildContext context,
-  required ScaffoldMessengerState messenger,
   required ScheduleRepository repo,
   required AppLocalizations l10n,
   required CancelDone done,
 }) {
   final String? notice = done.guardianMessage;
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 8),
-        // Auto-dismiss even though it has an action (Flutter 3.29+ keeps
-        // action snackbars until dismissed unless persist is false).
-        persist: false,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(done.removedExtra ? l10n.clsExtraRemovedSnack : l10n.clsCancelledSnack),
-            if (notice != null)
-              TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: Theme.of(context).colorScheme.inversePrimary,
-                  padding: EdgeInsets.zero,
+  final String text = done.removedExtra ? l10n.clsExtraRemovedSnack : l10n.clsCancelledSnack;
+
+  Future<void> undo() async {
+    String message = l10n.clsRestoredSnack;
+    try {
+      await repo.restore(done.occ);
+    } catch (e) {
+      message = errorText(l10n, e);
+    }
+    if (context.mounted) BhorToast.show(context, message: message);
+  }
+
+  if (notice == null) {
+    BhorToast.show(
+      context,
+      message: text,
+      duration: const Duration(seconds: 8),
+      actionLabel: l10n.commonUndo,
+      onAction: () => unawaited(undo()),
+    );
+    return;
+  }
+  // The library toast has one action; the guardians' notice needs a second.
+  _CancelToast.show(
+    context,
+    message: text,
+    undoLabel: l10n.commonUndo,
+    onUndo: () => unawaited(undo()),
+    notifyLabel: l10n.clsNotifyGuardians,
+    onNotify: () {
+      if (context.mounted) ShareService.shareText(context, notice);
+    },
+  );
+}
+
+/// A bottom toast with two actions (undo, notify guardians), 8 s, Bhor look.
+class _CancelToast extends StatefulWidget {
+  const _CancelToast({
+    required this.message,
+    required this.undoLabel,
+    required this.onUndo,
+    required this.notifyLabel,
+    required this.onNotify,
+    required this.onGone,
+    required this.theme,
+  });
+
+  final String message;
+  final String undoLabel;
+  final VoidCallback onUndo;
+  final String notifyLabel;
+  final VoidCallback onNotify;
+  final VoidCallback onGone;
+  final BhorThemeData theme;
+
+  static void show(
+    BuildContext context, {
+    required String message,
+    required String undoLabel,
+    required VoidCallback onUndo,
+    required String notifyLabel,
+    required VoidCallback onNotify,
+  }) {
+    final OverlayState overlay = Overlay.of(context, rootOverlay: true);
+    late final OverlayEntry entry;
+    void remove() {
+      if (entry.mounted) entry.remove();
+    }
+
+    entry = OverlayEntry(
+      builder: (BuildContext ctx) => _CancelToast(
+        message: message,
+        undoLabel: undoLabel,
+        onUndo: () {
+          remove();
+          onUndo();
+        },
+        notifyLabel: notifyLabel,
+        onNotify: () {
+          remove();
+          onNotify();
+        },
+        onGone: remove,
+        theme: context.bhor,
+      ),
+    );
+    overlay.insert(entry);
+  }
+
+  @override
+  State<_CancelToast> createState() => _CancelToastState();
+}
+
+class _CancelToastState extends State<_CancelToast> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(seconds: 8), widget.onGone);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = widget.theme;
+    final BhorColors c = b.colors;
+    return BhorTheme(
+      data: b,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(BhorSpace.s16),
+            child: Semantics(
+              liveRegion: true,
+              container: true,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 480),
+                padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(BhorRadius.control),
+                  border: Border.all(color: c.line),
                 ),
-                onPressed: () {
-                  messenger.hideCurrentSnackBar();
-                  if (context.mounted) ShareService.shareText(context, notice);
-                },
-                child: Text(l10n.clsNotifyGuardians),
+                child: DefaultTextStyle(
+                  style: b.type.body,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(widget.message, style: b.type.body),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          BhorButton(
+                            label: widget.notifyLabel,
+                            variant: BhorButtonVariant.ghost,
+                            size: BhorButtonSize.sm,
+                            onPressed: widget.onNotify,
+                          ),
+                          BhorButton(
+                            label: widget.undoLabel,
+                            variant: BhorButtonVariant.ghost,
+                            size: BhorButtonSize.sm,
+                            onPressed: widget.onUndo,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: l10n.commonUndo,
-          onPressed: () async {
-            String message = l10n.clsRestoredSnack;
-            try {
-              await repo.restore(done.occ);
-            } catch (e) {
-              message = errorText(l10n, e);
-            }
-            messenger
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(message)));
-          },
+            ),
+          ),
         ),
       ),
     );
+  }
 }
 
 /// The sheet body (public so the screen matrix can render it directly).
@@ -197,15 +318,14 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final AsyncValue<OccurrenceInfo?> async = ref.watch(occInfoProvider(widget.occ));
 
     if (async.hasError) {
       return SheetFrame(title: l10n.clsRescheduleTitle, child: Text(errorText(l10n, async.error!)));
     }
     if (!async.hasValue) {
-      return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+      return const SizedBox(height: 160, child: Center(child: BhorSpinner(size: 28)));
     }
     final OccurrenceInfo? info = async.value;
     final Occurrence? o = info?.occurrence;
@@ -292,25 +412,19 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Wrap(
-            spacing: 12,
-            runSpacing: 8,
+            spacing: BhorSpace.s12,
+            runSpacing: BhorSpace.s8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              Text(
-                fmt.timeRange(o.startMin, o.endMin),
-                style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
-              ),
-              if (state != null) StatePill(state: state),
+              Text(fmt.timeRange(o.startMin, o.endMin), style: b.type.heading),
+              if (state != null) _classStateTag(context, state),
               if (moved && o.originalStartMin != null)
-                Text(
-                  l10n.clsMovedFrom(fmt.time(o.originalStartMin!)),
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                ),
+                Text(l10n.clsMovedFrom(fmt.time(o.originalStartMin!)), style: b.type.meta),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           if (_restoreClash != null) ...<Widget>[
-            ConflictCard(
+            ClashCard(
               lines: <String>[
                 for (final ClashGroup g in _restoreClash!.groups.take(3))
                   clashLine(
@@ -325,11 +439,11 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: BhorSpace.s12),
           ],
           if (_error != null) ...<Widget>[
-            Text(_error!, style: tt.bodyMedium?.copyWith(color: tokens.error)),
-            const SizedBox(height: 12),
+            Text(_error!, style: b.type.body.copyWith(color: b.colors.danger)),
+            const SizedBox(height: BhorSpace.s12),
           ],
           ...actions,
         ],
@@ -357,47 +471,54 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final Color color = onTap == null
-        ? tokens.textDisabled
-        : destructive
-            ? tokens.error
-            : tokens.textPrimary;
-    return Semantics(
-      button: true,
-      enabled: onTap != null,
-      label: reason == null ? label : '$label. $reason',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusField),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 56),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: <Widget>[
-                Icon(icon, color: color),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: color)),
-                      if (reason != null)
-                        Text(
-                          reason!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    final Color color = onTap == null ? c.text3 : (destructive ? c.danger : c.text);
+    return BhorPressable(
+      onTap: onTap,
+      semanticLabel: reason == null ? label : '$label. $reason',
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      scaleOnPress: false,
+      builder: (BuildContext context, BhorStates s) => Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.all(BhorSpace.s8),
+        decoration: BoxDecoration(
+          color: s.hovered ? c.surface2 : null,
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, color: color),
+            const SizedBox(width: BhorSpace.s16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(label, style: b.type.body.copyWith(color: color)),
+                  if (reason != null) Text(reason!, style: b.type.meta),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
+  }
+}
+
+/// Class state as a Bhor tag (icon + word, never colour alone).
+Widget _classStateTag(BuildContext context, ClassState state) {
+  final l10n = context.l10n;
+  switch (state) {
+    case ClassState.now:
+      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: Icons.fiber_manual_record);
+    case ClassState.moved:
+      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: Icons.autorenew);
+    case ClassState.cancelled:
+      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: Icons.block);
+    case ClassState.extra:
+      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: Icons.add);
   }
 }

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -43,6 +44,16 @@ import 'package:attendance_alamin/app/providers/dues_providers.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
+
+/// Text inside the hero card (the page header repeats the date).
+Finder _inHero(String text) =>
+    find.descendant(of: find.byType(HeroClassCard), matching: find.text(text));
+
+/// A Bhor icon button by its accessible name (it doubles as the tooltip).
+Finder _byLabel(String label) => find.byWidgetPredicate(
+      (Widget w) => w is BhorIconButton && w.semanticLabel == label,
+      description: 'BhorIconButton "$label"',
+    );
 
 AppLocalizations _l10n(Lang lang) => lookupAppLocalizations(Locale(lang.code));
 
@@ -233,7 +244,7 @@ Future<SeededFakes> _pumpPhone(
   final SeededFakes f = fakes ?? seedFakes();
   await pumpApp(
     tester,
-    const TodayScreen(),
+    const Scaffold(body: TodayScreen()),
     lang: lang,
     overrides: <Override>[...f.overrides, _prefs(lang), ..._clockAt(date, time)],
   );
@@ -288,7 +299,7 @@ void main() {
       expect(find.text(l10n.todayHeroNext(l10n.todayInHours(fmt.number(6)))), findsOneWidget);
       expect(find.text(l10n.clsClassLabel('পদার্থবিজ্ঞান', 'ফিজিক্স এ')), findsWidgets);
       expect(find.text(fmt.timeRange(kPhysStart, kPhysEnd)), findsWidgets);
-      expect(find.text(fmt.weekdayDate(kToday)), findsOneWidget);
+      expect(_inHero(fmt.weekdayDate(kToday)), findsOneWidget);
       expect(find.text(l10n.todayTakeAttendance), findsWidgets);
     });
 
@@ -335,8 +346,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text(l10n.todayPickBatchTitle), findsOneWidget);
-      expect(find.widgetWithText(ListTile, 'ফিজিক্স এ'), findsOneWidget);
-      expect(find.widgetWithText(ListTile, 'কেমিস্ট্রি বি'), findsOneWidget);
+      expect(find.widgetWithText(BhorListRow, 'ফিজিক্স এ'), findsOneWidget);
+      expect(find.widgetWithText(BhorListRow, 'কেমিস্ট্রি বি'), findsOneWidget);
     });
 
     testWidgets('no batches: the setup card', (WidgetTester tester) async {
@@ -350,7 +361,7 @@ void main() {
       await _pumpPhone(tester, lang: Lang.en);
       final AppLocalizations l10n = _l10n(Lang.en);
       expect(find.text(l10n.todayHeroNext(l10n.todayInHours('6'))), findsOneWidget);
-      expect(find.text('Saturday, 21 Nov'), findsOneWidget);
+      expect(_inHero('Saturday, 21 Nov'), findsOneWidget);
     });
   });
 
@@ -368,8 +379,8 @@ void main() {
         find.text(l10n.todayDuesHeadline(fmt.number(r.studentsWithDues), fmt.number(r.overdueStudents))),
         findsOneWidget,
       );
-      expect(find.byType(EscalationBar), findsOneWidget);
-      expect(find.byType(SeverityBadge), findsWidgets);
+      expect(find.byType(BhorEscalationBar), findsOneWidget);
+      expect(find.byType(BhorTag), findsWidgets);
     });
 
     testWidgets('nobody owes and nothing collected yet: "no dues", no bar', (WidgetTester tester) async {
@@ -378,13 +389,13 @@ void main() {
       expect(l10n.todayDuesNone, 'কোনো বকেয়া নেই');
       expect(find.text(l10n.todayDuesNone), findsOneWidget);
       expect(find.text(l10n.todayDuesAllPaid), findsNothing);
-      expect(find.byType(EscalationBar), findsNothing);
+      expect(find.byType(BhorEscalationBar), findsNothing);
     });
 
     testWidgets('nobody owes after payments this month: "everyone paid"', (WidgetTester tester) async {
       await _pumpPhone(tester, fakes: _nobodyOwes());
       expect(find.text(_l10n(Lang.bn).todayDuesAllPaid), findsOneWidget);
-      expect(find.byType(EscalationBar), findsNothing);
+      expect(find.byType(BhorEscalationBar), findsNothing);
     });
   });
 
@@ -446,7 +457,7 @@ void main() {
       await _pumpPhone(tester, time: '18:00');
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.text(l10n.todayRollPending), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, l10n.todayTakeAttendance), findsOneWidget);
+      expect(find.widgetWithText(BhorButton, l10n.todayTakeAttendance), findsOneWidget);
     });
 
     testWidgets('a day without a class offers "+ extra class" right in the empty state',
@@ -482,7 +493,7 @@ void main() {
       expect(find.byType(DuesCard), findsNothing);
 
       // Back to today with the chip.
-      await tester.tap(find.widgetWithText(TextButton, l10n.commonToday));
+      await tester.tap(find.widgetWithText(BhorButton, l10n.commonToday));
       await _settle(tester);
       expect(find.text(l10n.todayRoutineToday), findsOneWidget);
       expect(find.byType(DuesCard), findsOneWidget);
@@ -506,11 +517,11 @@ void main() {
             SystemChannels.platform, (MethodCall call) async => null);
         addTearDown(() => tester.binding.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null));
-        await tester.tap(find.descendant(of: row, matching: find.byTooltip(l10n.commonCopyNumber)));
+        await tester.tap(find.descendant(of: row, matching: _byLabel(l10n.commonCopyNumber)));
         await _settle(tester);
         expect(find.text(l10n.shellNumberCopied(fmt.digits('01811223344'))), findsOneWidget);
 
-        await tester.tap(find.descendant(of: row, matching: find.byTooltip(l10n.todayAlertDismiss)));
+        await tester.tap(find.descendant(of: row, matching: _byLabel(l10n.todayAlertDismiss)));
         await _settle(tester);
         expect(
           f.localMeta.values[LocalMetaKeys.absenceDismissed(kEnrRahimPhys)],
@@ -591,7 +602,7 @@ void main() {
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byType(RecentPaymentsTile), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('today-receipt-rcp-4')), findsOneWidget);
-      expect(find.byTooltip(l10n.todayRecentShare), findsWidgets);
+      expect(_byLabel(l10n.todayRecentShare), findsWidgets);
     });
 
     testWidgets('quick actions: four pills on the phone page', (WidgetTester tester) async {
@@ -713,9 +724,9 @@ void main() {
       await _pumpDesktop(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byType(QuickActionsTile), findsNothing);
-      expect(find.byTooltip(l10n.todayQuickCollect), findsOneWidget);
-      expect(find.byTooltip(l10n.todayQuickAddStudent), findsOneWidget);
-      expect(find.byTooltip(l10n.todayQuickExtra), findsOneWidget);
+      expect(_byLabel(l10n.todayQuickCollect), findsOneWidget);
+      expect(_byLabel(l10n.todayQuickAddStudent), findsOneWidget);
+      expect(_byLabel(l10n.todayQuickExtra), findsOneWidget);
     });
 
     testWidgets('medium window: stacked cards, paired tiles of equal height', (WidgetTester tester) async {

@@ -10,17 +10,18 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
@@ -465,21 +466,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: 64,
             child: _step == 0
                 ? null
-                : IconButton(
-                    key: const Key('onb-back'),
-                    tooltip: l10n.commonBack,
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: _busy ? null : _back,
+                : Align(
+                    child: BhorIconButton(
+                      key: const Key('onb-back'),
+                      semanticLabel: l10n.commonBack,
+                      icon: Icons.arrow_back,
+                      onPressed: _busy ? null : _back,
+                    ),
                   ),
           ),
           Expanded(child: Center(child: OnbProgressDots(step: _step))),
           SizedBox(
-            width: 96,
+            width: 112,
             child: canSkip
-                ? TextButton(
-                    key: const Key('onb-skip'),
-                    onPressed: _busy ? null : () => _go(2),
-                    child: Text(l10n.onbSkip),
+                ? Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: BhorButton(
+                      key: const Key('onb-skip'),
+                      label: l10n.onbSkip,
+                      variant: BhorButtonVariant.ghost,
+                      size: BhorButtonSize.sm,
+                      onPressed: _busy ? null : () => _go(2),
+                    ),
                   )
                 : null,
           ),
@@ -505,7 +513,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final bool wide = WindowClass.of(context).isWide;
-    final tokens = context.aurora;
+    final BhorColors c = context.bhor.colors;
     final Widget content;
     if (wide) {
       content = LayoutBuilder(
@@ -526,12 +534,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       Expanded(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: tokens.surfaceDense,
-                            borderRadius: BorderRadius.circular(AuroraMetrics.radiusHero),
-                            border: Border.all(color: tokens.hairline),
+                            color: c.surface,
+                            borderRadius: BorderRadius.circular(BhorRadius.hero),
+                            border: Border.all(color: c.line),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AuroraMetrics.radiusHero),
+                            borderRadius: BorderRadius.circular(BhorRadius.hero),
                             child: Column(
                               children: <Widget>[
                                 _topBar(),
@@ -565,10 +573,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       onPopInvokedWithResult: (bool didPop, Object? _) {
         if (!didPop) _back();
       },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(child: content),
+      child: BhorScaffold(
+        body: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: content,
+        ),
       ),
     );
   }

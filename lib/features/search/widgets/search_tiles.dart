@@ -1,10 +1,10 @@
 // Result rows and the preview pane of the search screen.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/search/controllers/search_engine.dart';
 
 /// The phone to show under a result when the query looks like a phone number
@@ -38,9 +38,7 @@ class SearchStudentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
     final l10n = context.l10n;
-    final TextTheme tt = Theme.of(context).textTheme;
     final String? roll = entry.student.roll;
     final String? phone = matchedPhone(entry, query);
     final List<String> sub = <String>[
@@ -50,53 +48,35 @@ class SearchStudentTile extends StatelessWidget {
     ];
     return Semantics(
       container: true,
-      button: true,
       selected: selected,
-      child: Material(
-        color: selected ? tokens.accentContainer : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          hoverColor: tokens.track,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 64),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: <Widget>[
-                  InitialsAvatar(name: entry.student.name, size: 40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          roll == null || roll.isEmpty
-                              ? entry.student.name
-                              : '${context.fmt.digits(roll)} · ${entry.student.name}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.titleMedium
-                              ?.copyWith(color: tokens.textPrimary),
-                        ),
-                        if (sub.isNotEmpty)
-                          Text(
-                            sub.join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tt.labelMedium
-                                ?.copyWith(color: tokens.textSecondary),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: tokens.textSecondary),
-                ],
-              ),
-            ),
-          ),
-        ),
+      child: BhorListRow(
+        leading: BhorAvatar(name: entry.student.name, size: 40),
+        title: roll == null || roll.isEmpty
+            ? entry.student.name
+            : '${context.fmt.digits(roll)} · ${entry.student.name}',
+        subtitle: sub.isEmpty ? null : sub.join(' · '),
+        trailing: Icon(Icons.chevron_right, color: context.bhor.colors.text3),
+        selected: selected,
+        onTap: onTap,
       ),
+    );
+  }
+}
+
+/// Round batch glyph used where a student would show an avatar.
+class _BatchGlyph extends StatelessWidget {
+  const _BatchGlyph({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
+      child: Icon(Icons.groups_outlined, size: size / 2, color: c.accent),
     );
   }
 }
@@ -115,62 +95,21 @@ class SearchBatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
     final String count =
         context.l10n.searchBatchStudents(context.fmt.digits('${entry.studentCount}'));
     return Semantics(
       container: true,
-      button: true,
       selected: selected,
-      child: Material(
-        color: selected ? tokens.accentContainer : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          hoverColor: tokens.track,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 64),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: tokens.avatarBg,
-                    child: Icon(Icons.groups_outlined, color: tokens.avatarText),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          entry.batch.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.titleMedium
-                              ?.copyWith(color: tokens.textPrimary),
-                        ),
-                        Text(
-                          <String>[
-                            if (entry.subjectName.isNotEmpty) entry.subjectName,
-                            count,
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.labelMedium
-                              ?.copyWith(color: tokens.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: tokens.textSecondary),
-                ],
-              ),
-            ),
-          ),
-        ),
+      child: BhorListRow(
+        leading: const _BatchGlyph(size: 40),
+        title: entry.batch.name,
+        subtitle: <String>[
+          if (entry.subjectName.isNotEmpty) entry.subjectName,
+          count,
+        ].join(' · '),
+        trailing: Icon(Icons.chevron_right, color: context.bhor.colors.text3),
+        selected: selected,
+        onTap: onTap,
       ),
     );
   }
@@ -184,18 +123,15 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label,
-              style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+          Text(label, style: b.type.meta),
           const SizedBox(height: 2),
-          Text(value,
-              style: tt.bodyLarge?.copyWith(color: tokens.textPrimary)),
+          Text(value, style: b.type.body),
         ],
       ),
     );
@@ -217,10 +153,10 @@ class SearchPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b0 = context.bhor;
+    final BhorColors c = b0.colors;
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final StudentEntry? s = student;
     final BatchEntry? b = batch;
 
@@ -260,67 +196,57 @@ class SearchPreview extends StatelessWidget {
             value: l10n.searchBatchStudents(fmt.digits('${b.studentCount}'))));
     }
 
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            decoration: BoxDecoration(color: tokens.accentContainer),
-            child: Row(
-              children: <Widget>[
-                if (s != null)
-                  InitialsAvatar(name: s.student.name, size: 72)
-                else
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: tokens.avatarBg,
-                    child: Icon(Icons.groups_outlined,
-                        size: 36, color: tokens.avatarText),
-                  ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.headlineSmall
-                            ?.copyWith(color: tokens.onAccentContainer),
-                      ),
-                      if (headSub.isNotEmpty)
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(BhorRadius.card - 1),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.fromLTRB(BhorSpace.s24, 28, BhorSpace.s24, BhorSpace.s24),
+              decoration: BoxDecoration(color: c.accentTint),
+              child: Row(
+                children: <Widget>[
+                  if (s != null) BhorAvatar(name: s.student.name, size: 72) else const _BatchGlyph(size: 72),
+                  const SizedBox(width: BhorSpace.s16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
                         Text(
-                          headSub,
-                          style: tt.titleSmall
-                              ?.copyWith(color: tokens.onAccentContainer),
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: b0.type.title,
                         ),
-                    ],
+                        if (headSub.isNotEmpty) Text(headSub, style: b0.type.meta.copyWith(color: c.text2)),
+                      ],
+                    ),
                   ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(BhorSpace.s24, BhorSpace.s12, BhorSpace.s24, BhorSpace.s12),
+                children: facts,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(BhorSpace.s16),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: BhorButton(
+                  key: const ValueKey<String>('search-open'),
+                  onPressed: onOpen,
+                  icon: s != null ? Icons.person_outline : Icons.groups_outlined,
+                  label: s != null ? l10n.searchOpenStudent : l10n.searchOpenBatch,
                 ),
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-              children: facts,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              key: const ValueKey<String>('search-open'),
-              onPressed: onOpen,
-              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-              icon: Icon(s != null ? Icons.person_outline : Icons.groups_outlined),
-              label: Text(s != null ? l10n.searchOpenStudent : l10n.searchOpenBatch),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

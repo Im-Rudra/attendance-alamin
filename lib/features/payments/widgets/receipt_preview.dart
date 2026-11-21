@@ -1,15 +1,15 @@
 // The receipt: in-app preview (the "✓" of the template is drawn as an icon),
 // the receipt sheet (send / edit / delete) and sharing the text.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/dialogs.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -93,8 +93,7 @@ class ReceiptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextStyle? style = Theme.of(context).textTheme.bodyLarge?.copyWith(color: tokens.textPrimary);
+    final BhorThemeData b = context.bhor;
     final List<String> parts = text.split(_kCheckMark);
     final List<InlineSpan> spans = <InlineSpan>[];
     for (var i = 0; i < parts.length; i++) {
@@ -102,19 +101,18 @@ class ReceiptCard extends StatelessWidget {
       if (i < parts.length - 1) {
         spans.add(WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: Icon(Icons.check, size: 20, color: tokens.accent),
+          child: Icon(Icons.check, size: 20, color: b.colors.accent),
         ));
       }
     }
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: tokens.surfaceDense,
-        borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-        border: Border.all(color: tokens.hairline),
+      child: BhorCard(
+        child: Text.rich(
+          TextSpan(style: b.type.body, children: spans),
+          key: const ValueKey<String>('pay-receipt-text'),
+        ),
       ),
-      child: Text.rich(TextSpan(style: style, children: spans), key: const ValueKey<String>('pay-receipt-text')),
     );
   }
 }
@@ -134,7 +132,7 @@ class ReceiptPreview extends ConsumerWidget {
     if (model.hasError || settings.hasError) return Text(l10n.commonLoadingFailed);
     if (!model.hasValue || !settings.hasValue) {
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(BhorSpace.s24),
         child: Center(child: Text(l10n.payReceiptLoading)),
       );
     }
@@ -155,12 +153,9 @@ class ReceiptPreview extends ConsumerWidget {
 
 /// Receipt sheet: the preview with send, edit and delete.
 Future<void> showReceiptSheet(BuildContext context, {required String receiptId}) async {
-  final String? action = await showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  final String? action = await showBhorSheet<String>(
+    context,
+    title: context.l10n.payReceiptTitle,
     builder: (BuildContext ctx) => _ReceiptSheet(receiptId: receiptId),
   );
   if (action == null || !context.mounted) return;
@@ -178,15 +173,14 @@ class _ReceiptSheet extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final AppFormat fmt = context.fmt;
     final LocalDate today = ref.read(todayProvider);
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     final NavigatorState nav = Navigator.of(context);
-    final bool yes = await showConfirmDialog(
+    final bool yes = await showBhorConfirm(
       context,
       title: l10n.payDeleteTitle(
         fmt.money(m.facts.total),
         fmt.monthList(m.facts.months, currentYear: today.year),
       ),
-      body: l10n.payDeleteBody,
+      message: l10n.payDeleteBody,
       confirmLabel: l10n.commonDelete,
       destructive: true,
     );
@@ -194,60 +188,51 @@ class _ReceiptSheet extends ConsumerWidget {
     try {
       await ref.read(paymentsRepositoryProvider).deleteReceipt(receiptId);
     } on AppException catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      if (context.mounted) BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
       return;
     }
-    messenger
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.payDeletedToast)));
+    if (context.mounted) BhorToast.show(context, message: l10n.payDeletedToast, tone: BhorTone.ok);
     nav.pop();
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final TextTheme tt = Theme.of(context).textTheme;
     final ReceiptModel? m = ref.watch(payReceiptProvider(receiptId)).value;
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Semantics(header: true, child: Text(l10n.payReceiptTitle, style: tt.titleMedium)),
-          const SizedBox(height: 12),
           ReceiptPreview(receiptId: receiptId),
-          const SizedBox(height: 16),
-          FilledButton.icon(
+          const SizedBox(height: BhorSpace.s16),
+          BhorButton(
             key: const ValueKey<String>('pay-receipt-share'),
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+            icon: Icons.share,
+            label: l10n.paySendReceipt,
+            expand: true,
             onPressed: m == null ? null : () => shareReceiptNow(context, receiptId: receiptId),
-            icon: const Icon(Icons.share),
-            label: Text(l10n.paySendReceipt),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Row(
             children: <Widget>[
               Expanded(
-                child: OutlinedButton.icon(
+                child: BhorButton(
                   key: const ValueKey<String>('pay-receipt-edit'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  variant: BhorButtonVariant.secondary,
+                  icon: Icons.edit,
+                  label: l10n.commonEdit,
                   onPressed: m == null ? null : () => Navigator.of(context).pop('edit:${m.studentId}'),
-                  icon: const Icon(Icons.edit),
-                  label: Text(l10n.commonEdit),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: BhorSpace.s8),
               Expanded(
-                child: OutlinedButton.icon(
+                child: BhorButton(
                   key: const ValueKey<String>('pay-receipt-delete'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    foregroundColor: context.aurora.error,
-                  ),
+                  variant: BhorButtonVariant.danger,
+                  icon: Icons.delete_outline,
+                  label: l10n.commonDelete,
                   onPressed: m == null ? null : () => _delete(context, ref, m),
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(l10n.commonDelete),
                 ),
               ),
             ],

@@ -2,13 +2,14 @@
 // phone in Bangla or ASCII digits; most-owing first) that hands the chosen
 // student to the existing collect-payment sheet.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -61,15 +62,12 @@ bool pickerMatches(Student s, String query) {
   return has(s.name) || has(s.roll) || has(s.phone) || has(s.guardianPhone);
 }
 
+
 /// Opens the picker, then the collect-payment sheet of the chosen student.
 Future<void> showTakeMoneyPicker(BuildContext context) async {
-  final String? id = await showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    useRootNavigator: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  final String? id = await showBhorSheet<String>(
+    context,
+    title: context.l10n.duesPickerTitle,
     builder: (BuildContext ctx) => const TakeMoneyPicker(),
   );
   if (id == null || !context.mounted) return;
@@ -90,8 +88,7 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<Student> students = ref.watch(duesStudentsProvider).value ?? const <Student>[];
     final List<EnrollmentTerms> terms = ref.watch(enrollmentTermsProvider).value ?? const <EnrollmentTerms>[];
     final DuesReport? report = ref.watch(duesReportProvider).value;
@@ -100,60 +97,47 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
         if (pickerMatches(r.student, _query)) r,
     ];
     final double height = MediaQuery.sizeOf(context).height;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SizedBox(
-        height: height * 0.8,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Semantics(header: true, child: Text(l10n.duesPickerTitle, style: tt.titleLarge)),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: TextField(
-                key: const ValueKey<String>('picker-search'),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: l10n.duesPickerSearch,
-                ),
-                onChanged: (String v) => setState(() => _query = v),
-              ),
-            ),
-            Expanded(
-              child: rows.isEmpty
-                  ? EmptyState(icon: Icons.search_off, message: l10n.duesPickerNone)
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      itemCount: rows.length,
-                      itemBuilder: (BuildContext ctx, int i) {
-                        final PickerStudent r = rows[i];
-                        final List<String> sub = <String>[
-                          if (r.student.roll != null && r.student.roll!.isNotEmpty) fmt.digits(r.student.roll!),
-                          if (r.student.phone != null && r.student.phone!.isNotEmpty) fmt.digits(r.student.phone!),
-                        ];
-                        return ListTile(
-                          key: ValueKey<String>('picker-${r.student.id}'),
-                          minVerticalPadding: 8,
-                          leading: InitialsAvatar(name: r.student.name, size: 40),
-                          title: Text(r.student.name),
-                          subtitle: sub.isEmpty ? null : Text(sub.join(' · ')),
-                          trailing: r.owed > 0
-                              ? Text(
-                                  l10n.duesPickerOwes(fmt.money(r.owed)),
-                                  style: tt.labelLarge?.copyWith(color: tokens.textPrimary),
-                                )
-                              : null,
-                          onTap: () => Navigator.of(ctx).pop(r.student.id),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: height * 0.6,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          BhorTextField(
+            key: const ValueKey<String>('picker-search'),
+            semanticLabel: l10n.duesPickerSearch,
+            textInputAction: TextInputAction.search,
+            prefix: const Icon(Icons.search),
+            hint: l10n.duesPickerSearch,
+            onChanged: (String v) => setState(() => _query = v),
+          ),
+          const SizedBox(height: BhorSpace.s8),
+          Expanded(
+            child: rows.isEmpty
+                ? BhorEmptyState(icon: Icons.search_off, title: l10n.duesPickerNone)
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: rows.length,
+                    itemBuilder: (BuildContext ctx, int i) {
+                      final PickerStudent r = rows[i];
+                      final List<String> sub = <String>[
+                        if (r.student.roll != null && r.student.roll!.isNotEmpty) fmt.digits(r.student.roll!),
+                        if (r.student.phone != null && r.student.phone!.isNotEmpty) fmt.digits(r.student.phone!),
+                      ];
+                      return BhorListRow(
+                        key: ValueKey<String>('picker-${r.student.id}'),
+                        leading: BhorAvatar(name: r.student.name, size: 40),
+                        title: r.student.name,
+                        subtitle: sub.isEmpty ? null : sub.join(' · '),
+                        divider: i < rows.length - 1,
+                        trailing: r.owed > 0
+                            ? Text(l10n.duesPickerOwes(fmt.money(r.owed)), style: b.type.label)
+                            : null,
+                        onTap: () => Navigator.of(ctx).pop(r.student.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

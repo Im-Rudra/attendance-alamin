@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -35,6 +36,12 @@ import 'package:attendance_alamin/features/classes/widgets/reschedule_sheet.dart
 import '../../helpers/fakes/fake_structure_repos.dart';
 import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
+
+/// A Bhor icon button by its accessible name (it doubles as the tooltip).
+Finder _byLabel(String label) => find.byWidgetPredicate(
+      (Widget w) => w is BhorIconButton && w.semanticLabel == label,
+      description: 'BhorIconButton "$label"',
+    );
 
 /// The fake schedule repository with the REAL clash engine behind its checks
 /// and writes, and a `resolve` that sees cancelled / moved / extra classes.
@@ -283,7 +290,7 @@ void main() {
         return engineOverrides(f);
       },
       verify: (WidgetTester tester) async {
-        expect(find.byType(EmptyState), findsOneWidget);
+        expect(find.byType(BhorEmptyState), findsOneWidget);
       },
     );
   });
@@ -306,7 +313,7 @@ void main() {
       expect(find.text('ক্লাস বাতিল হয়েছে'), findsOneWidget);
       expect(find.text('অভিভাবকদের জানান'), findsOneWidget);
 
-      await tester.tap(find.byType(SnackBarAction));
+      await tester.tap(find.text('ফিরিয়ে নিন'));
       await tester.pumpAndSettle();
 
       expect(f.store.exceptions, isEmpty);
@@ -429,8 +436,8 @@ void main() {
 
       expect(find.text('Time clash'), findsOneWidget);
       expect(find.text('Another class is at this time — change the time'), findsOneWidget);
-      final Finder add = find.widgetWithText(FilledButton, 'Add class');
-      expect(tester.widget<FilledButton>(add).onPressed, isNull);
+      final Finder add = find.widgetWithText(BhorButton, 'Add class');
+      expect(tester.widget<BhorButton>(add).onPressed, isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
@@ -453,25 +460,23 @@ void main() {
       await openHost(tester);
 
       // Nothing changed yet: Save is disabled and says why.
-      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+      expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save')).onPressed, isNull);
       expect(find.text('Change the date or time to save'), findsOneWidget);
 
       // Move to Tuesday 24 Nov, 10:30 (Chem B has 10:00-11:00 there).
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 23))));
       await tester.pumpAndSettle();
       await tester.tap(find.text('24'));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       for (var i = 0; i < 22; i++) {
-        await tester.tap(find.byTooltip('15 min earlier'));
+        await tester.tap(_byLabel('15 min earlier'));
         await tester.pump();
       }
       await tester.pumpAndSettle();
 
       expect(find.text('Time clash'), findsOneWidget);
       expect(find.textContaining('রসায়ন'), findsOneWidget);
-      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+      expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save')).onPressed, isNull);
       expect(find.text('Another class is at this time — change the time'), findsOneWidget);
       // Nearest free times either side: 11:00 AM-12:00 PM (later) and 9:00-10:00 AM.
       final Finder later = find.text('Use ${fmt.timeRange(660, 720)}');
@@ -482,7 +487,7 @@ void main() {
       await tester.tap(later);
       await tester.pumpAndSettle();
       expect(find.text('Time clash'), findsNothing);
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.widgetWithText(BhorButton, 'Save'));
       await tester.pumpAndSettle();
 
       expect(saved, isTrue);
@@ -564,19 +569,15 @@ void main() {
       const String held = "Attendance for this class is already taken \u2014 it can't move to a future date";
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 18))));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey<String>('dp-day-22')));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('22'));
       await tester.pumpAndSettle();
       expect(find.text(held), findsOneWidget);
-      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+      expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Save')).onPressed, isNull);
 
       // An earlier day is fine: the roll call moves with the class.
       await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 22))));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey<String>('dp-day-17')));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('17'));
       await tester.pumpAndSettle();
       expect(find.text(held), findsNothing);
       expect(f.store.exceptions, isEmpty);
@@ -600,11 +601,11 @@ void main() {
       expect(find.text('Time clash'), findsOneWidget);
       expect(find.text('Use ${fmt.timeRange(660, 720)}'), findsOneWidget);
       expect(find.text('Earlier: ${fmt.timeRange(540, 600)}'), findsOneWidget);
-      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Add class')).onPressed, isNull);
+      expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Add class')).onPressed, isNull);
 
       await tester.tap(find.text('Use ${fmt.timeRange(660, 720)}'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Add class'));
+      await tester.tap(find.widgetWithText(BhorButton, 'Add class'));
       await tester.pumpAndSettle();
       expect(f.store.exceptions.single.newStartMin, 660);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -672,7 +673,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
       await tester.pumpAndSettle();
       expect(find.byType(ExtraClassSheet), findsOneWidget);
-      await tester.tap(find.byTooltip('Close sheet'));
+      await tester.tap(_byLabel('Close sheet'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('${fmt.dateShort(kToday)} – ${fmt.dateShort(kToday.addDays(6))}'));
@@ -697,10 +698,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(InkWell), findsWidgets);
+      expect(find.byType(BhorPressable), findsWidgets);
       await tester.tap(find.text('আজ'));
       expect(picked.last, kToday);
-      await tester.tap(find.byTooltip('পরের সপ্তাহ'));
+      await tester.tap(_byLabel('পরের সপ্তাহ'));
       expect(picked.last, kToday.addDays(17));
       await tester.pumpWidget(const SizedBox.shrink());
     });

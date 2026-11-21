@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/providers/storage_report.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -148,7 +149,7 @@ void main() {
       final SeededFakes fakes = seedFakes();
       await pumpApp(tester, const TemplateEditorScreen(kind: 'reminder'),
           overrides: _overrides(fakes));
-      final TextField field = tester.widget(find.byKey(const Key('template-field')));
+      final BhorTextField field = tester.widget(find.byKey(const Key('template-field')));
       expect(field.controller!.text, DefaultTemplates.reminderBn);
       final Text preview = tester.widget(find.byKey(const Key('template-preview')));
       expect(preview.data, contains('রাহিম'));
@@ -164,7 +165,7 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('chip-amount')));
       await tester.tap(find.byKey(const Key('chip-amount')));
       await tester.pump();
-      final TextField field = tester.widget(find.byKey(const Key('template-field')));
+      final BhorTextField field = tester.widget(find.byKey(const Key('template-field')));
       expect(field.controller!.text, '{amount}বেতন বাকি');
       final Text preview = tester.widget(find.byKey(const Key('template-preview')));
       expect(preview.data, '২,০০০বেতন বাকি');
@@ -179,7 +180,7 @@ void main() {
       );
       await pumpApp(tester, const TemplateEditorScreen(kind: 'reminder'),
           overrides: _overrides(fakes));
-      TextField field() => tester.widget(find.byKey(const Key('template-field')));
+      BhorTextField field() => tester.widget(find.byKey(const Key('template-field')));
       expect(field().controller!.text, 'আমার নিজের বার্তা {student}');
       expect((tester.widget(find.byKey(const Key('template-preview'))) as Text).data,
           'আমার নিজের বার্তা রাহিম');
@@ -190,6 +191,7 @@ void main() {
       expect(field().controller!.text, DefaultTemplates.reminderBn);
       expect(await fakes.settings.get(SettingKeys.reminderTemplateBn), '');
       expect(find.text(_bn.setTplResetDone), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
     });
 
     testWidgets('an unknown field is flagged', (tester) async {
@@ -208,7 +210,7 @@ void main() {
       await tester.tap(find.text(_bn.shellLangEnglish));
       await tester.pump();
       await tester.pump();
-      final TextField field = tester.widget(find.byKey(const Key('template-field')));
+      final BhorTextField field = tester.widget(find.byKey(const Key('template-field')));
       expect(field.controller!.text, DefaultTemplates.receiptEn);
       final Text preview = tester.widget(find.byKey(const Key('template-preview')));
       expect(preview.data, contains('Rahim'));
@@ -227,6 +229,7 @@ void main() {
       await tester.pump();
       expect(fakes.settings.encodedValues['payment_methods'], '{"hidden":[],"custom":["Upay"]}');
       expect(find.byKey(const Key('pm-custom-Upay')), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
     });
 
     testWidgets('rejects an empty, a too long and a duplicate name', (tester) async {

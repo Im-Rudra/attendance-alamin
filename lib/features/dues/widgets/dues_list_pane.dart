@@ -3,14 +3,15 @@
 // "ছেড়ে যাওয়া / আর্কাইভ" group. On large windows the same data becomes the
 // dues data table.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
@@ -57,8 +58,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
         if (!done.contains(r.studentId)) r,
     ];
     if (todo.isEmpty) {
-      ScaffoldMessenger.maybeOf(context)
-          ?.showSnackBar(SnackBar(content: Text(context.l10n.duesWalkNobody)));
+      BhorToast.show(context, message: context.l10n.duesWalkNobody, bottomOffset: 64);
       return;
     }
     await showReminderWalkthrough(context, todo);
@@ -71,11 +71,11 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     final AsyncValue<DuesView> async = ref.watch(duesViewProvider);
     final DuesReport? report = ref.watch(duesReportProvider).value;
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace s) =>
-          EmptyState(icon: Icons.error_outline, message: l10n.commonLoadingFailed),
+          BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed),
       data: (DuesView view) {
-        if (report == null) return const Center(child: CircularProgressIndicator());
+        if (report == null) return const Center(child: BhorSpinner());
         if (report.active.isEmpty && report.inactive.isEmpty) {
           return const DuesEmptyState();
         }
@@ -85,22 +85,25 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
   }
 
   Widget _remindAllButton(DuesView view) {
-    return OutlinedButton.icon(
+    return BhorButton(
       key: const ValueKey<String>('dues-remind-all'),
-      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+      variant: BhorButtonVariant.secondary,
+      icon: Icons.campaign_outlined,
+      label: context.l10n.duesRemindAll,
       onPressed: () => _remindAll(view.active),
-      icon: const Icon(Icons.campaign_outlined, size: 20),
-      label: Text(context.l10n.duesRemindAll),
     );
   }
 
   Widget _noMatch() {
     final l10n = context.l10n;
-    return EmptyState(
+    return BhorEmptyState(
       icon: Icons.filter_alt_off_outlined,
-      message: l10n.duesNoMatch,
-      actionLabel: l10n.duesShowAll,
-      onAction: () => ref.read(duesFilterProvider.notifier).reset(),
+      title: l10n.duesNoMatch,
+      action: BhorButton(
+        label: l10n.duesShowAll,
+        variant: BhorButtonVariant.secondary,
+        onPressed: () => ref.read(duesFilterProvider.notifier).reset(),
+      ),
     );
   }
 
@@ -109,25 +112,18 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
   Widget _headline(DuesReport report) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     return Wrap(
-      spacing: 12,
+      spacing: BhorSpace.s12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        Text(
-          fmt.money(report.totalOutstandingActive),
-          style: tt.headlineSmall?.copyWith(
-            color: tokens.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        BhorMoney(report.totalOutstandingActive, style: b.type.stat),
         Text(
           l10n.duesHeadline(
             fmt.number(report.studentsWithDues),
             fmt.number(report.overdueStudents),
           ),
-          style: tt.titleSmall?.copyWith(color: tokens.textSecondary),
+          style: b.type.bodyStrong.copyWith(color: b.colors.text2),
         ),
       ],
     );
@@ -191,7 +187,6 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
   }
 
   Widget _group(Widget header, List<DuesRow> rows, double g, {String? hint}) {
-    final tokens = context.aurora;
     return SliverMainAxisGroup(
       slivers: <Widget>[
         SliverPersistentHeader(
@@ -202,13 +197,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(g, 8, g, 0),
-              child: Text(
-                hint,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(color: tokens.textSecondary),
-              ),
+              child: Text(hint, style: context.bhor.type.meta),
             ),
           ),
         if (rows.isNotEmpty)
@@ -220,14 +209,11 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
                   final DuesRow r = rows[i];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-                      child: DuesRowTile(
-                        key: ValueKey<String>('dues-row-${r.studentId}'),
-                        row: r,
-                        selected: r.studentId == widget.selectedId,
-                        onOpen: () => _open(r.studentId),
-                      ),
+                    child: DuesRowTile(
+                      key: ValueKey<String>('dues-row-${r.studentId}'),
+                      row: r,
+                      selected: r.studentId == widget.selectedId,
+                      onOpen: () => _open(r.studentId),
                     ),
                   );
                 },
@@ -267,12 +253,11 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
                 children: <Widget>[
                   if (view.active.isNotEmpty) _remindAllButton(view),
                   if (view.inactive.isNotEmpty)
-                    FilterChip(
+                    BhorChip(
                       key: const ValueKey<String>('dues-toggle-inactive'),
-                      avatar: const Icon(Icons.inventory_2_outlined, size: 18),
-                      label: Text(
-                        '${l10n.duesInactiveGroup} · ${l10n.duesGroupCount(fmt.number(view.inactive.length))}',
-                      ),
+                      icon: Icons.inventory_2_outlined,
+                      label:
+                          '${l10n.duesInactiveGroup} · ${l10n.duesGroupCount(fmt.number(view.inactive.length))}',
                       selected: _showInactive,
                       onSelected: (bool _) => _toggleInactive(),
                     ),

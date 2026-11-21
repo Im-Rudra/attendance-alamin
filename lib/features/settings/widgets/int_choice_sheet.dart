@@ -3,11 +3,12 @@
 // digits. Used for the default reminder lead, the billing cutoff day and the
 // backup reminder interval.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 
 /// Parses typed digits (Bangla or Latin) and checks [min]..[max]; null when the
@@ -30,11 +31,9 @@ Future<int?> showIntChoiceSheet(
   int? customMin,
   int? customMax,
 }) {
-  return showModalBottomSheet<int>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  return showBhorSheet<int>(
+    context,
+    title: title,
     builder: (BuildContext ctx) => IntChoiceSheet(
       title: title,
       options: options,
@@ -97,80 +96,58 @@ class _IntChoiceSheetState extends State<IntChoiceSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorColors c = context.bhor.colors;
     final l10n = context.l10n;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
+    final String range = l10n.setCustomRange(
+      context.fmt.digits(widget.customMin.toString()),
+      context.fmt.digits(widget.customMax.toString()),
+    );
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final int o in widget.options)
+            BhorListRow(
+              title: widget.labelOf(o),
+              selected: o == widget.current,
+              divider: false,
+              trailing: o == widget.current ? Icon(Icons.check, color: c.accent) : null,
+              onTap: () => Navigator.of(context).pop(o),
+            ),
+          if (_hasCustom)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Semantics(
-                header: true,
-                child: Text(widget.title, style: tt.titleMedium),
+              padding: const EdgeInsets.only(top: BhorSpace.s8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: BhorTextField(
+                      controller: _custom,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯]')),
+                        LengthLimitingTextInputFormatter(4),
+                      ],
+                      label: l10n.setCustomOther,
+                      helper: range,
+                      error: _invalid ? range : null,
+                      onChanged: (_) {
+                        if (_invalid) setState(() => _invalid = false);
+                      },
+                      onSubmitted: (_) => _apply(),
+                    ),
+                  ),
+                  const SizedBox(width: BhorSpace.s12),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 22),
+                    child: BhorButton(label: l10n.setCustomApply, onPressed: _apply),
+                  ),
+                ],
               ),
             ),
-            for (final int o in widget.options)
-              ListTile(
-                minTileHeight: 52,
-                title: Text(widget.labelOf(o)),
-                selected: o == widget.current,
-                selectedColor: tokens.accent,
-                trailing: o == widget.current ? Icon(Icons.check, color: tokens.accent) : null,
-                onTap: () => Navigator.of(context).pop(o),
-              ),
-            if (_hasCustom)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: TextField(
-                        controller: _custom,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯]')),
-                          LengthLimitingTextInputFormatter(4),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: l10n.setCustomOther,
-                          helperText: l10n.setCustomRange(
-                            context.fmt.digits(widget.customMin.toString()),
-                            context.fmt.digits(widget.customMax.toString()),
-                          ),
-                          errorText: _invalid
-                              ? l10n.setCustomRange(
-                                  context.fmt.digits(widget.customMin.toString()),
-                                  context.fmt.digits(widget.customMax.toString()),
-                                )
-                              : null,
-                        ),
-                        onChanged: (_) {
-                          if (_invalid) setState(() => _invalid = false);
-                        },
-                        onSubmitted: (_) => _apply(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: FilledButton(
-                        onPressed: _apply,
-                        child: Text(l10n.setCustomApply),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-          ],
-        ),
+        ],
       ),
     );
   }
