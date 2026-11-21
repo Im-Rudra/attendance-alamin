@@ -143,7 +143,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
           ],
           fab: showFab
               ? Padding(
-                  padding: EdgeInsets.only(bottom: compact ? 64 : 0),
+                  padding: EdgeInsets.only(bottom: compact ? 84 : 0),
                   child: BhorButton(
                     icon: Icons.person_add_alt_1,
                     label: l10n.batchAddStudent,

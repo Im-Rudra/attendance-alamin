@@ -149,7 +149,9 @@ void main() {
     expect(find.byType(BatchDetailScreen), findsOneWidget);
     expect(find.byType(BatchesScreen), findsNothing);
     // Back arrow returns to the list.
-    await tester.tap(find.byType(BackButton));
+    await tester.tap(find.byWidgetPredicate(
+      (Widget w) => w is BhorIconButton && w.icon == Icons.arrow_back_rounded,
+    ));
     await tester.pumpAndSettle();
     expect(find.byType(BatchesScreen), findsOneWidget);
   });

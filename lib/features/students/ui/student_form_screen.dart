@@ -210,8 +210,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                   padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
                   child: BhorButton(
                     label: l10n.stuSave,
-                    expand: true,
-                    loading: _busy,
+                    expand: true,
                     onPressed: _busy ? null : _save,
                   ),
                 ),

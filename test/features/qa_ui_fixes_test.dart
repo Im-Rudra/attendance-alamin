@@ -11,6 +11,7 @@ import 'package:attendance_alamin/app/services/share_service.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
 import 'package:attendance_alamin/features/home/widgets/dues_card.dart';
 import 'package:attendance_alamin/features/students/ui/student_profile_screen.dart';
 import 'package:attendance_alamin/features/students/ui/students_screen.dart';
@@ -157,7 +158,7 @@ void main() {
       );
       expect(find.text(bn.stuOverviewByBatch), findsOneWidget);
       expect(find.text(bn.stuOverviewRecent), findsOneWidget);
-      expect(find.byType(BarListCard), findsOneWidget);
+      expect(find.byType(BatchBarList), findsOneWidget);
     });
   });
 

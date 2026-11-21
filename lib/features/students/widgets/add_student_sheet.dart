@@ -321,8 +321,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
             BhorButton(
               key: const ValueKey<String>('stu-add-save'),
               label: l10n.stuSave,
-              expand: true,
-              loading: _busy,
+              expand: true,
               onPressed: _busy ? null : _saveNew,
             ),
           ],

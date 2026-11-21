@@ -207,8 +207,7 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
               children: <Widget>[
                 BhorButton(
                   label: l10n.commonSave,
-                  expand: true,
-                  loading: _saving,
+                  expand: true,
                   onPressed: canSave ? () => _save(c) : null,
                   disabledReason: reason,
                 ),

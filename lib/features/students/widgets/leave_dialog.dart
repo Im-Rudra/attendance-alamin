@@ -181,8 +181,7 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
         ),
         BhorButton(
           key: const ValueKey<String>('stu-leave-confirm'),
-          label: one == null ? l10n.stuLeftConfirm : l10n.stuRemoveConfirm,
-          loading: _busy,
+          label: one == null ? l10n.stuLeftConfirm : l10n.stuRemoveConfirm,
           onPressed: (_busy || (one != null && open.isEmpty)) ? null : () => _confirm(date, open, lbm),
         ),
       ],

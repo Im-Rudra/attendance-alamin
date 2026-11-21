@@ -473,8 +473,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                   children: <Widget>[
                     BhorButton(
                       label: l10n.commonSave,
-                      expand: true,
-                      loading: _saving,
+                      expand: true,
                       onPressed: reason == null && !_saving ? _save : null,
                       disabledReason: reason,
                     ),

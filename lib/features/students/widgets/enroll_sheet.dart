@@ -164,8 +164,7 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
                 BhorButton(
                   key: const ValueKey<String>('stu-enroll-confirm'),
                   label: l10n.stuEnrollConfirm,
-                  expand: true,
-                  loading: _busy,
+                  expand: true,
                   onPressed: (_busy || _choice.batchId == null) ? null : () => _enroll(today, cutoff),
                 ),
                 if (_choice.batchId == null)

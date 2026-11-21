@@ -96,7 +96,7 @@ class _ListScaffold extends StatelessWidget {
               ? null
               : Padding(
                   // Lift the button above the floating nav pill on phones (QA-03).
-                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 64),
+                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
                   child: BhorButton(
                     key: const ValueKey<String>('stu-fab-new'),
                     onPressed: () => stuPush(context, Routes.studentNew),

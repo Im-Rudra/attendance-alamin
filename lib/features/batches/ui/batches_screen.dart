@@ -183,7 +183,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
           floating: empty
               ? null
               : Padding(
-                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 64),
+                  padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
                   child: BhorButton(icon: Icons.add, label: l10n.batchNew, onPressed: _new),
                 ),
           body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
