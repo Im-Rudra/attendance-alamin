@@ -64,7 +64,7 @@ class RollRow extends StatelessWidget {
 
     // Row tint and edge stripe per status; the row stays a surface card.
     final (Color fill, Color stripe) = switch (status) {
-      AttendanceStatus.present => (c.surface, const Color(0x00000000)),
+      AttendanceStatus.present => (c.surface, c.surface.withValues(alpha: 0)),
       AttendanceStatus.absent => (c.absentBg, c.absentText),
       AttendanceStatus.late => (c.lateBg, c.late),
       AttendanceStatus.leave => (c.soft, c.text3),
