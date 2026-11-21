@@ -485,5 +485,101 @@
   "extraAttLeave": "ছুটি",
   "@extraAttLeave": {
     "description": "CSV attendance value."
+  },
+  "extraImportButton": "CSV ফাইল থেকে যোগ করুন",
+  "@extraImportButton": {
+    "description": "Secondary button under the manual form; opens a file picker for a .csv file."
+  },
+  "extraImportFound": "{n} জন শিক্ষার্থী পাওয়া গেছে",
+  "@extraImportFound": {
+    "description": "Title of the CSV preview sheet; n is a localised number.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportSkipped": "{n}টি সারি বাদ যাবে",
+  "@extraImportSkipped": {
+    "description": "Shown when some CSV rows have problems.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportHint": "ফাইলে প্রতি লাইনে একজন: নাম, অভিভাবকের ফোন, রোল (ফোন ও রোল না দিলেও চলবে)। যেমন: আয়েশা খাতুন, 01712345678, 5",
+  "@extraImportHint": {
+    "description": "One-line format hint with a tiny example on the CSV preview sheet."
+  },
+  "extraImportProblemName": "নাম নেই — বাদ যাবে",
+  "@extraImportProblemName": {
+    "description": "Row problem label."
+  },
+  "extraImportProblemPhone": "ফোন নম্বর ঠিক নয় — বাদ যাবে",
+  "@extraImportProblemPhone": {
+    "description": "Row problem label."
+  },
+  "extraImportProblemDuplicate": "একই নাম ও ফোন আগে থেকেই আছে — বাদ যাবে",
+  "@extraImportProblemDuplicate": {
+    "description": "Row problem label (duplicate in the file or among saved students)."
+  },
+  "extraImportAddAll": "সব যোগ করুন ({n})",
+  "@extraImportAddAll": {
+    "description": "Confirm button of the CSV preview; n is the number of valid rows.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportSaving": "যোগ হচ্ছে… {done}/{total}",
+  "@extraImportSaving": {
+    "description": "Progress text while saving the CSV students.",
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportDone": "{n} জন শিক্ষার্থী যোগ হয়েছে",
+  "@extraImportDone": {
+    "description": "Snackbar after a CSV import.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportDonePartial": "{n} জন যোগ হয়েছে, {failed}টি যোগ করা যায়নি",
+  "@extraImportDonePartial": {
+    "description": "Snackbar when some rows failed to save.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "failed": {
+        "type": "String"
+      }
+    }
+  },
+  "extraImportNone": "ফাইলে কোনো শিক্ষার্থী পাওয়া যায়নি",
+  "@extraImportNone": {
+    "description": "Snackbar for an empty file."
+  },
+  "extraImportReadFailed": "ফাইলটি পড়া যায়নি",
+  "@extraImportReadFailed": {
+    "description": "Snackbar when the picked file cannot be read."
+  },
+  "extraImportNoteSamePhone": "একই অভিভাবকের ফোন",
+  "@extraImportNoteSamePhone": {
+    "description": "Soft note on a CSV row whose phone is shared with another student; the row is still added."
+  },
+  "extraImportNoteSameName": "একই নামে আরেকজন আছে",
+  "@extraImportNoteSameName": {
+    "description": "Soft note on a CSV row whose name is shared with another student; the row is still added."
   }
 }

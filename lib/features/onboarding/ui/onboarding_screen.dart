@@ -27,6 +27,8 @@ import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
+import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
 import 'package:attendance_alamin/features/onboarding/controllers/onboarding_service.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/batch_step.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/coach_mark.dart';
@@ -311,6 +313,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _importCsv() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await startCsvStudentImport(
+        context,
+        ref,
+        batchId: _batchId,
+        onAdded: (List<BulkAdded> added) {
+          if (!mounted) return;
+          setState(() {
+            for (final BulkAdded a in added) {
+              _students.add(SavedStudent(id: a.id, name: a.name, roll: a.roll, guardianPhone: a.guardianPhone));
+            }
+            if (added.isNotEmpty) _lastAdded = added.last.name;
+          });
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _afterStudents() async {
     if (!await _addStudent(requireName: false)) return;
     if (!mounted) return;
@@ -378,6 +406,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           phone: _studentPhone,
           nameFocus: _nameFocus,
           onAdd: () => _addStudent(requireName: true),
+          onImportCsv: _importCsv,
           saved: _students,
           batchName: _created?.batch,
           billingMonth: context.fmt.monthYear(ref.read(todayProvider).yearMonth),

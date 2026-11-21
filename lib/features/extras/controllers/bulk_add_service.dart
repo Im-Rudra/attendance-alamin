@@ -36,36 +36,40 @@ Future<Student?> phoneOwner(StudentsRepository students, String rawPhone) async 
   return null;
 }
 
-/// Creates [name] with the guardian phone and enrols them in [batchId] from
-/// [today]; these are existing students, so billing starts this month. Throws
+/// Creates [name] with the guardian phone and enrols them in [batchId] (when
+/// given) from [today]; a blank [roll] takes the next free one. These are existing
+/// students, so billing starts this month. Throws
 /// `AppException` for invalid input or an archived batch.
 Future<BulkAdded> bulkAddStudent({
   required StudentsRepository students,
   required EnrollmentsRepository enrollments,
-  required String batchId,
+  required String? batchId,
   required String name,
   required String guardianPhone,
   required LocalDate today,
+  String? roll,
 }) async {
   final String cleanName = Validators.name(name);
   final String? phone = Validators.phone(guardianPhone);
-  final String roll = await students.nextRoll();
+  final String useRoll = (roll != null && roll.trim().isNotEmpty) ? roll.trim() : await students.nextRoll();
   final String id = await students.create(StudentDraft(
     name: cleanName,
-    roll: roll,
+    roll: useRoll,
     guardianPhone: phone,
     admissionDate: today,
   ));
-  try {
-    await enrollments.enroll(
-      studentId: id,
-      batchId: batchId,
-      joinDate: today,
-      startMonth: today.yearMonth,
-    );
-  } catch (_) {
-    await students.softDelete(id);
-    rethrow;
+  if (batchId != null) {
+    try {
+      await enrollments.enroll(
+        studentId: id,
+        batchId: batchId,
+        joinDate: today,
+        startMonth: today.yearMonth,
+      );
+    } catch (_) {
+      await students.softDelete(id);
+      rethrow;
+    }
   }
-  return BulkAdded(id: id, name: cleanName, roll: roll, guardianPhone: phone);
+  return BulkAdded(id: id, name: cleanName, roll: useRoll, guardianPhone: phone);
 }

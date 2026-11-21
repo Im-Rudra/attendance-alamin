@@ -21,6 +21,7 @@ import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/controllers/extra_providers.dart';
+import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
 
 class BulkAddScreen extends ConsumerStatefulWidget {
   const BulkAddScreen({super.key, required this.batchId});
@@ -141,6 +142,28 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
         _busy = false;
         _error = errorText(context.l10n, e);
       });
+    }
+  }
+
+  Future<void> _importCsv() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await startCsvStudentImport(
+        context,
+        ref,
+        batchId: widget.batchId,
+        onAdded: (List<BulkAdded> added) {
+          if (!mounted) return;
+          setState(() {
+            _added.insertAll(0, added.reversed);
+            _error = null;
+            _removedNote = null;
+          });
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -298,6 +321,8 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           ],
           const SizedBox(height: 12),
           Text(l10n.extraBulkHint, style: tt.bodySmall?.copyWith(color: tokens.textSecondary)),
+          const SizedBox(height: 12),
+          CsvImportButton(onPressed: _busy ? null : _importCsv),
         ],
       ),
     );

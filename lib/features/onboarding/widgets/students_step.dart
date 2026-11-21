@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
 import 'package:attendance_alamin/features/onboarding/controllers/onboarding_service.dart';
 import 'package:attendance_alamin/features/onboarding/widgets/onb_common.dart';
 
@@ -17,6 +18,7 @@ class StudentsStep extends StatelessWidget {
     required this.phone,
     required this.nameFocus,
     required this.onAdd,
+    required this.onImportCsv,
     required this.saved,
     required this.batchName,
     required this.billingMonth,
@@ -29,6 +31,7 @@ class StudentsStep extends StatelessWidget {
   final TextEditingController phone;
   final FocusNode nameFocus;
   final VoidCallback onAdd;
+  final VoidCallback onImportCsv;
 
   /// Students saved so far, oldest first.
   final List<SavedStudent> saved;
@@ -115,6 +118,8 @@ class StudentsStep extends StatelessWidget {
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                 child: Text(l10n.onbStudentSaveNext),
               ),
+              const SizedBox(height: 8),
+              CsvImportButton(onPressed: busy ? null : onImportCsv),
               if (lastAdded != null) ...<Widget>[
                 const SizedBox(height: 8),
                 Semantics(
