@@ -448,7 +448,7 @@ void main() {
       expect(find.byKey(ValueKey<String>('dues-row-$kStuRahim')), findsOneWidget);
     });
 
-    testWidgets('a row's take-money button opens the payment side panel', (WidgetTester tester) async {
+    testWidgets('the take-money button of a row opens the payment side panel', (WidgetTester tester) async {
       await pumpApp(
         tester,
         const FeesScreen(),
@@ -462,7 +462,7 @@ void main() {
       expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
     });
 
-    testWidgets('/fees/s/:id on a wide window opens that student's panel', (WidgetTester tester) async {
+    testWidgets('/fees/s/:id on a wide window opens the panel of that student', (WidgetTester tester) async {
       await pumpApp(
         tester,
         const FeesScreen(selectedStudentId: kStuRahim),
