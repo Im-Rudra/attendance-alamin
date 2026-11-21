@@ -18,7 +18,8 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 /// Entities in display order; deletions are listed in this order too.
 const List<SummaryEntity> kReviewEntities = SummaryEntity.values;
 
-int _keptTotal(ChangeSummary s) {
+/// Records of this device that are newer than the backup and are kept.
+int keptTotal(ChangeSummary s) {
   int n = 0;
   for (final EntityChange e in s.entities.values) {
     n += e.keptLocal;
@@ -123,17 +124,25 @@ class ReviewNote extends StatelessWidget {
 }
 
 /// "এই ব্যাকআপে N টি পরিবর্তন আছে" (24 sp), or the nothing-to-do sentence.
+/// With no changes but [kept] newer local records (QA-08) it says that
+/// nothing will change and those records are kept, never "the same".
 class ReviewHeadline extends StatelessWidget {
-  const ReviewHeadline({super.key, required this.changes});
+  const ReviewHeadline({super.key, required this.changes, this.kept = 0});
 
   final int changes;
+
+  /// Records of this device that are newer than the backup (kept as they are).
+  final int kept;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final tokens = context.aurora;
-    final String text =
-        changes == 0 ? l10n.backupHeadlineNone : l10n.backupHeadline(context.fmt.number(changes));
+    final String text = changes > 0
+        ? l10n.backupHeadline(context.fmt.number(changes))
+        : kept > 0
+            ? l10n.backupHeadlineKeptOnly(context.fmt.number(kept))
+            : l10n.backupHeadlineNone;
     return Semantics(
       header: true,
       liveRegion: true,
@@ -230,7 +239,7 @@ class ChangeTable extends StatelessWidget {
       );
     }
 
-    final int kept = _keptTotal(summary);
+    final int kept = keptTotal(summary);
     final Widget table = Column(
       mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,

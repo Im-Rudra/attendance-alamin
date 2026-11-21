@@ -38,12 +38,35 @@ abstract final class DuesEngine {
 
   /// Effective monthly fee for [m] (Product 3.1): the latest override with
   /// `effective <= m` wins unless its amount is `null` (override cleared);
-  /// otherwise the latest batch fee with `effective <= m`. With neither, the
-  /// fee is 0 and `missing` is true (never a due; surfaced in the UI).
+  /// otherwise the latest batch fee with `effective <= m`.
+  ///
+  /// History starts with the earliest record (Chair rule, QA-01): a month
+  /// before every fee record of the enrollment (batch fees and overrides)
+  /// is read as that earliest month, so the first fee is in effect from the
+  /// start unless a later change says otherwise (a teacher migrating a
+  /// student whose first billable month precedes the batch's first fee
+  /// record still gets those months billed). A month after an override-only
+  /// start with no batch fee yet falls back to the earliest batch fee. Only
+  /// with no fee record at all is the fee 0 and `missing` true (never a due;
+  /// surfaced in the UI).
   static ({int fee, bool missing}) feeFor(EnrollmentTerms t, YearMonth m) {
-    final overrideAmount = _latestAtOrBefore(t.overrides, m)?.amount;
+    final firstBatch = _earliestMonth(t.batchFees);
+    final firstOverride = _earliestMonth(t.overrides);
+    final YearMonth anchor;
+    if (firstBatch == null) {
+      if (firstOverride == null) return (fee: 0, missing: true);
+      anchor = firstOverride;
+    } else {
+      anchor = firstOverride == null || firstBatch.isBefore(firstOverride)
+          ? firstBatch
+          : firstOverride;
+    }
+    final at = m.isBefore(anchor) ? anchor : m;
+    final overrideAmount = _latestAtOrBefore(t.overrides, at)?.amount;
     if (overrideAmount != null) return (fee: overrideAmount, missing: false);
-    final batchAmount = _latestAtOrBefore(t.batchFees, m)?.amount;
+    final batch = _latestAtOrBefore(t.batchFees, at) ??
+        (firstBatch == null ? null : _latestAtOrBefore(t.batchFees, firstBatch));
+    final batchAmount = batch?.amount;
     if (batchAmount != null) return (fee: batchAmount, missing: false);
     return (fee: 0, missing: true);
   }
@@ -398,6 +421,14 @@ abstract final class DuesEngine {
 
   static bool _isInactive(EnrollmentTerms t) =>
       t.studentLeft || t.batchArchived || t.enrollmentEnded;
+
+  static YearMonth? _earliestMonth(List<FeePeriod> periods) {
+    YearMonth? first;
+    for (final p in periods) {
+      if (first == null || p.effective.isBefore(first)) first = p.effective;
+    }
+    return first;
+  }
 
   static FeePeriod? _latestAtOrBefore(List<FeePeriod> periods, YearMonth m) {
     FeePeriod? best;

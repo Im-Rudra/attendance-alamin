@@ -213,6 +213,15 @@
   "@backupHeadlineNone": {
     "description": "Review screen headline when there are no changes."
   },
+  "backupHeadlineKeptOnly": "কিছুই বদলাবে না — এই ডিভাইসের {n}টি নতুন তথ্য যেমন আছে তেমনই রাখা হবে",
+  "@backupHeadlineKeptOnly": {
+    "description": "Review screen headline when the backup changes nothing but this device has newer records that are kept (QA-08).",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
   "backupColAdded": "নতুন",
   "@backupColAdded": {
     "description": "Change table column: added."

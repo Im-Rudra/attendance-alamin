@@ -36,7 +36,7 @@
   "todayRollTaken": "Attendance {x}/{y}",
   "todayRollPending": "Attendance due",
   "todayMovedFrom": "was {time}",
-  "todayMovedAway": "{label} → {time}",
+  "todayMovedAway": "{label} · moved to {time}",
   "todayClassOptions": "Class options",
   "todayCollectionTitle": "This month's collection",
   "todayCollectionOf": "of {amount} expected",

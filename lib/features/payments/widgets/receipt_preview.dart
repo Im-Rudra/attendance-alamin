@@ -61,7 +61,7 @@ Future<void> shareReceiptNow(BuildContext context, {required String receiptId}) 
   if (rows.isEmpty) return;
   final Student? student = await container.read(studentsRepositoryProvider).getById(rows.first.studentId);
   final List<EnrollmentTerms> terms = await container.read(enrollmentsRepositoryProvider).watchTerms().first;
-  final List<PaymentFact> facts = await payments.watchFacts().first;
+  final List<Payment> history = await payments.watchAll().first;
   final settings = container.read(settingsRepositoryProvider);
   final String stored = await settings.get(templateKey(TemplateKind.receipt, lang));
   final String center = await settings.get(SettingKeys.centerName);
@@ -70,9 +70,8 @@ Future<void> shareReceiptNow(BuildContext context, {required String receiptId}) 
     receiptId: receiptId,
     rows: rows,
     terms: terms,
-    facts: facts,
+    history: history,
     student: student,
-    today: today,
   );
   if (model == null || !context.mounted) return;
   final String text = receiptTextFor(

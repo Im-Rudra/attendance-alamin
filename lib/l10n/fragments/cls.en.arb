@@ -10,7 +10,7 @@
   "clsActionRestoreMoved": "Back to the original time",
   "clsActionRestoreCancelled": "Undo cancellation",
   "clsMovedFrom": "was {time}",
-  "clsMovedAway": "→ {when}",
+  "clsMovedAway": "{when}",
   "clsCancelledSnack": "Class cancelled",
   "clsExtraRemovedSnack": "Extra class removed",
   "clsRestoredSnack": "Class restored",

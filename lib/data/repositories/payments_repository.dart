@@ -11,7 +11,8 @@ import 'package:attendance_alamin/domain/models/payment.dart';
 /// [watchFacts] but are not receipts ([receipt], [updateReceipt] and
 /// [deleteReceipt] ignore them).
 abstract interface class PaymentsRepository {
-  /// Live rows, newest payment date first.
+  /// Live rows, newest payment date first; on one date the receipt recorded
+  /// last comes first (recording order, QA-05).
   Stream<List<Payment>> watchAll();
   Stream<List<Payment>> watchForStudent(String studentId);
   Stream<List<PaymentFact>> watchFacts();

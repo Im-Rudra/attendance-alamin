@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
+import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/center_time.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -28,6 +29,48 @@ class StructureStore {
 
   /// The center's current date (from the stamper's clock).
   LocalDate today() => center.dateOfEpochMs(stamper.nowMs());
+
+  // ------------------------------------------------------------ held classes
+
+  /// The live saved roll call of occurrence [occ], if any.
+  Future<SessionRow?> liveSession(String occ) =>
+      (db.select(db.attendanceSessions)
+            ..where((t) =>
+                (t.id.equals(Ids.sessionForOcc(occ)) | t.occ.equals(occ)) &
+                t.deletedAt.isNull())
+            ..limit(1))
+          .getSingleOrNull();
+
+  /// QA-04: a held class (saved roll call) never moves to a date after
+  /// today; roll calls are never in the future (Product 3.6).
+  void checkHeldMove(SessionRow? session, LocalDate newDate) {
+    if (session != null && newDate.isAfter(today())) {
+      throw const ValidationException(ErrorCodes.heldClassToFuture,
+          field: 'date');
+    }
+  }
+
+  /// The saved roll call moves with its occurrence (Product 3.6).
+  Future<void> moveSession(
+      SessionRow? session, LocalDate date, int startMin, int endMin) async {
+    if (session == null) return;
+    final iso = date.toIso();
+    if (session.date == iso &&
+        session.startMin == startMin &&
+        session.endMin == endMin) {
+      return;
+    }
+    await (db.update(db.attendanceSessions)
+          ..where((t) => t.id.equals(session.id)))
+        .write(AttendanceSessionsCompanion(
+      date: Value(iso),
+      startMin: Value(startMin),
+      endMin: Value(endMin),
+      updatedAt: Value(stamper.nextUpdatedAt(session.updatedAt)),
+      rev: Value(stamper.nextRev(session.rev)),
+      deviceId: Value(stamper.deviceId),
+    ));
+  }
 
   Future<List<BatchSchedule>> loadSchedules() => loadAllSchedules(db, center);
 

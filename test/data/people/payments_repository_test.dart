@@ -1,10 +1,12 @@
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
+import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'people_harness.dart';
@@ -169,6 +171,30 @@ void main() {
   });
 
   group('Product money scenarios (repo + dues engine)', () {
+    test('3 (QA-01): migrated student, batch fee recorded only from Nov',
+        () async {
+      final h = PeopleHarness(today: '2026-11-02');
+      await h.seedBatches();
+      // The batch was created this month: its only fee row starts in Nov.
+      await (h.db.update(h.db.batchFees)..where((t) => t.batchId.equals(batPhy)))
+          .write(const BatchFeesCompanion(effectiveMonth: Value(202611)));
+      final rahim = await h.enrolled('Rahim', fbm: 202609);
+      await h.enrolled('Sara', fbm: 202611);
+
+      final dues = await h.dues(rahim.enrollment);
+      expect(dues.months.where((m) => m.state == MonthState.free), isEmpty);
+      expect([for (final m in dues.openDue) m.month],
+          [ym(202609), ym(202610), ym(202611)]);
+      expect(dues.worst, DueLevel.overdue);
+      expect(dues.totalOutstanding, 3000);
+      final report = await h.report();
+      expect(report.active.map((s) => s.name), ['Rahim', 'Sara']);
+      final r = report.active.first;
+      expect((r.openDueMonths, r.totalOutstanding, r.oldestOpenDue),
+          (3, 3000, ym(202609)));
+      expect(report.active[1].worst, DueLevel.justDue);
+    });
+
     test('4: partial then full payment', () async {
       final h = PeopleHarness(today: '2026-11-04');
       await h.seedBatches();
@@ -419,6 +445,21 @@ void main() {
           throwsA(isA<AppException>()));
       expect(await h.allPaymentRows(), isEmpty);
     });
+  });
+
+  test('QA-05: on one date the receipt recorded last comes first', () async {
+    final h = PeopleHarness(today: '2026-11-10');
+    await h.seedBatches();
+    final a = await h.enrolled('Rahim', fbm: 202610);
+    final first = await h.payments
+        .record(h.draft(a.student, a.enrollment, {202610: 1000}));
+    h.clock.tick(60000);
+    final second = await h.payments
+        .record(h.draft(a.student, a.enrollment, {202611: 1000}));
+    final all = await h.payments.watchAll().first;
+    expect([for (final p in all) p.receiptId], [second, first]);
+    final mine = await h.payments.watchForStudent(a.student).first;
+    expect([for (final p in mine) p.receiptId], [second, first]);
   });
 
   test('history reads: newest first, per student, tombstones skipped', () async {

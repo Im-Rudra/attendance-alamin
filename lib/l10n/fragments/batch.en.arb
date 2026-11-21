@@ -104,5 +104,6 @@
   "batchContextNoDues": "No dues",
   "batchContextStudentsOne": "{count}",
   "batchBulkAdd": "Add many at once",
-  "batchOverviewByStudents": "Students per batch"
+  "batchOverviewByStudents": "Students per batch",
+  "batchFeeEarlierMonth": "An earlier month"
 }

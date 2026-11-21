@@ -166,7 +166,7 @@ class _ReadyBody extends ConsumerWidget {
         : ReviewError(text: errorTextForCode(l10n, state.errorCode!));
     final Widget? info = snapshot == null ? null : ReviewInfoCard(snapshot: snapshot, center: center);
     final Widget? older = state.older ? ReviewNote(icon: Icons.history_toggle_off, text: l10n.backupOlderBanner) : null;
-    final Widget headline = ReviewHeadline(changes: changes);
+    final Widget headline = ReviewHeadline(changes: changes, kept: keptTotal(summary));
     final bool hasDeletions = summary.entities.values.any((EntityChange c) => c.deleted > 0);
     final Widget? deletions =
         hasDeletions ? DeletionsCard(summary: summary, names: state.names) : null;

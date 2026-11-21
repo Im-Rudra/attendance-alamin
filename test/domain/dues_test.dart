@@ -132,6 +132,9 @@ void main() {
     const override800 = <FeePeriod>[
       FeePeriod(effective: YearMonth(2026, 10), amount: 800),
     ];
+    const override800Late = <FeePeriod>[
+      FeePeriod(effective: YearMonth(2026, 12), amount: 800),
+    ];
     const override800Cleared = <FeePeriod>[
       FeePeriod(effective: YearMonth(2026, 10), amount: 800),
       FeePeriod(effective: YearMonth(2027, 2)),
@@ -216,13 +219,55 @@ void main() {
         missing: true,
       ),
       (
-        label: 'batch fee starts after the month',
+        label: 'QA-01: earliest batch fee applies backwards',
         t: physics(fees: const [
           FeePeriod(effective: YearMonth(2026, 12), amount: 1000),
         ]),
         m: ym(2026, 11),
-        fee: 0,
-        missing: true,
+        fee: 1000,
+        missing: false,
+      ),
+      (
+        label: 'QA-01: backwards uses the earliest record, not a later raise',
+        t: physics(fees: const [
+          FeePeriod(effective: YearMonth(2027, 1), amount: 1200),
+          FeePeriod(effective: YearMonth(2026, 11), amount: 1000),
+        ]),
+        m: ym(2026, 9),
+        fee: 1000,
+        missing: false,
+      ),
+      (
+        label: 'QA-01: earliest override applies backwards',
+        t: physics(fees: const [
+          FeePeriod(effective: YearMonth(2026, 11), amount: 1000),
+        ], overrides: const [
+          FeePeriod(effective: YearMonth(2026, 11), amount: 700),
+        ]),
+        m: ym(2026, 9),
+        fee: 700,
+        missing: false,
+      ),
+      (
+        label: 'QA-01: a later override does not reach back over the batch fee',
+        t: physics(fees: const [
+          FeePeriod(effective: YearMonth(2026, 11), amount: 1000),
+        ], overrides: override800Late),
+        m: ym(2026, 9),
+        fee: 1000,
+        missing: false,
+      ),
+      (
+        label: 'QA-01: cleared override before the first batch fee',
+        t: physics(fees: const [
+          FeePeriod(effective: YearMonth(2026, 12), amount: 1000),
+        ], overrides: const [
+          FeePeriod(effective: YearMonth(2026, 9), amount: 500),
+          FeePeriod(effective: YearMonth(2026, 10)),
+        ]),
+        m: ym(2026, 10),
+        fee: 1000,
+        missing: false,
       ),
       (
         label: 'override without any batch fee',
@@ -1247,18 +1292,44 @@ void main() {
           .active, isEmpty);
     });
 
-    test('batch fee starting after the FBM: early month flagged', () {
+    test('QA-01: batch fee starting after the FBM bills the early month',
+        () {
       final t = physics(start: ym(2026, 11), fees: const [
         FeePeriod(effective: YearMonth(2026, 12), amount: 1000),
       ]);
       final dues = duesOf(t, d(2026, 12, 2));
       final nov = monthOf(dues, ym(2026, 11));
-      expect(nov.feeMissing, isTrue);
-      expect(nov.state, MonthState.free);
+      expect(nov.feeMissing, isFalse);
+      expect(nov.state, MonthState.unpaid);
+      expect(nov.fee, 1000);
       final dec = monthOf(dues, ym(2026, 12));
       expect(dec.feeMissing, isFalse);
       expect(dec.state, MonthState.unpaid);
-      expect(dues.totalOutstanding, 1000);
+      expect(dues.totalOutstanding, 2000);
+    });
+
+    test('QA-01: migrated student (FBM Sep, batch fee from Nov) owes 3 months',
+        () {
+      // Batch created 21 Nov with ৳1000; Sara's fee starts Sep (scenario 3).
+      final sara = physics(
+          id: 'e-sara-phy',
+          studentId: 's-sara',
+          name: 'Sara',
+          start: ym(2026, 9),
+          fees: const [FeePeriod(effective: YearMonth(2026, 11), amount: 1000)]);
+      final today = d(2026, 11, 21);
+      final dues = duesOf(sara, today);
+      expect(dues.months.where((m) => m.state == MonthState.free), isEmpty);
+      expect(dues.openDue.map((m) => m.month),
+          [ym(2026, 9), ym(2026, 10), ym(2026, 11)]);
+      expect(dues.totalOutstanding, 3000);
+      expect(dues.worst, DueLevel.overdue);
+      expect(dues.oldestOpenDue, ym(2026, 9));
+      final report =
+          DuesEngine.report(today: today, terms: [sara], payments: const []);
+      expect(report.active.single.openDueMonths, 3);
+      expect(report.active.single.totalOutstanding, 3000);
+      expect(report.overdueStudents, 1);
     });
   });
 

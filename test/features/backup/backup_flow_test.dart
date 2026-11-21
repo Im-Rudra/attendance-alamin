@@ -130,7 +130,10 @@ void main() {
     expect(find.byKey(const Key('host-import')), findsOneWidget);
 
     await _importFile(tester);
-    expect(find.text(_bn.backupHeadlineNone), findsOneWidget);
+    // QA-08: nothing changes, and Rahim's newer record here is kept (never
+    // "the same").
+    expect(find.text(_bn.backupHeadlineKeptOnly(_f.number(1))), findsOneWidget, reason: allTexts(tester));
+    expect(find.text(_bn.backupHeadlineNone), findsNothing);
     expect(tester.widget<FilledButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
     expect(find.text(_bn.backupApplyDisabledNone), findsOneWidget);
     expect(repo.byId('students', 'tuhin')!['deleted_at'], 220);
