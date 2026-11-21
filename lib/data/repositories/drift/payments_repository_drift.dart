@@ -35,7 +35,8 @@ class DriftPaymentsRepository implements PaymentsRepository {
   final SyncStamper _stamper;
   final CenterTime _center;
 
-  /// Newest payment date first, then receipt, then month.
+  /// Newest payment date first, then receipt, then month (tie-break of
+  /// [_history]).
   static int _historyOrder(Payment a, Payment b) {
     final d = b.paidOn.compareTo(a.paidOn);
     if (d != 0) return d;
@@ -46,8 +47,27 @@ class DriftPaymentsRepository implements PaymentsRepository {
     return a.id.compareTo(b.id);
   }
 
-  static List<Payment> _history(List<PaymentRow> rows) =>
-      rows.map(paymentFromRow).toList()..sort(_historyOrder);
+  /// On one payment date the receipt recorded last comes first, so the
+  /// list is in recording order (the receipt view reads the balance as it
+  /// stood at a receipt from it, QA-05).
+  static List<Payment> _history(List<PaymentRow> rows) {
+    final recordedAt = <String, int>{};
+    for (final r in rows) {
+      final seen = recordedAt[r.receiptId];
+      if (seen == null || r.createdAt < seen) {
+        recordedAt[r.receiptId] = r.createdAt;
+      }
+    }
+    return rows.map(paymentFromRow).toList()
+      ..sort((a, b) {
+        final d = b.paidOn.compareTo(a.paidOn);
+        if (d != 0) return d;
+        final t = (recordedAt[b.receiptId] ?? 0)
+            .compareTo(recordedAt[a.receiptId] ?? 0);
+        if (t != 0) return t;
+        return _historyOrder(a, b);
+      });
+  }
 
   @override
   Stream<List<Payment>> watchAll() =>

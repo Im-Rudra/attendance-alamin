@@ -280,6 +280,36 @@ void main() {
       expect((await (h.db.select(h.db.batchFees)).getSingle()).rev, 2);
     });
 
+    test('QA-01: a fee from before the first record keeps earlier months',
+        () async {
+      // Batch fee ৳1000 from Nov; a migrated student billed from Aug.
+      final id = await h.physicsA();
+      await addEnrollment(h, id, start: const YearMonth(2026, 8));
+      await h.batches.setFee(id, 1200, const YearMonth(2026, 10));
+      final fees = await h.batches.watchFees(id).first;
+      expect(fees, [
+        const FeePeriod(effective: YearMonth(2026, 8), amount: 1000),
+        const FeePeriod(effective: YearMonth(2026, 10), amount: 1200),
+        const FeePeriod(effective: YearMonth(2026, 11), amount: 1000),
+      ]);
+    });
+
+    test('QA-01: preview counts paid months before the first fee record',
+        () async {
+      final id = await h.physicsA(); // ৳1000 from Nov
+      await addEnrollment(h, id, start: const YearMonth(2026, 9));
+      await addPayment(h, id,
+          id: 'p-sep', month: const YearMonth(2026, 9), amount: 1000);
+      await addPayment(h, id,
+          id: 'p-oct', month: const YearMonth(2026, 10), amount: 1000);
+      // Sep and Oct are billed at the backdated ৳1000; a rise from Sep
+      // (bounded by the Nov row) splits both.
+      expect(
+          await h.batches
+              .previewPartialMonths(id, 1200, const YearMonth(2026, 9)),
+          2);
+    });
+
     test('setFee validates', () async {
       final id = await h.physicsA();
       await expectLater(h.batches.setFee(id, -5, const YearMonth(2026, 12)),

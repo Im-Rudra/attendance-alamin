@@ -18,6 +18,7 @@ import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
+import 'package:attendance_alamin/domain/models/attendance.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
@@ -504,6 +505,85 @@ void main() {
     });
   });
 
+  group('held classes and future dates (QA-04, QA-15)', () {
+    testWidgets('a future class offers no roll call and says why', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showClassActionsSheet(c, occ: physOcc('2026-11-23'))),
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+
+      expect(find.text('হাজিরা নিন'), findsOneWidget);
+      expect(find.text('আগামী দিনের হাজিরা নেওয়া যাবে না'), findsOneWidget);
+      await tester.tap(find.text('হাজিরা নিন'));
+      await tester.pumpAndSettle();
+      // Nothing happened: the sheet is still open on the same class.
+      expect(find.text('আগামী দিনের হাজিরা নেওয়া যাবে না'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets("today's class still offers the roll call", (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showClassActionsSheet(c, occ: satOcc)),
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+      expect(find.text('হাজিরা নিন'), findsOneWidget);
+      expect(find.text('আগামী দিনের হাজিরা নেওয়া যাবে না'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a held class cannot be moved to a future date', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      final String wedOcc = physOcc('2026-11-18');
+      if (await f.attendance.getSession(wedOcc) == null) {
+        f.attendance.sessions.add(AttendanceSession(
+          id: Ids.sessionForOcc(wedOcc),
+          occ: wedOcc,
+          batchId: kBatPhysA,
+          slotId: kSlotPhysWed,
+          date: const LocalDate(2026, 11, 18),
+          startMin: kPhysStart,
+          endMin: kPhysEnd,
+        ));
+      }
+      const AppFormat fmt = AppFormat(Lang.en);
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showRescheduleSheet(c, occ: wedOcc)),
+        lang: Lang.en,
+        viewport: TestViewport.desktop,
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+
+      const String held = "Attendance for this class is already taken \u2014 it can't move to a future date";
+      await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 18))));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('dp-day-22')));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.text(held), findsOneWidget);
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+
+      // An earlier day is fine: the roll call moves with the class.
+      await tester.tap(find.text(fmt.weekdayDate(const LocalDate(2026, 11, 22))));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('dp-day-17')));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.text(held), findsNothing);
+      expect(f.store.exceptions, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
   group('extra class clash with a weekly class (scenario 17)', () {
     testWidgets('Physics A extra on Sunday 10:30 is refused; the later suggestion saves', (WidgetTester tester) async {
       const AppFormat fmt = AppFormat(Lang.en);
@@ -542,15 +622,21 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('＋ পদার্থবিজ্ঞান — ফিজিক্স এ'), findsOneWidget);
+      // QA-17: state marks are icons, never font glyphs the font lacks.
+      expect(find.byKey(const Key('week-block-extra')), findsOneWidget);
       expect(find.text(fmt.timeRange(480, 540)), findsOneWidget);
       // The cancelled Monday class is struck through.
       final Iterable<Text> struck = tester.widgetList<Text>(find.byType(Text)).where(
           (Text t) => t.style?.decoration == TextDecoration.lineThrough);
       expect(struck, isNotEmpty);
       // The moved Wednesday class leaves a ghost pointing to Friday 11:00.
-      expect(find.textContaining('→'), findsOneWidget);
-      expect(find.text('↻ পদার্থবিজ্ঞান — ফিজিক্স এ'), findsOneWidget);
+      expect(find.byKey(const Key('week-ghost-arrow')), findsOneWidget);
+      expect(find.textContaining(fmt.time(660)), findsWidgets);
+      expect(find.byKey(const Key('week-block-moved')), findsOneWidget);
+      for (final Text t in tester.widgetList<Text>(find.byType(Text))) {
+        final String plain = t.data ?? t.textSpan?.toPlainText() ?? '';
+        expect(plain.contains(RegExp('[→↻✓＋]')), isFalse, reason: plain);
+      }
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

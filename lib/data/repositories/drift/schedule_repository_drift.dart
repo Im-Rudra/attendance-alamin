@@ -406,6 +406,8 @@ class DriftScheduleRepository implements ScheduleRepository {
       }
       _requireLive(loc.bs);
       final batchId = loc.bs.batch.id;
+      final session = await _store.liveSession(occ);
+      _store.checkHeldMove(session, newDate);
 
       if (loc.isExtra) {
         await _requireNoClash(
@@ -430,6 +432,7 @@ class DriftScheduleRepository implements ScheduleRepository {
           newEndMin: endMin,
           note: loc.exception?.note,
         ));
+        await _store.moveSession(session, newDate, startMin, endMin);
         return;
       }
 
@@ -458,6 +461,7 @@ class DriftScheduleRepository implements ScheduleRepository {
       );
       if (backToOriginal) {
         await _store.tombstoneException(loc.exceptionId);
+        await _store.moveSession(session, newDate, startMin, endMin);
         return;
       }
       final existing = loc.exception;
@@ -472,6 +476,7 @@ class DriftScheduleRepository implements ScheduleRepository {
         newEndMin: endMin,
         note: existing?.kind == ExceptionKind.reschedule ? existing?.note : null,
       ));
+      await _store.moveSession(session, newDate, startMin, endMin);
     });
   }
 
@@ -523,8 +528,12 @@ class DriftScheduleRepository implements ScheduleRepository {
       if (!_regularExists(slot, od, loc.bs.batch)) {
         throw NotFoundException(ErrorCodes.notFound, detail: occ);
       }
-      await _requireNoClash(all, _regularOccurrence(loc.bs, slot, od), occ);
+      final back = _regularOccurrence(loc.bs, slot, od);
+      final session = await _store.liveSession(occ);
+      _store.checkHeldMove(session, od);
+      await _requireNoClash(all, back, occ);
       await _store.tombstoneException(loc.exceptionId);
+      await _store.moveSession(session, od, back.startMin, back.endMin);
     });
   }
 

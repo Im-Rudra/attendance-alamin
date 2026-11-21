@@ -258,7 +258,7 @@
       }
     }
   },
-  "todayMovedAway": "{label} → {time}",
+  "todayMovedAway": "{label} · সরানো হয়েছে: {time}",
   "@todayMovedAway": {
     "description": "Timeline line of a class that moved to another time.",
     "placeholders": {

@@ -284,6 +284,31 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('QA-01: offers months before the quick chips (back 24 months)',
+        (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchFormScreen(batchId: kBatPhysA),
+          overrides: withBatches(fakes, fakes.batches));
+      await tallWindow(tester);
+      await settleSome(tester);
+      await tester.enterText(find.byKey(const Key('batch-form-fee')), '1200');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, bn.commonSave));
+      await settleSome(tester);
+
+      expect(find.text(bn.batchFeeEarlierMonth), findsOneWidget);
+      await tester.tap(find.byKey(const Key('fee-change-earlier')));
+      await settleSome(tester);
+      await tester.tap(find.text(fmtBn.monthYear(const YearMonth(2026, 8))).last);
+      await settleSome(tester);
+      await tester.tap(find.widgetWithText(FilledButton, bn.batchFeeConfirm));
+      await settleSome(tester, 10);
+
+      final List<FeePeriod> fees = fakes.store.fees[kBatPhysA]!;
+      expect(fees, contains(const FeePeriod(effective: YearMonth(2026, 8), amount: 1200)));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('no warning when no paid month turns partial; dismissing saves nothing',
         (WidgetTester tester) async {
       fakes = seedFakes();

@@ -219,6 +219,7 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
     final bool cancelled = info.cancelled;
     final bool moved = o.kind == OccurrenceKind.rescheduled;
     final bool extra = o.kind == OccurrenceKind.extra;
+    final bool future = o.date.isAfter(ref.watch(todayProvider));
 
     // How many classes of this batch fall on that date (cancelled ones too):
     // with 2+ the title names the time, so the sessions are never confused.
@@ -255,7 +256,16 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
           destructive: true,
           onTap: _busy ? null : () => _cancel(info),
         ),
-      if (!cancelled)
+      // Product 3.6: no roll call for a future date (QA-15); the tile stays
+      // visible, disabled, with the reason.
+      if (!cancelled && future)
+        _ActionTile(
+          icon: Icons.fact_check_outlined,
+          label: l10n.clsActionRollCall,
+          reason: errorTextForCode(l10n, ErrorCodes.rollCallFutureDate),
+          onTap: null,
+        ),
+      if (!cancelled && !future)
         _ActionTile(
           icon: Icons.fact_check_outlined,
           label: l10n.clsActionRollCall,
@@ -329,12 +339,21 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
 }
 
 class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.icon, required this.label, required this.onTap, this.destructive = false});
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+    this.reason,
+  });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
   final bool destructive;
+
+  /// Why the action is unavailable (shown under the label when disabled).
+  final String? reason;
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +366,7 @@ class _ActionTile extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: onTap != null,
-      label: label,
+      label: reason == null ? label : '$label. $reason',
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
@@ -361,7 +380,18 @@ class _ActionTile extends StatelessWidget {
                 Icon(icon, color: color),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: color)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: color)),
+                      if (reason != null)
+                        Text(
+                          reason!,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),

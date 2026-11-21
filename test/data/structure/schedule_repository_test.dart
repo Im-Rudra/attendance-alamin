@@ -268,6 +268,65 @@ void main() {
       expect(rows.single.newDate, '2026-11-25');
     });
 
+    test('QA-04: a held class cannot move to a future date; past moves '
+        'carry the roll call', () async {
+      final physics = await h.physicsA();
+      final monSlot = await h.slotId(physics, mon);
+      final occ = OccId.regular(monSlot, d(2026, 11, 23));
+      await h.db.into(h.db.attendanceSessions).insert(stamped(
+          sessionToCompanion(AttendanceSession(
+            id: Ids.sessionForOcc(occ),
+            occ: occ,
+            batchId: physics,
+            slotId: monSlot,
+            originalDate: d(2026, 11, 23),
+            date: d(2026, 11, 23),
+            startMin: 960,
+            endMin: 1020,
+          )).copyWith));
+      h.setNow(DateTime.utc(2026, 11, 24, 6)); // Tue 24 Nov, 12:00 Dhaka
+
+      await expectLater(
+          h.schedule.reschedule(occ,
+              newDate: d(2026, 11, 25), startMin: 720, endMin: 780),
+          validation(ErrorCodes.heldClassToFuture));
+      expect(await h.exceptionRows(physics), isEmpty);
+
+      // Same-day / past corrections keep the roll call with the class.
+      await h.schedule.reschedule(occ,
+          newDate: d(2026, 11, 22), startMin: 720, endMin: 780);
+      var s = await h.db.select(h.db.attendanceSessions).getSingle();
+      expect((s.date, s.startMin, s.endMin, s.rev), ('2026-11-22', 720, 780, 2));
+
+      // Un-moving brings the roll call back to the original date.
+      await h.schedule.restore(occ);
+      s = await h.db.select(h.db.attendanceSessions).getSingle();
+      expect((s.date, s.startMin, s.endMin), ('2026-11-23', 960, 1020));
+    });
+
+    test('QA-04: a held class whose original date is ahead cannot be '
+        'un-moved', () async {
+      final physics = await h.physicsA();
+      final monSlot = await h.slotId(physics, mon);
+      final occ = OccId.regular(monSlot, d(2026, 11, 30));
+      await h.schedule.reschedule(occ,
+          newDate: d(2026, 11, 20), startMin: 720, endMin: 780);
+      await h.db.into(h.db.attendanceSessions).insert(stamped(
+          sessionToCompanion(AttendanceSession(
+            id: Ids.sessionForOcc(occ),
+            occ: occ,
+            batchId: physics,
+            slotId: monSlot,
+            originalDate: d(2026, 11, 30),
+            date: d(2026, 11, 20),
+            startMin: 720,
+            endMin: 780,
+          )).copyWith));
+      await expectLater(
+          h.schedule.restore(occ), validation(ErrorCodes.heldClassToFuture));
+      expect((await h.exceptionRows(physics)).single.deletedAt, isNull);
+    });
+
     test('a class that does not exist cannot be moved', () async {
       final physics = await h.physicsA();
       // Slot is Monday; 2026-11-24 is a Tuesday.

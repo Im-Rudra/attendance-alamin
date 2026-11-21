@@ -16,6 +16,7 @@
   "errDuplicateOpenEnrollment": "This student is already in this batch",
   "errNotFound": "We could not find this. It may have been deleted",
   "errRollCallFutureDate": "You cannot take attendance for a future day",
+  "errHeldClassToFuture": "Attendance for this class is already taken — it can't move to a future date",
   "errBatchArchived": "This batch is archived. Reopen it first",
   "errPhotoTooLarge": "The photo is too large. Pick a smaller one",
   "errImportNotBackup": "This is not a Hajira Khata backup file",

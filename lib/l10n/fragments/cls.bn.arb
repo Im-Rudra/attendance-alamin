@@ -72,9 +72,9 @@
       }
     }
   },
-  "clsMovedAway": "→ {when}",
+  "clsMovedAway": "{when}",
   "@clsMovedAway": {
-    "description": "Ghost note at the old slot of a class that moved; when is the new date and time.",
+    "description": "Ghost note at the old slot of a class that moved; when is the new date and time. The arrow before it is an icon (no arrow glyph in the font).",
     "placeholders": {
       "when": {
         "type": "String",

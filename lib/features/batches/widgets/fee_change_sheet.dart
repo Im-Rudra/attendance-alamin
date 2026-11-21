@@ -9,8 +9,11 @@ import 'package:attendance_alamin/core/time/year_month.dart';
 
 /// Returns the chosen first month, or null when dismissed.
 ///
-/// [current] is the default (this month); months before [earliest] (the
-/// batch's first month) are not offered. [previewPartial] returns how many
+/// [current] is the default (this month); months before [earliest] are not
+/// offered. Callers pass the earliest first billable month of the batch's
+/// enrollments, at least 24 months back (QA-01: a migrated student's past
+/// months can carry the fee). Months older than the quick chips are offered
+/// in a "আরও আগের মাস" dropdown. [previewPartial] returns how many
 /// fully paid months would turn partial from the given month.
 Future<YearMonth?> showFeeChangeSheet(
   BuildContext context, {
@@ -63,6 +66,11 @@ class _FeeChangeSheetState extends State<FeeChangeSheet> {
           if (!widget.current.addMonths(i).isBefore(widget.earliest)) widget.current.addMonths(i),
       ];
 
+  /// Months before the quick chips, newest first, back to [FeeChangeSheet.earliest].
+  List<YearMonth> get _older => <YearMonth>[
+        for (YearMonth m = widget.current.addMonths(-3); !m.isBefore(widget.earliest); m = m.addMonths(-1)) m,
+      ];
+
   void _pick(YearMonth m) {
     setState(() {
       _month = m;
@@ -110,6 +118,22 @@ class _FeeChangeSheetState extends State<FeeChangeSheet> {
                   ),
               ],
             ),
+            if (_older.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              DropdownButton<YearMonth>(
+                key: const Key('fee-change-earlier'),
+                value: _older.contains(_month) ? _month : null,
+                isExpanded: true,
+                hint: Text(l10n.batchFeeEarlierMonth),
+                items: <DropdownMenuItem<YearMonth>>[
+                  for (final YearMonth m in _older)
+                    DropdownMenuItem<YearMonth>(value: m, child: Text(fmt.monthYear(m))),
+                ],
+                onChanged: (YearMonth? m) {
+                  if (m != null) _pick(m);
+                },
+              ),
+            ],
             const SizedBox(height: 12),
             FutureBuilder<int>(
               future: _preview,

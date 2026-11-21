@@ -13,6 +13,8 @@ import 'package:attendance_alamin/data/db/mappers.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/drift/structure_store.dart';
+import 'package:attendance_alamin/domain/dues/dues_engine.dart';
+import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -263,14 +265,6 @@ class DriftBatchesRepository implements BatchesRepository {
           ..orderBy([(t) => OrderingTerm.asc(t.effectiveMonth)]))
         .get();
     final fees = [for (final r in feeRows) feeFromRow(r)];
-    YearMonth? nextRow;
-    for (final f in fees) {
-      if (f.effective.isAfter(from)) {
-        nextRow = f.effective;
-        break;
-      }
-    }
-
     final enrollments = await (_db.select(_db.enrollments)
           ..where((t) => t.batchId.equals(batchId) & t.deletedAt.isNull()))
         .get();
@@ -302,13 +296,39 @@ class DriftBatchesRepository implements BatchesRepository {
       }
     }
 
-    int? latestAmount(List<FeePeriod> list, YearMonth m) {
-      FeePeriod? best;
-      for (final f in list) {
-        if (!f.effective.isAfter(m)) best = f;
-      }
-      return best?.amount;
+    // Fees before / after the change, read the way the dues engine reads
+    // them (the earliest record applies backwards, QA-01).
+    // setFee pins the old earliest fee before [from] (see _pinFeeBefore).
+    YearMonth? firstStart;
+    for (final e in enrollments) {
+      final s = YearMonth.fromInt(e.startMonth);
+      if (firstStart == null || s.isBefore(firstStart)) firstStart = s;
     }
+    final pin = fees.isNotEmpty &&
+            from.isBefore(fees.first.effective) &&
+            firstStart != null &&
+            firstStart.isBefore(from)
+        ? FeePeriod(effective: firstStart, amount: fees.first.amount)
+        : null;
+    final after = <FeePeriod>[
+      ?pin,
+      for (final f in fees)
+        if (f.effective != from) f,
+      FeePeriod(effective: from, amount: amount),
+    ];
+    EnrollmentTerms termsOf(EnrollmentRow e, List<FeePeriod> batchFees) =>
+        EnrollmentTerms(
+          enrollmentId: e.id,
+          studentId: e.studentId,
+          batchId: batchId,
+          studentName: '',
+          batchName: '',
+          subjectName: '',
+          billing: BillingType.prepaid,
+          start: YearMonth.fromInt(e.startMonth),
+          batchFees: batchFees,
+          overrides: overrides[e.id] ?? const <FeePeriod>[],
+        );
 
     var count = 0;
     for (final e in enrollments) {
@@ -317,17 +337,15 @@ class DriftBatchesRepository implements BatchesRepository {
       final start = YearMonth.fromInt(e.startMonth);
       final endInt = e.endMonth;
       final end = endInt == null ? null : YearMonth.fromInt(endInt);
+      final was = termsOf(e, fees);
+      final now = termsOf(e, after);
       for (final entry in byMonth.entries) {
         final m = entry.key;
-        if (m.isBefore(from)) continue;
-        if (nextRow != null && !m.isBefore(nextRow)) continue;
         if (m.isBefore(start) || (end != null && m.isAfter(end))) continue;
         if (waived[e.id]?.contains(m) ?? false) continue;
-        final overrideAmount = latestAmount(overrides[e.id] ?? const [], m);
-        if (overrideAmount != null) continue;
-        final oldFee = latestAmount(fees, m);
-        if (oldFee == null) continue;
-        if (entry.value >= oldFee && entry.value < amount) count++;
+        final oldFee = DuesEngine.feeFor(was, m).fee;
+        final newFee = DuesEngine.feeFor(now, m).fee;
+        if (entry.value >= oldFee && entry.value < newFee) count++;
       }
     }
     return count;
@@ -338,8 +356,32 @@ class DriftBatchesRepository implements BatchesRepository {
     StructureStore.checkAmount(amount);
     await _db.transaction(() async {
       await _store.requireBatch(batchId);
+      await _pinFeeBefore(batchId, from);
       await _putFee(batchId, amount, from);
     });
+  }
+
+  /// The earliest fee record applies backwards (QA-01). When [from] is
+  /// before every fee record, the billable months before [from] keep the old
+  /// earliest fee ("আগের মাসগুলোতে পুরোনো ফি-ই থাকবে"): that fee is written
+  /// again from the earliest first billable month of the batch.
+  Future<void> _pinFeeBefore(String batchId, YearMonth from) async {
+    final first = await (_db.select(_db.batchFees)
+          ..where((t) => t.batchId.equals(batchId) & t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.effectiveMonth)])
+          ..limit(1))
+        .getSingleOrNull();
+    if (first == null || first.effectiveMonth <= from.toInt()) return;
+    final starts = await (_db.select(_db.enrollments)
+          ..where((t) =>
+              t.batchId.equals(batchId) &
+              t.deletedAt.isNull() &
+              t.startMonth.isSmallerThanValue(from.toInt()))
+          ..orderBy([(t) => OrderingTerm.asc(t.startMonth)])
+          ..limit(1))
+        .getSingleOrNull();
+    if (starts == null) return;
+    await _putFee(batchId, first.amount, YearMonth.fromInt(starts.startMonth));
   }
 
   Future<void> _putFee(String batchId, int amount, YearMonth from) async {

@@ -410,14 +410,30 @@ class FakePaymentsRepository with _FakeBase implements PaymentsRepository {
   LocalDate today = const LocalDate(2026, 11, 20);
 
   @override
-  Stream<List<Payment>> watchAll() => _watch(() => [...payments]
-    ..sort((a, b) => b.paidOn.compareTo(a.paidOn)));
+  Stream<List<Payment>> watchAll() => _watch(() => _recordingOrder(payments));
+
+  /// Newest payment date first; on one date the receipt added last first
+  /// (the drift repository's order).
+  static List<Payment> _recordingOrder(Iterable<Payment> rows) {
+    final list = [...rows];
+    final added = <String, int>{};
+    for (var i = 0; i < list.length; i++) {
+      added.putIfAbsent(list[i].receiptId, () => i);
+    }
+    return list
+      ..sort((a, b) {
+        final d = b.paidOn.compareTo(a.paidOn);
+        if (d != 0) return d;
+        return added[b.receiptId]!.compareTo(added[a.receiptId]!);
+      });
+  }
 
   @override
-  Stream<List<Payment>> watchForStudent(String studentId) => _watch(() => [
+  Stream<List<Payment>> watchForStudent(String studentId) => _watch(() =>
+      _recordingOrder([
         for (final p in payments)
           if (p.studentId == studentId) p,
-      ]..sort((a, b) => b.paidOn.compareTo(a.paidOn)));
+      ]));
 
   @override
   Stream<List<PaymentFact>> watchFacts() => _watch(() => [

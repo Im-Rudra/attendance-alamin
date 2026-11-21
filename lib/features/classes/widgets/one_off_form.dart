@@ -13,7 +13,9 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/core/errors/error_codes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
@@ -60,6 +62,10 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   bool _saving = false;
   String? _error;
 
+  /// Reschedule only: the class already has a saved roll call (QA-04), so it
+  /// may move to today or earlier but never to a future date.
+  bool _held = false;
+
   bool get _isExtra => widget.mode == OneOffMode.extra;
 
   @override
@@ -88,6 +94,17 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   List<BatchSchedule> _liveBatches() {
     final List<BatchSchedule> all = ref.read(schedulesProvider).value ?? const <BatchSchedule>[];
     return <BatchSchedule>[for (final BatchSchedule s in all) if (!s.batch.archived) s];
+  }
+
+  Future<void> _loadHeld() async {
+    final String? occ = widget.occ;
+    if (_isExtra || occ == null) return;
+    try {
+      final Object? session = await ref.read(attendanceRepositoryProvider).getSession(occ);
+      if (session != null && mounted) setState(() => _held = true);
+    } catch (_) {
+      // The repository re-checks on save.
+    }
   }
 
   Future<void> _recheck() async {
@@ -241,7 +258,10 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
         _dur = o.endMin - o.startMin;
         _initDate = _date;
         _initStart = _start;
-        WidgetsBinding.instance.addPostFrameCallback((_) => _recheck());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _recheck();
+          _loadHeld();
+        });
       }
       batchId = _batchId;
       classLabel = l10n.clsClassLabel(i.subjectName, i.batch.name);
@@ -271,9 +291,12 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     ]..sort();
 
     final bool clash = _clash != null && !_clash!.ok;
+    final LocalDate today = ref.watch(todayProvider);
     String? reason;
     if (batchId == null) {
       reason = l10n.clsReasonNoBatch;
+    } else if (_held && _date.isAfter(today)) {
+      reason = errorTextForCode(l10n, ErrorCodes.heldClassToFuture);
     } else if (clash) {
       reason = l10n.clsReasonClash;
     } else if (!_isExtra && !_changed) {

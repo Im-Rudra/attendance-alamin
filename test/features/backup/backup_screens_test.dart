@@ -356,6 +356,27 @@ void main() {
       expect(find.byKey(const Key('review-deletions')), findsNothing);
     });
 
+    testWidgets('QA-08: 0 changes but newer local records: says nothing changes and N are kept',
+        (WidgetTester tester) async {
+      await pumpApp(tester, const BackupReviewScreen(), overrides: _overrides(
+        seedFakes(),
+        _repo(),
+        FakeBackupFiles(),
+        <Override>[
+          fixedImport(ImportState(
+            phase: ImportPhase.ready,
+            snapshot: snap(<String, List<RowMap>>{}),
+            summary: const ChangeSummary(entities: <SummaryEntity, EntityChange>{
+              SummaryEntity.students: EntityChange(keptLocal: 1),
+            }),
+          )),
+        ],
+      ));
+      expect(find.text(_bn.backupHeadlineKeptOnly(_f.number(1))), findsOneWidget, reason: allTexts(tester));
+      expect(find.text(_bn.backupHeadlineNone), findsNothing);
+      expect(tester.widget<FilledButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
+    });
+
     testWidgets('desktop: numbers on one side, named details on the other, no clipped area',
         (WidgetTester tester) async {
       await pumpApp(tester, const BackupReviewScreen(),

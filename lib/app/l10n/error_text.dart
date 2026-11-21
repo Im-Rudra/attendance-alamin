@@ -45,6 +45,8 @@ String errorTextForCode(AppLocalizations l10n, String code) {
       return l10n.errNotFound;
     case ErrorCodes.rollCallFutureDate:
       return l10n.errRollCallFutureDate;
+    case ErrorCodes.heldClassToFuture:
+      return l10n.errHeldClassToFuture;
     case ErrorCodes.batchArchived:
       return l10n.errBatchArchived;
     case ErrorCodes.photoTooLarge:

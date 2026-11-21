@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('ErrorCodes', () {
     test('all lists every code exactly once and each code equals its name', () {
-      expect(ErrorCodes.all.length, 25);
+      expect(ErrorCodes.all.length, 26);
       expect(ErrorCodes.all.toSet().length, ErrorCodes.all.length);
       const expectedCodes = [
         'nameRequired',
@@ -24,6 +24,7 @@ void main() {
         'duplicateOpenEnrollment',
         'notFound',
         'rollCallFutureDate',
+        'heldClassToFuture',
         'batchArchived',
         'photoTooLarge',
         'importNotBackup',

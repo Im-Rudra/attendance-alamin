@@ -23,6 +23,7 @@ import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
+import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
@@ -221,12 +222,20 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     final LocalDate today = ref.read(todayProvider);
     YearMonth? from;
     if (oldFee != null && newFee != oldFee) {
+      // QA-01: a migrated student's past months may carry the fee, so offer
+      // months back to the earliest first billable month (at least 24 back).
+      final List<Enrollment> enrolled = await ref.read(batchEnrollmentsProvider(batch.id).future);
+      if (!mounted) return false;
+      YearMonth earliest = today.yearMonth.addMonths(-24);
+      for (final Enrollment e in enrolled) {
+        if (e.startMonth.isBefore(earliest)) earliest = e.startMonth;
+      }
       from = await showFeeChangeSheet(
         context,
         oldFee: oldFee,
         newFee: newFee,
         current: today.yearMonth,
-        earliest: batch.createdOn.yearMonth,
+        earliest: earliest,
         previewPartial: (YearMonth m) => repo.previewPartialMonths(batch.id, newFee, m),
       );
       if (from == null) return false;

@@ -560,22 +560,23 @@ class _ClassBlock extends StatelessWidget {
     final TextTheme tt = Theme.of(context).textTheme;
     final bool cancelled = dc.cancelled;
     final Color fg = cancelled ? tokens.textSecondary : tokens.onAccentContainer;
-    String prefix = '';
-    if (!cancelled) {
-      if (dc.state == ClassState.extra) {
-        prefix = '＋ ';
-      } else if (dc.state == ClassState.moved) {
-        prefix = '↻ ';
-      }
-      if (dc.taken) prefix = '$prefix✓ ';
-    }
     final TextStyle? base = tt.labelMedium?.copyWith(
       color: fg,
       decoration: cancelled ? TextDecoration.lineThrough : null,
       decorationColor: fg,
     );
+    // State marks are Material icons: Hind Siliguri has no ＋ ↻ ✓ glyphs
+    // (they rendered as tofu boxes, QA-17).
+    final double iconSize = (base?.fontSize ?? 12) + 2;
+    final List<InlineSpan> marks = <InlineSpan>[
+      if (!cancelled && dc.state == ClassState.extra)
+        _mark(Icons.add, fg, iconSize, const Key('week-block-extra')),
+      if (!cancelled && dc.state == ClassState.moved)
+        _mark(Icons.update, fg, iconSize, const Key('week-block-moved')),
+      if (!cancelled && dc.taken) _mark(Icons.check, fg, iconSize, const Key('week-block-taken')),
+    ];
     final String time = fmt.timeRange(dc.startMin, dc.endMin);
-    final String name = '$prefix${dc.subjectName} — ${dc.batch.name}';
+    final String name = '${dc.subjectName} — ${dc.batch.name}';
     final String label = l10n.clsBlockLabel(dc.subjectName, dc.batch.name, time);
     final ClassState? st = dc.state;
     final String stateLabel = st == null || st == ClassState.now
@@ -602,7 +603,15 @@ class _ClassBlock extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: base),
+                  if (marks.isEmpty)
+                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: base)
+                  else
+                    Text.rich(
+                      TextSpan(children: <InlineSpan>[...marks, TextSpan(text: name)]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: base,
+                    ),
                   Text(time, maxLines: 1, overflow: TextOverflow.ellipsis, style: base),
                 ],
               ),
@@ -624,6 +633,15 @@ class _ClassBlock extends StatelessWidget {
   }
 }
 
+/// One state mark before a block's name: an icon and a small gap.
+WidgetSpan _mark(IconData icon, Color color, double size, Key key) => WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(end: 2),
+        child: Icon(icon, key: key, size: size, color: color),
+      ),
+    );
+
 class _GhostBlock extends StatelessWidget {
   const _GhostBlock({required this.text});
 
@@ -632,6 +650,7 @@ class _GhostBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.aurora;
+    final TextStyle? style = Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.textSecondary);
     return ExcludeSemantics(
       child: IgnorePointer(
         child: DashedBorder(
@@ -644,11 +663,17 @@ class _GhostBlock extends StatelessWidget {
                 alignment: Alignment.topLeft,
                 minHeight: 0,
                 maxHeight: double.infinity,
-                child: Text(
-                  text,
+                // "→ {when}": the arrow is an icon (no arrow glyph in Hind
+                // Siliguri, QA-17).
+                child: Text.rich(
+                  TextSpan(children: <InlineSpan>[
+                    _mark(Icons.arrow_forward, tokens.textSecondary, (style?.fontSize ?? 11) + 2,
+                        const Key('week-ghost-arrow')),
+                    TextSpan(text: text),
+                  ]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.textSecondary),
+                  style: style,
                 ),
               ),
             ),

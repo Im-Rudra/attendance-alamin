@@ -16,6 +16,9 @@ abstract final class ErrorCodes {
   static const duplicateOpenEnrollment = 'duplicateOpenEnrollment';
   static const notFound = 'notFound';
   static const rollCallFutureDate = 'rollCallFutureDate';
+
+  /// A class with a saved roll call cannot move to a future date (QA-04).
+  static const heldClassToFuture = 'heldClassToFuture';
   static const batchArchived = 'batchArchived';
   static const photoTooLarge = 'photoTooLarge';
   static const importNotBackup = 'importNotBackup';
@@ -44,6 +47,7 @@ abstract final class ErrorCodes {
     duplicateOpenEnrollment,
     notFound,
     rollCallFutureDate,
+    heldClassToFuture,
     batchArchived,
     photoTooLarge,
     importNotBackup,

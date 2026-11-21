@@ -64,6 +64,10 @@
   "@errRollCallFutureDate": {
     "description": "Roll call attempted for a date after today."
   },
+  "errHeldClassToFuture": "এই ক্লাসের হাজিরা নেওয়া হয়ে গেছে — ভবিষ্যতের তারিখে সরানো যাবে না",
+  "@errHeldClassToFuture": {
+    "description": "Rescheduling a class whose roll call is saved to a date after today (QA-04)."
+  },
   "errBatchArchived": "ব্যাচটি আর্কাইভ করা আছে, আগে চালু করুন",
   "@errBatchArchived": {
     "description": "Action on an archived batch."

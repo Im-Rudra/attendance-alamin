@@ -133,14 +133,45 @@ class ReceiptModel {
   String get enrollmentId => first.enrollmentId;
 }
 
+/// The allocation facts as they stood when [receiptId] was recorded (QA-05):
+/// its own rows and every row recorded before it. [history] is the
+/// repository's order (newest payment date first; on one date the receipt
+/// recorded last comes first). Rows of later receipts never count, so an old
+/// receipt keeps saying what it said when it was given.
+List<PaymentFact> factsAsOfReceipt(String receiptId, List<Payment> history) {
+  int last = -1;
+  LocalDate? on;
+  for (var i = 0; i < history.length; i++) {
+    if (history[i].receiptId != receiptId) continue;
+    last = i;
+    on = history[i].paidOn;
+  }
+  if (on == null) return const <PaymentFact>[];
+  return <PaymentFact>[
+    for (var i = 0; i < history.length; i++)
+      if (history[i].receiptId == receiptId ||
+          history[i].paidOn.isBefore(on) ||
+          (history[i].paidOn == on && i > last))
+        PaymentFact(
+          enrollmentId: history[i].enrollmentId,
+          month: history[i].billingMonth,
+          amount: history[i].amount,
+          waived: history[i].waived,
+        ),
+  ];
+}
+
 /// Builds the receipt model from loaded data; null when [rows] is empty.
+///
+/// The partial months and the balance are those AT THE PAYMENT (QA-05,
+/// acceptance 5): dues from [history] up to and including this receipt
+/// ([factsAsOfReceipt]), on the payment date.
 ReceiptModel? assembleReceipt({
   required String receiptId,
   required List<Payment> rows,
   required List<EnrollmentTerms> terms,
-  required List<PaymentFact> facts,
+  required List<Payment> history,
   required Student? student,
-  required LocalDate today,
 }) {
   if (rows.isEmpty) return null;
   final Payment first = rows.first;
@@ -148,9 +179,20 @@ ReceiptModel? assembleReceipt({
   for (final EnrollmentTerms t in terms) {
     if (t.enrollmentId == first.enrollmentId) mine = t;
   }
+  final LocalDate asOf = first.paidOn;
+  int ahead = 12;
+  for (final Payment p in rows) {
+    final int gap = (p.billingMonth.year - asOf.year) * 12 + p.billingMonth.month - asOf.month;
+    if (gap > ahead) ahead = gap;
+  }
   final EnrollmentDues? dues = mine == null
       ? null
-      : DuesEngine.forEnrollment(terms: mine, payments: facts, today: today, aheadMonths: 12);
+      : DuesEngine.forEnrollment(
+          terms: mine,
+          payments: factsAsOfReceipt(receiptId, history),
+          today: asOf,
+          aheadMonths: ahead,
+        );
   return ReceiptModel(
     receiptId: receiptId,
     first: first,
@@ -167,15 +209,14 @@ ReceiptModel? assembleReceipt({
 
 final payReceiptProvider =
     Provider.autoDispose.family<AsyncValue<ReceiptModel?>, String>((ref, receiptId) {
-  final LocalDate today = ref.watch(todayProvider);
   final AsyncValue<List<Payment>> rowsAsync = ref.watch(payReceiptRowsProvider(receiptId));
   final AsyncValue<List<EnrollmentTerms>> termsAsync = ref.watch(enrollmentTermsProvider);
-  final AsyncValue<List<PaymentFact>> factsAsync = ref.watch(paymentFactsProvider);
+  final AsyncValue<List<Payment>> historyAsync = ref.watch(payAllPaymentsProvider);
   final AsyncValue<List<Payment>> joined = combine3(
     rowsAsync,
     termsAsync,
-    factsAsync,
-    (List<Payment> rows, List<EnrollmentTerms> terms, List<PaymentFact> facts) => rows,
+    historyAsync,
+    (List<Payment> rows, List<EnrollmentTerms> terms, List<Payment> history) => rows,
   );
   if (joined.hasError) {
     return AsyncValue<ReceiptModel?>.error(joined.error!, joined.stackTrace ?? StackTrace.empty);
@@ -189,9 +230,8 @@ final payReceiptProvider =
     receiptId: receiptId,
     rows: rows,
     terms: termsAsync.requireValue,
-    facts: factsAsync.requireValue,
+    history: historyAsync.requireValue,
     student: student.value,
-    today: today,
   ));
 });
 

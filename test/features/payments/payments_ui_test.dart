@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
+import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
@@ -428,8 +429,71 @@ void main() {
       final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
       expect(plain, contains('Months: October'));
       expect(plain, contains('Paid: ৳1,000 (Cash), date 4 Oct 2026'));
-      expect(plain, contains('Remaining: ৳ 1,000'));
+      // QA-05: the balance as it was on 4 Oct (Sep and Oct paid), not today's.
+      expect(plain, contains('All fees paid'));
       expect(RegExp(r'[০-৯]').hasMatch(plain), isFalse);
+    });
+
+    testWidgets('QA-05: an old partial receipt keeps its balance after later payments',
+        (WidgetTester tester) async {
+      final SeededFakes f = seedFakes(withPayments: false);
+      Payment row(String receipt, YearMonth month, int amount, LocalDate on) => Payment(
+            id: 'pay-$receipt-${month.toInt()}',
+            receiptId: receipt,
+            studentId: kStuRahim,
+            enrollmentId: kEnrRahimPhys,
+            batchId: kBatPhysA,
+            billingMonth: month,
+            amount: amount,
+            paidOn: on,
+            method: PaymentMethod.cash,
+          );
+      f.payments.payments.addAll(<Payment>[
+        row('rcp-a', _nov, 600, const LocalDate(2026, 11, 4)),
+        // Later, one payment settles everything.
+        row('rcp-b', const YearMonth(2026, 9), 1000, const LocalDate(2026, 11, 10)),
+        row('rcp-b', const YearMonth(2026, 10), 1000, const LocalDate(2026, 11, 10)),
+        row('rcp-b', _nov, 400, const LocalDate(2026, 11, 10)),
+      ]);
+      await pumpApp(
+        tester,
+        _Launcher((BuildContext c) => showReceiptSheet(c, receiptId: 'rcp-a')),
+        overrides: f.overrides,
+      );
+      await _open(tester);
+      final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
+      expect(plain, contains('মাস: নভেম্বর (আংশিক)'));
+      expect(plain, contains('বাকি: ৳ ২,৪০০'));
+      expect(plain, isNot(contains('সব বেতন পরিশোধিত')));
+    });
+
+    testWidgets('QA-05: same-day receipts read in recording order', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes(withPayments: false);
+      Payment row(String receipt, YearMonth month, int amount) => Payment(
+            id: 'pay-$receipt-${month.toInt()}',
+            receiptId: receipt,
+            studentId: kStuRahim,
+            enrollmentId: kEnrRahimPhys,
+            batchId: kBatPhysA,
+            billingMonth: month,
+            amount: amount,
+            paidOn: kToday,
+            method: PaymentMethod.cash,
+          );
+      f.payments.payments.addAll(<Payment>[
+        row('rcp-z-first', const YearMonth(2026, 9), 1000),
+        row('rcp-a-second', const YearMonth(2026, 10), 1000),
+        row('rcp-a-second', _nov, 1000),
+      ]);
+      await pumpApp(
+        tester,
+        _Launcher((BuildContext c) => showReceiptSheet(c, receiptId: 'rcp-z-first')),
+        overrides: f.overrides,
+      );
+      await _open(tester);
+      final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
+      // Oct and Nov were still owed when the first receipt was given.
+      expect(plain, contains('বাকি: ৳ ২,০০০'));
     });
 
     testWidgets('delete asks first, then the month is due again', (WidgetTester tester) async {
