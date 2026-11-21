@@ -69,6 +69,30 @@ Future<void> pumpDs(
   await tester.pump();
 }
 
+/// How visible [finder]'s widget is right now: the product of every
+/// FadeTransition / Opacity above it (0 when offstage). Golden-free frame
+/// checks use it to prove two contents are never legible together.
+/// With several matches it reports the most visible one (0 for none).
+double visibleOpacity(WidgetTester tester, Finder finder) {
+  double best = 0;
+  for (final Element e in finder.evaluate()) {
+    double o = 1;
+    e.visitAncestorElements((Element a) {
+      final Widget w = a.widget;
+      if (w is FadeTransition) {
+        o *= w.opacity.value.clamp(0.0, 1.0);
+      } else if (w is Opacity) {
+        o *= w.opacity;
+      } else if (w is Offstage && w.offstage) {
+        o = 0;
+      }
+      return o > 0;
+    });
+    if (o > best) best = o;
+  }
+  return best;
+}
+
 /// Fails when the framework recorded an exception (overflow, assertion...).
 void expectClean(WidgetTester tester, [String when = '']) {
   final Object? e = tester.takeException();

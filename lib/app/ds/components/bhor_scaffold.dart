@@ -1,17 +1,22 @@
 // BhorScaffold: page background + faint top-left wash + safe areas, with
 // optional header, sidebar (desktop), bottom nav (phone) and a floating
 // primary action. Replaces Material Scaffold. BhorActionBar is the sticky
-// save bar pinned under full-screen forms.
+// save bar pinned under full-screen forms. The header fades in a hairline
+// once the body scrolls; the floating action moves up out of a toast's way.
+// Page transitions (bhorPageTransition / bhorFullscreenTransition) fade
+// through on an opaque page background: the page below is covered before
+// the new page's content appears, so two pages are never legible at once.
 // Usage: `BhorScaffold(header: BhorHeader(title: 'আজ'), body: ..., bottomNav: nav)`.
 
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
-import 'package:attendance_alamin/app/ds/components/bhor_navigation.dart' show BhorBottomNav;
+import 'package:attendance_alamin/app/ds/components/bhor_navigation.dart' show BhorBottomNav, BhorHeaderScrolled;
+import 'package:attendance_alamin/app/ds/components/bhor_overlays.dart' show BhorBottomObstruction, BhorToast;
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 
-class BhorScaffold extends StatelessWidget {
+class BhorScaffold extends StatefulWidget {
   const BhorScaffold({
     super.key,
     required this.body,
@@ -34,13 +39,40 @@ class BhorScaffold extends StatelessWidget {
   final bool wash;
 
   @override
+  State<BhorScaffold> createState() => _BhorScaffoldState();
+}
+
+class _BhorScaffoldState extends State<BhorScaffold> {
+  bool _scrolled = false;
+
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth == 0 && n.metrics.axis == Axis.vertical) {
+      final bool now = n.metrics.pixels > 4;
+      if (now != _scrolled) setState(() => _scrolled = now);
+    }
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
+    final Widget? header = widget.header;
+    final Widget? sidebar = widget.sidebar;
+    final Widget? bottomNav = widget.bottomNav;
+    final Widget? floating = widget.floating;
+    final Widget body = header == null
+        ? widget.body
+        : NotificationListener<ScrollNotification>(onNotification: _onScroll, child: widget.body);
     final Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (header != null) SafeArea(bottom: false, left: sidebar == null, child: header!),
+        if (header != null)
+          SafeArea(
+            bottom: false,
+            left: sidebar == null,
+            child: BhorHeaderScrolled(scrolled: _scrolled, child: header),
+          ),
         Expanded(
           child: SafeArea(
             top: header == null,
@@ -60,7 +92,7 @@ class BhorScaffold extends StatelessWidget {
           data: IconThemeData(color: c.text2, size: 22),
           child: Stack(
             children: <Widget>[
-              if (wash)
+              if (widget.wash)
                 Positioned.fill(
                   child: IgnorePointer(child: CustomPaint(painter: _WashPainter(c.washStart))),
                 ),
@@ -69,7 +101,7 @@ class BhorScaffold extends StatelessWidget {
                     ? content
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[sidebar!, Expanded(child: content)],
+                        children: <Widget>[sidebar, Expanded(child: content)],
                       ),
               ),
               if (floating != null)
@@ -79,12 +111,35 @@ class BhorScaffold extends StatelessWidget {
                       (bottomNav == null
                           ? MediaQuery.paddingOf(context).bottom
                           : BhorBottomNav.height + MediaQuery.paddingOf(context).bottom),
-                  child: SafeArea(top: false, bottom: false, child: floating!),
+                  child: SafeArea(top: false, bottom: false, child: _FloatingLift(child: floating)),
                 ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Moves the floating action up by the height of a bottom toast while one
+/// shows (phones), so the two never overlap.
+class _FloatingLift extends StatelessWidget {
+  const _FloatingLift({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.bhorIsWide) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: BhorToast.occupied,
+      builder: (BuildContext context, double lift, Widget? child) => AnimatedPadding(
+        padding: EdgeInsets.only(bottom: lift),
+        duration: BhorMotion.of(context, BhorMotion.base),
+        curve: BhorMotion.curveOf(context, BhorMotion.springSoft),
+        child: child,
+      ),
+      child: child,
     );
   }
 }
@@ -132,6 +187,7 @@ class BhorActionBar extends StatelessWidget {
     this.summary,
     this.loading = false,
     this.done = false,
+    this.state,
   });
 
   /// Spinner in the button (saving).
@@ -139,6 +195,9 @@ class BhorActionBar extends StatelessWidget {
 
   /// The button morphs to a check + "হয়েছে".
   final bool done;
+
+  /// Wins over [loading] / [done] when set.
+  final BhorButtonState? state;
 
   final String label;
 
@@ -157,7 +216,9 @@ class BhorActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    return DecoratedBox(
+    // Toasts sit above the bar, never on its button.
+    return BhorBottomObstruction(
+      child: DecoratedBox(
       decoration: BoxDecoration(
         color: b.colors.surface,
         border: Border(top: BorderSide(color: b.colors.line)),
@@ -184,6 +245,7 @@ class BhorActionBar extends StatelessWidget {
                 size: BhorButtonSize.lg,
                 loading: loading,
                 done: done,
+                state: state,
                 onPressed: onPressed,
                 disabledReason: disabledReason,
               ),
@@ -195,43 +257,97 @@ class BhorActionBar extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
 
-/// The Bhor page transition. Phone push: the new page slides in from
-/// x +32 px and fades in (ease) while the page underneath slides to
-/// x -16 px and dims to .94 (parallax); pop reverses with the exit curve.
-/// Desktop (>= 840): a cross-fade with scale .985 -> 1. Reduced motion: a
-/// fade only. Used by [BhorPageRoute] and the app router's pages.
+/// Share of a page transition during which the new page's opaque
+/// background covers the page below; its content only fades in after it.
+const double kBhorPageCover = 0.4;
+
+/// The Bhor page transition, a true fade-through. First the new page's
+/// opaque background fades over the page below (first 40%), then its
+/// content fades in (rest): two pages' content is never legible at once.
+/// Phone push: the content slides in from x +32 px while the page
+/// underneath slides to x -16 px and dims to .94 (parallax); pop reverses
+/// (the content fades out first, then the background uncovers the page
+/// below). Desktop (>= 840): the content scales .985 -> 1. Reduced motion:
+/// fades only. Used by [BhorPageRoute] and the app router's pages.
 Widget bhorPageTransition(
   BuildContext context,
   Animation<double> animation,
   Animation<double> secondaryAnimation,
   Widget child,
-) {
-  final Animation<double> curved =
-      CurvedAnimation(parent: animation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
-  if (BhorMotion.reduced(context)) return FadeTransition(opacity: curved, child: child);
-  if (context.bhorIsWide) {
-    return FadeTransition(
-      opacity: curved,
-      child: ScaleTransition(scale: Tween<double>(begin: 0.985, end: 1).animate(curved), child: child),
+) =>
+    _fadeThroughPage(context, animation, secondaryAnimation, child, fullscreen: false);
+
+/// The full-screen flow transition (roll call, search, onboarding): the
+/// same fade-through, rising 24 px in; on close the content drops 24 px and
+/// fades out before its background uncovers the page below.
+Widget bhorFullscreenTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child,
+) =>
+    _fadeThroughPage(context, animation, secondaryAnimation, child, fullscreen: true);
+
+Widget _fadeThroughPage(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child, {
+  required bool fullscreen,
+}) {
+  final BhorColors c = context.bhor.colors;
+  final bool reduced = BhorMotion.reduced(context);
+  final bool wide = context.bhorIsWide;
+  final Animation<double> cover =
+      CurvedAnimation(parent: animation, curve: const Interval(0, kBhorPageCover, curve: BhorMotion.ease));
+  final Animation<double> reveal =
+      CurvedAnimation(parent: animation, curve: const Interval(kBhorPageCover, 1, curve: BhorMotion.ease));
+  Widget content = FadeTransition(opacity: reveal, child: child);
+  if (!reduced) {
+    content = AnimatedBuilder(
+      animation: reveal,
+      builder: (BuildContext context, Widget? page) {
+        final double t = 1 - reveal.value;
+        if (fullscreen) return Transform.translate(offset: Offset(0, 24 * t), child: page);
+        if (wide) return Transform.scale(scale: 0.985 + 0.015 * reveal.value, child: page);
+        return Transform.translate(offset: Offset(BhorMotion.distanceLg * t, 0), child: page);
+      },
+      child: content,
     );
   }
-  final Animation<double> under =
-      CurvedAnimation(parent: secondaryAnimation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
-  return AnimatedBuilder(
-    animation: Listenable.merge(<Listenable>[curved, under]),
-    builder: (BuildContext context, Widget? page) => Transform.translate(
-      offset: Offset(32 * (1 - curved.value) - 16 * under.value, 0),
-      child: Opacity(
-        opacity: (curved.value * (1 - 0.06 * under.value)).clamp(0.0, 1.0),
-        child: page,
+  Widget page = Stack(
+    fit: StackFit.expand,
+    children: <Widget>[
+      IgnorePointer(
+        child: FadeTransition(
+          key: const ValueKey<String>('bhor-page-cover'),
+          opacity: cover,
+          child: ColoredBox(color: c.bg),
+        ),
       ),
-    ),
-    child: child,
+      content,
+    ],
   );
+  if (!reduced && !wide && !fullscreen) {
+    // The page underneath a phone push: parallax to x -16 and dim to .94
+    // (it is covered by then; this only shapes the uncover on pop).
+    final Animation<double> under =
+        CurvedAnimation(parent: secondaryAnimation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
+    page = AnimatedBuilder(
+      animation: under,
+      builder: (BuildContext context, Widget? p) => Transform.translate(
+        offset: Offset(-16 * under.value, 0),
+        child: Opacity(opacity: (1 - 0.06 * under.value).clamp(0.0, 1.0), child: p),
+      ),
+      child: page,
+    );
+  }
+  return page;
 }
 
 /// A full-screen page pushed outside the router (replaces MaterialPageRoute).

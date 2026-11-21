@@ -23,6 +23,26 @@ import 'package:attendance_alamin/features/students/ui/students_screen.dart';
 import '../../helpers/fakes/fake_settings_repos.dart';
 import 'shell_harness.dart';
 
+/// Product of the FadeTransition / Opacity values above [finder] (0 when
+/// offstage or absent).
+double _visible(WidgetTester tester, Finder finder) {
+  if (finder.evaluate().isEmpty) return 0;
+  final Element e = finder.evaluate().first;
+  double o = 1;
+  e.visitAncestorElements((Element a) {
+    final Widget w = a.widget;
+    if (w is FadeTransition) {
+      o *= w.opacity.value.clamp(0.0, 1.0);
+    } else if (w is Opacity) {
+      o *= w.opacity;
+    } else if (w is Offstage && w.offstage) {
+      o = 0;
+    }
+    return o > 0;
+  });
+  return o;
+}
+
 void main() {
   test('window classes follow 600 / 840 / 1200 / 1600', () {
     expect(WindowClass.fromWidth(599), WindowClass.compact);
@@ -94,19 +114,20 @@ void main() {
     await pumpShell(tester);
     final l10n = l10nOf(Lang.bn);
     // The branch stack sits in one fade-through (it is never built twice).
-    expect(find.byWidgetPredicate((Widget w) => w is BhorFadeThrough), findsOneWidget);
+    expect(find.byType(BhorBranchFadeThrough), findsOneWidget);
     await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navBatches)));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
-    final FadeTransition fade = tester.widget<FadeTransition>(find
-        .descendant(
-          of: find.byWidgetPredicate((Widget w) => w is BhorFadeThrough),
-          matching: find.byType(FadeTransition),
-        )
-        .first);
-    expect(fade.opacity.value, lessThan(1));
+    // Fade-through: Today fades out before the batches tab fades in; at no
+    // frame are both tabs visible.
+    for (int f = 0; f < 24; f++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final double today = _visible(tester, find.byType(TodayScreen, skipOffstage: false));
+      final double batches = _visible(tester, find.byType(BatchesScreen, skipOffstage: false));
+      expect(today > 0.02 && batches > 0.02, isFalse, reason: 'frame $f: today $today, batches $batches');
+    }
     await tester.pumpAndSettle();
     expect(find.byType(BatchesScreen), findsOneWidget);
+    expect(_visible(tester, find.byType(TodayScreen, skipOffstage: false)), 0);
     await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navToday)));
     await tester.pumpAndSettle();
     expect(find.byType(TodayScreen), findsOneWidget);

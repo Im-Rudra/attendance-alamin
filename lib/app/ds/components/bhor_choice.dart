@@ -72,6 +72,9 @@ class BhorSegmented<T> extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: c.isDark ? c.soft2 : c.surface,
                       borderRadius: BorderRadius.circular(BhorRadius.control - 4),
+                      // Dark: a 1 px edge at >= 3:1 so the selected segment
+                      // is easy to find on the dark track.
+                      border: c.isDark ? Border.all(color: c.segmentEdge) : null,
                       boxShadow: c.thumbShadow,
                     ),
                   ),

@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
@@ -83,7 +84,19 @@ class _BhorPressableState extends State<BhorPressable> {
   bool _focused = false;
   bool _pressed = false;
 
+  /// Last pointer that touched this control: hover visuals follow a mouse
+  /// only, so a tap on a touch screen never leaves a hover tint behind.
+  PointerDeviceKind? _lastKind;
+
   bool get _enabled => widget.onTap != null || widget.onLongPress != null;
+
+  bool get _touch => _lastKind != null && _lastKind != PointerDeviceKind.mouse;
+
+  void _onPointer(PointerEvent e) {
+    if (e is PointerDownEvent) BhorTapTracker.record(e);
+    _lastKind = e.kind;
+    if (_touch && _hovered && mounted) setState(() => _hovered = false);
+  }
 
   void _setPressed(bool v) {
     if (_pressed != v && mounted) setState(() => _pressed = v);
@@ -102,7 +115,7 @@ class _BhorPressableState extends State<BhorPressable> {
   Widget build(BuildContext context) {
     final bool enabled = _enabled;
     final BhorStates states = BhorStates(
-      hovered: _hovered && enabled,
+      hovered: _hovered && enabled && !_touch,
       focused: _focused && enabled,
       pressed: _pressed && enabled,
       enabled: enabled,
@@ -129,13 +142,17 @@ class _BhorPressableState extends State<BhorPressable> {
       onLongPress: widget.onLongPress,
       child: child,
     );
+    child = Listener(onPointerDown: _onPointer, onPointerUp: _onPointer, child: child);
     child = FocusableActionDetector(
       enabled: enabled,
       focusNode: widget.focusNode,
       autofocus: widget.autofocus,
       mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
       onShowFocusHighlight: (bool v) => setState(() => _focused = v),
-      onShowHoverHighlight: (bool v) => setState(() => _hovered = v),
+      onShowHoverHighlight: (bool v) {
+        if (v && _touch) return;
+        setState(() => _hovered = v);
+      },
       actions: <Type, Action<Intent>>{
         ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent _) {
           widget.onTap?.call();
@@ -157,6 +174,20 @@ class _BhorPressableState extends State<BhorPressable> {
       excludeSemantics: widget.excludeChildSemantics,
       child: child,
     );
+  }
+}
+
+/// Remembers the last pointer-down on a [BhorPressable], so a popover
+/// opened from a whole-screen context can still anchor to the control that
+/// was tapped (showBhorPopover).
+abstract final class BhorTapTracker {
+  /// Global position and view of the last pointer-down (null before one).
+  static Offset? position;
+  static int? viewId;
+
+  static void record(PointerDownEvent e) {
+    position = e.position;
+    viewId = e.viewId;
   }
 }
 

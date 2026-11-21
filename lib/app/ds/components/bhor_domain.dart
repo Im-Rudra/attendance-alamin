@@ -19,8 +19,10 @@ import 'package:attendance_alamin/app/theme/tokens.dart' show AttendanceKind;
 import 'package:attendance_alamin/core/format/app_format.dart';
 
 /// Three-way attendance control for one student: a soft pill track whose
-/// coloured thumb (ok / absent / late tint) glides to the chosen status with
-/// the spring; the icon / text colour follows. Fills the width when
+/// thumb glides to the chosen status with the spring. The thumb is the
+/// surface with a light status tint and a 1.5 px status-coloured ring, so
+/// the selected state stands out from the track at >= 3:1 (light and dark);
+/// the icon / text colour follows. Fills the width when
 /// labelled; [compact] uses short labels, [iconOnly] shows ✓ ✕ clock for
 /// dense phone rows.
 /// Usage: `BhorAttendanceToggle(value: AttendanceKind.present, onChanged: f)`,
@@ -85,7 +87,9 @@ class BhorAttendanceToggle extends StatelessWidget {
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
     Widget track(double segW) {
-      final (Color thumbFill, _) = look(sel < 0 ? AttendanceKind.present : kinds[sel]);
+      final (Color tint, Color tone) = look(sel < 0 ? AttendanceKind.present : kinds[sel]);
+      // Surface + a whisper of the status tint, edged in the status colour.
+      final Color thumbFill = Color.alphaBlend(tint.withValues(alpha: tint.a * 0.6), c.surface);
       return Container(
         height: h,
         padding: const EdgeInsets.all(3),
@@ -105,7 +109,12 @@ class BhorAttendanceToggle extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: fast,
                   curve: BhorMotion.ease,
-                  decoration: BoxDecoration(color: thumbFill, borderRadius: BorderRadius.circular(BhorRadius.pill)),
+                  decoration: BoxDecoration(
+                    color: thumbFill,
+                    borderRadius: BorderRadius.circular(BhorRadius.pill),
+                    border: Border.all(color: tone, width: 1.5),
+                    boxShadow: c.thumbShadow,
+                  ),
                 ),
               ),
             ),
@@ -279,8 +288,10 @@ class BhorEscalationBar extends StatelessWidget {
     final BhorColors c = context.bhor.colors;
     final l10n = context.l10n;
     final AppFormat fmt = context.fmt;
+    // Nothing due yet: no bar (ten empty segments read as a loading skeleton).
+    if (day < 1) return const SizedBox.shrink();
     final String label =
-        day > 10 ? l10n.uiEscalationBeyond : l10n.a11yEscalationDay(fmt.number(day < 0 ? 0 : day));
+        day > 10 ? l10n.uiEscalationBeyond : l10n.a11yEscalationDay(fmt.number(day));
     return Semantics(
       container: true,
       label: label,

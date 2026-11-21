@@ -2,7 +2,9 @@
 // fill, floating label), the chevron rotates 180° with the spring. On wide
 // windows the menu drops from the field as a surface popover (scale .96 -> 1,
 // y -4 -> 0, fade, 200 ms) with a check on the chosen item; on phones the
-// options open as a bottom-sheet list instead. No Material DropdownButton.
+// options open as a bottom-sheet list instead. The chosen item is an accent
+// tint + check (never an outline) and the list opens scrolled to it. No
+// Material DropdownButton.
 // Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`.
 
 import 'dart:math' as math;
@@ -94,6 +96,7 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
             options: widget.options,
             selected: widget.value,
             rowHeight: BhorSize.field - 4,
+            autofocusSelected: false,
             onPick: (T v) => Navigator.of(ctx).pop(_Pick<T>(v)),
           ),
         ),
@@ -196,12 +199,21 @@ class _Pick<T> {
 
 /// The option rows shared by the popover and the phone sheet.
 class _OptionList<T> extends StatelessWidget {
-  const _OptionList({required this.options, required this.selected, required this.onPick, this.rowHeight = BhorSize.control});
+  const _OptionList({
+    required this.options,
+    required this.selected,
+    required this.onPick,
+    this.rowHeight = BhorSize.control,
+    this.autofocusSelected = true,
+  });
 
   final List<BhorOption<T>> options;
   final T? selected;
   final ValueChanged<T> onPick;
   final double rowHeight;
+
+  /// Keyboard focus starts on the chosen item (desktop popover).
+  final bool autofocusSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -212,8 +224,10 @@ class _OptionList<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         for (final BhorOption<T> o in options)
-          BhorPressable(
-            autofocus: o.value == selected,
+          _ScrollIntoView(
+            enabled: o.value == selected,
+            child: BhorPressable(
+            autofocus: autofocusSelected && o.value == selected,
             onTap: o.enabled ? () => onPick(o.value) : null,
             selected: o.value == selected,
             semanticLabel: o.label,
@@ -228,7 +242,7 @@ class _OptionList<T> extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
                 decoration: BoxDecoration(
-                  color: s.hovered || s.pressed ? c.soft : c.soft.withValues(alpha: 0),
+                  color: sel ? c.accentTint : (s.hovered || s.pressed ? c.soft : c.soft.withValues(alpha: 0)),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -250,9 +264,37 @@ class _OptionList<T> extends StatelessWidget {
               );
             },
           ),
+          ),
       ],
     );
   }
+}
+
+/// Scrolls [child] to the middle of its scroll view once, after the first
+/// frame (the chosen option of a long list).
+class _ScrollIntoView extends StatefulWidget {
+  const _ScrollIntoView({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_ScrollIntoView> createState() => _ScrollIntoViewState();
+}
+
+class _ScrollIntoViewState extends State<_ScrollIntoView> {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.enabled) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || Scrollable.maybeOf(context) == null) return;
+      Scrollable.ensureVisible(context, alignment: 0.5);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {

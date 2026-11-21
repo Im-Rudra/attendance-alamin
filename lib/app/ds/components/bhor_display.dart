@@ -14,22 +14,44 @@ import 'package:attendance_alamin/app/theme/tokens.dart' show SeverityLevel;
 
 enum BhorTone { neutral, accent, ok, danger, late, absent, warn, overdue }
 
-/// Status tag: a pill. Never colour alone: always a word.
+/// Status tag: a tinted pill (tint fill + coloured text, one style on every
+/// screen). Never colour alone: always a word.
 /// Usage: `BhorTag(label: 'পরিশোধিত', tone: BhorTone.ok)` or
 /// `BhorTag.severity(level: SeverityLevel.urgent, label: 'জরুরি')`.
 class BhorTag extends StatelessWidget {
   const BhorTag({super.key, required this.label, this.tone = BhorTone.neutral, this.icon})
-      : severity = null;
+      : severity = null,
+        solid = false;
 
-  /// Dues severity tag (honey to rose; overdue is solid raspberry, white text).
-  const BhorTag.severity({super.key, required SeverityLevel level, required this.label, this.icon})
-      : severity = level,
+  /// Dues severity tag: the honey -> rose tints; overdue is the tinted
+  /// raspberry pill (overdueBg + overdue text), the same as
+  /// `BhorTone.overdue`. [solid] is only for a single compact count badge
+  /// (at most one per screen, e.g. "মোট বকেয়া ৩"): solid raspberry, white
+  /// text.
+  const BhorTag.severity({
+    super.key,
+    required SeverityLevel level,
+    required this.label,
+    this.icon,
+    this.solid = false,
+  })  : severity = level,
         tone = BhorTone.neutral;
 
   final String label;
   final BhorTone tone;
   final SeverityLevel? severity;
   final IconData? icon;
+
+  /// Solid fill (a lone count badge); tags are tinted otherwise.
+  final bool solid;
+
+  /// Fill and text colour of a severity tag.
+  static (Color, Color) severityColorsOf(BhorColors c, SeverityLevel level, {bool solid = false}) {
+    if (level == SeverityLevel.overdue) {
+      return solid ? (c.sevFill[level.index], c.sevText[level.index]) : (c.overdueBg, c.overdue);
+    }
+    return (c.sevFill[level.index], c.sevText[level.index]);
+  }
 
   /// Fill and text colour of [tone].
   static (Color, Color) colorsOf(BhorColors c, BhorTone tone) => switch (tone) {
@@ -48,7 +70,7 @@ class BhorTag extends StatelessWidget {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final (Color bg, Color fg) =
-        severity != null ? (c.sevFill[severity!.index], c.sevText[severity!.index]) : colorsOf(c, tone);
+        severity != null ? severityColorsOf(c, severity!, solid: solid) : colorsOf(c, tone);
     return Semantics(
       container: true,
       label: label,

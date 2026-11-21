@@ -1,7 +1,10 @@
 // BhorButton and BhorIconButton (docs/council/13-fluid-ui-spec.md, Button).
 // Solid, soft, filled; r14, h46 (sm 38, lg 52). Press scale .96 (80 ms) and a
-// spring back; hover colour shift; a trailing arrow nudges +3 px on hover;
-// loading shows a spinner, `done` morphs to a check + "হয়েছে".
+// spring back; hover colour shift; a trailing arrow nudges +3 px on hover.
+// States (BhorButtonState): idle -> loading (the label fades out completely,
+// then a spinner fades in; never both at once) ->
+// success (the spinner gives way to a check that pops in + "হয়েছে").
+// BhorAsyncButton drives the states from a Future.
 // Usage: `BhorButton(label: 'সেভ করুন', onPressed: save)`;
 // `BhorButton(label: 'মুছুন', variant: BhorButtonVariant.danger, ...)`;
 // `BhorButton(label: 'হাজিরা নিন', arrow: true, variant: BhorButtonVariant.hero, ...)`;
@@ -105,12 +108,16 @@ Widget _buttonBox({
   return AnimatedOpacity(opacity: disabledLook ? 0.45 : 1, duration: d, child: box);
 }
 
-enum _Phase { idle, loading, done }
+/// What a [BhorButton] shows: its label, a spinner (working; presses are
+/// blocked), or a check + "হয়েছে" (done; presses are blocked).
+enum BhorButtonState { idle, loading, success }
 
-/// Text button with optional leading icon and trailing arrow. `loading`
-/// shows a spinner and blocks presses; `done` morphs the content to a check
-/// and [doneLabel] (default "হয়েছে"); `disabledReason` explains a disabled
-/// button (tooltip on hover, semantics hint).
+/// Text button with optional leading icon and trailing arrow. [state] (or
+/// the older `loading` / `done` flags) switches between the label, a
+/// spinner and the success check with a fade-through: the outgoing content
+/// is gone before the incoming one appears, and the width morphs with it.
+/// `disabledReason` explains a disabled button (tooltip on hover,
+/// semantics hint). For a save that returns a Future use [BhorAsyncButton].
 class BhorButton extends StatelessWidget {
   const BhorButton({
     super.key,
@@ -123,6 +130,7 @@ class BhorButton extends StatelessWidget {
     this.arrow = false,
     this.loading = false,
     this.done = false,
+    this.state,
     this.doneLabel,
     this.disabledReason,
     this.expand = false,
@@ -144,6 +152,9 @@ class BhorButton extends StatelessWidget {
 
   /// Success state: a check and [doneLabel]; presses are blocked.
   final bool done;
+
+  /// Wins over [loading] / [done] when set.
+  final BhorButtonState? state;
   final String? doneLabel;
   final String? disabledReason;
 
@@ -153,19 +164,24 @@ class BhorButton extends StatelessWidget {
   /// Pill shape (radius 999), e.g. toast actions.
   final bool pill;
 
+  /// Label <-> spinner <-> check fade-through.
+  static const Duration switchDuration = Duration(milliseconds: 240);
+
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    final bool enabled = onPressed != null && !loading && !done;
+    final BhorButtonState phase =
+        state ?? (done ? BhorButtonState.success : (loading ? BhorButtonState.loading : BhorButtonState.idle));
+    final bool busy = phase != BhorButtonState.idle;
+    final bool enabled = onPressed != null && !busy;
     final double iconSize = size == BhorButtonSize.sm ? BhorIconSize.chip - 2 : BhorIconSize.chip;
     final TextStyle style = size == BhorButtonSize.sm ? b.type.label : b.type.bodyStrong;
-    final _Phase phase = done ? _Phase.done : (loading ? _Phase.loading : _Phase.idle);
     final bool reduced = BhorMotion.reduced(context);
-    final String shownLabel = done ? (doneLabel ?? context.l10n.dsDone) : label;
+    final String shownLabel = phase == BhorButtonState.success ? (doneLabel ?? context.l10n.dsDone) : label;
     Widget button = BhorPressable(
       onTap: enabled ? onPressed : null,
       semanticLabel: shownLabel,
-      semanticHint: !enabled && !loading && !done ? disabledReason : null,
+      semanticHint: !enabled && !busy ? disabledReason : null,
       excludeChildSemantics: true,
       radius: pill ? size.height / 2 : BhorRadius.control,
       builder: (BuildContext context, BhorStates s) => _buttonBox(
@@ -175,7 +191,7 @@ class BhorButton extends StatelessWidget {
         height: size.height,
         width: expand ? double.infinity : null,
         radius: pill ? size.height / 2 : BhorRadius.control,
-        disabledLook: onPressed == null && !done,
+        disabledLook: onPressed == null && !busy,
         padding: EdgeInsets.symmetric(
           horizontal: switch (size) {
             BhorButtonSize.sm => BhorSpace.s16,
@@ -192,22 +208,36 @@ class BhorButton extends StatelessWidget {
               style: style.copyWith(color: fg),
             ),
           );
-          final Widget row = Row(
-            key: ValueKey<_Phase>(phase),
+          final Widget row = switch (phase) {
+            // Working: the spinner alone (the label has faded out; it stays
+            // in the tree, invisible, so the button keeps its width).
+            BhorButtonState.loading => Stack(
+                key: const ValueKey<BhorButtonState>(BhorButtonState.loading),
+                alignment: Alignment.center,
+                children: <Widget>[
+                  Opacity(opacity: 0, child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[text])),
+                  BhorSpinner(size: iconSize + 2, color: fg),
+                ],
+              ),
+            BhorButtonState.success => Row(
+                key: const ValueKey<BhorButtonState>(BhorButtonState.success),
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _PopIn(child: Icon(BhorIcons.check, size: iconSize, color: fg)),
+                  const SizedBox(width: BhorSpace.s8),
+                  text,
+                ],
+              ),
+            BhorButtonState.idle => Row(
+            key: const ValueKey<BhorButtonState>(BhorButtonState.idle),
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              if (phase == _Phase.loading) ...<Widget>[
-                BhorSpinner(size: iconSize, color: fg),
-                const SizedBox(width: BhorSpace.s8),
-              ] else if (phase == _Phase.done) ...<Widget>[
-                _PopIn(child: Icon(BhorIcons.check, size: iconSize, color: fg)),
-                const SizedBox(width: BhorSpace.s8),
-              ] else if (icon != null) ...<Widget>[
+              if (icon != null) ...<Widget>[
                 Icon(icon, size: iconSize, color: fg),
                 const SizedBox(width: BhorSpace.s8),
               ],
               text,
-              if (phase == _Phase.idle && (trailingIcon != null || arrow)) ...<Widget>[
+              if (trailingIcon != null || arrow) ...<Widget>[
                 const SizedBox(width: BhorSpace.s8),
                 AnimatedSlide(
                   offset: Offset(s.hovered && !reduced ? 3 / iconSize : 0, 0),
@@ -217,14 +247,19 @@ class BhorButton extends StatelessWidget {
                 ),
               ],
             ],
-          );
+          ),
+          };
           return AnimatedSize(
             duration: BhorMotion.of(context, BhorMotion.base),
             curve: BhorMotion.ease,
             child: AnimatedSwitcher(
-              duration: BhorMotion.of(context, BhorMotion.fast),
-              switchInCurve: BhorMotion.ease,
-              switchOutCurve: BhorMotion.exitCurve,
+              duration: BhorMotion.of(context, BhorButton.switchDuration),
+              layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+                alignment: Alignment.center,
+                children: <Widget>[...previous, if (current != null) current],
+              ),
+              transitionBuilder: (Widget child, Animation<double> a) =>
+                  _fadeThrough(child, a, incoming: child.key == row.key, reduced: reduced),
               child: row,
             ),
           );
@@ -243,6 +278,114 @@ class BhorButton extends StatelessWidget {
     }
     return button;
   }
+}
+
+/// Fade-through for the button content: the outgoing content is fully gone
+/// in the first 40% (label never overlaps the spinner), then the incoming
+/// one fades and scales in (.8 -> 1 with the spring).
+Widget _fadeThrough(Widget child, Animation<double> a, {required bool incoming, required bool reduced}) {
+  if (reduced) return FadeTransition(opacity: a, child: child);
+  if (!incoming) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: a, curve: const Interval(0.6, 1, curve: BhorMotion.ease)),
+      child: child,
+    );
+  }
+  final Animation<double> inA = CurvedAnimation(parent: a, curve: const Interval(0.4, 1, curve: BhorMotion.ease));
+  return FadeTransition(
+    opacity: inA,
+    child: ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1)
+          .animate(CurvedAnimation(parent: a, curve: const Interval(0.4, 1, curve: BhorMotion.spring))),
+      child: child,
+    ),
+  );
+}
+
+/// A [BhorButton] that runs [onPressed] (a Future) through the states:
+/// idle -> loading while it runs -> success (check + [doneLabel]) for
+/// [successHold], then [onDone] and back to idle. A result of `false` or
+/// an error returns straight to idle (the error is rethrown to the zone).
+/// Usage: `BhorAsyncButton(label: 'হাজিরা সেভ করুন', onPressed: save, onDone: close)`.
+class BhorAsyncButton extends StatefulWidget {
+  const BhorAsyncButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.onDone,
+    this.variant = BhorButtonVariant.primary,
+    this.size = BhorButtonSize.md,
+    this.icon,
+    this.doneLabel,
+    this.disabledReason,
+    this.expand = false,
+    this.successHold = const Duration(milliseconds: 700),
+  });
+
+  final String label;
+
+  /// The work; return false to skip the success state. Null disables.
+  final Future<bool?> Function()? onPressed;
+
+  /// After the success hold (e.g. close the screen).
+  final VoidCallback? onDone;
+  final BhorButtonVariant variant;
+  final BhorButtonSize size;
+  final IconData? icon;
+  final String? doneLabel;
+  final String? disabledReason;
+  final bool expand;
+  final Duration successHold;
+
+  @override
+  State<BhorAsyncButton> createState() => _BhorAsyncButtonState();
+}
+
+class _BhorAsyncButtonState extends State<BhorAsyncButton> with SingleTickerProviderStateMixin {
+  BhorButtonState _state = BhorButtonState.idle;
+  late final AnimationController _hold = AnimationController(vsync: this, duration: widget.successHold);
+
+  Future<void> _run() async {
+    final Future<bool?> Function()? task = widget.onPressed;
+    if (task == null || _state != BhorButtonState.idle) return;
+    setState(() => _state = BhorButtonState.loading);
+    bool? ok;
+    try {
+      ok = await task();
+    } catch (_) {
+      if (mounted) setState(() => _state = BhorButtonState.idle);
+      rethrow;
+    }
+    if (!mounted) return;
+    if (ok == false) {
+      setState(() => _state = BhorButtonState.idle);
+      return;
+    }
+    setState(() => _state = BhorButtonState.success);
+    await _hold.forward(from: 0).orCancel.catchError((Object _) {});
+    if (!mounted) return;
+    widget.onDone?.call();
+    if (mounted) setState(() => _state = BhorButtonState.idle);
+  }
+
+  @override
+  void dispose() {
+    _hold.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => BhorButton(
+        label: widget.label,
+        onPressed: widget.onPressed == null ? null : _run,
+        state: _state,
+        variant: widget.variant,
+        size: widget.size,
+        icon: widget.icon,
+        doneLabel: widget.doneLabel,
+        disabledReason: widget.disabledReason,
+        expand: widget.expand,
+      );
 }
 
 /// Scale-pops its child in once (the done check).

@@ -11,6 +11,10 @@
 //   on its own 16% tint) and the solid accent FILL #6A61EA under white text
 //   (white on #7B72F6 is only 3.8:1). Hover fill #6158E3 (darker, so white
 //   stays AA). Legacy `accent` fills keep a near-black `onAccent` in dark.
+// - segmentEdge (not in the spec table): the selected segmented thumb's 1 px
+//   edge. Dark #727786 is 3.5:1 on the soft track (the spec's #3A3F4B is
+//   1.4:1, so the thumb was hard to find); light keeps the line colour (the
+//   white thumb + shadow already separates it).
 
 import 'package:flutter/widgets.dart';
 
@@ -51,6 +55,7 @@ abstract final class BhorPaletteLight {
   static const Color lateText = Color(0xFF0B6A80);
   static const Color scrim = Color(0x6617181C);
   static const Color panelScrim = Color(0x3317181C);
+  static const Color segmentEdge = Color(0xFFE3E0D8);
   static const Color pressShade = Color(0x14000000);
   static const Color shadow = Color(0x1A17181C);
   static const Color highlight = Color(0x29FFFFFF);
@@ -90,6 +95,7 @@ abstract final class BhorPaletteDark {
   static const Color lateText = Color(0xFF8FDCEC);
   static const Color scrim = Color(0x99000000);
   static const Color panelScrim = Color(0x59000000);
+  static const Color segmentEdge = Color(0xFF727786);
   static const Color pressShade = Color(0x1F000000);
   static const Color shadow = Color(0x66000000);
   static const Color highlight = Color(0x29FFFFFF);

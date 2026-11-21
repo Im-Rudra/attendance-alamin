@@ -9,6 +9,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
+import 'package:attendance_alamin/app/ds/components/bhor_overlays.dart' show BhorBottomObstruction;
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
@@ -217,7 +218,9 @@ class BhorBottomNav extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(inset, 6, inset, inset),
-        child: Container(
+        // Toasts always sit above the pill (BhorToast).
+        child: BhorBottomObstruction(
+          child: Container(
           height: pillHeight,
           decoration: BoxDecoration(
             color: c.surface,
@@ -293,6 +296,7 @@ class BhorBottomNav extends StatelessWidget {
               );
             },
           ),
+        ),
         ),
       ),
     );
@@ -513,6 +517,33 @@ class BhorSidebar extends StatelessWidget {
   }
 }
 
+/// Marks a root tab's pane (e.g. the list half of a desktop list ‖ detail
+/// split): a [BhorHeader] inside never shows the automatic back button,
+/// even though the route under it can pop. The shell puts it around the
+/// master pane of wide detail routes.
+class BhorRootPane extends InheritedWidget {
+  const BhorRootPane({super.key, required super.child});
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<BhorRootPane>() != null;
+
+  @override
+  bool updateShouldNotify(BhorRootPane oldWidget) => false;
+}
+
+/// Tells a [BhorHeader] in [BhorScaffold.header] that the body has scrolled
+/// (it then fades in its bottom hairline).
+class BhorHeaderScrolled extends InheritedWidget {
+  const BhorHeaderScrolled({super.key, required this.scrolled, required super.child});
+
+  final bool scrolled;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<BhorHeaderScrolled>()?.scrolled ?? false;
+
+  @override
+  bool updateShouldNotify(BhorHeaderScrolled oldWidget) => oldWidget.scrolled != scrolled;
+}
+
 /// Screen header: optional back button (soft, r13), small [overline]
 /// (date) above a title + subtitle, actions.
 /// Usage: `BhorHeader(title: 'আজ', subtitle: fmt.weekdayDate(today), actions: [...])`,
@@ -559,7 +590,13 @@ class BhorHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final bool back = leading == null && (showBack ?? (onBack != null || (ModalRoute.of(context)?.canPop ?? false)));
+    final bool back = leading == null &&
+        (showBack ??
+            (onBack != null || (!BhorRootPane.of(context) && (ModalRoute.of(context)?.canPop ?? false))));
+    final bool wide = context.bhorIsWide;
+    // Hairline under the header once the body scrolls under it (or always
+    // with [divider]).
+    final bool edge = divider || BhorHeaderScrolled.of(context);
     final Widget titleBlock = titleWidget ??
         Column(
           mainAxisSize: MainAxisSize.min,
@@ -580,11 +617,20 @@ class BhorHeader extends StatelessWidget {
               Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
           ],
         );
-    return Container(
+    return AnimatedContainer(
+      duration: BhorMotion.of(context, BhorMotion.fast),
+      curve: BhorMotion.ease,
       constraints: const BoxConstraints(minHeight: 60),
+      // Desktop: the title sits 20 px below the window top.
       padding: EdgeInsets.fromLTRB(
-          back || leading != null ? BhorSpace.s12 : BhorSpace.s16, BhorSpace.s8, BhorSpace.s12, BhorSpace.s8),
-      decoration: divider ? BoxDecoration(border: Border(bottom: BorderSide(color: c.line))) : null,
+        back || leading != null ? BhorSpace.s12 : BhorSpace.s16,
+        wide ? BhorSpace.s20 : BhorSpace.s8,
+        BhorSpace.s12,
+        BhorSpace.s8,
+      ),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: edge ? c.line : c.line.withValues(alpha: 0))),
+      ),
       child: Row(
         children: <Widget>[
           ?leading,

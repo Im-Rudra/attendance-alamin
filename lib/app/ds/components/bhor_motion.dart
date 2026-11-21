@@ -9,8 +9,14 @@
 //   and roll to new values; Bangla digits per frame, tabular.
 // - BhorFadeThrough: tab / view switches (old fades out 90 ms, new fades in
 //   and scales .98 -> 1 over 210 ms). `.replay` re-plays the entrance on a
-//   widget that must stay mounted (the shell's branch stack).
-// - BhorPaneSwitcher: desktop detail pane cross-fade + 6 px rise.
+//   widget that must stay mounted.
+// - BhorBranchFadeThrough: the shell's branch stack. Keeps every branch
+//   mounted, fades the old tab out completely, then the new one in.
+// - BhorStepTransition: shared-axis X for step changes (onboarding, steps in
+//   a sheet): out -24 px + fade over 90 ms, then in from +24 px over 210 ms.
+// - BhorPaneSwitcher: desktop detail pane fade-through + 6 px rise.
+// No switcher here ever shows two contents legibly at once: the outgoing one
+// is fully transparent before the incoming one starts (reduced motion too).
 // - BhorSuccess: the success circle that pops and draws its check.
 
 import 'package:flutter/widgets.dart';
@@ -279,7 +285,7 @@ class _BhorFadeThroughState extends State<BhorFadeThrough> with SingleTickerProv
       layoutBuilder: _stackTopLayout,
       transitionBuilder: (Widget child, Animation<double> a) {
         final bool incoming = child.key == current;
-        if (reduced) return FadeTransition(opacity: a, child: child);
+        if (reduced) return _reducedThrough(child, a, incoming: incoming);
         if (!incoming) {
           // Reverse 1 -> 0: gone after the first 30% (90 ms).
           return FadeTransition(
@@ -304,6 +310,171 @@ Widget _stackTopLayout(Widget? current, List<Widget> previous) => Stack(
       children: <Widget>[...previous, if (current != null) current],
     );
 
+/// Reduced motion: a plain fade, still without overlap (out in the first
+/// half, in during the second).
+Widget _reducedThrough(Widget child, Animation<double> a, {required bool incoming}) => FadeTransition(
+      opacity: CurvedAnimation(parent: a, curve: const Interval(0.5, 1)),
+      child: child,
+    );
+
+// ------------------------------------------------- Branch fade through ----
+
+/// The shell's tab stack: every branch stays mounted (its navigator and
+/// scroll state survive), only the current one is on stage. On a switch the
+/// old branch fades out completely in 90 ms, then the new one fades in and
+/// scales .98 -> 1 over 210 ms; at no frame are two tabs legible together.
+/// Usage (go_router): `StatefulShellRoute(navigatorContainerBuilder:
+/// (c, shell, children) => BhorBranchFadeThrough(index: shell.currentIndex, children: children), ...)`.
+class BhorBranchFadeThrough extends StatefulWidget {
+  const BhorBranchFadeThrough({super.key, required this.index, required this.children});
+
+  final int index;
+  final List<Widget> children;
+
+  /// Whole switch: 90 ms out + 210 ms in.
+  static const Duration duration = Duration(milliseconds: 300);
+
+  @override
+  State<BhorBranchFadeThrough> createState() => _BhorBranchFadeThroughState();
+}
+
+class _BhorBranchFadeThroughState extends State<BhorBranchFadeThrough> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: BhorBranchFadeThrough.duration, value: 1)
+    ..addStatusListener((AnimationStatus s) {
+      if (s == AnimationStatus.completed && _previous != null && mounted) setState(() => _previous = null);
+    });
+  int? _previous;
+
+  @override
+  void didUpdateWidget(BhorBranchFadeThrough oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _previous = oldWidget.index;
+      _c.duration = BhorMotion.of(context, BhorBranchFadeThrough.duration);
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduced = BhorMotion.reduced(context);
+    final Animation<double> out = ReverseAnimation(
+      CurvedAnimation(parent: _c, curve: Interval(0, reduced ? 0.5 : 0.3, curve: BhorMotion.ease)),
+    );
+    final Animation<double> inA = CurvedAnimation(parent: _c, curve: Interval(reduced ? 0.5 : 0.3, 1, curve: BhorMotion.ease));
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        for (int i = 0; i < widget.children.length; i++)
+          _branch(i, out, inA, reduced),
+      ],
+    );
+  }
+
+  Widget _branch(int i, Animation<double> out, Animation<double> inA, bool reduced) {
+    final bool active = i == widget.index;
+    final bool leaving = i == _previous && !active;
+    final bool onStage = active || leaving;
+    final Animation<double> opacity = active ? inA : (leaving ? out : kAlwaysCompleteAnimation);
+    // The same wrappers for every branch, so a branch's subtree is never
+    // re-parented when it becomes current.
+    final Widget child = ScaleTransition(
+      scale: active && !reduced ? Tween<double>(begin: 0.98, end: 1).animate(inA) : kAlwaysCompleteAnimation,
+      child: widget.children[i],
+    );
+    return KeyedSubtree(
+      key: ValueKey<int>(i),
+      child: Offstage(
+        offstage: !onStage,
+        child: TickerMode(
+          enabled: onStage,
+          child: IgnorePointer(
+            ignoring: !active,
+            child: FadeTransition(opacity: opacity, child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------------ Step transition ----
+
+/// A step change inside one screen or sheet (onboarding steps, a two-step
+/// add flow), shared axis X: the old step moves 24 px towards the start and
+/// fades to 0 in the first 90 ms; only then the new step comes in from
+/// +24 px and fades in (210 ms). Going [forward] = false mirrors it. Give
+/// each step a distinct [step]; wrap the footer in a second
+/// BhorStepTransition with the same [step] so body and footer change
+/// together. [color] paints an opaque background behind each step.
+/// Usage: `BhorStepTransition(step: index, forward: index > old, child: stepWidget(index))`.
+class BhorStepTransition extends StatelessWidget {
+  const BhorStepTransition({
+    super.key,
+    required this.step,
+    required this.child,
+    this.forward = true,
+    this.color,
+    this.alignment = AlignmentDirectional.topStart,
+  });
+
+  final Object step;
+  final Widget child;
+  final bool forward;
+  final Color? color;
+  final AlignmentGeometry alignment;
+
+  /// 90 ms out + 210 ms in.
+  static const Duration duration = Duration(milliseconds: 300);
+
+  /// How far a step slides.
+  static const double distance = 24;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduced = BhorMotion.reduced(context);
+    final Key current = ValueKey<Object>(step);
+    final double dir = (forward ? 1 : -1) * (Directionality.maybeOf(context) == TextDirection.rtl ? -1 : 1);
+    Widget content = child;
+    if (color != null) content = ColoredBox(color: color!, child: content);
+    return AnimatedSwitcher(
+      duration: reduced ? BhorMotion.reducedFade : duration,
+      layoutBuilder: (Widget? cur, List<Widget> previous) => Stack(
+        alignment: alignment,
+        fit: StackFit.passthrough,
+        children: <Widget>[...previous, if (cur != null) cur],
+      ),
+      transitionBuilder: (Widget c, Animation<double> a) {
+        final bool incoming = c.key == current;
+        if (reduced) return _reducedThrough(c, a, incoming: incoming);
+        final Animation<double> phase = CurvedAnimation(
+          parent: a,
+          curve: incoming ? const Interval(0.3, 1, curve: BhorMotion.ease) : const Interval(0.7, 1, curve: BhorMotion.ease),
+        );
+        return FadeTransition(
+          opacity: phase,
+          child: AnimatedBuilder(
+            animation: phase,
+            builder: (BuildContext context, Widget? w) => Transform.translate(
+              // In: +24 -> 0. Out (phase 1 -> 0): 0 -> -24.
+              offset: Offset((incoming ? 1 : -1) * dir * distance * (1 - phase.value), 0),
+              child: w,
+            ),
+            child: c,
+          ),
+        );
+      },
+      child: KeyedSubtree(key: current, child: content),
+    );
+  }
+}
+
 // -------------------------------------------------------- Pane switcher ----
 
 /// Desktop list -> detail: when [paneKey] changes, the old detail fades
@@ -320,17 +491,18 @@ class BhorPaneSwitcher extends StatelessWidget {
     final bool reduced = BhorMotion.reduced(context);
     final Key key = ValueKey<Object?>(paneKey);
     return AnimatedSwitcher(
-      duration: reduced ? BhorMotion.reducedFade : const Duration(milliseconds: 180),
+      duration: reduced ? BhorMotion.reducedFade : const Duration(milliseconds: 270),
       layoutBuilder: _stackTopLayout,
       transitionBuilder: (Widget c, Animation<double> a) {
-        if (reduced) return FadeTransition(opacity: a, child: c);
+        if (reduced) return _reducedThrough(c, a, incoming: c.key == key);
         if (c.key != key) {
+          // Gone in the first 90 ms.
           return FadeTransition(
-            opacity: CurvedAnimation(parent: a, curve: const Interval(0.5, 1.0, curve: BhorMotion.ease)),
+            opacity: CurvedAnimation(parent: a, curve: const Interval(0.667, 1.0, curve: BhorMotion.ease)),
             child: c,
           );
         }
-        final Animation<double> inA = CurvedAnimation(parent: a, curve: BhorMotion.ease);
+        final Animation<double> inA = CurvedAnimation(parent: a, curve: const Interval(0.333, 1.0, curve: BhorMotion.ease));
         return FadeTransition(
           opacity: inA,
           child: AnimatedBuilder(
