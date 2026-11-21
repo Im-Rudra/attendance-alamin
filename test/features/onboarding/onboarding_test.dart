@@ -3,6 +3,8 @@
 // and two students are created, onboardingDone is set and the coach mark shows
 // once.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +12,10 @@ import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
+import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/onboarding/ui/onboarding_screen.dart';
@@ -22,6 +26,7 @@ import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
 
 final AppLocalizations bn = lookupAppLocalizations(const Locale('bn'));
+const AppFormat fmtBn = AppFormat(Lang.bn);
 
 /// Fakes with no data at all (a brand-new install).
 SeededFakes emptyFakes() {
@@ -130,7 +135,7 @@ void main() {
 
       // Step 2: subject chip + class chip compose "Math — Class 10".
       expect(find.text(bn.onbBatchTitle), findsOneWidget);
-      expect(textOf(tester, 'onb-batch-name'), bn.batchDefaultName('১'));
+      expect(textOf(tester, 'onb-batch-name'), bn.onbBatchTimeName('সকাল ১১'));
       await tester.ensureVisible(find.widgetWithText(ChoiceChip, bn.batchSuggestMath));
       await tester.tap(find.widgetWithText(ChoiceChip, bn.batchSuggestMath));
       await tester.pump();
@@ -154,6 +159,7 @@ void main() {
       // Step 3: the quick-add loop keeps the cursor on the name field.
       expect(find.text(bn.onbStudentsTitle), findsOneWidget);
       expect(find.text(bn.onbStudentsIntoBatch(batch.name)), findsOneWidget);
+      expect(find.text(bn.onbBillingStartNote(fmtBn.monthYear(const YearMonth(2026, 11)))), findsOneWidget);
       await typeInto(tester, 'onb-student-name', 'রহিম উদ্দিন');
       await tapKey(tester, 'onb-student-add');
       expect(tester.widget<TextField>(key('onb-student-name')).focusNode!.hasFocus, isTrue);
@@ -167,6 +173,9 @@ void main() {
       expect(f.students.students.last.guardianPhone, '01712345678');
       expect(f.enrollments.enrollments, hasLength(2));
       expect(f.enrollments.enrollments.every((e) => e.batchId == batch.id), isTrue);
+      // Existing students: billing starts this month (the 21st is past the
+      // cutoff, yet the first month is November, not December).
+      expect(f.enrollments.enrollments.every((e) => e.startMonth == const YearMonth(2026, 11)), isTrue);
       await tapKey(tester, 'onb-primary');
 
       // Step 4: "Not now" finishes; Today opens with the one-time coach mark.
@@ -219,6 +228,31 @@ void main() {
       expect(await f.settings.get(SettingKeys.onboardingDone), isTrue);
       expect(find.text('TODAY-PAGE'), findsOneWidget);
       expect(find.text(bn.onbCoachText), findsNothing);
+    });
+
+    testWidgets('text typed while a student is being saved is kept for the next one',
+        (WidgetTester tester) async {
+      final SeededFakes f = emptyFakes();
+      final Completer<void> gate = Completer<void>();
+      f.students.createGate = gate.future;
+      await pumpApp(tester, app(makeRouter()), overrides: overridesOf(f));
+      await tester.pumpAndSettle();
+
+      await tapKey(tester, 'onb-primary');
+      await tapKey(tester, 'onb-skip');
+      await typeInto(tester, 'onb-student-name', 'রহিম');
+      await tester.ensureVisible(key('onb-student-add'));
+      await tester.tap(key('onb-student-add'));
+      await tester.pump();
+      // The save has not finished, yet the field is already free again.
+      expect(f.students.students, isEmpty);
+      expect(textOf(tester, 'onb-student-name'), '');
+      await typeInto(tester, 'onb-student-name', 'করিম');
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(f.students.students.map((Student s) => s.name), <String>['রহিম']);
+      expect(textOf(tester, 'onb-student-name'), 'করিম');
     });
   });
 }

@@ -102,5 +102,7 @@
   "stuRemoveConfirm": "Remove",
   "stuLeftEmpty": "No student has left",
   "stuOverviewByBatch": "Students per batch",
-  "stuOverviewRecent": "Recently joined"
+  "stuOverviewRecent": "Recently joined",
+  "stuStartThisMonth": "From this month",
+  "stuStartNextMonth": "From next month"
 }

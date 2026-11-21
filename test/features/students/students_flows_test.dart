@@ -305,6 +305,40 @@ void main() {
       expect(f.students.students.any((Student s) => s.name == 'রাকিব হাসান'), isTrue);
       expect(_open(f, result!, kBatPhysA).length, 1);
     });
+
+    testWidgets('a new admission shows the billing start and a one-tap toggle',
+        (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      String? result;
+      await pumpApp(
+        tester,
+        _Launcher((BuildContext c) async {
+          result = await showAddStudentToBatchSheet(c, batchId: kBatPhysA);
+        }),
+        overrides: f.overrides,
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const ValueKey<String>('stu-add-search')), 'রাকিব হাসান');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey<String>('stu-add-new')));
+      await tester.pumpAndSettle();
+
+      // The 21st is past the cutoff: December by default, shown prominently.
+      final Finder line = find.byKey(const ValueKey<String>('stu-billing-start-line'));
+      await tester.ensureVisible(line);
+      expect(tester.widget<Text>(line).data, 'বেতন শুরু: ডিসেম্বর ২০২৬');
+      await tester.tap(find.text('এই মাস থেকে'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(line).data, 'বেতন শুরু: নভেম্বর ২০২৬');
+
+      final Finder save = find.byKey(const ValueKey<String>('stu-add-save'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(_open(f, result!, kBatPhysA).single.startMonth, const YearMonth(2026, 11));
+    });
   });
 
   group('new student form', () {

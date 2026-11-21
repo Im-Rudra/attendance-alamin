@@ -95,6 +95,7 @@ Login/accounts/server · SMS gateway or WhatsApp API (share sheet only) · onlin
 ### 3.2 Billable months for an enrollment
 Billable months = every month from **first billable month (FBM)** to **last billable month (LBM)** inclusive, where LBM is open-ended while active.
 - **FBM default** from join date: join day **1–C → join month**; join day **> C → next month**, where C = Settings "নতুন ভর্তির বেতন শুরু" cutoff, default **15** (so 1-15 → join month, 16-31 → next month). Changing C affects only enrollments created afterwards. Shown on the enrollment form as "বেতন শুরু: [মাস ▾]", editable to any month (earlier or later). **No proration ever.**
+- **Existing students** (entered during onboarding step 3 or via bulk-add) are already enrolled: their FBM is the **current month** regardless of C. Only the normal add-student form applies the C rule, with a one-tap toggle "এই মাস থেকে / পরের মাস থেকে" under the batch choice.
 - **Student marked Left** (with left date, default today): for each active enrollment, LBM default = left month if left day ≥ 11, otherwise previous month. Shown and editable in the "ছেড়ে গেছে" dialog. Status changes to Left; student hidden from roll call and Home after left date.
 - **Removed from one batch only** (student stays active elsewhere): same LBM rule on that enrollment.
 - **Batch archived** (archive date, default today): every open enrollment gets LBM = archive month if archive day ≥ 11, else previous month (editable once in the archive dialog as a single value for the batch). No new billable months afterwards; no roll call.

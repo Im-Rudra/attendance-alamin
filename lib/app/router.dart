@@ -276,7 +276,10 @@ GoRouter buildRouter(String initialLocation) {
       // Full-screen routes: top-level, so they live on the root navigator.
       GoRoute(
         path: '/rollcall/:occ',
-        builder: (BuildContext context, GoRouterState state) => RollCallScreen(occ: _param(state, 'occ')),
+        builder: (BuildContext context, GoRouterState state) => RollCallScreen(
+          occ: _param(state, 'occ'),
+          returnTo: state.extra is String ? state.extra! as String : null,
+        ),
       ),
       GoRoute(
         path: Routes.search,

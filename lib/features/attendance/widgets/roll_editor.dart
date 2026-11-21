@@ -35,6 +35,7 @@ import 'package:attendance_alamin/features/attendance/controllers/roll_call_cont
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
 
@@ -49,7 +50,11 @@ class RollEditor extends ConsumerStatefulWidget {
     required this.choices,
     required this.onDate,
     required this.onPick,
+    this.returnTo,
   });
+
+  /// Where "Done" goes back to (the screen the teacher came from), if known.
+  final String? returnTo;
 
   final String batchId;
   final LocalDate date;
@@ -109,7 +114,24 @@ class _RollEditorState extends ConsumerState<RollEditor> {
 
   Future<void> _load() async {
     try {
-      final List<BatchSchedule> schedules = await ref.read(schedulesProvider.future);
+      final ScheduleRepository scheduleRepo = ref.read(scheduleRepositoryProvider);
+      final AttendanceRepository attendance = ref.read(attendanceRepositoryProvider);
+      final String? occ = widget.occ;
+      // Everything the first frame needs is asked at once (one worker round
+      // trip each on web), not one await after the other.
+      final String draftGuess = occ ?? 'adhoc.${widget.batchId}.${widget.date.toCompact()}';
+      final Future<List<BatchSchedule>> schedulesF = ref.read(schedulesProvider.future);
+      final Future<OccurrenceInfo?> infoF = occ == null ? Future<OccurrenceInfo?>.value() : scheduleRepo.resolve(occ);
+      final Future<(AttendanceSession, List<AttendanceRecord>)?> savedF =
+          occ == null ? Future<(AttendanceSession, List<AttendanceRecord>)?>.value() : attendance.getSession(occ);
+      final Future<List<Student>> rosterF = ref.read(enrollmentsRepositoryProvider).rosterOn(widget.batchId, widget.date);
+      final Future<String?> draftF = ref.read(localMetaRepositoryProvider).getRaw(LocalMetaKeys.rollCallDraft(draftGuess));
+      final loaded = await (schedulesF, infoF, savedF, rosterF, draftF).wait;
+      final List<BatchSchedule> schedules = loaded.$1;
+      final OccurrenceInfo? info = loaded.$2;
+      final (AttendanceSession, List<AttendanceRecord>)? saved = loaded.$3;
+      final List<Student> firstRoster = loaded.$4;
+      final String? firstDraft = loaded.$5;
       if (!mounted) return;
       BatchSchedule? bs;
       for (final BatchSchedule s in schedules) {
@@ -119,16 +141,9 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         setState(() => _notFound = true);
         return;
       }
-      final ScheduleRepository scheduleRepo = ref.read(scheduleRepositoryProvider);
-      final AttendanceRepository attendance = ref.read(attendanceRepositoryProvider);
-
       Occurrence? occurrence;
       var cancelled = false;
-      (AttendanceSession, List<AttendanceRecord>)? saved;
-      final String? occ = widget.occ;
       if (occ != null) {
-        final OccurrenceInfo? info = await scheduleRepo.resolve(occ);
-        saved = await attendance.getSession(occ);
         occurrence = info?.occurrence;
         cancelled = info?.cancelled ?? false;
         if (occurrence == null && saved != null) {
@@ -152,11 +167,15 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         }
       }
       final LocalDate date = occurrence?.date ?? widget.date;
-      final List<Student> roster = await ref.read(enrollmentsRepositoryProvider).rosterOn(widget.batchId, date);
+      final List<Student> roster = date == widget.date
+          ? firstRoster
+          : await ref.read(enrollmentsRepositoryProvider).rosterOn(widget.batchId, date);
       final String draftOcc = occurrence?.occ ?? 'adhoc.${widget.batchId}.${date.toCompact()}';
       String? rawDraft;
       if (saved == null) {
-        rawDraft = await ref.read(localMetaRepositoryProvider).getRaw(LocalMetaKeys.rollCallDraft(draftOcc));
+        rawDraft = draftOcc == draftGuess
+            ? firstDraft
+            : await ref.read(localMetaRepositoryProvider).getRaw(LocalMetaKeys.rollCallDraft(draftOcc));
       }
       if (!mounted) return;
 
@@ -398,6 +417,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final GoRouter? router = GoRouter.maybeOf(context);
     if (router == null) {
       Navigator.of(context).maybePop();
+    } else if (widget.returnTo != null) {
+      router.go(widget.returnTo!);
     } else if (router.canPop()) {
       router.pop();
     } else {
@@ -625,7 +646,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         name: l10n.shellTitleRollCall,
         icon: Icons.fact_check_outlined,
         fullScreen: true,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const RollSkeleton(),
       );
     }
     final LocalDate today = ref.watch(todayProvider);

@@ -12,7 +12,8 @@ import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
 
 /// Roll call of one class occurrence (full screen).
 void openRollCall(BuildContext context, String occ) {
-  GoRouter.maybeOf(context)?.push<void>(Routes.rollCall(occ));
+  // `extra` tells the roll call to come back here on Done.
+  GoRouter.maybeOf(context)?.push<void>(Routes.rollCall(occ), extra: Routes.today);
 }
 
 /// Switch to another tab (or any route) with `go`.

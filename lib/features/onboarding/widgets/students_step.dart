@@ -19,6 +19,7 @@ class StudentsStep extends StatelessWidget {
     required this.onAdd,
     required this.saved,
     required this.batchName,
+    required this.billingMonth,
     required this.busy,
     this.error,
     this.lastAdded,
@@ -34,6 +35,9 @@ class StudentsStep extends StatelessWidget {
 
   /// The batch they join, or null when step 2 was skipped.
   final String? batchName;
+
+  /// The formatted current month, shown as the billing start of these students.
+  final String billingMonth;
   final bool busy;
   final String? error;
 
@@ -68,6 +72,15 @@ class StudentsStep extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 28),
+          child: Text(
+            l10n.onbBillingStartNote(billingMonth),
+            key: const Key('onb-students-billing-note'),
+            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+          ),
         ),
         const SizedBox(height: 16),
         OnbSection(

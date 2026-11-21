@@ -317,5 +317,19 @@
   "onbCoachSemantics": "টিপ: হাজিরা নেওয়ার বোতাম",
   "@onbCoachSemantics": {
     "description": "Spoken label of the coach mark."
+  },
+  "onbBillingStartNote": "বেতন শুরু: এই মাস ({month})",
+  "@onbBillingStartNote": {
+    "description": "One-line note under the existing-students form: their first billable month is the current one.",
+    "placeholders": {
+      "month": {"type": "String", "example": "নভেম্বর ২০২৬"}
+    }
+  },
+  "onbBatchTimeName": "{time}টার ব্যাচ",
+  "@onbBatchTimeName": {
+    "description": "Default batch name from the first class time, e.g. বিকাল ৪টার ব্যাচ. time is pre-formatted without minutes when on the hour.",
+    "placeholders": {
+      "time": {"type": "String", "example": "বিকাল ৪"}
+    }
   }
 }

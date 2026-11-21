@@ -100,7 +100,7 @@ class RollRow extends StatelessWidget {
               )
             : Row(
                 children: <Widget>[
-                  InitialsAvatar(name: name),
+                  InitialsAvatar(name: name, background: text.withValues(alpha: 0.16), foreground: text),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

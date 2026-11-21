@@ -64,5 +64,7 @@
   "onbFinishing": "Finishing…",
   "onbCoachText": "Tap today's class to start the roll call",
   "onbCoachGotIt": "Got it",
-  "onbCoachSemantics": "Tip: roll call button"
+  "onbCoachSemantics": "Tip: roll call button",
+  "onbBillingStartNote": "Fees start: this month ({month})",
+  "onbBatchTimeName": "{time} batch"
 }

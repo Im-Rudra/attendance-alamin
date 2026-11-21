@@ -565,5 +565,9 @@
   "stuOverviewRecent": "সম্প্রতি ভর্তি",
   "@stuOverviewRecent": {
     "description": "Overview card title: newest students."
-  }
+  },
+  "stuStartThisMonth": "এই মাস থেকে",
+  "@stuStartThisMonth": {"description": "Toggle: bill from the joining month."},
+  "stuStartNextMonth": "পরের মাস থেকে",
+  "@stuStartNextMonth": {"description": "Toggle: bill from the month after joining."}
 }

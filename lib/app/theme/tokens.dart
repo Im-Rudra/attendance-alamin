@@ -324,13 +324,13 @@ abstract final class DuskTokens {
   // ---- Attendance (UX 6). Index = AttendanceKind.index --------------------
   static const List<Color> attFill = [
     Color(0xFF133222), // present
-    Color(0xFFD5D9E8), // absent: solid light slab
+    Color(0xFF3F4660), // absent: solid ink-slate (same slab as light)
     Color(0xFF0F2E38), // late
     Color(0xFF2A3036), // leave / excused
   ];
   static const List<Color> attText = [
     Color(0xFF8FDCA6),
-    Color(0xFF151826),
+    Color(0xFFFFFFFF),
     Color(0xFF8BD3E8),
     Color(0xFFC3CBD3),
   ];
