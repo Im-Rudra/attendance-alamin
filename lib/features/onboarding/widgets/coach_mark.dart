@@ -63,9 +63,9 @@ Future<bool> showRollCallCoach(BuildContext context) async {
   if (!context.mounted) return false;
   final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return false;
+  final BhorThemeData theme = context.bhor;
   await meta.setRaw(kRollCallCoachMetaKey, '1');
   late final OverlayEntry entry;
-  final BhorThemeData theme = context.bhor;
   entry = OverlayEntry(
     builder: (BuildContext ctx) => BhorTheme(
       data: theme,
