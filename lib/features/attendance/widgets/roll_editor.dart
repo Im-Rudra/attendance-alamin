@@ -5,7 +5,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,6 @@ import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
@@ -71,7 +69,7 @@ class RollEditor extends ConsumerStatefulWidget {
   ConsumerState<RollEditor> createState() => _RollEditorState();
 }
 
-class _RollEditorState extends ConsumerState<RollEditor> {
+class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProviderStateMixin {
   RollCallController? _c;
   RollTarget? _target;
   List<BatchSchedule> _schedules = const <BatchSchedule>[];
@@ -91,6 +89,11 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   String _digits = '';
   bool _leaving = false;
 
+  /// The save button is showing its "done" check (success moment).
+  bool _celebrate = false;
+  late final AnimationController _hold =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
+
   /// The "everyone is present" hint of a fresh roll call. Decided once on load
   /// and kept for the whole visit, so the roster never jumps under a tap.
   bool _showHint = false;
@@ -107,6 +110,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     _search.dispose();
     _focus.dispose();
     _scroll.dispose();
+    _hold.dispose();
     super.dispose();
   }
 
@@ -393,6 +397,12 @@ class _RollEditorState extends ConsumerState<RollEditor> {
               },
       );
     }
+    // Success moment: the button morphs to a check, a short hold, then close.
+    if (!BhorMotion.reduced(context)) {
+      setState(() => _celebrate = true);
+      await _hold.forward(from: 0);
+      if (!mounted) return;
+    }
     _finish();
   }
 
@@ -614,7 +624,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     if (_notFound) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         message: l10n.rollNotFound,
       );
@@ -622,7 +632,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     if (_loadError != null) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         message: errorText(l10n, _loadError!),
       );
@@ -630,7 +640,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     if (c == null || t == null) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         body: const RollSkeleton(),
       );
@@ -645,9 +655,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
 
   int _columns(WindowClass wc) => switch (wc) {
         WindowClass.compact => 1,
-        WindowClass.medium || WindowClass.expanded => 2,
-        WindowClass.large => 3,
-        WindowClass.extraLarge => 4,
+        WindowClass.medium || WindowClass.expanded || WindowClass.large => 2,
+        WindowClass.extraLarge => 3,
       };
 
   Widget _loaded(BuildContext context, RollCallController c, RollTarget initialTarget, LocalDate today, WindowClass wc) {
@@ -683,6 +692,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     final Widget bar = BhorActionBar(
       label: saveLabel,
       onPressed: canSave ? () => unawaited(_save()) : null,
+      loading: c.saving && !c.saved,
+      done: _celebrate,
       disabledReason: reason,
       summary: wide ? null : countsText,
     );
@@ -702,14 +713,14 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         selectedOcc: widget.occ,
         onPick: widget.onPick,
       ),
-      if (archived) _gap(RollBanner(icon: Icons.inventory_2_outlined, text: l10n.rollBannerArchived)),
+      if (archived) _gap(RollBanner(icon: BhorIcons.archive, text: l10n.rollBannerArchived)),
       if (future)
-        _gap(RollBanner(icon: Icons.event_busy, text: l10n.rollBannerFuture, tone: RollBannerTone.warning))
+        _gap(RollBanner(icon: BhorIcons.holiday, text: l10n.rollBannerFuture, tone: RollBannerTone.warning))
       else if (past)
-        _gap(RollBanner(icon: Icons.history, text: l10n.rollBannerPast)),
-      if (t.cancelled) _gap(RollBanner(icon: Icons.block, text: l10n.rollBannerCancelled)),
+        _gap(RollBanner(icon: BhorIcons.clock, text: l10n.rollBannerPast)),
+      if (t.cancelled) _gap(RollBanner(icon: BhorIcons.absent, text: l10n.rollBannerCancelled)),
       if (t.adHoc && !c.readOnly) ...<Widget>[
-        _gap(RollBanner(icon: Icons.add_circle_outline, text: l10n.rollBannerAdHoc)),
+        _gap(RollBanner(icon: BhorIcons.addCircle, text: l10n.rollBannerAdHoc)),
         _gap(AdHocTimeCard(
           startMin: t.startMin,
           endMin: t.endMin,
@@ -719,12 +730,13 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         )),
         if (_clash != null && !_clash!.ok) _gap(_clashCard(t, _clash!)),
       ],
-      if (c.restoredFromDraft && !c.saved) _gap(RollBanner(icon: Icons.restore, text: l10n.rollBannerDraft)),
+      if (c.restoredFromDraft && !c.saved) _gap(RollBanner(icon: BhorIcons.undo, text: l10n.rollBannerDraft)),
       if (c.error != null) _gap(_errorCard(c)),
       if (c.note != null)
-        _gap(RollBanner(icon: Icons.edit_note, text: l10n.rollNoteLabel(c.note!))),
+        _gap(RollBanner(icon: BhorIcons.notes, text: l10n.rollNoteLabel(c.note!))),
       if (_showHint && !c.readOnly && c.students.isNotEmpty)
-        _gap(RollBanner(icon: Icons.info_outline, text: l10n.rollHintAllPresent)),
+        _gap(RollBanner(icon: BhorIcons.info, text: l10n.rollHintAllPresent)),
+      if (!wide && c.students.isNotEmpty) _gap(RollCountTags(counts: k)),
       if (c.students.isNotEmpty && !c.readOnly) _gap(_actionsRow(c)),
     ];
 
@@ -733,7 +745,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       roster = Padding(
         padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
         child: BhorEmptyState(
-          icon: Icons.groups_outlined,
+          icon: BhorIcons.batches,
           title: l10n.rollEmptyBatch,
           action: (archived || c.readOnly)
               ? null
@@ -777,7 +789,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
 
     final Widget menu = BhorIconButton(
       semanticLabel: l10n.commonMore,
-      icon: Icons.more_vert,
+      icon: BhorIcons.overflowVertical,
       onPressed: () => unawaited(_openMenu(c, t)),
     );
     final bool hasMenu = !c.readOnly;
@@ -820,7 +832,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       );
     } else {
       final bool twoCol = wc == WindowClass.medium;
-      body = Column(
+      body = BhorStaggerScope(
+        child: Column(
         children: <Widget>[
           Expanded(
             child: CustomScrollView(
@@ -843,7 +856,8 @@ class _RollEditorState extends ConsumerState<RollEditor> {
                     sliver: SliverList.separated(
                       itemCount: rows.length,
                       separatorBuilder: (BuildContext _, int __) => const SizedBox(height: BhorSpace.s8),
-                      itemBuilder: (BuildContext ctx, int i) => _row(ctx, c, rows[i], i, dense: false, keyed: false),
+                      itemBuilder: (BuildContext ctx, int i) =>
+                          BhorStagger(index: i, child: _row(ctx, c, rows[i], i, dense: false, keyed: false)),
                     ),
                   ),
               ],
@@ -851,6 +865,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
           ),
           bar,
         ],
+      ),
       );
     }
 
@@ -870,7 +885,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
               divider: true,
               leading: BhorIconButton(
                 semanticLabel: l10n.commonClose,
-                icon: Icons.close,
+                icon: BhorIcons.close,
                 color: context.bhor.colors.text,
                 onPressed: _close,
               ),
@@ -879,7 +894,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
                 if (!c.readOnly)
                   BhorIconButton(
                     semanticLabel: l10n.commonUndo,
-                    icon: Icons.undo,
+                    icon: BhorIcons.undo,
                     onPressed: c.canUndo ? c.undo : null,
                   ),
                 if (hasMenu) menu,
@@ -896,21 +911,25 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   Future<void> _openMenu(RollCallController c, RollTarget t) async {
     final l10n = context.l10n;
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
-    final String? v = await showBhorSheet<String>(
+    final String? v = await showBhorPanel<String>(
       context,
+      kind: BhorPanelKind.list,
+      title: l10n.commonMore,
+      scroll: false,
+      width: 400,
       builder: (BuildContext ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           BhorListRow(
-            leading: const Icon(Icons.edit_note),
+            leading: const Icon(BhorIcons.notes),
             title: l10n.rollMenuNote,
             divider: canDelete,
             onTap: () => Navigator.of(ctx).pop('note'),
           ),
           if (canDelete)
             BhorListRow(
-              leading: const Icon(Icons.delete_outline),
+              leading: const Icon(BhorIcons.delete),
               title: l10n.rollMenuDelete,
               divider: false,
               onTap: () => Navigator.of(ctx).pop('delete'),
@@ -950,10 +969,9 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         HapticFeedback.selectionClick();
         c.toggle(s.id);
       },
-      onLate: () {
+      onSet: (AttendanceStatus next) {
         setState(() => _cursor = index);
-        HapticFeedback.selectionClick();
-        c.toggleLate(s.id);
+        c.setStatus(s.id, next);
       },
       onMenu: () => unawaited(_rowMenu(c, s)),
     );
@@ -970,13 +988,13 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       children: <Widget>[
         BhorButton(
           label: l10n.rollAllPresent,
-          icon: AttendanceStatus.present.icon,
+          icon: BhorIcons.present,
           variant: BhorButtonVariant.secondary,
           onPressed: () => c.markAll(AttendanceStatus.present),
         ),
         BhorButton(
           label: l10n.rollAllAbsent,
-          icon: AttendanceStatus.absent.icon,
+          icon: BhorIcons.absent,
           variant: BhorButtonVariant.secondary,
           onPressed: () => c.markAll(AttendanceStatus.absent),
         ),
@@ -987,7 +1005,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       textInputAction: TextInputAction.search,
       onChanged: (String _) => setState(() => _cursor = -1),
       hint: l10n.rollSearchHint,
-      prefix: const Icon(Icons.search),
+      prefix: const Icon(BhorIcons.search),
     );
     if (wide) {
       return Row(
@@ -1021,7 +1039,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
           padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: b.colors.danger),
+              Icon(BhorIcons.warning, color: b.colors.danger),
               const SizedBox(width: BhorSpace.s8),
               Expanded(
                 child: Text(
@@ -1087,7 +1105,7 @@ class _StateLine extends StatelessWidget {
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     final String text = saving ? l10n.rollStateSaving : (saved ? l10n.rollStateSaved : l10n.rollStateUnsaved);
-    final IconData icon = saving ? Icons.sync : (saved ? Icons.check : Icons.edit_outlined);
+    final IconData icon = saving ? BhorIcons.refresh : (saved ? BhorIcons.check : BhorIcons.edit);
     return Semantics(
       liveRegion: true,
       container: true,

@@ -3,7 +3,6 @@
 // their counts; tapping a class reopens its roll call. Shrink-wrapped: it
 // scrolls by itself only when its parent gives it a bounded height.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -102,7 +101,7 @@ class BatchAttendanceTab extends ConsumerWidget {
     final Batch? batch = ref.watch(rollBatchProvider(batchId)).value;
 
     if (data.hasError) {
-      return BhorEmptyState(icon: Icons.error_outline, title: errorText(l10n, data.error!));
+      return BhorEmptyState(icon: BhorIcons.warning, title: errorText(l10n, data.error!));
     }
     final value = data.value;
     if (value == null) {
@@ -210,9 +209,9 @@ class _TabContentState extends State<_TabContent> {
             const SizedBox(width: BhorSpace.s8),
             Expanded(
               child: BhorCard(
-                child: BhorStatText(
+                child: BhorStatText.count(
                   label: l10n.rollTabMonthHeld,
-                  value: fmt.number(widget.stats.held),
+                  count: widget.stats.held,
                 ),
               ),
             ),
@@ -226,12 +225,12 @@ class _TabContentState extends State<_TabContent> {
             children: <Widget>[
               BhorButton(
                 label: l10n.rollTabTake,
-                icon: Icons.how_to_reg_outlined,
+                icon: BhorIcons.rollCall,
                 onPressed: () => pushRollCallBatchDate(context, widget.batchId, widget.today),
               ),
               BhorButton(
                 label: l10n.rollTabOtherDate,
-                icon: Icons.event,
+                icon: BhorIcons.calendar,
                 variant: BhorButtonVariant.secondary,
                 onPressed: _pickDate,
               ),
@@ -246,15 +245,11 @@ class _TabContentState extends State<_TabContent> {
             child: Text(l10n.rollTabEmpty, style: b.type.body.copyWith(color: b.colors.text2)),
           )
         else
-          BhorCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (var i = 0; i < shown.length; i++)
-                  _SessionRow(summary: shown[i], divider: i < shown.length - 1),
-              ],
-            ),
+          BhorList(
+            children: <Widget>[
+              for (var i = 0; i < shown.length; i++)
+                _SessionRow(summary: shown[i], divider: i < shown.length - 1),
+            ],
           ),
         if (widget.sessions.length > _preview)
           Align(
@@ -305,7 +300,7 @@ class _SessionRow extends StatelessWidget {
             ],
           ),
           const SizedBox(width: BhorSpace.s4),
-          Icon(Icons.chevron_right, color: b.colors.text2),
+          Icon(BhorIcons.chevronRight, color: b.colors.text2),
         ],
       ),
     );

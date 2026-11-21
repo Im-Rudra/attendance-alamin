@@ -3,10 +3,10 @@
 // batch and date of the occurrence, then hands over to [RollCallPage], which
 // also serves the batch launcher (batch + date, no occurrence yet).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/async_combine.dart';
@@ -45,7 +45,7 @@ class RollCallScreen extends ConsumerWidget {
     if (where.hasError) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         message: errorText(l10n, where.error!),
       );
@@ -53,14 +53,14 @@ class RollCallScreen extends ConsumerWidget {
     if (where.isLoading) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         body: const RollSkeleton(),
       );
     }
     return StubScreen(
       name: l10n.shellTitleRollCall,
-      icon: Icons.fact_check_outlined,
+      icon: BhorIcons.rollCall,
       fullScreen: true,
       message: l10n.rollNotFound,
     );
@@ -159,7 +159,7 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
     if (choices == null) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         message: async.hasError ? errorText(l10n, async.error!) : null,
         body: async.hasError ? null : const RollSkeleton(),
@@ -170,7 +170,7 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
       // Behind the chooser sheet nothing spins.
       return StubScreen(
         name: l10n.shellTitleRollCall,
-        icon: Icons.fact_check_outlined,
+        icon: BhorIcons.rollCall,
         fullScreen: true,
         body: choices.length > 1 ? const SizedBox.shrink() : const RollSkeleton(),
       );

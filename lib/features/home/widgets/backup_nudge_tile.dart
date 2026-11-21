@@ -2,7 +2,6 @@
 // make a new one. It turns info-coloured once the nudge is due. Wide windows
 // always show it; phones show it only when the nudge is due.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,13 +31,13 @@ class BackupNudgeTile extends ConsumerWidget {
     final BackupStatus? s = ref.watch(todayBackupProvider).value;
 
     final Widget header = TileHeader(
-      icon: Icons.cloud_upload_outlined,
+      icon: BhorIcons.backupUp,
       title: l10n.todayBackupTitle,
     );
     if (s == null) {
       return onlyWhenDue
           ? const SizedBox.shrink()
-          : TileFrame(header: header, child: const SizedBox(height: 96));
+          : TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
     if (onlyWhenDue && !s.due) return const SizedBox.shrink();
 
@@ -64,7 +63,7 @@ class BackupNudgeTile extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(s.due ? Icons.info_outline : Icons.verified_outlined,
+                      Icon(s.due ? BhorIcons.info : BhorIcons.checkCircle,
                           size: 20, color: chipFg),
                       const SizedBox(width: BhorSpace.s8),
                       Flexible(

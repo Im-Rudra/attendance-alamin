@@ -2,7 +2,6 @@
 // countdown, and the near-white pill that opens its roll call. Also the
 // no-class, all-done, other-day and no-batch variants.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -66,6 +65,7 @@ class HeroClassCard extends ConsumerWidget {
           ..add(const SizedBox(height: BhorSpace.s8))
           ..add(t(l10n.todaySetupBody, line, maxLines: 3));
         actions.add(_HeroPill(
+          expand: !fill,
           label: l10n.todaySetupButton,
           onPressed: () => pushRoute(context, Routes.batchNew),
         ));
@@ -73,6 +73,7 @@ class HeroClassCard extends ConsumerWidget {
         texts.add(t(l10n.todayHeroRest, title));
         actions
           ..add(_HeroPill(
+            expand: !fill,
             label: l10n.todayAddExtraLong,
             onPressed: () => showExtraClassSheet(context, date: date),
           ))
@@ -84,7 +85,7 @@ class HeroClassCard extends ConsumerWidget {
         texts
           ..add(Row(
             children: <Widget>[
-              Icon(Icons.check_circle, color: heroText, size: 28),
+              Icon(BhorIcons.checkCircleFill, color: heroText, size: 28),
               const SizedBox(width: BhorSpace.s8),
               Expanded(child: t(l10n.todayHeroDone, title)),
             ],
@@ -117,6 +118,7 @@ class HeroClassCard extends ConsumerWidget {
         if (focus != null) {
           actions.add(CoachMarkAnchor(
             child: _HeroPill(
+              expand: !fill,
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -134,6 +136,7 @@ class HeroClassCard extends ConsumerWidget {
             ..add(t(fmt.timeRange(focus.startMin, focus.endMin), line, maxLines: 1));
           actions.add(CoachMarkAnchor(
             child: _HeroPill(
+              expand: !fill,
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -217,7 +220,16 @@ class _HeroShell extends StatelessWidget {
             textColumn,
             if (actions.isNotEmpty) ...<Widget>[
               const SizedBox(height: BhorSpace.s16),
-              Align(alignment: AlignmentDirectional.centerEnd, child: actionWrap),
+              // Phone: the primary action spans the card (full-width pill).
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < actions.length; i++) ...<Widget>[
+                    if (i > 0) const SizedBox(height: BhorSpace.s4),
+                    actions[i],
+                  ],
+                ],
+              ),
             ],
           ],
         ),
@@ -332,38 +344,24 @@ class _HeroTextButton extends StatelessWidget {
   }
 }
 
-/// Near-white pill on the hero card (the one saturated surface of the page).
+/// Near-white solid button on the hero card (the one saturated surface of the
+/// page). [expand] spans the card on phones; right-aligned on desktop.
 class _HeroPill extends StatelessWidget {
-  const _HeroPill({required this.label, required this.onPressed});
+  const _HeroPill({required this.label, required this.onPressed, this.expand = true});
 
   final String label;
   final VoidCallback? onPressed;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
-    final BhorThemeData b = context.bhor;
-    return BhorPressable(
-      onTap: onPressed,
-      semanticLabel: label,
-      isButton: true,
-      excludeChildSemantics: true,
-      radius: BhorSize.phoneRow,
-      builder: (BuildContext context, BhorStates states) => AnimatedOpacity(
-        opacity: onPressed == null ? 0.5 : 1,
-        duration: BhorMotion.fast,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: BhorSize.phoneRow, minWidth: 64),
-          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s24),
-          decoration: BoxDecoration(
-            color: b.colors.onHero,
-            borderRadius: BorderRadius.circular(BhorSize.phoneRow),
-          ),
-          child: Center(
-            widthFactor: 1,
-            child: Text(label, style: b.type.bodyStrong.copyWith(color: b.colors.heroEnd)),
-          ),
-        ),
-      ),
+    return BhorButton(
+      label: label,
+      icon: label == context.l10n.todayTakeAttendance ? BhorIcons.rollCall : null,
+      variant: BhorButtonVariant.hero,
+      size: BhorButtonSize.lg,
+      expand: expand,
+      onPressed: onPressed,
     );
   }
 }

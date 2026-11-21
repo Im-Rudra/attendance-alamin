@@ -2,7 +2,6 @@
 // 10-segment escalation bar with today ringed, a level legend, and a tap that
 // opens Fees. With nobody owing it turns into the green "everyone paid" card.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,16 +17,7 @@ import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
-
-/// Worst first: what the legend lists.
-const List<DueLevel> _legendOrder = <DueLevel>[
-  DueLevel.overdue,
-  DueLevel.finalDays,
-  DueLevel.urgent,
-  DueLevel.followUp,
-  DueLevel.remind,
-  DueLevel.justDue,
-];
+import 'package:attendance_alamin/features/payments/payments_entry.dart';
 
 class DuesCard extends ConsumerWidget {
   const DuesCard({super.key});
@@ -39,8 +29,8 @@ class DuesCard extends ConsumerWidget {
     final l10n = context.l10n;
     if (report == null) {
       return TileFrame(
-        header: TileHeader(icon: Icons.account_balance_wallet_outlined, title: l10n.todayDuesTitle),
-        child: const SizedBox(height: 96),
+        header: TileHeader(icon: BhorIcons.fees, title: l10n.todayDuesTitle),
+        child: const BhorSkeleton(height: 96, radius: 12),
       );
     }
     if (report.studentsWithDues == 0) {
@@ -62,34 +52,17 @@ class _DuesBody extends StatelessWidget {
     final fmt = context.fmt;
     final BhorThemeData b = context.bhor;
 
-    final List<Widget> legend = <Widget>[
-      for (final DueLevel level in _legendOrder)
-        if ((report.countByLevel[level] ?? 0) > 0)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              BhorTag.severity(
-                level: level.severityLevel,
-                label: level.label(l10n),
-                icon: level.icon,
-              ),
-              const SizedBox(width: BhorSpace.s4),
-              Text(
-                fmt.number(report.countByLevel[level] ?? 0),
-                style: b.type.label,
-              ),
-            ],
-          ),
-    ];
+    // The worst few students: tapping a row opens the payment flow.
+    final List<StudentDues> top = report.active.take(3).toList();
 
     return TileFrame(
       onTap: () => goRoute(context, Routes.fees),
       header: TileHeader(
-        icon: Icons.account_balance_wallet_outlined,
+        icon: BhorIcons.fees,
         title: l10n.todayDuesTitle,
         trailing: BhorTooltip(
           message: l10n.todayDuesOpen,
-          child: Icon(Icons.chevron_right, color: b.colors.text2),
+          child: Icon(BhorIcons.chevronRight, color: b.colors.text2),
         ),
       ),
       child: Column(
@@ -102,7 +75,7 @@ class _DuesBody extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: BhorMoney(report.totalOutstandingActive, style: b.type.display),
+                child: BhorCountUp.money(amount: report.totalOutstandingActive, style: b.type.display),
               ),
               Text(
                 l10n.todayDuesHeadline(
@@ -111,7 +84,7 @@ class _DuesBody extends StatelessWidget {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: b.type.heading,
+                style: b.type.meta,
               ),
             ],
           ),
@@ -119,24 +92,60 @@ class _DuesBody extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // The legend below already counts the overdue students (QA-18).
+              // The rows below already carry each student's level (QA-18).
               BhorEscalationBar(day: escalationDayOf(today) ?? 0),
-              if (legend.isNotEmpty) ...<Widget>[
+              if (top.isNotEmpty) ...<Widget>[
                 const SizedBox(height: BhorSpace.s8),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: b.colors.surface2,
-                    borderRadius: BorderRadius.circular(BhorRadius.control),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8),
-                    child: Wrap(spacing: BhorSpace.s12, runSpacing: BhorSpace.s8, children: legend),
-                  ),
-                ),
+                for (final StudentDues d in top) _DueRow(dues: d),
               ],
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One owing student: avatar, name, level tag and the amount. Opens the
+/// payment flow for that student.
+class _DueRow extends StatelessWidget {
+  const _DueRow({required this.dues});
+
+  final StudentDues dues;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final DueLevel? level = dues.worst;
+    return BhorPressable(
+      onTap: () => showCollectPaymentSheet(context, studentId: dues.studentId),
+      semanticLabel: '${dues.name}, ${context.fmt.money(dues.totalOutstanding)}',
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.instant),
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8, vertical: BhorSpace.s8),
+        decoration: BoxDecoration(
+          color: s.hovered || s.pressed ? b.colors.soft : b.colors.soft.withValues(alpha: 0),
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+        ),
+        child: Row(
+          children: <Widget>[
+            BhorAvatar(name: dues.name, size: 32),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(
+              child: Text(dues.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.bodyStrong),
+            ),
+            if (level != null) ...<Widget>[
+              const SizedBox(width: BhorSpace.s8),
+              BhorTag.severity(level: level.severityLevel, label: level.label(l10n)),
+            ],
+            const SizedBox(width: BhorSpace.s8),
+            BhorMoney(dues.totalOutstanding, style: b.type.bodyStrong),
+          ],
+        ),
       ),
     );
   }
@@ -159,9 +168,9 @@ class _AllPaid extends ConsumerWidget {
     return TileFrame(
       onTap: () => goRoute(context, Routes.fees),
       header: TileHeader(
-        icon: Icons.account_balance_wallet_outlined,
+        icon: BhorIcons.fees,
         title: l10n.todayDuesTitle,
-        trailing: Icon(Icons.chevron_right, color: b.colors.text2),
+        trailing: Icon(BhorIcons.chevronRight, color: b.colors.text2),
       ),
       child: Center(
         child: Row(
@@ -171,7 +180,7 @@ class _AllPaid extends ConsumerWidget {
               decoration: BoxDecoration(color: b.colors.okBg, shape: BoxShape.circle),
               child: Padding(
                 padding: const EdgeInsets.all(BhorSpace.s12),
-                child: Icon(notStarted ? Icons.schedule : Icons.check, size: 32, color: b.colors.ok),
+                child: Icon(notStarted ? BhorIcons.clock : BhorIcons.check, size: 32, color: b.colors.ok),
               ),
             ),
             const SizedBox(width: BhorSpace.s16),

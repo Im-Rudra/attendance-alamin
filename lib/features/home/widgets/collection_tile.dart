@@ -2,7 +2,6 @@
 // share of the month's fees it covers on a progress track, and the split by
 // payment method. Tap opens the monthly collection summary.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,12 +26,12 @@ class CollectionTile extends ConsumerWidget {
     final MonthCollection? c = ref.watch(todayCollectionProvider).value;
 
     final Widget header = TileHeader(
-      icon: Icons.savings_outlined,
+      icon: BhorIcons.money,
       title: l10n.todayCollectionTitle,
-      trailing: Icon(Icons.chevron_right, color: b.colors.text2),
+      trailing: Icon(BhorIcons.chevronRight, color: b.colors.text2),
     );
     if (c == null) {
-      return TileFrame(header: header, child: const SizedBox(height: 96));
+      return TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
 
     final int? percent = c.percent;
@@ -53,7 +52,7 @@ class CollectionTile extends ConsumerWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: BhorMoney(c.collected, style: b.type.display),
+                child: BhorCountUp.money(amount: c.collected, style: b.type.display),
               ),
               Text(
                 c.expected > 0

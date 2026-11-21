@@ -1,7 +1,6 @@
 // Attendance today (UX 3b): classes with a roll call out of the classes held
 // today, the overall present rate as a big number, and the weakest class.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,17 +25,17 @@ class AttendanceTodayTile extends ConsumerWidget {
         ref.watch(todayAttendanceProvider(ref.watch(todayProvider))).value;
 
     final Widget header = TileHeader(
-      icon: Icons.fact_check_outlined,
+      icon: BhorIcons.rollCall,
       title: l10n.todayAttendanceTitle,
     );
     if (a == null) {
-      return TileFrame(header: header, child: const SizedBox(height: 96));
+      return TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
     if (a.total == 0) {
       return TileFrame(
         header: header,
         child: TileMessage(
-          icon: Icons.weekend_outlined,
+          icon: BhorIcons.holiday,
           message: l10n.todayAttendanceNone,
         ),
       );
@@ -59,11 +58,13 @@ class AttendanceTodayTile extends ConsumerWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  percent == null ? '—' : fmt.percent(percent),
-                  maxLines: 1,
-                  style: BhorType.tabular(b.type.display),
-                ),
+                child: percent == null
+                    ? Text('—', maxLines: 1, style: BhorType.tabular(b.type.display))
+                    : BhorCountUp(
+                        value: percent,
+                        format: (num v) => fmt.percent(v.round()),
+                        style: b.type.display,
+                      ),
               ),
               Text(
                 a.taken == 0 ? l10n.todayAttendanceNotYet : l10n.todayAttendanceRate,
@@ -92,7 +93,7 @@ class AttendanceTodayTile extends ConsumerWidget {
                             width: 14,
                             height: 14,
                             child: i < a.taken
-                                ? Icon(Icons.check, size: 10, color: b.colors.surface)
+                                ? Icon(BhorIcons.check, size: 10, color: b.colors.surface)
                                 : null,
                           ),
                         ),

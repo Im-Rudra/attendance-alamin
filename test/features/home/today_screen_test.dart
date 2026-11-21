@@ -461,7 +461,21 @@ void main() {
       await _pumpPhone(tester, time: '18:00');
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.text(l10n.todayRollPending), findsOneWidget);
-      expect(find.widgetWithText(BhorButton, l10n.todayTakeAttendance), findsOneWidget);
+      // The timeline row's button; the hero card carries its own full-width one.
+      expect(
+        find.descendant(
+          of: find.byType(TodayTimeline),
+          matching: find.widgetWithText(BhorButton, l10n.todayTakeAttendance),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(HeroClassCard),
+          matching: find.widgetWithText(BhorButton, l10n.todayTakeAttendance),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a day without a class offers "+ extra class" right in the empty state',

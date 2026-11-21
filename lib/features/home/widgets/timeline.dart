@@ -3,7 +3,6 @@
 // date they left, extras tagged. On a phone it sits under the day strip; in the
 // bento it is a tall tile that scrolls inside with a fade edge.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,7 +57,7 @@ class TodayTimeline extends ConsumerWidget {
           const SizedBox(height: BhorSpace.s8),
         ],
         TileHeader(
-          icon: Icons.event_note_outlined,
+          icon: BhorIcons.calendar,
           title: title,
           trailing: noClasses
               ? null
@@ -99,7 +98,7 @@ class TodayTimeline extends ConsumerWidget {
 
     final Widget body;
     if (plan == null) {
-      body = const SizedBox(height: 96);
+      body = const BhorSkeleton(height: 96, radius: 12);
     } else if (rows.isEmpty) {
       body = Padding(
         padding: const EdgeInsets.symmetric(vertical: BhorSpace.s16),
@@ -124,12 +123,12 @@ class TodayTimeline extends ConsumerWidget {
 Widget _emptyDay(BuildContext context, LocalDate date) {
   final l10n = context.l10n;
   return TileMessage(
-    icon: Icons.event_available_outlined,
+    icon: BhorIcons.calendar,
     message: l10n.todayNoClassesDay,
     action: BhorButton(
       key: const ValueKey<String>('today-empty-add-extra'),
       label: l10n.todayAddExtra,
-      icon: Icons.add,
+      icon: BhorIcons.add,
       variant: BhorButtonVariant.secondary,
       onPressed: () => showExtraClassSheet(context, date: date),
     ),
@@ -201,27 +200,27 @@ class _ClassRow extends ConsumerWidget {
     if (taken) {
       leadBg = c.okBg;
       leadFg = c.ok;
-      leadIcon = Icons.check;
+      leadIcon = BhorIcons.check;
     } else if (running) {
       leadBg = c.accentTint;
       leadFg = c.accent;
-      leadIcon = Icons.fiber_manual_record;
+      leadIcon = BhorIcons.clock;
     } else if (cancelled) {
       leadBg = c.surface2;
       leadFg = c.text2;
-      leadIcon = Icons.block;
+      leadIcon = BhorIcons.absent;
     } else if (dc.state == ClassState.extra) {
       leadBg = c.surface2;
       leadFg = c.text2;
-      leadIcon = Icons.add;
+      leadIcon = BhorIcons.add;
     } else if (dc.state == ClassState.moved) {
       leadBg = c.surface2;
       leadFg = c.text2;
-      leadIcon = Icons.autorenew;
+      leadIcon = BhorIcons.refresh;
     } else {
       leadBg = c.surface2;
       leadFg = c.text2;
-      leadIcon = Icons.schedule;
+      leadIcon = BhorIcons.clock;
     }
 
     final AttendanceTally? tally = dc.tally;
@@ -291,7 +290,7 @@ class _ClassRow extends ConsumerWidget {
           ),
           BhorIconButton(
             semanticLabel: l10n.todayClassOptions,
-            icon: Icons.more_vert,
+            icon: BhorIcons.overflowVertical,
             onPressed: () => showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today),
           ),
         ],
@@ -332,7 +331,7 @@ class _RollChip extends StatelessWidget {
     return BhorTag(
       label: text,
       tone: pending ? BhorTone.accent : BhorTone.ok,
-      icon: pending ? Icons.pending_actions : Icons.check,
+      icon: pending ? BhorIcons.clock : BhorIcons.check,
     );
   }
 }
@@ -369,7 +368,7 @@ class _MovedAwayRow extends StatelessWidget {
                 child: SizedBox(
                   width: 36,
                   height: 36,
-                  child: Icon(Icons.arrow_forward, size: 20, color: b.colors.text2),
+                  child: Icon(BhorIcons.arrowRight, size: 20, color: b.colors.text2),
                 ),
               ),
             ),
@@ -394,12 +393,12 @@ Widget _classStateTag(BuildContext context, ClassState state) {
   final l10n = context.l10n;
   switch (state) {
     case ClassState.now:
-      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: Icons.fiber_manual_record);
+      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: BhorIcons.clock);
     case ClassState.moved:
-      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: Icons.autorenew);
+      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: BhorIcons.refresh);
     case ClassState.cancelled:
-      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: Icons.block);
+      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: BhorIcons.absent);
     case ClassState.extra:
-      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: Icons.add);
+      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: BhorIcons.add);
   }
 }

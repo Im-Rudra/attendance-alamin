@@ -2,7 +2,6 @@
 // number of classes of each day and a marker for cancelled / extra classes.
 // Tapping it opens the full week grid.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,15 +29,15 @@ class WeekGlanceTile extends ConsumerWidget {
     final List<DayPlan>? plans = ref.watch(weekPlanProvider(first)).value;
 
     final Widget header = TileHeader(
-      icon: Icons.calendar_view_week_outlined,
+      icon: BhorIcons.calendar,
       title: l10n.todayWeekTitle,
       trailing: BhorTooltip(
         message: l10n.todayWeekOpen,
-        child: Icon(Icons.chevron_right, color: b.colors.text2),
+        child: Icon(BhorIcons.chevronRight, color: b.colors.text2),
       ),
     );
     if (plans == null) {
-      return TileFrame(header: header, child: const SizedBox(height: 96));
+      return TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
     return TileFrame(
       header: header,
@@ -123,8 +122,8 @@ class _DayColumn extends StatelessWidget {
                     maxLines: 1,
                     style: b.type.caption.copyWith(color: sub),
                   ),
-                  if (cancelled > 0) marker(Icons.block, fmt.number(cancelled)),
-                  if (extra > 0) marker(Icons.add, fmt.number(extra)),
+                  if (cancelled > 0) marker(BhorIcons.absent, fmt.number(cancelled)),
+                  if (extra > 0) marker(BhorIcons.add, fmt.number(extra)),
                 ],
               ),
             ),

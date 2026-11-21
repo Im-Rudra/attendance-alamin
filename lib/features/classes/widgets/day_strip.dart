@@ -3,7 +3,6 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,7 +50,7 @@ class DayStrip extends StatelessWidget {
                 children: <Widget>[
                   BhorIconButton(
                     semanticLabel: l10n.clsPrevWeek,
-                    icon: Icons.chevron_left,
+                    icon: BhorIcons.chevronLeft,
                     onPressed: () => onSelected(selected.addDays(-7)),
                   ),
                   Expanded(
@@ -65,7 +64,7 @@ class DayStrip extends StatelessWidget {
                   ),
                   BhorIconButton(
                     semanticLabel: l10n.clsNextWeek,
-                    icon: Icons.chevron_right,
+                    icon: BhorIcons.chevronRight,
                     onPressed: () => onSelected(selected.addDays(7)),
                   ),
                   if (!atToday)

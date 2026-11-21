@@ -8,7 +8,6 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,10 +169,13 @@ class _WeekGridState extends State<WeekGrid> {
   Future<void> _emptyCellTap(TapUpDetails details, LocalDate date, int startMin) async {
     _focus.requestFocus();
     final String label = context.l10n.clsEmptyCellAction;
-    final bool? choice = await showBhorSheet<bool>(
+    final bool? choice = await showBhorPanel<bool>(
       context,
+      kind: BhorPanelKind.list,
+      width: 380,
+      scroll: false,
       builder: (BuildContext ctx) => BhorListRow(
-        leading: const Icon(Icons.add),
+        leading: const Icon(BhorIcons.add),
         title: label,
         divider: false,
         onTap: () => Navigator.of(ctx).pop(true),
@@ -213,7 +215,7 @@ class _WeekGridState extends State<WeekGrid> {
         children: <Widget>[
           BhorIconButton(
             semanticLabel: l10n.clsPrevWeek,
-            icon: Icons.chevron_left,
+            icon: BhorIcons.chevronLeft,
             onPressed: () => _shiftWeek(-1),
           ),
           Text(
@@ -222,7 +224,7 @@ class _WeekGridState extends State<WeekGrid> {
           ),
           BhorIconButton(
             semanticLabel: l10n.clsNextWeek,
-            icon: Icons.chevron_right,
+            icon: BhorIcons.chevronRight,
             onPressed: () => _shiftWeek(1),
           ),
           BhorButton(
@@ -286,7 +288,7 @@ class _WeekGridState extends State<WeekGrid> {
           header,
           Expanded(
             child: BhorEmptyState(
-              icon: Icons.calendar_view_week_outlined,
+              icon: BhorIcons.calendar,
               title: l10n.clsWeekEmpty,
               action: BhorButton(
                 label: l10n.clsWeekEmptyAction,
@@ -573,10 +575,10 @@ class _ClassBlock extends StatelessWidget {
     final double iconSize = (base.fontSize ?? 12) + 2;
     final List<InlineSpan> marks = <InlineSpan>[
       if (!cancelled && dc.state == ClassState.extra)
-        _mark(Icons.add, fg, iconSize, const Key('week-block-extra')),
+        _mark(BhorIcons.add, fg, iconSize, const Key('week-block-extra')),
       if (!cancelled && dc.state == ClassState.moved)
-        _mark(Icons.update, fg, iconSize, const Key('week-block-moved')),
-      if (!cancelled && dc.taken) _mark(Icons.check, fg, iconSize, const Key('week-block-taken')),
+        _mark(BhorIcons.refresh, fg, iconSize, const Key('week-block-moved')),
+      if (!cancelled && dc.taken) _mark(BhorIcons.check, fg, iconSize, const Key('week-block-taken')),
     ];
     final String time = fmt.timeRange(dc.startMin, dc.endMin);
     final String name = '${dc.subjectName} — ${dc.batch.name}';
@@ -591,10 +593,14 @@ class _ClassBlock extends StatelessWidget {
       radius: BhorRadius.chip,
       scaleOnPress: false,
       showFocusRing: false,
-      builder: (BuildContext context, BhorStates s) => Container(
+      builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.fast),
+        curve: BhorMotion.ease,
         padding: const EdgeInsets.all(BhorSpace.s4),
         decoration: BoxDecoration(
-          color: cancelled ? null : c.accentTint,
+          color: cancelled
+              ? null
+              : (s.hovered ? Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.accentTint) : c.accentTint),
           borderRadius: BorderRadius.circular(BhorRadius.chip),
           border: selected
               ? Border.all(color: c.accent, width: 2)
@@ -672,7 +678,7 @@ class _GhostBlock extends StatelessWidget {
                 // Siliguri, QA-17).
                 child: Text.rich(
                   TextSpan(children: <InlineSpan>[
-                    _mark(Icons.arrow_forward, b.colors.text2, (style.fontSize ?? 11) + 2,
+                    _mark(BhorIcons.arrowRight, b.colors.text2, (style.fontSize ?? 11) + 2,
                         const Key('week-ghost-arrow')),
                     TextSpan(text: text),
                   ]),

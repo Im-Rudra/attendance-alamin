@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +35,8 @@ Future<void> showClassActionsSheet(BuildContext context, {required String occ, S
   final ClassSheetResult? result = await showClassSheet<ClassSheetResult>(
     context,
     (BuildContext ctx) => ClassActionsSheet(occ: occ),
+    kind: BhorPanelKind.list,
+    width: 440,
   );
   if (result == null || !context.mounted) return;
   switch (result) {
@@ -236,13 +237,13 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
     final List<Widget> actions = <Widget>[
       if (!cancelled)
         _ActionTile(
-          icon: Icons.schedule,
+          icon: BhorIcons.clock,
           label: l10n.clsActionReschedule,
           onTap: _busy ? null : () => Navigator.of(context).pop(const RescheduleRequested()),
         ),
       if (!cancelled)
         _ActionTile(
-          icon: extra ? Icons.delete_outline : Icons.event_busy_outlined,
+          icon: extra ? BhorIcons.delete : BhorIcons.holiday,
           label: extra ? l10n.clsActionRemoveExtra : l10n.clsActionCancel,
           destructive: true,
           onTap: _busy ? null : () => _cancel(info),
@@ -251,26 +252,26 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
       // visible, disabled, with the reason.
       if (!cancelled && future)
         _ActionTile(
-          icon: Icons.fact_check_outlined,
+          icon: BhorIcons.rollCall,
           label: l10n.clsActionRollCall,
           reason: errorTextForCode(l10n, ErrorCodes.rollCallFutureDate),
           onTap: null,
         ),
       if (!cancelled && !future)
         _ActionTile(
-          icon: Icons.fact_check_outlined,
+          icon: BhorIcons.rollCall,
           label: l10n.clsActionRollCall,
           onTap: _busy ? null : () => Navigator.of(context).pop(const RollCallRequested()),
         ),
       if (cancelled)
         _ActionTile(
-          icon: Icons.undo,
+          icon: BhorIcons.undo,
           label: l10n.clsActionRestoreCancelled,
           onTap: _busy ? null : _restore,
         ),
       if (moved && !cancelled)
         _ActionTile(
-          icon: Icons.history,
+          icon: BhorIcons.clock,
           label: l10n.clsActionRestoreMoved,
           onTap: _busy ? null : _restore,
         ),
@@ -384,12 +385,12 @@ Widget _classStateTag(BuildContext context, ClassState state) {
   final l10n = context.l10n;
   switch (state) {
     case ClassState.now:
-      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: Icons.fiber_manual_record);
+      return BhorTag(label: l10n.uiClassNow, tone: BhorTone.accent, icon: BhorIcons.clock);
     case ClassState.moved:
-      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: Icons.autorenew);
+      return BhorTag(label: l10n.uiClassMoved, tone: BhorTone.late, icon: BhorIcons.refresh);
     case ClassState.cancelled:
-      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: Icons.block);
+      return BhorTag(label: l10n.uiClassCancelled, tone: BhorTone.danger, icon: BhorIcons.absent);
     case ClassState.extra:
-      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: Icons.add);
+      return BhorTag(label: l10n.uiClassExtra, tone: BhorTone.neutral, icon: BhorIcons.add);
   }
 }

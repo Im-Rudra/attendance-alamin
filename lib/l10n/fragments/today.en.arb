@@ -78,5 +78,8 @@
   "todayWeekDay": "{day}: {count} classes",
   "todayWeekCancelled": "{count} cancelled",
   "todayWeekExtra": "{count} extra",
-  "todayWeekOpen": "Open the week grid"
+  "todayWeekOpen": "Open the week grid",
+  "todayGreetMorning": "Good morning",
+  "todayGreetAfternoon": "Good afternoon",
+  "todayGreetEvening": "Good evening"
 }

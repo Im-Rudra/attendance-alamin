@@ -671,7 +671,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
       await tester.pumpAndSettle();
       expect(find.byType(ExtraClassSheet), findsOneWidget);
-      await tester.tap(_byLabel('Close sheet'));
+      await tester.tap(_byLabel('Close'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('${fmt.dateShort(kToday)} – ${fmt.dateShort(kToday.addDays(6))}'));

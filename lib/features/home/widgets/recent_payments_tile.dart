@@ -1,6 +1,5 @@
 // Recent payments (UX 3b): the last five receipts with a receipt-share button.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,16 +24,16 @@ class RecentPaymentsTile extends ConsumerWidget {
     final List<Student> students = ref.watch(todayStudentsProvider).value ?? const <Student>[];
 
     final Widget header = TileHeader(
-      icon: Icons.receipt_long_outlined,
+      icon: BhorIcons.receipt,
       title: l10n.todayRecentTitle,
     );
     if (receipts == null) {
-      return TileFrame(header: header, child: const SizedBox(height: 96));
+      return TileFrame(header: header, child: const BhorSkeleton(height: 96, radius: 12));
     }
     if (receipts.isEmpty) {
       return TileFrame(
         header: header,
-        child: TileMessage(icon: Icons.receipt_long_outlined, message: l10n.todayRecentEmpty),
+        child: TileMessage(icon: BhorIcons.receipt, message: l10n.todayRecentEmpty),
       );
     }
 
@@ -75,7 +74,7 @@ class RecentPaymentsTile extends ConsumerWidget {
                   ),
                   BhorIconButton(
                     semanticLabel: l10n.todayRecentShare,
-                    icon: Icons.share_outlined,
+                    icon: BhorIcons.share,
                     onPressed: () => shareReceipt(context, receiptId: r.receiptId),
                   ),
                 ],

@@ -1,7 +1,6 @@
 // "কোন ক্লাসের হাজিরা?" (UX 2b): a day with 2+ classes of one batch shows one
 // big time card per class; the first class without a roll call is highlighted.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -16,8 +15,11 @@ Future<String?> showSessionChooserSheet(
   required LocalDate date,
   required List<SessionChoice> choices,
 }) {
-  return showBhorSheet<String>(
+  return showBhorPanel<String>(
     context,
+    kind: BhorPanelKind.list,
+    width: 440,
+    scroll: false,
     builder: (BuildContext ctx) => SessionChooserSheet(date: date, choices: choices),
   );
 }
@@ -75,13 +77,13 @@ class _ChoiceCard extends StatelessWidget {
     final IconData icon;
     if (choice.cancelled) {
       state = l10n.rollChooserCancelled;
-      icon = Icons.block;
+      icon = BhorIcons.absent;
     } else if (choice.taken) {
       state = l10n.rollChooserTaken;
-      icon = Icons.check_circle_outline;
+      icon = BhorIcons.checkCircle;
     } else {
       state = l10n.rollChooserPending;
-      icon = Icons.radio_button_unchecked;
+      icon = BhorIcons.clock;
     }
     final String? count = (choice.taken && tally != null)
         ? l10n.rollChooserCount(fmt.number(tally.present + tally.late), fmt.number(tally.held))

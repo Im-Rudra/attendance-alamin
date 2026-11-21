@@ -134,7 +134,23 @@ class FieldRow extends StatelessWidget {
   }
 }
 
-/// Shows [builder] as a Bhor sheet above the whole shell.
-Future<T?> showClassSheet<T>(BuildContext context, WidgetBuilder builder) {
-  return showBhorSheet<T>(context, builder: builder);
+/// Shows [builder] in the adaptive container: a bottom sheet on phones
+/// ([expand] opens a long form at 60%, drag to full), a centred dialog on
+/// desktop ([kind] list = menus, confirm = short forms). The body keeps its
+/// own title, scroll and pinned footer ([SheetFrame]).
+Future<T?> showClassSheet<T>(
+  BuildContext context,
+  WidgetBuilder builder, {
+  BhorPanelKind kind = BhorPanelKind.confirm,
+  bool expand = false,
+  double? width,
+}) {
+  return showBhorPanel<T>(
+    context,
+    kind: kind,
+    expand: expand,
+    width: width,
+    scroll: false,
+    builder: builder,
+  );
 }

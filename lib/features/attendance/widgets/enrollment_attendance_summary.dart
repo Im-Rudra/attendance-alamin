@@ -2,7 +2,6 @@
 // overall percent plus the latest marks. Shrink-wrapped (it sits inside the
 // profile's own scroll view).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,7 +43,7 @@ class EnrollmentAttendanceSummary extends ConsumerWidget {
     if (all.held == 0) {
       return Row(
         children: <Widget>[
-          Icon(Icons.how_to_reg_outlined, size: 18, color: b.colors.text2),
+          Icon(BhorIcons.rollCall, size: 18, color: b.colors.text2),
           const SizedBox(width: BhorSpace.s8),
           Expanded(
             child: Text(
