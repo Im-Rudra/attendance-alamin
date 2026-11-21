@@ -132,7 +132,7 @@ void main() {
   testWidgets('theme switches instantly from the More tab and is saved', (WidgetTester tester) async {
     final ShellHarness h = await pumpShell(tester, location: Routes.more);
     // Read where Bhor components read it: the in-app switch must reach them.
-    Brightness brightness() => tester.element(find.byType(BhorSegmented<ThemeMode>)).bhor.brightness;
+    Brightness brightness() => tester.element(find.byKey(const ValueKey<String>('theme-swatch-dark'))).bhor.brightness;
     expect(brightness(), Brightness.light);
 
     await tester.ensureVisible(find.text(l10nOf(Lang.bn).shellThemeDark));
