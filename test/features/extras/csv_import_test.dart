@@ -47,6 +47,8 @@ void main() {
     final SeededFakes f = seedFakes();
     await pumpApp(tester, const BulkAddScreen(batchId: kBatPhysA), overrides: _overrides(f));
     final int before = f.students.students.length;
+    // Tall enough that the lazy preview list builds all seven rows.
+    tester.view.physicalSize = const Size(360, 1600);
 
     await _openPreview(tester);
 
