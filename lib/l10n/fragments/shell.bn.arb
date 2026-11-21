@@ -62,9 +62,13 @@
       }
     }
   },
-  "shellTextCopied": "লেখা কপি হয়েছে — যেকোনো জায়গায় পেস্ট করুন",
+  "shellTextCopied": "লেখা কপি হয়েছে — WhatsApp বা মেসেজে পেস্ট করুন",
   "@shellTextCopied": {
     "description": "Snackbar after a message was copied for sharing."
+  },
+  "shellNoPhone": "এই শিক্ষার্থীর ফোন নম্বর নেই",
+  "@shellNoPhone": {
+    "description": "Toast when a reminder is shared for a student with no phone number saved."
   },
   "shellRailCollapse": "মেনু ছোট করুন",
   "@shellRailCollapse": {

@@ -84,7 +84,7 @@ void main() {
       }
       expect(copied, 'hello');
       expect(find.text(bn.shellTextCopied), findsOneWidget);
-      expect(bn.shellTextCopied, 'লেখা কপি হয়েছে — যেকোনো জায়গায় পেস্ট করুন');
+      expect(bn.shellTextCopied, 'লেখা কপি হয়েছে — WhatsApp বা মেসেজে পেস্ট করুন');
       expect(en.shellTextCopied, contains('paste'));
     });
   });

@@ -22,14 +22,33 @@ abstract final class ShareService {
   /// Open the share sheet at all (not on desktop browsers).
   static bool get _openSheet => !kIsWeb || _isMobilePlatform;
 
+  /// Toast "this student has no phone number" (the reminder can still be
+  /// copied and pasted elsewhere).
+  static void showNoPhone(BuildContext context) {
+    BhorToast.show(
+      BhorToast.anchorOf(context),
+      message: context.l10n.shellNoPhone,
+      tone: BhorTone.warn,
+      bottomOffset: BhorToastInset.of(context),
+    );
+  }
+
   /// Shares [text]; whenever the share API is missing or fails, the text is
   /// copied and the teacher is told so, so a tap always gives feedback (QA-06).
-  static Future<void> shareText(BuildContext context, String text) async {
+  ///
+  /// Pass `hasPhone: false` when the text is a reminder for a person with no
+  /// phone number: the teacher is told so first, then the usual copy / share
+  /// feedback follows (see [showNoPhone]).
+  static Future<void> shareText(BuildContext context, String text, {bool hasPhone = true}) async {
     if (text.trim().isEmpty) return;
     // Read before any await: the caller (often a sheet) may be gone by then.
     final BuildContext anchor = BhorToast.anchorOf(context);
     final double lift = BhorToastInset.of(context);
     final String copiedMessage = context.l10n.shellTextCopied;
+    if (!hasPhone) {
+      showNoPhone(context);
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+    }
 
     Future<void> copy() async {
       try {

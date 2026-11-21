@@ -491,7 +491,8 @@ void main() {
       final Finder add = find.byKey(const ValueKey<String>('today-empty-add-extra'));
       await tester.ensureVisible(add);
       expect(add, findsOneWidget);
-      expect(find.text(l10n.todayAddExtra), findsOneWidget);
+      // The add icon already says "+": BhorButton drops a leading "+ ".
+      expect(find.text(l10n.todayAddExtra.replaceFirst(RegExp(r'^\+\s+'), '')), findsWidgets);
     });
 
     testWidgets('the day strip switches the day; the dues card hides until today', (WidgetTester tester) async {
