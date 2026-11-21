@@ -1,6 +1,5 @@
 // Form fields shared by the full-screen student form and the add sheet.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +79,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
                 child: Row(
                   children: <Widget>[
                     Expanded(child: Text(l10n.stuMoreInfo, style: b.type.bodyStrong)),
-                    Icon(_open ? Icons.expand_less : Icons.expand_more, color: b.colors.text2),
+                    Icon(_open ? BhorIcons.chevronUp : BhorIcons.chevronDown, color: b.colors.text2),
                   ],
                 ),
               ),
@@ -164,7 +163,7 @@ class _PhotoRow extends StatelessWidget {
             children: <Widget>[
               BhorButton(
                 variant: BhorButtonVariant.secondary,
-                icon: Icons.photo_camera_outlined,
+                icon: BhorIcons.user,
                 label: has ? l10n.stuPhotoChange : l10n.stuPhotoAdd,
                 onPressed: () async {
                   final bytes = await pickStudentPhoto(context);
@@ -245,7 +244,7 @@ class DateField extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.calendar_today_outlined, size: 20, color: b.colors.text2),
+                Icon(BhorIcons.calendar, size: 20, color: b.colors.text2),
               ],
             ),
           ),

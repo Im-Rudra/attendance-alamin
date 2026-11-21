@@ -1,7 +1,6 @@
 // Batch detail › শিক্ষার্থী: rows with dues badge and attendance %; a data
 // table (sticky header) when the pane is wide enough (UX 3b, extra-large).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +59,7 @@ class BatchStudentsTab extends ConsumerWidget {
     return async.when(
       loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace s) => BhorEmptyState(
-        icon: Icons.error_outline,
+        icon: BhorIcons.warning,
         title: l10n.commonLoadingFailed,
         action: BhorButton(
           label: l10n.commonRetry,
@@ -71,7 +70,7 @@ class BatchStudentsTab extends ConsumerWidget {
       data: (List<BatchStudentRow> rows) {
         if (rows.isEmpty) {
           return BhorEmptyState(
-            icon: Icons.person_add_alt_1_outlined,
+            icon: BhorIcons.add,
             title: l10n.batchStudentsEmpty,
             action: archived
                 ? null
@@ -86,7 +85,7 @@ class BatchStudentsTab extends ConsumerWidget {
             if (c.maxWidth >= 640 && c.hasBoundedHeight) {
               return _Table(batchId: batchId, rows: rows);
             }
-            return _Cards(batchId: batchId, rows: rows, columns: c.maxWidth >= 480 ? 2 : 1);
+            return _Cards(batchId: batchId, rows: rows);
           },
         );
       },
@@ -100,75 +99,55 @@ String _rollText(BuildContext context, Student s) {
   return context.l10n.batchRoll(context.fmt.digits(AppFormat.toAsciiDigits(roll)));
 }
 
+/// One student per row at every width (a card grid wrapped names per
+/// character in narrow columns): circle avatar, name that ellipsizes, roll as
+/// meta, dues tag and attendance on the right.
 class _Cards extends StatelessWidget {
-  const _Cards({required this.batchId, required this.rows, required this.columns});
+  const _Cards({required this.batchId, required this.rows});
 
   final String batchId;
   final List<BatchStudentRow> rows;
-  final int columns;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints c) {
-        const double gap = BhorSpace.s8;
-        final double w = (c.maxWidth - gap * (columns - 1)) / columns;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(0, BhorSpace.s8, 0, 160),
-          child: Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: <Widget>[
-              for (final BatchStudentRow r in rows)
-                SizedBox(width: w, child: _StudentCard(batchId: batchId, row: r)),
-            ],
-          ),
-        );
-      },
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(0, BhorSpace.s8, 0, 160),
+      child: BhorStaggerScope(
+        child: BhorList(
+          children: <Widget>[
+            for (int i = 0; i < rows.length; i++)
+              BhorStagger(index: i, child: _StudentRow(batchId: batchId, row: rows[i])),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _StudentCard extends ConsumerWidget {
-  const _StudentCard({required this.batchId, required this.row});
+class _StudentRow extends StatelessWidget {
+  const _StudentRow({required this.batchId, required this.row});
 
   final String batchId;
   final BatchStudentRow row;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final BhorThemeData th = context.bhor;
+  Widget build(BuildContext context) {
     final Student s = row.student;
     final String roll = _rollText(context, s);
-    return BhorCard(
-      onTap: () => openPath(context, Routes.student(s.id)),
-      semanticLabel: s.name,
-      padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s8 + 2),
-      child: Row(
+    return BhorListRow(
+      title: s.name,
+      subtitle: roll.isEmpty ? null : roll,
+      leading: BhorAvatar(name: s.name),
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: <Widget>[
-          BhorAvatar(name: s.name),
-          const SizedBox(width: BhorSpace.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(s.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: th.type.heading),
-                Wrap(
-                  spacing: BhorSpace.s8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    if (roll.isNotEmpty) Text(roll, style: th.type.body.copyWith(color: th.colors.text2)),
-                    _AttendanceText(studentId: s.id, batchId: batchId),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: BhorSpace.s8),
           _DuesCell(enrollmentId: row.enrollment.id),
+          _AttendanceText(studentId: s.id, batchId: batchId),
         ],
       ),
+      semanticLabel: s.name,
+      onTap: () => openPath(context, Routes.student(s.id)),
     );
   }
 }
@@ -207,7 +186,7 @@ class _DuesCell extends ConsumerWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.check_circle_outline, size: 16, color: th.colors.text2),
+          Icon(BhorIcons.checkCircle, size: 16, color: th.colors.text2),
           const SizedBox(width: BhorSpace.s4),
           Flexible(
             child: Text(

@@ -2,7 +2,6 @@
 // enrollment (month strip, attendance summary, [টাকা নিন]), payment history.
 // Wide windows lay the profile out in two columns.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,6 +23,7 @@ import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/dues_entry.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
+import 'package:attendance_alamin/features/students/ui/student_form_screen.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
 import 'package:attendance_alamin/features/students/widgets/enrollment_card.dart';
@@ -47,7 +47,7 @@ class StudentProfileScreen extends ConsumerWidget {
     final AsyncValue<Student?> async = ref.watch(stuStudentProvider(studentId));
     final Student? student = async.value;
 
-    void edit() => stuPush(context, Routes.studentEdit(studentId));
+    void edit() => showStudentFormPanel(context, studentId: studentId);
     void collect() => showCollectPaymentSheet(context, studentId: studentId);
 
     return StudentKeys(
@@ -61,12 +61,12 @@ class StudentProfileScreen extends ConsumerWidget {
             if (student != null) ...<Widget>[
               BhorIconButton(
                 semanticLabel: l10n.commonEdit,
-                icon: Icons.edit_outlined,
+                icon: BhorIcons.edit,
                 onPressed: edit,
               ),
               BhorIconButton(
                 semanticLabel: l10n.commonMore,
-                icon: Icons.more_vert,
+                icon: BhorIcons.overflowVertical,
                 onPressed: () => _openMenu(context, ref, student),
               ),
             ],
@@ -90,11 +90,11 @@ class StudentProfileScreen extends ConsumerWidget {
         body: async.when(
           loading: () => const Center(child: BhorSpinner()),
           error: (Object e, StackTrace st) => BhorEmptyState(
-            icon: Icons.error_outline,
+            icon: BhorIcons.warning,
             title: l10n.commonLoadingFailed,
           ),
           data: (Student? s) => s == null
-              ? BhorEmptyState(icon: Icons.person_off_outlined, title: l10n.stuNotFound)
+              ? BhorEmptyState(icon: BhorIcons.leftStudents, title: l10n.stuNotFound)
               : _ProfileBody(student: s),
         ),
       ),
@@ -104,8 +104,10 @@ class StudentProfileScreen extends ConsumerWidget {
   Future<void> _openMenu(BuildContext context, WidgetRef ref, Student student) async {
     final l10n = context.l10n;
     final bool active = student.status == StudentStatus.active;
-    final _ProfileMenu? m = await showBhorSheet<_ProfileMenu>(
+    final _ProfileMenu? m = await showBhorPanel<_ProfileMenu>(
       context,
+      kind: BhorPanelKind.list,
+      width: 380,
       title: student.name,
       builder: (BuildContext ctx) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -211,7 +213,7 @@ class _ProfileBody extends ConsumerWidget {
           key: const ValueKey<String>('stu-enroll-other'),
           variant: BhorButtonVariant.secondary,
           expand: true,
-          icon: Icons.add,
+          icon: BhorIcons.add,
           label: l10n.stuEnrollOther,
           onPressed: () => showEnrollSheet(context, studentId: student.id),
         ),
@@ -328,20 +330,20 @@ class _HeaderCard extends StatelessWidget {
               if (guardian == null && own == null)
                 BhorButton(
                   variant: BhorButtonVariant.secondary,
-                  icon: Icons.add_call,
+                  icon: BhorIcons.phone,
                   label: l10n.stuAddPhone,
-                  onPressed: () => stuPush(context, Routes.studentEdit(student.id)),
+                  onPressed: () => showStudentFormPanel(context, studentId: student.id),
                 ),
               if (dues != null)
                 BhorButton(
                   variant: BhorButtonVariant.secondary,
-                  icon: Icons.share,
+                  icon: BhorIcons.share,
                   label: l10n.stuRemind,
                   onPressed: () => shareDuesReminder(context, studentId: student.id),
                 ),
               if (showCollect)
                 BhorButton(
-                  icon: Icons.payments_outlined,
+                  icon: BhorIcons.takeMoney,
                   label: l10n.stuCollect,
                   onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
                 ),
@@ -366,7 +368,7 @@ class _LeftCard extends ConsumerWidget {
     return BhorCard(
       child: Row(
         children: <Widget>[
-          Icon(Icons.person_off_outlined, color: th.colors.text2),
+          Icon(BhorIcons.leftStudents, color: th.colors.text2),
           const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Text(

@@ -31,6 +31,7 @@ import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 import '../../helpers/fakes/fake_structure_repos.dart';
@@ -175,6 +176,24 @@ void main() {
       await settleSome(tester);
       expect(find.text(bn.batchContextWeek), findsOneWidget);
       expect(find.text(bn.batchTabSchedule), findsOneWidget);
+    });
+  });
+
+  group('panel hosting', () {
+    testWidgets('the embedded form has no scaffold and publishes its save bar to the footer slot',
+        (WidgetTester tester) async {
+      fakes = seedFakes();
+      final PanelFooterSlot slot = PanelFooterSlot();
+      addTearDown(slot.dispose);
+      await pumpApp(
+        tester,
+        SingleChildScrollView(child: BatchFormScreen(embedded: true, footerSlot: slot)),
+        overrides: withBatches(fakes, fakes.batches),
+      );
+      await tallWindow(tester);
+      await settleSome(tester);
+      expect(find.byType(BhorScaffold), findsNothing);
+      expect(slot.value, isNotNull);
     });
   });
 

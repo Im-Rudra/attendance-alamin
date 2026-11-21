@@ -1,6 +1,5 @@
 // More › সংরক্ষণাগার: archived batches with a one-tap unarchive (scenario 21).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,7 +55,7 @@ class ArchivedBatchesScreen extends ConsumerWidget {
     final Widget body = ref.watch(_archivedRowsProvider).when(
           loading: () => const Center(child: BhorSpinner()),
           error: (Object e, StackTrace s) => BhorEmptyState(
-            icon: Icons.error_outline,
+            icon: BhorIcons.warning,
             title: l10n.commonLoadingFailed,
             action: BhorButton(
               label: l10n.commonRetry,
@@ -68,7 +67,7 @@ class ArchivedBatchesScreen extends ConsumerWidget {
             if (rows.isEmpty) {
               return BhorCard(
                 padding: EdgeInsets.zero,
-                child: BhorEmptyState(icon: Icons.inventory_2_outlined, title: l10n.batchArchivedEmpty),
+                child: BhorEmptyState(icon: BhorIcons.archive, title: l10n.batchArchivedEmpty),
               );
             }
             return LayoutBuilder(
@@ -144,7 +143,7 @@ class _ArchivedCard extends StatelessWidget {
           const SizedBox(height: BhorSpace.s8),
           BhorButton(
             label: l10n.batchMenuUnarchive,
-            icon: Icons.unarchive_outlined,
+            icon: BhorIcons.archive,
             variant: BhorButtonVariant.secondary,
             onPressed: () => showUnarchiveBatchFlow(context, batchId: b.id),
           ),

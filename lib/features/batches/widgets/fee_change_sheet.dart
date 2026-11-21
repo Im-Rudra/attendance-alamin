@@ -24,9 +24,10 @@ Future<YearMonth?> showFeeChangeSheet(
   required YearMonth earliest,
   required Future<int> Function(YearMonth from) previewPartial,
 }) {
-  return showBhorSheet<YearMonth>(
+  return showBhorPanel<YearMonth>(
     context,
     title: context.l10n.batchFeeFromTitle,
+    kind: BhorPanelKind.confirm,
     builder: (BuildContext ctx) => FeeChangeSheet(
       oldFee: oldFee,
       newFee: newFee,

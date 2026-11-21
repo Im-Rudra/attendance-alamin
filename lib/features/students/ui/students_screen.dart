@@ -4,7 +4,6 @@
 // the data table (sticky header, UX 3b columns).
 // `/students/:studentId` passes [selectedId].
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -13,6 +12,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
+import 'package:attendance_alamin/features/students/ui/student_form_screen.dart';
 import 'package:attendance_alamin/features/students/ui/student_profile_screen.dart';
 import 'package:attendance_alamin/features/students/widgets/student_keys.dart';
 import 'package:attendance_alamin/features/students/widgets/students_list_pane.dart';
@@ -34,7 +34,7 @@ class StudentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? id = selectedId;
     return StudentKeys(
-      onNew: () => stuPush(context, Routes.studentNew),
+      onNew: () => showStudentFormPanel(context),
       onEscape: id == null ? null : () => stuGo(context, Routes.students),
       child: _build(context, id),
     );
@@ -52,7 +52,7 @@ class StudentsScreen extends StatelessWidget {
       preferList: id == null,
       detail: id == null
           ? const StudentsOverview()
-          : StudentProfileScreen(studentId: id),
+          : BhorPaneSwitcher(paneKey: id, child: StudentProfileScreen(studentId: id)),
     );
   }
 }
@@ -80,14 +80,14 @@ class _ListScaffold extends StatelessWidget {
               if (table)
                 BhorButton(
                   key: const ValueKey<String>('stu-new-button'),
-                  onPressed: () => stuPush(context, Routes.studentNew),
-                  icon: Icons.person_add_alt_1,
+                  onPressed: () => showStudentFormPanel(context),
+                  icon: BhorIcons.add,
                   label: l10n.stuNewStudent,
                   size: BhorButtonSize.sm,
                 ),
               BhorIconButton(
                 semanticLabel: l10n.commonSearch,
-                icon: Icons.manage_search,
+                icon: BhorIcons.search,
                 onPressed: () => stuPush(context, Routes.search),
               ),
             ],
@@ -99,8 +99,8 @@ class _ListScaffold extends StatelessWidget {
                   padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
                   child: BhorButton(
                     key: const ValueKey<String>('stu-fab-new'),
-                    onPressed: () => stuPush(context, Routes.studentNew),
-                    icon: Icons.person_add_alt_1,
+                    onPressed: () => showStudentFormPanel(context),
+                    icon: BhorIcons.add,
                     label: l10n.stuNewStudent,
                   ),
                 ),

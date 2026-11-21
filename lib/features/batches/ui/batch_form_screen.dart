@@ -2,7 +2,6 @@
 // created inline (never a destination of its own); billing is two radio cards
 // in plain words, default = last used; a fee change asks "কোন মাস থেকে?".
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -34,12 +33,34 @@ import 'package:attendance_alamin/features/batches/controllers/batch_providers.d
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
 import 'package:attendance_alamin/features/batches/widgets/fee_change_sheet.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
+import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
+
+/// Opens the batch form in the adaptive panel (bottom sheet on phones, floating
+/// side panel on desktop). Returns the new batch id (String) after a create,
+/// true after an edit, null when dismissed.
+Future<Object?> showBatchFormPanel(BuildContext context, {String? batchId}) {
+  final PanelFooterSlot slot = PanelFooterSlot();
+  final l10n = context.l10n;
+  return showBhorPanel<Object>(
+    context,
+    title: batchId == null ? l10n.shellTitleBatchNew : l10n.shellTitleBatchEdit,
+    kind: BhorPanelKind.form,
+    expand: true,
+    footer: slot.build,
+    builder: (BuildContext c) => BatchFormScreen(batchId: batchId, embedded: true, footerSlot: slot),
+  );
+}
 
 class BatchFormScreen extends ConsumerStatefulWidget {
-  const BatchFormScreen({super.key, this.batchId});
+  const BatchFormScreen({super.key, this.batchId, this.embedded = false, this.footerSlot});
 
   /// null = create a new batch.
   final String? batchId;
+
+  /// Hosted inside [showBhorPanel]: no scaffold; the save bar goes to [footerSlot].
+  final bool embedded;
+  final PanelFooterSlot? footerSlot;
 
   @override
   ConsumerState<BatchFormScreen> createState() => _BatchFormScreenState();
@@ -152,6 +173,10 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   }
 
   void _close() {
+    if (widget.embedded) {
+      Navigator.of(context).maybePop();
+      return;
+    }
     final GoRouter? router = GoRouter.maybeOf(context);
     if (router == null) {
       Navigator.of(context).maybePop();
@@ -178,12 +203,20 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           return;
         }
         if (mounted) {
+          if (widget.embedded) {
+            await showBhorSuccess<Object>(context, result: true, toast: l10n.batchSavedToast);
+            return;
+          }
           BhorToast.show(context, message: l10n.batchSavedToast);
           _close();
         }
       } else {
         final String id = await _saveCreate();
         if (!mounted) return;
+        if (widget.embedded) {
+          await showBhorSuccess<Object>(context, result: id, toast: l10n.batchCreatedToast);
+          return;
+        }
         BhorToast.show(context, message: l10n.batchCreatedToast);
         if (router != null) {
           router.go(Routes.batch(id));
@@ -259,6 +292,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    if (widget.embedded) return _body(context);
     return BhorScaffold(
       header: BhorHeader(
         title: _editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew,
@@ -278,12 +312,12 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     }
     if (_loaded) {
       return _notFound
-          ? BhorEmptyState(icon: Icons.search_off, title: l10n.errNotFound)
+          ? BhorEmptyState(icon: BhorIcons.search, title: l10n.errNotFound)
           : _form(context);
     }
     if (seed.hasError) {
       return BhorEmptyState(
-        icon: Icons.error_outline,
+        icon: BhorIcons.warning,
         title: l10n.commonLoadingFailed,
         action: BhorButton(
           label: l10n.commonRetry,
@@ -292,7 +326,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
         ),
       );
     }
-    return const Center(child: BhorSpinner());
+    return const Padding(padding: EdgeInsets.all(BhorSpace.s32), child: Center(child: BhorSpinner()));
   }
 
   Widget _form(BuildContext context) {
@@ -329,16 +363,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           ],
         );
 
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(g, 8, g, 24),
-                children: <Widget>[
+    final List<Widget> items = <Widget>[
                   BhorTextField(
                     key: const Key('batch-form-subject'),
                     controller: _subject,
@@ -354,7 +379,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                         padding: const EdgeInsets.only(top: BhorSpace.s8),
                         child: Row(
                           children: <Widget>[
-                            Icon(Icons.add_circle_outline, size: 18, color: th.colors.accent),
+                            Icon(BhorIcons.addCircle, size: 18, color: th.colors.accent),
                             const SizedBox(width: BhorSpace.s8),
                             Expanded(
                               child: Text(
@@ -388,11 +413,13 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     BhorCard(
                       padding: EdgeInsets.zero,
                       child: BhorListRow(
-                        leading: const Icon(Icons.schedule),
+                        leading: const Icon(BhorIcons.clock),
                         title: l10n.batchEditSchedule,
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: const Icon(BhorIcons.chevronRight),
                         divider: false,
-                        onTap: () => context.push(Routes.batchSlots(widget.batchId!)),
+                        onTap: () => widget.embedded
+                            ? showSlotEditorPanel(context, batchId: widget.batchId!)
+                            : context.push(Routes.batchSlots(widget.batchId!)),
                       ),
                     )
                   else ...<Widget>[
@@ -437,13 +464,13 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                   if (_editing && _batch != null && !_batch!.archived) ...<Widget>[
                     const SizedBox(height: 16),
                     BhorButton(
-                      variant: BhorButtonVariant.secondary,
+                      variant: BhorButtonVariant.ghost,
                       expand: true,
                       onPressed: () async {
                         final bool done = await showArchiveBatchDialog(context, batchId: _batch!.id);
                         if (done && mounted) _close();
                       },
-                      icon: Icons.inventory_2_outlined,
+                      icon: BhorIcons.archive,
                       label: l10n.batchMenuArchive,
                     ),
                   ],
@@ -451,7 +478,51 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     const SizedBox(height: BhorSpace.s16),
                     BatchNotice(text: _error!),
                   ],
-                ],
+    ];
+                final Widget saveBar = Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    BhorButton(
+                      label: l10n.commonSave,
+                      expand: true,
+                      onPressed: reason == null && !_saving ? _save : null,
+                      disabledReason: reason,
+                    ),
+                    if (reason != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: BhorSpace.s8),
+                        child: Text(
+                          reason,
+                          textAlign: TextAlign.center,
+                          style: th.type.meta,
+                        ),
+                      ),
+                  ],
+                );
+
+    if (widget.embedded) {
+      widget.footerSlot?.publish(saveBar, alive: () => mounted);
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: items,
+        ),
+      );
+    }
+
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(g, 8, g, 24),
+                children: items,
               ),
             ),
           ),
@@ -467,27 +538,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    BhorButton(
-                      label: l10n.commonSave,
-                      expand: true,
-                      onPressed: reason == null && !_saving ? _save : null,
-                      disabledReason: reason,
-                    ),
-                    if (reason != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: BhorSpace.s8),
-                        child: Text(
-                          reason,
-                          textAlign: TextAlign.center,
-                          style: th.type.meta,
-                        ),
-                      ),
-                  ],
-                ),
+                child: saveBar,
               ),
             ),
           ),

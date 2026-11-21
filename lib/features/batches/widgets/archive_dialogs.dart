@@ -1,7 +1,6 @@
 // Archive dialog (asks the last billable month, scenario 9) and unarchive
 // dialog (clash list + gap-waive prompt, scenario 21).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -127,7 +126,7 @@ class _UnarchiveBatchDialogState extends State<UnarchiveBatchDialog> {
               const SizedBox(height: BhorSpace.s12),
               BatchNotice(
                 text: l10n.batchUnarchiveClash,
-                icon: Icons.warning_amber_rounded,
+                icon: BhorIcons.warning,
                 children: <Widget>[
                   const SizedBox(height: BhorSpace.s8),
                   for (final String line in widget.clashLines)

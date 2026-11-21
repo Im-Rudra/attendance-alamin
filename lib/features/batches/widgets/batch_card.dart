@@ -57,16 +57,31 @@ class BatchCard extends ConsumerWidget {
           : (TapUpDetails d) => onSecondaryTap!(d.globalPosition),
       child: Semantics(
         selected: selected,
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(BhorRadius.card),
-            border: selected ? Border.all(color: th.colors.accent, width: 2) : null,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: selected ? 1 : 0),
+          duration: BhorMotion.of(context, BhorMotion.fast),
+          curve: BhorMotion.curveOf(context, BhorMotion.ease),
+          builder: (BuildContext context, double t, Widget? child) => DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(BhorRadius.card),
+              border: Border.all(
+                color: Color.lerp(th.colors.accent.withValues(alpha: 0), th.colors.accent, t)!,
+                width: 1.5,
+              ),
+            ),
+            child: child,
           ),
           child: BhorCard(
             onTap: onTap,
             semanticLabel: data.batch.name,
-            child: Column(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                BhorAvatar(name: data.batch.name, size: 40),
+                const SizedBox(width: BhorSpace.s12),
+                Expanded(
+                  child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -106,6 +121,9 @@ class BatchCard extends ConsumerWidget {
                       ),
                     BatchDuesBadge(batchId: data.batch.id),
                   ],
+                ),
+              ],
+                  ),
                 ),
               ],
             ),

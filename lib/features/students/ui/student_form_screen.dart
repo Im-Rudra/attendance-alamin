@@ -2,7 +2,6 @@
 // one batch at once (`initialBatchId` comes from the route `extra`); saving
 // runs the duplicate guard (UX 2e).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,6 +18,7 @@ import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_form_model.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
@@ -26,8 +26,38 @@ import 'package:attendance_alamin/features/students/controllers/student_provider
 import 'package:attendance_alamin/features/students/widgets/student_dialogs.dart';
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
+/// Opens the student form in the adaptive panel (expanding sheet on phones,
+/// floating side panel on desktop). True when saved, null when dismissed.
+Future<bool?> showStudentFormPanel(BuildContext context, {String? studentId, String? initialBatchId}) {
+  final PanelFooterSlot slot = PanelFooterSlot();
+  final l10n = context.l10n;
+  return showBhorPanel<bool>(
+    context,
+    title: studentId == null ? l10n.shellTitleStudentNew : l10n.shellTitleStudentEdit,
+    kind: BhorPanelKind.form,
+    expand: true,
+    footer: slot.build,
+    builder: (BuildContext c) => StudentFormScreen(
+      studentId: studentId,
+      initialBatchId: initialBatchId,
+      embedded: true,
+      footerSlot: slot,
+    ),
+  );
+}
+
 class StudentFormScreen extends ConsumerStatefulWidget {
-  const StudentFormScreen({super.key, this.studentId, this.initialBatchId});
+  const StudentFormScreen({
+    super.key,
+    this.studentId,
+    this.initialBatchId,
+    this.embedded = false,
+    this.footerSlot,
+  });
+
+  /// Hosted inside [showBhorPanel]: no scaffold; the save button goes to [footerSlot].
+  final bool embedded;
+  final PanelFooterSlot? footerSlot;
 
   /// null = add a new student.
   final String? studentId;
@@ -89,6 +119,16 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
     setState(() => _model = m);
   }
 
+  /// Success: the panel's circle-check moment when embedded, else toast + close.
+  Future<void> _done(String message, {String fallback = Routes.students}) async {
+    if (widget.embedded) {
+      await showBhorSuccess<bool>(context, result: true, toast: message);
+      return;
+    }
+    BhorToast.show(context, message: message);
+    stuClose(context, fallback: fallback);
+  }
+
   Future<void> _save() async {
     final l10n = context.l10n;
     final StudentFormModel model = _model!;
@@ -112,8 +152,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
           if (mounted) ref.invalidate(stuPhotoProvider((id: editId, has: true)));
         }
         if (!mounted) return;
-        BhorToast.show(context, message: l10n.stuSaved(draft.name));
-        stuClose(context, fallback: Routes.student(editId));
+        await _done(l10n.stuSaved(draft.name), fallback: Routes.student(editId));
         return;
       }
       final String? batchId = choice?.batchId;
@@ -139,11 +178,11 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                   feeOverride: fee.amount,
                 );
             if (!mounted) return;
-            BhorToast.show(context, message: l10n.stuAddedToBatch(existing.name));
-            stuClose(context);
+            await _done(l10n.stuAddedToBatch(existing.name));
           } else {
             if (!mounted) return;
             stuGo(context, Routes.student(existing.id));
+            if (widget.embedded) Navigator.of(context).maybePop();
           }
           return;
         }
@@ -159,8 +198,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         feeOverride: fee.amount,
       );
       if (!mounted) return;
-      BhorToast.show(context, message: l10n.stuSaved(draft.name));
-      stuClose(context);
+      await _done(l10n.stuSaved(draft.name));
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -192,6 +230,90 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       return '';
     }
 
+    final Widget form = model == null ? const SizedBox.shrink() : Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        StudentFieldsView(
+          model: model,
+          today: today,
+          autofocusName: _isNew,
+          moreExpanded: !_isNew,
+        ),
+        if (_isNew && choice != null) ...<Widget>[
+          const SizedBox(height: BhorSpace.s16),
+          Text(l10n.stuEnrollSection, style: th.type.heading),
+          const SizedBox(height: BhorSpace.s8),
+          ListenableBuilder(
+            listenable: choice,
+            builder: (BuildContext context, Widget? _) {
+              final String? chosen = choice.batchId;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  BhorSelect<String>(
+                    key: const ValueKey<String>('stu-form-batch'),
+                    label: l10n.stuBatchOptional,
+                    value: batches.any((Batch b) => b.id == chosen) ? chosen : '',
+                    options: <BhorOption<String>>[
+                      BhorOption<String>('', l10n.stuNoBatch),
+                      for (final Batch b in batches)
+                        BhorOption<String>(
+                          b.id,
+                          subjectOf(b).isEmpty
+                              ? b.name
+                              : '${subjectOf(b)} · ${b.name}',
+                        ),
+                    ],
+                    onChanged: (String v) => choice.setBatch(v.isEmpty ? null : v),
+                  ),
+                  if (chosen != null) ...<Widget>[
+                    const SizedBox(height: BhorSpace.s12),
+                    ListenableBuilder(
+                      listenable: model,
+                      builder: (BuildContext context, Widget? _) => StartMonthFeeFields(
+                        choice: choice,
+                        join: model.admissionDate,
+                        cutoff: cutoff,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: BhorSpace.s12),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(_error!, style: th.type.body.copyWith(color: th.colors.danger)),
+            ),
+          ),
+      ],
+    );
+    final Widget saveButton = BhorButton(
+      label: l10n.stuSave,
+      expand: true,
+      onPressed: _busy ? null : _save,
+    );
+
+    if (widget.embedded) {
+      if (_missing || model == null) {
+        return Padding(
+          padding: const EdgeInsets.all(BhorSpace.s32),
+          child: _missing
+              ? BhorEmptyState(icon: BhorIcons.leftStudents, title: l10n.stuNotFound)
+              : const Center(child: BhorSpinner()),
+        );
+      }
+      widget.footerSlot?.publish(saveButton, alive: () => mounted);
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
+        child: form,
+      );
+    }
+
     return BhorScaffold(
       header: BhorHeader(
         title: _isNew ? l10n.shellTitleStudentNew : l10n.shellTitleStudentEdit,
@@ -208,16 +330,12 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                 top: false,
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
-                  child: BhorButton(
-                    label: l10n.stuSave,
-                    expand: true,
-                    onPressed: _busy ? null : _save,
-                  ),
+                  child: saveButton,
                 ),
               ),
             ),
       body: _missing
-          ? BhorEmptyState(icon: Icons.person_off_outlined, title: l10n.stuNotFound)
+          ? BhorEmptyState(icon: BhorIcons.leftStudents, title: l10n.stuNotFound)
           : model == null
               ? const Center(child: BhorSpinner())
               : SingleChildScrollView(
@@ -228,68 +346,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                       constraints: const BoxConstraints(maxWidth: 640),
                       child: BhorCard(
                         padding: const EdgeInsets.all(BhorSpace.s16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            StudentFieldsView(
-                              model: model,
-                              today: today,
-                              autofocusName: _isNew,
-                              moreExpanded: !_isNew,
-                            ),
-                            if (_isNew && choice != null) ...<Widget>[
-                              const SizedBox(height: BhorSpace.s16),
-                              Text(l10n.stuEnrollSection, style: th.type.heading),
-                              const SizedBox(height: BhorSpace.s8),
-                              ListenableBuilder(
-                                listenable: choice,
-                                builder: (BuildContext context, Widget? _) {
-                                  final String? chosen = choice.batchId;
-                                  return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: <Widget>[
-                                      BhorSelect<String>(
-                                        key: const ValueKey<String>('stu-form-batch'),
-                                        label: l10n.stuBatchOptional,
-                                        value: batches.any((Batch b) => b.id == chosen) ? chosen : '',
-                                        options: <BhorOption<String>>[
-                                          BhorOption<String>('', l10n.stuNoBatch),
-                                          for (final Batch b in batches)
-                                            BhorOption<String>(
-                                              b.id,
-                                              subjectOf(b).isEmpty
-                                                  ? b.name
-                                                  : '${subjectOf(b)} · ${b.name}',
-                                            ),
-                                        ],
-                                        onChanged: (String v) => choice.setBatch(v.isEmpty ? null : v),
-                                      ),
-                                      if (chosen != null) ...<Widget>[
-                                        const SizedBox(height: BhorSpace.s12),
-                                        ListenableBuilder(
-                                          listenable: model,
-                                          builder: (BuildContext context, Widget? _) => StartMonthFeeFields(
-                                            choice: choice,
-                                            join: model.admissionDate,
-                                            cutoff: cutoff,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  );
-                                },
-                              ),
-                            ],
-                            if (_error != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: BhorSpace.s12),
-                                child: Semantics(
-                                  liveRegion: true,
-                                  child: Text(_error!, style: th.type.body.copyWith(color: th.colors.danger)),
-                                ),
-                              ),
-                          ],
-                        ),
+                        child: form,
                       ),
                     ),
                   ),

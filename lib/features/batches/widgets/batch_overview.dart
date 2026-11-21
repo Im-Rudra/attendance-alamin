@@ -2,7 +2,6 @@
 // blank area) and the context pane of the selected batch (UX 3b: week slots,
 // dues by level, 8-week attendance trend).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,7 +53,7 @@ class BatchesOverview extends ConsumerWidget {
           final Widget pickHint = BhorCard(
             child: Row(
               children: <Widget>[
-                Icon(Icons.touch_app_outlined, color: th.colors.accent),
+                Icon(BhorIcons.sparkle, color: th.colors.accent),
                 const SizedBox(width: BhorSpace.s12),
                 Expanded(child: Text(l10n.batchOverviewPick, style: th.type.body)),
               ],
@@ -250,7 +249,7 @@ class BatchContextPane extends ConsumerWidget {
           child: levels.isEmpty
               ? Row(
                   children: <Widget>[
-                    Icon(Icons.check_circle_outline, color: th.colors.text2),
+                    Icon(BhorIcons.checkCircle, color: th.colors.text2),
                     const SizedBox(width: BhorSpace.s8),
                     Expanded(
                       child: Text(

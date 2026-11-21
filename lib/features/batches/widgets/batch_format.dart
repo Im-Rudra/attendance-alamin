@@ -1,7 +1,6 @@
 // Small shared helpers of the batches feature: schedule text, billing pill,
 // the dues mini-badge, a notice strip and navigation.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -136,7 +135,7 @@ class BatchNotice extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(icon ?? (warn ? Icons.error_outline : Icons.check_circle_outline), color: fg),
+                  Icon(icon ?? (warn ? BhorIcons.warning : BhorIcons.checkCircle), color: fg),
                   const SizedBox(width: BhorSpace.s8),
                   Expanded(child: Text(text, style: b.type.body.copyWith(color: fg))),
                 ],

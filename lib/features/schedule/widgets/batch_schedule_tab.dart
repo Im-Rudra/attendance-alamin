@@ -2,7 +2,6 @@
 // row (UX 2h) and the button into the slot editor. Two columns when the pane
 // is wide, so a desktop detail pane is filled, not stretched.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +17,7 @@ import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/schedule/controllers/schedule_tab_providers.dart';
+import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
 import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
 import 'package:attendance_alamin/features/schedule/widgets/slot_editor_body.dart';
 import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
@@ -39,7 +39,7 @@ class BatchScheduleTab extends StatelessWidget {
     return async.when(
       loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace _) => BhorEmptyState(
-        icon: Icons.error_outline,
+        icon: BhorIcons.warning,
         title: errorText(l10n, e),
       ),
       data: (List<BatchSchedule> all) {
@@ -49,7 +49,7 @@ class BatchScheduleTab extends StatelessWidget {
         }
         if (mine == null) {
           return BhorEmptyState(
-            icon: Icons.search_off,
+            icon: BhorIcons.search,
             title: l10n.commonLoadingFailed,
           );
         }
@@ -73,13 +73,13 @@ class _Content extends ConsumerWidget {
     final List<SlotDraft> slots = currentSlotDrafts(schedule, today);
     final bool archived = batch.archived;
 
-    void openEditor() => context.push(Routes.batchSlots(batch.id));
+    void openEditor() => showSlotEditorPanel(context, batchId: batch.id);
 
     if (slots.isEmpty) {
       final Widget card = BhorCard(
         padding: EdgeInsets.zero,
         child: BhorEmptyState(
-          icon: Icons.event_busy_outlined,
+          icon: BhorIcons.holiday,
           title: l10n.schedTabEmpty,
           action: archived ? null : BhorButton(label: l10n.schedTabAddFirst, onPressed: openEditor),
         ),
@@ -121,7 +121,7 @@ class _Content extends ConsumerWidget {
           BhorButton(
             onPressed: archived ? null : openEditor,
             expand: true,
-            icon: Icons.edit_calendar_outlined,
+            icon: BhorIcons.edit,
             label: l10n.schedChangeWeekly,
           ),
         ],
@@ -173,7 +173,7 @@ class _Note extends StatelessWidget {
         padding: const EdgeInsets.all(BhorSpace.s12),
         child: Row(
           children: <Widget>[
-            Icon(Icons.info_outline, color: b.colors.accent),
+            Icon(BhorIcons.info, color: b.colors.accent),
             const SizedBox(width: BhorSpace.s12),
             Expanded(child: Text(text, style: b.type.body)),
           ],
@@ -240,7 +240,7 @@ class _ReminderRow extends ConsumerWidget {
           children: <Widget>[
             ExcludeSemantics(
               child: Icon(
-                masterOn ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
+                BhorIcons.bell,
                 color: masterOn ? b.colors.accent : b.colors.text2,
               ),
             ),
@@ -263,13 +263,13 @@ class _ReminderRow extends ConsumerWidget {
                           if (context.mounted) BhorToast.show(context, message: errorText(context.l10n, e));
                         }
                       },
-                      icon: Icons.restart_alt,
+                      icon: BhorIcons.refresh,
                       label: l10n.schedLeadReset,
                     ),
                 ],
               ),
             ),
-            if (enabled) const Icon(Icons.chevron_right),
+            if (enabled) const Icon(BhorIcons.chevronRight),
           ],
         ),
       ),

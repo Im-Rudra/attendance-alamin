@@ -1,7 +1,6 @@
 // "ছেড়ে যাওয়া শিক্ষার্থী" (More > Students who left): who left and when, what
 // they still owe (grey), and a rejoin button.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +32,7 @@ class LeftStudentsScreen extends ConsumerWidget {
         child: async.when(
           loading: () => const Center(child: BhorSpinner()),
           error: (Object e, StackTrace st) =>
-              BhorEmptyState(icon: Icons.error_outline, title: l10n.commonLoadingFailed),
+              BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed),
           data: (List<StudentRow> all) {
             final List<StudentRow> rows = <StudentRow>[
               for (final StudentRow r in all)
@@ -42,7 +41,7 @@ class LeftStudentsScreen extends ConsumerWidget {
             if (rows.isEmpty) {
               return BhorCard(
                 padding: EdgeInsets.zero,
-                child: BhorEmptyState(icon: Icons.person_off_outlined, title: l10n.stuLeftEmpty),
+                child: BhorEmptyState(icon: BhorIcons.leftStudents, title: l10n.stuLeftEmpty),
               );
             }
             return BhorCard(
@@ -67,7 +66,7 @@ class LeftStudentsScreen extends ConsumerWidget {
                       key: ValueKey<String>('stu-left-rejoin-${s.id}'),
                       variant: BhorButtonVariant.secondary,
                       size: BhorButtonSize.sm,
-                      icon: Icons.person_add_alt_1_outlined,
+                      icon: BhorIcons.add,
                       label: l10n.stuRejoin,
                       onPressed: () => runRejoinFlow(context, ref, s),
                     ),

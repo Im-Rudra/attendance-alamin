@@ -2,7 +2,6 @@
 // clashing classes, then offers the nearest free time as one-tap fixes (later
 // = primary, earlier = secondary). Never says "conflict" or "overlap".
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,7 +129,7 @@ class _ClashPanel extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(Icons.warning_amber_rounded, color: c.danger, size: 24),
+                  Icon(BhorIcons.warning, color: c.danger, size: 24),
                   const SizedBox(width: BhorSpace.s8),
                   Expanded(child: Text(l10n.uiConflictTitle, style: b.type.heading.copyWith(color: c.danger))),
                 ],

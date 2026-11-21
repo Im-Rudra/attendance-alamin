@@ -2,7 +2,6 @@
 // 5 / 10 / 15 / 20 / 30 / 60 minutes, "other" 1..180 (Bangla or ASCII digits)
 // or off for this batch (0).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -225,7 +224,7 @@ class _RadioRow extends StatelessWidget {
           children: <Widget>[
             const SizedBox(width: BhorSpace.s8),
             Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              selected ? BhorIcons.checkCircleFill : BhorIcons.checkCircle,
               color: selected ? b.colors.accent : b.colors.text2,
             ),
             const SizedBox(width: BhorSpace.s12),
