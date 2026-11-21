@@ -1,9 +1,9 @@
 // Enum bridges between domain enums and the theme-local enums (Lead notes,
 // M3-B). Features never repeat the index arithmetic.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/theme/tokens.dart' show AttendanceKind, SeverityLevel;
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -16,19 +16,19 @@ extension DueLevelTheme on DueLevel {
   IconData get icon {
     switch (this) {
       case DueLevel.upcoming:
-        return Icons.schedule;
+        return BhorIcons.clock;
       case DueLevel.justDue:
-        return Icons.notifications;
+        return BhorIcons.bell;
       case DueLevel.remind:
-        return Icons.notifications_active;
+        return BhorIcons.remind;
       case DueLevel.followUp:
-        return Icons.error;
+        return BhorIcons.infoFill;
       case DueLevel.urgent:
-        return Icons.warning;
+        return BhorIcons.warningFill;
       case DueLevel.finalDays:
-        return Icons.hourglass_bottom;
+        return BhorIcons.clock;
       case DueLevel.overdue:
-        return Icons.report;
+        return BhorIcons.errorFill;
     }
   }
 
@@ -58,13 +58,13 @@ extension AttendanceStatusTheme on AttendanceStatus {
   IconData get icon {
     switch (this) {
       case AttendanceStatus.present:
-        return Icons.check;
+        return BhorIcons.present;
       case AttendanceStatus.absent:
-        return Icons.close;
+        return BhorIcons.absent;
       case AttendanceStatus.late:
-        return Icons.schedule;
+        return BhorIcons.late;
       case AttendanceStatus.leave:
-        return Icons.event_busy;
+        return BhorIcons.leave;
     }
   }
 
