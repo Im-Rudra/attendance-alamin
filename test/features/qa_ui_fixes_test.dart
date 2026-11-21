@@ -2,6 +2,7 @@
 // QA-02 money glyph, QA-03 students FAB, QA-06 share feedback, QA-09 overview
 // panes, QA-12 week start of the date picker, QA-18 duplicate pill / button.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
