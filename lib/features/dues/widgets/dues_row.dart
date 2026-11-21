@@ -1,6 +1,7 @@
 // One student of the dues list: avatar, name and amount, the calm pill tag
-// (icon + word + day), batches and months, then Call / Remind and the
-// secondary "টাকা নিন" button that opens the payment panel. Also the shared
+// (icon + word + day), batches and months, then (wide) Call / Remind and the
+// secondary "টাকা নিন" button that opens the payment panel; phones keep one
+// compact line and put call / remind behind a long press. Also the shared
 // row actions and the desktop right-click menu (টাকা নিন · মনে করান ·
 // নম্বর কপি · মওকুফ).
 
@@ -126,36 +127,18 @@ class DuesRowTile extends ConsumerWidget {
     ].where((String s) => s.isNotEmpty).join(' · ');
 
     final String remindLabel = reminded ? l10n.duesRemindedToday : l10n.duesRemind;
-    final Widget call = wide
-        ? BhorIconButton(
+    final Widget call = BhorIconButton(
             key: ValueKey<String>('dues-call-${row.studentId}'),
             icon: ContactActions.icon,
             semanticLabel: ContactActions.label(l10n),
             size: BhorButtonSize.sm,
             onPressed: () => duesCall(context, ref, row.studentId),
-          )
-        : BhorButton(
-            key: ValueKey<String>('dues-call-${row.studentId}'),
-            variant: BhorButtonVariant.ghost,
-            size: BhorButtonSize.sm,
-            icon: ContactActions.icon,
-            label: ContactActions.label(l10n),
-            onPressed: () => duesCall(context, ref, row.studentId),
           );
-    final Widget remind = wide
-        ? BhorIconButton(
+    final Widget remind = BhorIconButton(
             key: ValueKey<String>('dues-remind-${row.studentId}'),
             icon: reminded ? BhorIcons.check : BhorIcons.share,
             semanticLabel: remindLabel,
             size: BhorButtonSize.sm,
-            onPressed: () => duesRemind(context, row.studentId),
-          )
-        : BhorButton(
-            key: ValueKey<String>('dues-remind-${row.studentId}'),
-            variant: BhorButtonVariant.ghost,
-            size: BhorButtonSize.sm,
-            icon: reminded ? BhorIcons.check : BhorIcons.share,
-            label: remindLabel,
             onPressed: () => duesRemind(context, row.studentId),
           );
     final Widget collect = BhorButton(
@@ -183,6 +166,10 @@ class DuesRowTile extends ConsumerWidget {
         name,
         const SizedBox(height: 2),
         Align(alignment: AlignmentDirectional.centerStart, child: DuesStatusBadge(row: row)),
+        if (reminded && !wide) ...<Widget>[
+          const SizedBox(height: 2),
+          Text(remindLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+        ],
         if (subtitle.isNotEmpty) ...<Widget>[
           const SizedBox(height: 2),
           Text(subtitle, maxLines: wide ? 1 : 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
@@ -205,30 +192,19 @@ class DuesRowTile extends ConsumerWidget {
               collect,
             ],
           )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              BhorAvatar(name: row.name, size: 40),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(child: details),
+              const SizedBox(width: BhorSpace.s8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  BhorAvatar(name: row.name, size: 40),
-                  const SizedBox(width: BhorSpace.s12),
-                  Expanded(child: details),
-                  const SizedBox(width: BhorSpace.s8),
                   amount,
-                ],
-              ),
-              const SizedBox(height: BhorSpace.s8),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: <Widget>[call, remind],
-                    ),
-                  ),
-                  const SizedBox(width: BhorSpace.s8),
+                  const SizedBox(height: BhorSpace.s4),
                   collect,
                 ],
               ),
@@ -239,6 +215,8 @@ class DuesRowTile extends ConsumerWidget {
       behavior: HitTestBehavior.translucent,
       onSecondaryTapUp: (TapUpDetails d) =>
           showDuesContextMenu(context, ref, d.globalPosition, row),
+      // Phones: call / remind / copy live behind a long press.
+      onLongPress: () => showDuesContextMenu(context, ref, Offset.zero, row),
       child: BhorPressable(
         onTap: onOpen,
         semanticLabel: row.name,
@@ -261,7 +239,7 @@ class DuesRowTile extends ConsumerWidget {
 
 // ---- right-click menu --------------------------------------------------------
 
-enum _MenuAction { collect, remind, copy, waive, open }
+enum _MenuAction { collect, call, remind, copy, waive, open }
 
 /// Desktop context menu on a dues row or table row (a small dialog of the
 /// student's actions; [position] is kept for the callers' signature).
@@ -278,6 +256,7 @@ Future<void> showDuesContextMenu(
   final YearMonth? waiveMonth = row.waiveMonth;
   final List<(_MenuAction, String)> entries = <(_MenuAction, String)>[
     (_MenuAction.collect, l10n.duesCollect),
+    if (number != null) (_MenuAction.call, ContactActions.label(l10n)),
     (_MenuAction.remind, l10n.duesRemind),
     if (number != null) (_MenuAction.copy, l10n.commonCopyNumber),
     if (waiveEnrollment != null && waiveMonth != null) (_MenuAction.waive, l10n.duesMenuWaive),
@@ -307,6 +286,8 @@ Future<void> showDuesContextMenu(
   switch (choice) {
     case _MenuAction.collect:
       await duesCollect(context, row.studentId);
+    case _MenuAction.call:
+      await duesCall(context, ref, row.studentId);
     case _MenuAction.remind:
       await duesRemind(context, row.studentId);
     case _MenuAction.copy:

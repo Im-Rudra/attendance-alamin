@@ -95,9 +95,8 @@ class _DayColumn extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isToday ? b.colors.accentTint : b.colors.surface2,
+          color: isToday ? b.colors.accentTint : b.colors.soft,
           borderRadius: BorderRadius.circular(BhorRadius.control),
-          border: Border.all(color: isToday ? b.colors.accentLine : b.colors.line),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8, horizontal: BhorSpace.s4),

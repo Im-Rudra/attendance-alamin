@@ -285,7 +285,7 @@ class MonthDropdown extends StatelessWidget {
 
 /// "বেতন শুরু: [মাস ▾]" (default from the cutoff, Product 3.2) and the optional
 /// fee override.
-class StartMonthFeeFields extends StatelessWidget {
+class StartMonthFeeFields extends StatefulWidget {
   const StartMonthFeeFields({
     super.key,
     required this.choice,
@@ -298,7 +298,17 @@ class StartMonthFeeFields extends StatelessWidget {
   final int cutoff;
 
   @override
+  State<StartMonthFeeFields> createState() => _StartMonthFeeFieldsState();
+}
+
+class _StartMonthFeeFieldsState extends State<StartMonthFeeFields> {
+  bool _showOther = false;
+
+  @override
   Widget build(BuildContext context) {
+    final EnrollChoice choice = widget.choice;
+    final LocalDate join = widget.join;
+    final int cutoff = widget.cutoff;
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     return ListenableBuilder(
@@ -330,12 +340,25 @@ class StartMonthFeeFields extends StatelessWidget {
               ),
               const SizedBox(height: BhorSpace.s12),
             ],
-            MonthDropdown(
-              label: l10n.stuBillingStart,
-              value: start,
-              months: monthChoices(base.addMonths(-12), base.addMonths(7), start),
-              onChanged: choice.setStart,
-            ),
+            // The month select hides behind "another month" unless the start is
+            // already something other than this / next month.
+            if (_showOther || !(start == base || start == base.addMonths(1)))
+              MonthDropdown(
+                label: l10n.stuBillingStart,
+                value: start,
+                months: monthChoices(base.addMonths(-12), base.addMonths(7), start),
+                onChanged: choice.setStart,
+              )
+            else
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: BhorButton(
+                  variant: BhorButtonVariant.ghost,
+                  size: BhorButtonSize.sm,
+                  label: l10n.stuOtherMonth,
+                  onPressed: () => setState(() => _showOther = true),
+                ),
+              ),
             const SizedBox(height: BhorSpace.s4),
             Text(
               l10n.stuBillingStartHint(cutoffDayText(context, cutoff)),

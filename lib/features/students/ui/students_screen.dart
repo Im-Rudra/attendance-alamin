@@ -28,7 +28,7 @@ class StudentsScreen extends StatelessWidget {
   static const double tableProfileWidth = 420;
 
   /// The list pane shows the table from this width (on large windows).
-  static const double tableMinPaneWidth = 480;
+  static const double tableMinPaneWidth = 680;
 
   @override
   Widget build(BuildContext context) {
@@ -85,11 +85,6 @@ class _ListScaffold extends StatelessWidget {
                   label: l10n.stuNewStudent,
                   size: BhorButtonSize.sm,
                 ),
-              BhorIconButton(
-                semanticLabel: l10n.commonSearch,
-                icon: BhorIcons.search,
-                onPressed: () => stuPush(context, Routes.search),
-              ),
             ],
           ),
           floating: table

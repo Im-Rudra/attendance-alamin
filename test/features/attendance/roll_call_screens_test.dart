@@ -152,21 +152,32 @@ void main() {
     },
   );
 
-  // ---- scenario 12: roll call ---------------------------------------------
+  /// The live count chips above the roster (the footer line is gone).
+void _expectCounts(String a, String b, String c, [String? d]) {
+  for (final String label in <String>[a, b, c, ?d]) {
+    expect(
+      find.byWidgetPredicate((Widget w) => w is Semantics && w.properties.label == label),
+      findsOneWidget,
+      reason: label,
+    );
+  }
+}
+
+// ---- scenario 12: roll call ---------------------------------------------
 
   testWidgets('all present by default; taps change the counts; save writes the day', (WidgetTester tester) async {
     final SeededFakes f = seedFakes(withAttendance: false);
     final String occ = physOcc('2026-11-21');
     await open(tester, RollCallScreen(occ: occ), f);
 
-    expect(find.text('Present 3 · Absent 0 · Late 0'), findsOneWidget);
+    _expectCounts('Present 3', 'Absent 0', 'Late 0');
     expect(find.text('Save attendance (3)'), findsOneWidget);
     expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
 
     final double rowTop = tester.getTopLeft(find.text('রহিম উদ্দিন')).dy;
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
-    expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 1', 'Late 0');
     // The hint stays: the roster does not shift under the finger.
     expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
     expect(tester.getTopLeft(find.text('রহিম উদ্দিন')).dy, rowTop);
@@ -212,7 +223,7 @@ void main() {
     expect(find.byType(BhorSpinner), findsNothing);
   });
 
-  testWidgets('dark mode: an absent row is a tinted surface with an edge stripe', (WidgetTester tester) async {
+  testWidgets('dark mode: an absent row is a tinted surface', (WidgetTester tester) async {
     await pumpApp(
       tester,
       BhorTheme(
@@ -243,11 +254,11 @@ void main() {
 
     expect(find.text('You are viewing attendance of a past day'), findsOneWidget);
     expect(find.text('Saved'), findsOneWidget);
-    expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 1', 'Late 0');
 
     await tester.tap(find.descendant(of: find.byType(RollRow).first, matching: find.byIcon(BhorIcons.late)));
     await tester.pumpAndSettle();
-    expect(find.text('Present 2 · Absent 0 · Late 1'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 0', 'Late 1');
     final AttendanceRecord rahim = f.attendance.records.firstWhere((AttendanceRecord r) =>
         r.sessionId == Ids.sessionForOcc(occ) && r.studentId == kStuRahim);
     expect(rahim.status, AttendanceStatus.late);
@@ -263,7 +274,7 @@ void main() {
     expect(find.byType(RollStatusSheet), findsOneWidget);
     await tester.tap(find.text('Excused'));
     await tester.pumpAndSettle();
-    expect(find.text('Present 2 · Absent 0 · Late 0 · Excused 1'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 0', 'Late 0', 'Excused 1');
   });
 
   testWidgets('an unsaved draft survives an app restart', (WidgetTester tester) async {
@@ -277,7 +288,7 @@ void main() {
     await unmount(tester);
     await open(tester, RollCallScreen(occ: occ), f);
     expect(find.text('Your earlier unfinished attendance was restored'), findsOneWidget);
-    expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 1', 'Late 0');
     expect(f.attendance.sessions, isEmpty);
   });
 
@@ -431,7 +442,7 @@ void main() {
     expect(find.text('Done'), findsOneWidget);
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();
-    expect(find.text('Present 2 · Absent 1 · Late 0'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 1', 'Late 0');
   });
 
   testWidgets('a future date cannot be taken', (WidgetTester tester) async {
@@ -441,7 +452,7 @@ void main() {
     expect(find.text('Attendance cannot be taken for a future date'), findsOneWidget);
     await tester.tap(find.text('করিম হোসেন'));
     await tester.pump();
-    expect(find.text('Present 2 · Absent 0 · Late 0'), findsOneWidget);
+    _expectCounts('Present 2', 'Absent 0', 'Late 0');
     expect(f.attendance.sessions.where((AttendanceSession s) => s.date == _sunday), isEmpty);
   });
 

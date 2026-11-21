@@ -87,6 +87,26 @@ class SlotEditorBody extends ConsumerWidget {
   }
 }
 
+/// A flat soft-filled group (no outline): one level of containment per form
+/// section, never card-in-card.
+class _SoftBox extends StatelessWidget {
+  const _SoftBox({required this.child, this.padding = const EdgeInsets.all(BhorSpace.s16)});
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.bhor.colors.soft,
+        borderRadius: BorderRadius.circular(BhorRadius.card),
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
 /// "শনি, সোম — বিকাল ৪:০০–৫:০০" inside a dense card; announced when it changes.
 class SlotSentenceCard extends StatelessWidget {
   const SlotSentenceCard({
@@ -137,8 +157,15 @@ class SlotSentenceCard extends StatelessWidget {
           ),
         ],
       );
-    return BhorCard(
-      child: fill ? Align(alignment: AlignmentDirectional.centerStart, child: content) : content,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: b.colors.accentTint,
+        borderRadius: BorderRadius.circular(BhorRadius.card),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(BhorSpace.s16),
+        child: fill ? Align(alignment: AlignmentDirectional.centerStart, child: content) : content,
+      ),
     );
   }
 }
@@ -152,7 +179,7 @@ class _SameAllRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final String label = context.l10n.schedSameAllDays;
-    return BhorCard(
+    return _SoftBox(
       padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s4),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 48),
@@ -192,25 +219,38 @@ class _SameTimeEditor extends StatelessWidget {
     final List<int> order = <int>[
       for (var i = 0; i < 7; i++) ((weekStart - 1 + i) % 7) + 1,
     ];
-    return BhorCard(
+    return _SoftBox(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(l10n.schedPickDays, style: b.type.heading),
           const SizedBox(height: BhorSpace.s12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              for (final int d in order)
-                SchedChip(
-                  label: fmt.weekdayShort(d),
-                  semanticLabel: fmt.weekdayName(d),
-                  selected: c.days.contains(d),
-                  minWidth: 56,
-                  onTap: () => c.toggleDay(d),
-                ),
-            ],
+          // Seven equal columns when there is room (no orphan on line two).
+          LayoutBuilder(
+            builder: (BuildContext _, BoxConstraints box) {
+              Widget chip(int d, double minW) => SchedChip(
+                    label: fmt.weekdayShort(d),
+                    semanticLabel: fmt.weekdayName(d),
+                    selected: c.days.contains(d),
+                    minWidth: minW,
+                    onTap: () => c.toggleDay(d),
+                  );
+              if (box.maxWidth >= 440) {
+                return Row(
+                  children: <Widget>[
+                    for (int i = 0; i < order.length; i++) ...<Widget>[
+                      if (i > 0) const SizedBox(width: 6),
+                      Expanded(child: chip(order[i], 0)),
+                    ],
+                  ],
+                );
+              }
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[for (final int d in order) chip(d, 56)],
+              );
+            },
           ),
           const SizedBox(height: 16),
           Text(l10n.schedClassTime, style: b.type.heading),
@@ -257,7 +297,7 @@ class _PerDayEditor extends StatelessWidget {
 
     Widget groupFor(int day) {
       final List<SlotRow> rows = c.rowsOf(day);
-      return BhorCard(
+      return _SoftBox(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -454,9 +494,8 @@ class TimeButton extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: b.colors.surface,
+            color: st.hovered || st.pressed ? b.colors.soft2 : b.colors.surface,
             borderRadius: BorderRadius.circular(BhorRadius.control),
-            border: Border.all(color: st.hovered ? b.colors.accentLine : b.colors.line),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: 6),

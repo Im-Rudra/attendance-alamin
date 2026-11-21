@@ -131,7 +131,6 @@ class RollBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: warn ? b.colors.danger.withValues(alpha: 0.35) : b.colors.accentLine),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s12),

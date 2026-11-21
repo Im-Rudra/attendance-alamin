@@ -249,8 +249,8 @@ void main() {
       expect(_key('pay-month-202611'), findsOneWidget);
       expect(_key('pay-month-202612'), findsOneWidget);
       expect(find.text('ডিসেম্বর · অগ্রিম'), findsOneWidget);
-      // Typed Bangla digits are previewed in the app language under the field.
-      expect(find.text(AppFormat(Lang.bn).money(1000)), findsOneWidget);
+      // No tiny echo of the amount under the field.
+      expect(find.text(AppFormat(Lang.bn).money(1000)), findsNothing);
       await tester.tap(_key('pay-month-202612'));
       await tester.pump();
       expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
@@ -614,8 +614,7 @@ void main() {
     testWidgets('waiving November from the sheet moves on to December', (WidgetTester tester) async {
       final SeededFakes f = await _openCollect(tester);
       expect(_monthsText(tester), 'নভেম্বর');
-      await tester.tap(_key('pay-menu'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(_key('pay-menu-waive'));
       await tester.tap(_key('pay-menu-waive'));
       await tester.pumpAndSettle();
       expect(find.text('নভেম্বর ২০২৬ মাফ করবেন?'), findsOneWidget);

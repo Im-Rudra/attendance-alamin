@@ -522,15 +522,19 @@ class _GridPainter extends CustomPainter {
     final Paint hourPaint = Paint()
       ..color = hour
       ..strokeWidth = 1;
+    // Half-hour lines at line@50%; the quarter-hour ones even lighter.
     final Paint quarterPaint = Paint()
       ..color = quarter
+      ..strokeWidth = 1;
+    final Paint faintPaint = Paint()
+      ..color = quarter.withValues(alpha: quarter.a * 0.5)
       ..strokeWidth = 1;
     for (int m = fromMin; m <= toMin; m += 15) {
       final double y = (m - fromMin) / 60 * hourH;
       canvas.drawLine(
         Offset(labelW, y),
         Offset(size.width, y),
-        m % 60 == 0 ? hourPaint : quarterPaint,
+        m % 60 == 0 ? hourPaint : (m % 30 == 0 ? quarterPaint : faintPaint),
       );
     }
     for (int d = 0; d <= 7; d++) {
@@ -588,7 +592,9 @@ class _ClassBlock extends StatelessWidget {
         ? ''
         : ', ${st == ClassState.cancelled ? l10n.uiClassCancelled : st == ClassState.moved ? l10n.uiClassMoved : l10n.uiClassExtra}';
 
-    final Widget content = BhorPressable(
+    final Widget content = ClipRRect(
+      borderRadius: BorderRadius.circular(BhorRadius.chip),
+      child: BhorPressable(
       onTap: onTap,
       radius: BhorRadius.chip,
       scaleOnPress: false,
@@ -596,17 +602,29 @@ class _ClassBlock extends StatelessWidget {
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.of(context, BhorMotion.fast),
         curve: BhorMotion.ease,
-        padding: const EdgeInsets.all(BhorSpace.s4),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s4, BhorSpace.s4, BhorSpace.s4),
         decoration: BoxDecoration(
           color: cancelled
               ? null
               : (s.hovered ? Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.accentTint) : c.accentTint),
           borderRadius: BorderRadius.circular(BhorRadius.chip),
-          border: selected
-              ? Border.all(color: c.accent, width: 2)
-              : (cancelled ? null : Border.all(color: c.accentLine)),
+          // Soft fill and a 3 px leading bar instead of an outline; only the
+          // selected block gets a ring.
+          border: selected ? Border.all(color: c.accent, width: 2) : null,
         ),
-        child: ClipRect(
+        child: Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            if (!cancelled)
+              Positioned(
+                left: -BhorSpace.s8,
+                top: -BhorSpace.s4,
+                bottom: -BhorSpace.s4,
+                width: 3,
+                child: ColoredBox(color: c.accent),
+              ),
+            ClipRect(
             child: OverflowBox(
               alignment: Alignment.topLeft,
               minHeight: 0,
@@ -616,11 +634,11 @@ class _ClassBlock extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   if (marks.isEmpty)
-                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: base)
+                    Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: base)
                   else
                     Text.rich(
                       TextSpan(children: <InlineSpan>[...marks, TextSpan(text: name)]),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: base,
                     ),
@@ -628,7 +646,10 @@ class _ClassBlock extends StatelessWidget {
                 ],
               ),
             ),
+            ),
+          ],
         ),
+      ),
       ),
     );
 

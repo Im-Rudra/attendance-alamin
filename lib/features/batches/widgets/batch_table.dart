@@ -7,7 +7,13 @@ import 'package:flutter/widgets.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 
 class BatchColumn<T> {
-  const BatchColumn({required this.label, required this.cell, this.flex = 1, this.numeric = false});
+  const BatchColumn({
+    required this.label,
+    required this.cell,
+    this.flex = 1,
+    this.numeric = false,
+    this.fixedWidth,
+  });
 
   final String label;
   final Widget Function(T row) cell;
@@ -15,6 +21,26 @@ class BatchColumn<T> {
 
   /// Right-aligned (counts, money).
   final bool numeric;
+
+  /// A fixed-width column (phone, percent, tag): never truncated; the
+  /// flexible columns share the rest.
+  final double? fixedWidth;
+}
+
+const double _kColGap = BhorSpace.s12;
+
+/// Column children with a 12 px gap between them; fixed columns keep their
+/// width, the others share the rest by flex.
+List<Widget> _cols<T>(List<BatchColumn<T>> columns, Widget Function(BatchColumn<T> col) cell) {
+  return <Widget>[
+    for (int i = 0; i < columns.length; i++) ...<Widget>[
+      if (i > 0) const SizedBox(width: _kColGap),
+      if (columns[i].fixedWidth != null)
+        SizedBox(width: columns[i].fixedWidth, child: cell(columns[i]))
+      else
+        Expanded(flex: columns[i].flex, child: cell(columns[i])),
+    ],
+  ];
 }
 
 class BatchTable<T> extends StatelessWidget {
@@ -70,19 +96,16 @@ class BatchTable<T> extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s8),
       child: Row(
-        children: <Widget>[
-          for (final BatchColumn<T> col in columns)
-            Expanded(
-              flex: col.flex,
-              child: Text(
-                col.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: col.numeric ? TextAlign.end : TextAlign.start,
-                style: b.type.label.copyWith(color: b.colors.text2),
-              ),
-            ),
-        ],
+        children: _cols<T>(
+          columns,
+          (BatchColumn<T> col) => Text(
+            col.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: col.numeric ? TextAlign.end : TextAlign.start,
+            style: b.type.label.copyWith(color: b.colors.text2),
+          ),
+        ),
       ),
     );
   }
@@ -93,16 +116,13 @@ class BatchTable<T> extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
         child: Row(
-          children: <Widget>[
-            for (final BatchColumn<T> col in columns)
-              Expanded(
-                flex: col.flex,
-                child: Align(
-                  alignment: col.numeric ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-                  child: col.cell(row),
-                ),
-              ),
-          ],
+          children: _cols<T>(
+            columns,
+            (BatchColumn<T> col) => Align(
+              alignment: col.numeric ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+              child: col.cell(row),
+            ),
+          ),
         ),
       ),
     );

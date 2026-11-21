@@ -81,5 +81,7 @@
   "todayWeekOpen": "Open the week grid",
   "todayGreetMorning": "Good morning",
   "todayGreetAfternoon": "Good afternoon",
-  "todayGreetEvening": "Good evening"
+  "todayGreetEvening": "Good evening",
+  "todayNewMenu": "New…",
+  "todayDuesMore": "{count} more"
 }

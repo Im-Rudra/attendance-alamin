@@ -541,28 +541,63 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ),
     );
-    // Shared-axis horizontal slide: forward steps enter from the right.
+    return _fadeThrough(page, reduced: reduced, dir: dir, keepOutgoing: true);
+  }
+
+  /// Fade-through shared axis: the outgoing step fades (and slides) out over the
+  /// first 30% of the transition and is fully hidden before the incoming step
+  /// starts to appear, so two steps' text never overlap. With [keepOutgoing]
+  /// false the outgoing child is dropped at once (the footer).
+  Widget _fadeThrough(
+    Widget child, {
+    required bool reduced,
+    required int dir,
+    required bool keepOutgoing,
+  }) {
     return AnimatedSwitcher(
       duration: reduced ? BhorMotion.reducedFade : BhorMotion.base,
-      switchInCurve: BhorMotion.ease,
-      switchOutCurve: BhorMotion.ease,
       layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
         alignment: Alignment.topCenter,
-        children: <Widget>[...previous, if (current != null) current],
+        children: <Widget>[
+          if (keepOutgoing) ...previous,
+          if (current != null) current,
+        ],
       ),
-      transitionBuilder: (Widget child, Animation<double> a) {
-        final bool entering = child.key == ValueKey<int>(_step);
-        if (reduced) return FadeTransition(opacity: a, child: child);
+      transitionBuilder: (Widget c, Animation<double> a) {
+        final bool entering = c.key == child.key;
+        // Incoming runs 0..1; outgoing runs 1..0 in reverse, so its useful
+        // range is the last 30% of the controller (the first 30% of time).
+        final Animation<double> fade = CurvedAnimation(
+          parent: a,
+          curve: entering ? const Interval(0.3, 1) : const Interval(0.7, 1),
+        );
+        final Widget faded = IgnorePointer(
+          ignoring: !entering,
+          child: FadeTransition(opacity: fade, child: c),
+        );
+        if (reduced || dir == 0) return faded;
         final double from = (entering ? 1 : -1) * dir * 0.06;
-        return FadeTransition(
-          opacity: a,
-          child: SlideTransition(
-            position: Tween<Offset>(begin: Offset(from, 0), end: Offset.zero).animate(a),
-            child: child,
-          ),
+        final Animation<double> slide = CurvedAnimation(
+          parent: a,
+          curve: entering ? const Interval(0.3, 1, curve: BhorMotion.ease) : const Interval(0.7, 1),
+        );
+        return SlideTransition(
+          position: Tween<Offset>(begin: Offset(from, 0), end: Offset.zero).animate(slide),
+          child: faded,
         );
       },
-      child: page,
+      child: child,
+    );
+  }
+
+  /// The footer changes with the same fade-through as the body, so it never
+  /// jumps ahead of the content it belongs to.
+  Widget _footer() {
+    return _fadeThrough(
+      KeyedSubtree(key: ValueKey<String>('foot-$_step-${_created != null}'), child: _actionBar()),
+      reduced: BhorMotion.reduced(context),
+      dir: 0,
+      keepOutgoing: false,
     );
   }
 
@@ -600,7 +635,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               children: <Widget>[
                                 _topBar(),
                                 Expanded(child: _scrollBody(24)),
-                                _actionBar(),
+                                _footer(),
                               ],
                             ),
                           ),
@@ -619,7 +654,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: <Widget>[
           _topBar(),
           Expanded(child: _scrollBody(16)),
-          _actionBar(),
+          _footer(),
         ],
       );
     }

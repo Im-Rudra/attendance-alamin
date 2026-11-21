@@ -12,7 +12,6 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/shell/language_chip.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/widgets/bento_grid.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -71,7 +70,7 @@ class TodayScreen extends ConsumerWidget {
             ),
           ),
         ),
-      if (quickActionsInTopBar(wc)) ..._topBarQuick(context, today),
+      if (quickActionsInTopBar(wc)) _NewMenuButton(date: today),
       BhorIconButton(
         semanticLabel: l10n.commonSearch,
         icon: BhorIcons.search,
@@ -79,7 +78,6 @@ class TodayScreen extends ConsumerWidget {
         circle: true,
         onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
       ),
-      const LanguageChip(),
       const SizedBox(width: BhorSpace.s8),
     ];
 
@@ -102,22 +100,50 @@ class TodayScreen extends ConsumerWidget {
           : _StackedBody(wc: wc, today: today),
     );
   }
+}
 
-  /// Large windows move the quick actions into the top bar. Labels show only
-  /// when the bar has room; icons with tooltips otherwise.
-  List<Widget> _topBarQuick(BuildContext context, LocalDate today) {
-    if (MediaQuery.sizeOf(context).width >= 1500) {
-      return quickActionBarButtons(context, today);
-    }
-    return <Widget>[
-      for (final QuickAction q in quickActionsOf(context, today).take(3))
-        BhorIconButton(
-          semanticLabel: q.label,
-          icon: q.icon,
-          variant: BhorButtonVariant.secondary,
-          onPressed: q.onTap,
-        ),
-    ];
+/// Large windows: one labelled "নতুন…" button that lists the quick actions
+/// (collect, add student, extra class) instead of a row of bare icons.
+class _NewMenuButton extends StatelessWidget {
+  const _NewMenuButton({required this.date});
+
+  final LocalDate date;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(left: BhorSpace.s8),
+      child: BhorButton(
+        label: l10n.todayNewMenu,
+        icon: BhorIcons.add,
+        variant: BhorButtonVariant.secondary,
+        onPressed: () async {
+          final List<QuickAction> actions = quickActionsOf(context, date).take(3).toList();
+          final QuickAction? picked = await showBhorPanel<QuickAction>(
+            context,
+            kind: BhorPanelKind.list,
+            scroll: false,
+            title: l10n.todayNewMenu,
+            builder: (BuildContext ctx) => SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < actions.length; i++)
+                    BhorListRow(
+                      title: actions[i].label,
+                      leading: Icon(actions[i].icon),
+                      divider: i < actions.length - 1,
+                      onTap: () => Navigator.of(ctx).pop(actions[i]),
+                    ),
+                ],
+              ),
+            ),
+          );
+          picked?.onTap();
+        },
+      ),
+    );
   }
 }
 

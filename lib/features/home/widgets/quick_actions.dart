@@ -152,13 +152,12 @@ class _QuickPill extends StatelessWidget {
       semanticLabel: action.label,
       isButton: true,
       excludeChildSemantics: true,
-      radius: BhorRadius.card,
+      radius: 14,
       builder: (BuildContext context, BhorStates s) => Container(
         padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
         decoration: BoxDecoration(
-          color: s.hovered ? c.surface2 : c.surface,
-          borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: s.hovered ? c.accentLine : c.line),
+          color: s.hovered || s.pressed ? c.soft2 : c.soft,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

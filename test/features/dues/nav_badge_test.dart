@@ -11,7 +11,6 @@ import 'package:attendance_alamin/app/shell/adaptive_scaffold.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
-import 'package:attendance_alamin/features/dues/ui/collection_screen.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
@@ -65,10 +64,13 @@ void main() {
     expect(find.byType(FeesScreen), findsOneWidget);
     await tester.tap(find.text(l10n.duesSegCollection));
     await tester.pumpAndSettle();
-    expect(find.byType(CollectionScreen), findsOneWidget);
+    // One page: the body swaps in place, FeesScreen stays and the header is shared.
+    expect(find.byType(FeesScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('coll-export-csv')), findsOneWidget);
     await tester.tap(find.text(l10n.duesSegDues));
     await tester.pumpAndSettle();
     expect(find.byType(FeesScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('coll-export-csv')), findsNothing);
   });
 
   testWidgets('outstanding of a month leads to the dues list for that month', (WidgetTester tester) async {

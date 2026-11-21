@@ -2,22 +2,20 @@
 // row shared by the collection screen and the batch fees tab.
 
 import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 
 enum FeesSegment { dues, collection }
 
-/// Dues | Collected switch. Both screens are routes of the same tab, so a tap
-/// navigates (nothing happens without a router, e.g. in widget tests).
+/// Dues | Collected switch. The Fees page swaps its body in place.
 class FeesSegments extends StatelessWidget {
-  const FeesSegments({super.key, required this.selected});
+  const FeesSegments({super.key, required this.selected, required this.onChanged});
 
   final FeesSegment selected;
+  final ValueChanged<FeesSegment> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +30,7 @@ class FeesSegments extends StatelessWidget {
         ],
         value: selected,
         onChanged: (FeesSegment s) {
-          if (s == selected) return;
-          GoRouter.maybeOf(context)
-              ?.go(s == FeesSegment.dues ? Routes.fees : Routes.feesCollection);
+          if (s != selected) onChanged(s);
         },
       ),
     );

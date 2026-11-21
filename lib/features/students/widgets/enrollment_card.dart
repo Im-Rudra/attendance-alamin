@@ -274,16 +274,26 @@ class _MonthStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
-      child: Row(
-        children: <Widget>[
-          for (int i = 0; i < months.length; i++) ...<Widget>[
-            if (i > 0) const SizedBox(width: BhorSpace.s8),
-            _MonthTile(key: ValueKey<int>(months[i].month.toInt()), due: months[i]),
+    final Color solid = context.bhor.colors.surface;
+    // Scrolls sideways; the trailing edge fades so a clipped month never
+    // looks cut by accident.
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (Rect r) => LinearGradient(
+        colors: <Color>[solid, solid, solid.withValues(alpha: 0)],
+        stops: const <double>[0, 0.93, 1],
+      ).createShader(r),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(top: BhorSpace.s4, bottom: BhorSpace.s4, right: BhorSpace.s16),
+        child: Row(
+          children: <Widget>[
+            for (int i = 0; i < months.length; i++) ...<Widget>[
+              if (i > 0) const SizedBox(width: BhorSpace.s8),
+              _MonthTile(key: ValueKey<int>(months[i].month.toInt()), due: months[i]),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -332,14 +342,18 @@ class _MonthTile extends StatelessWidget {
       container: true,
       label: l10n.a11yMonthChip(fmt.monthYear(due.month), word),
       excludeSemantics: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(fmt.monthShort(due.month.month), style: b.type.label),
-          const SizedBox(height: BhorSpace.s4),
-          tag,
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 64),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            // Full month name, never a truncated short form.
+            Text(fmt.monthName(due.month.month), maxLines: 1, style: b.type.label),
+            const SizedBox(height: BhorSpace.s4),
+            tag,
+          ],
+        ),
       ),
     );
   }

@@ -47,6 +47,87 @@ void openPath(BuildContext context, String path) {
   }
 }
 
+/// Circle initials from the first (distinguishing) word of a batch name, so
+/// "সকালের ব্যাচ" and "সন্ধ্যা ব্যাচ" no longer both read "সব". At most two
+/// grapheme clusters, never splitting a conjunct.
+class BatchAvatar extends StatelessWidget {
+  const BatchAvatar({super.key, required this.name, this.size = 40});
+
+  final String name;
+  final double size;
+
+  static String initialsOf(String name) {
+    final List<String> words =
+        name.trim().split(RegExp(r'\s+')).where((String w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return '?';
+    final List<String> g = words.first.characters.toList();
+    if (g.length == 1) return g.first;
+    return g[1].runes.length <= 2 ? g[0] + g[1] : g[0];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return Semantics(
+      label: name,
+      excludeSemantics: true,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: b.colors.accentTint, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: Text(
+          initialsOf(name),
+          maxLines: 1,
+          style: b.type.label.copyWith(color: b.colors.accent, fontSize: size * 0.36, height: 1.2),
+        ),
+      ),
+    );
+  }
+}
+
+/// A menu row for desktop overflow menus: leading icon, title, optional
+/// destructive tone.
+class BatchMenuRow extends StatelessWidget {
+  const BatchMenuRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final Color fg = destructive ? b.colors.danger : b.colors.text;
+    return BhorPressable(
+      onTap: onTap,
+      semanticLabel: label,
+      builder: (BuildContext c, BhorStates st) => Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+        decoration: BoxDecoration(
+          color: st.hovered || st.pressed ? b.colors.soft : b.colors.soft.withValues(alpha: 0),
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: BhorIconSize.chip, color: fg),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(child: Text(label, style: b.type.body.copyWith(color: fg))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// "অগ্রিম" / "মাস শেষে": plain words, never "prepaid" jargon.
 class BillingPill extends StatelessWidget {
   const BillingPill({super.key, required this.type});
