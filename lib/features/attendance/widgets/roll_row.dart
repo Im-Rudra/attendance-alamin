@@ -48,7 +48,8 @@ class RollRow extends StatelessWidget {
 
   /// A segment of the attendance toggle was chosen.
   final ValueChanged<AttendanceStatus>? onSet;
-  final VoidCallback? onMenu;
+  /// Called with the row's context (the status popover anchors to it).
+  final ValueChanged<BuildContext>? onMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +60,7 @@ class RollRow extends StatelessWidget {
     final String statusText = status.label(l10n);
     final String rollText = fmt.number(roll);
     final VoidCallback? tap = enabled ? onToggle : null;
-    final VoidCallback? menu = enabled ? onMenu : null;
+    final VoidCallback? menu = (enabled && onMenu != null) ? () => onMenu!(context) : null;
     final String hint = status == AttendanceStatus.absent ? l10n.a11yHintMarkPresent : l10n.a11yHintMarkAbsent;
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
@@ -205,11 +206,13 @@ Future<RollMenuChoice?> showRollStatusSheet(
   BuildContext context, {
   required String name,
   required AttendanceStatus current,
+  BuildContext? anchor,
 }) {
   // Phone: bottom sheet; desktop: a centred panel over the roster.
   return showBhorPanel<RollMenuChoice>(
     context,
     kind: BhorPanelKind.list,
+    anchor: anchor,
     title: context.l10n.rollStatusSheetTitle(name),
     scroll: false,
     width: 420,

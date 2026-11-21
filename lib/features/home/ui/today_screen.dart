@@ -123,6 +123,7 @@ class _NewMenuButton extends StatelessWidget {
           final QuickAction? picked = await showBhorPanel<QuickAction>(
             context,
             kind: BhorPanelKind.list,
+            anchor: context,
             scroll: false,
             title: l10n.todayNewMenu,
             builder: (BuildContext ctx) => SingleChildScrollView(

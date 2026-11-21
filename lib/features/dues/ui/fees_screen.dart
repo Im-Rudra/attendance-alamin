@@ -105,11 +105,13 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
             const CollectionActions(),
             const SizedBox(width: BhorSpace.s8),
           ] else if (wc.usesRail) ...<Widget>[
-            BhorButton(
-              key: const ValueKey<String>('fees-take-money'),
-              icon: BhorIcons.takeMoney,
-              label: l10n.payTitle,
-              onPressed: () => showTakeMoneyPicker(context),
+            Builder(
+              builder: (BuildContext bc) => BhorButton(
+                key: const ValueKey<String>('fees-take-money'),
+                icon: BhorIcons.takeMoney,
+                label: l10n.payTitle,
+                onPressed: () => showTakeMoneyPicker(context, anchor: bc),
+              ),
             ),
             const SizedBox(width: BhorSpace.s12),
           ],

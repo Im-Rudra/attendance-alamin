@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -441,6 +442,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     key: const Key('batch-form-fee'),
                     controller: _fee,
                     keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt)],
                     textInputAction: TextInputAction.next,
                     label: l10n.batchFeeLabel,
                     prefix: Text('৳ ', style: th.type.body.copyWith(color: th.colors.text2)),
@@ -486,6 +488,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     BhorButton(
                       label: l10n.commonSave,
                       expand: true,
+                      loading: _saving,
                       onPressed: reason == null && !_saving ? _save : null,
                       disabledReason: reason,
                     ),

@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -308,7 +309,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             textInputAction: TextInputAction.done,
             tabular: true,
             inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯+\-\s]')),
+              DigitsFormatter(context.fmt, maxLength: 20, phone: true),
             ],
             label: l10n.extraBulkPhoneLabel,
             onChanged: (_) => setState(() {

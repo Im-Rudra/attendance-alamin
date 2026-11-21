@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/chip_wrap.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -147,13 +148,14 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     _recheck();
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate(BuildContext anchor) async {
     final LocalDate today = ref.read(todayProvider);
     final LocalDate lo = (_initDate.isBefore(today) ? _initDate : today).addDays(-365);
     final LocalDate hi = (_initDate.isAfter(today) ? _initDate : today).addDays(730);
     final int weekStart = ref.read(weekStartProvider).value ?? DateTime.saturday;
     final DateTime? picked = await showBhorDatePicker(
       context,
+      anchor: anchor,
       initialDate: DateTime(_date.year, _date.month, _date.day),
       firstDate: DateTime(lo.year, lo.month, lo.day),
       lastDate: DateTime(hi.year, hi.month, hi.day),
@@ -168,8 +170,9 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     _recheck();
   }
 
-  Future<void> _pickTime() async {
-    final int? m = await showBhorTimePicker(context, initial: _start, title: context.l10n.clsFieldTime);
+  Future<void> _pickTime(BuildContext anchor) async {
+    final int? m =
+        await showBhorTimePicker(context, initial: _start, title: context.l10n.clsFieldTime, anchor: anchor);
     if (m == null || !mounted) return;
     _setStart(m);
   }
@@ -310,6 +313,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
       subtitle: _isExtra ? null : classLabel,
       footer: ClassSaveBar(
         label: _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule,
+        loading: _saving,
         onPressed: canSave ? () => _save(target) : null,
         disabledReason: reason,
       ),
@@ -321,7 +325,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
             if (live.isEmpty)
               Text(l10n.clsNoBatches, style: b.type.meta)
             else
-              Wrap(
+              ChipWrap(
                 spacing: BhorSpace.s8,
                 runSpacing: BhorSpace.s8,
                 children: <Widget>[
@@ -335,31 +339,35 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
               ),
             const SizedBox(height: BhorSpace.s12),
           ],
-          FieldRow(
-            label: l10n.clsFieldDate,
-            value: fmt.weekdayDate(_date),
-            icon: BhorIcons.calendar,
-            onTap: _pickDate,
+          Builder(
+            builder: (BuildContext bc) => FieldRow(
+              label: l10n.clsFieldDate,
+              value: fmt.weekdayDate(_date),
+              icon: BhorIcons.calendar,
+              onTap: () => _pickDate(bc),
+            ),
           ),
           const SizedBox(height: BhorSpace.s12),
-          FieldRow(
-            label: l10n.clsFieldTime,
-            value: fmt.timeRange(_start, _start + _dur),
-            onTap: _pickTime,
-            leading: BhorIconButton(
-              semanticLabel: l10n.clsEarlier,
-              icon: BhorIcons.minus,
-              onPressed: _start - 15 >= 0 ? () => _setStart(_start - 15) : null,
-            ),
-            trailing: BhorIconButton(
-              semanticLabel: l10n.clsLater,
-              icon: BhorIcons.add,
-              onPressed: _start + _dur + 15 <= 1440 ? () => _setStart(_start + 15) : null,
+          Builder(
+            builder: (BuildContext bc) => FieldRow(
+              label: l10n.clsFieldTime,
+              value: fmt.timeRange(_start, _start + _dur),
+              onTap: () => _pickTime(bc),
+              leading: BhorIconButton(
+                semanticLabel: l10n.clsEarlier,
+                icon: BhorIcons.minus,
+                onPressed: _start - 15 >= 0 ? () => _setStart(_start - 15) : null,
+              ),
+              trailing: BhorIconButton(
+                semanticLabel: l10n.clsLater,
+                icon: BhorIcons.add,
+                onPressed: _start + _dur + 15 <= 1440 ? () => _setStart(_start + 15) : null,
+              ),
             ),
           ),
           const SizedBox(height: BhorSpace.s12),
           _Label(l10n.clsFieldDuration),
-          Wrap(
+          ChipWrap(
             spacing: BhorSpace.s8,
             runSpacing: BhorSpace.s8,
             children: <Widget>[

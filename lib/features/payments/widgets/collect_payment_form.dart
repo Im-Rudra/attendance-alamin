@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/chip_wrap.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -108,13 +109,14 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
   Future<void> _waive(String enrollmentId, YearMonth month) =>
       runWaiveDialog(context, enrollmentId: enrollmentId, month: month);
 
-  Future<void> _pickDate(LocalDate current, LocalDate today) async {
+  Future<void> _pickDate(LocalDate current, LocalDate today, BuildContext anchor) async {
     final DateTime last = DateTime(today.year, today.month, today.day);
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
     final DateTime? picked = await showBhorDatePicker(
       context,
+      anchor: anchor,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,
       lastDate: last,
@@ -292,7 +294,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       if (chooser) ...<Widget>[
         const SizedBox(height: BhorSpace.s16),
         _Label(l10n.payBatchLabel),
-        Wrap(
+        ChipWrap(
           spacing: BhorSpace.s8,
           runSpacing: BhorSpace.s4,
           children: <Widget>[
@@ -311,7 +313,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       const SizedBox(height: 16),
       _Label(l10n.payMonthsLabel),
       if (!editing && plan.openMonths.isNotEmpty) ...<Widget>[
-        Wrap(
+        ChipWrap(
           key: const ValueKey<String>('pay-month-chips'),
           spacing: BhorSpace.s8,
           runSpacing: BhorSpace.s4,
@@ -390,7 +392,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         ),
       const SizedBox(height: 16),
       _Label(l10n.payMethodLabel),
-      Wrap(
+      ChipWrap(
         spacing: BhorSpace.s8,
         runSpacing: BhorSpace.s4,
         children: <Widget>[
@@ -404,12 +406,14 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         ],
       ),
       const SizedBox(height: 16),
-      _DateField(
-        key: const ValueKey<String>('pay-date-edit'),
-        label: l10n.payDateLabel,
-        value: paidOn == today ? l10n.payDateToday(fmt.date(paidOn)) : fmt.date(paidOn),
-        semanticLabel: l10n.payDateEdit,
-        onTap: () => _pickDate(paidOn, today),
+      Builder(
+        builder: (BuildContext bc) => _DateField(
+          key: const ValueKey<String>('pay-date-edit'),
+          label: l10n.payDateLabel,
+          value: paidOn == today ? l10n.payDateToday(fmt.date(paidOn)) : fmt.date(paidOn),
+          semanticLabel: l10n.payDateEdit,
+          onTap: () => _pickDate(paidOn, today, bc),
+        ),
       ),
       const SizedBox(height: BhorSpace.s8),
       if (_showNote)

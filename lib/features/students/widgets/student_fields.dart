@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -64,6 +65,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
               key: const ValueKey<String>('stu-field-guardian-phone'),
               controller: model.guardianPhone,
               keyboardType: TextInputType.phone,
+              inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)],
               textInputAction: TextInputAction.next,
               onChanged: (_) => model.clearError('guardianPhone'),
               label: l10n.stuFieldGuardianPhone,
@@ -99,6 +101,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
                     BhorTextField(
                       controller: model.phone,
                       keyboardType: TextInputType.phone,
+                      inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)],
                       textInputAction: TextInputAction.next,
                       onChanged: (_) => model.clearError('phone'),
                       label: l10n.stuFieldStudentPhone,
@@ -214,6 +217,7 @@ class DateField extends ConsumerWidget {
         final int weekStart = ref.read(weekStartProvider).value ?? DateTime.saturday;
         final DateTime? d = await showBhorDatePicker(
           context,
+          anchor: context,
           initialDate: DateTime(value.year, value.month, value.day),
           firstDate: DateTime(firstDate.year, firstDate.month, firstDate.day),
           lastDate: DateTime(last.year, last.month, last.day),
@@ -369,6 +373,7 @@ class _StartMonthFeeFieldsState extends State<StartMonthFeeFields> {
               key: const ValueKey<String>('stu-field-fee-override'),
               controller: choice.fee,
               keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt)],
               label: l10n.stuFeeOverride,
               helper: l10n.stuFeeOverrideHint,
               error: choice.feeError,

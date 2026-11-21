@@ -5,6 +5,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -159,8 +160,7 @@ class _ReminderLeadPanelState extends State<ReminderLeadPanel> {
                   autofocus: true,
                   keyboardType: TextInputType.number,
                   inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.allow(RegExp('[0-9০-৯]')),
-                    LengthLimitingTextInputFormatter(3),
+                    DigitsFormatter(context.fmt, maxLength: 3),
                   ],
                   onChanged: (_) => setState(() {}),
                   label: l10n.schedLeadCustomLabel,

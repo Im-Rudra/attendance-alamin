@@ -317,11 +317,12 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     });
   }
 
-  Future<void> _pickTime({required bool start}) async {
+  Future<void> _pickTime({required bool start, BuildContext? anchor}) async {
     final RollTarget? t = _target;
     if (t == null) return;
     final int? m = await showBhorTimePicker(
       context,
+      anchor: anchor,
       initial: start ? t.startMin : t.endMin,
       title: start ? context.l10n.rollAdHocStart : context.l10n.rollAdHocEnd,
     );
@@ -496,12 +497,13 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     c.setNote(value);
   }
 
-  Future<void> _rowMenu(RollCallController c, Student s) async {
+  Future<void> _rowMenu(RollCallController c, Student s, BuildContext anchor) async {
     if (c.readOnly) return;
     final RollMenuChoice? choice = await showRollStatusSheet(
       context,
       name: s.name,
       current: c.statusOf(s.id),
+      anchor: anchor,
     );
     if (choice == null || !mounted) return;
     if (choice.note) {
@@ -721,8 +723,8 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
           startMin: t.startMin,
           endMin: t.endMin,
           enabled: !c.saving,
-          onStart: () => unawaited(_pickTime(start: true)),
-          onEnd: () => unawaited(_pickTime(start: false)),
+          onStart: (BuildContext bc) => unawaited(_pickTime(start: true, anchor: bc)),
+          onEnd: (BuildContext bc) => unawaited(_pickTime(start: false, anchor: bc)),
         )),
         if (_clash != null && !_clash!.ok) _gap(_clashCard(t, _clash!)),
       ],
@@ -791,10 +793,12 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     // roll call can also be deleted. Otherwise "note" is a direct button.
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
     final Widget menu = canDelete
-        ? BhorIconButton(
-            semanticLabel: l10n.commonMore,
-            icon: BhorIcons.overflowVertical,
-            onPressed: () => unawaited(_openMenu(c, t)),
+        ? Builder(
+            builder: (BuildContext bc) => BhorIconButton(
+              semanticLabel: l10n.commonMore,
+              icon: BhorIcons.overflowVertical,
+              onPressed: () => unawaited(_openMenu(c, t, bc)),
+            ),
           )
         : BhorIconButton(
             semanticLabel: l10n.rollMenuNote,
@@ -907,12 +911,13 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   }
 
   /// The "more" sheet: edit the class note, delete a saved roll call.
-  Future<void> _openMenu(RollCallController c, RollTarget t) async {
+  Future<void> _openMenu(RollCallController c, RollTarget t, BuildContext anchor) async {
     final l10n = context.l10n;
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
     final String? v = await showBhorPanel<String>(
       context,
       kind: BhorPanelKind.list,
+      anchor: anchor,
       title: l10n.commonMore,
       scroll: false,
       width: 400,
@@ -972,7 +977,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         setState(() => _cursor = index);
         c.setStatus(s.id, next);
       },
-      onMenu: () => unawaited(_rowMenu(c, s)),
+      onMenu: (BuildContext rowContext) => unawaited(_rowMenu(c, s, rowContext)),
     );
     if (!keyed) return row;
     return KeyedSubtree(key: _rowKeys.putIfAbsent(s.id, () => GlobalKey()), child: row);

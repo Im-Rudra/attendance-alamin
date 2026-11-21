@@ -209,7 +209,7 @@ void main() {
       expect(find.text(bn.onbWelcomeTitle), findsOneWidget);
       await tapKey(tester, 'onb-primary');
       expect(textOf(tester, 'onb-subject'), 'রসায়ন');
-      expect(textOf(tester, 'onb-fee'), '800');
+      expect(textOf(tester, 'onb-fee'), '৮০০');
 
       // Skip the batch: students then stay unassigned and say so.
       await tapKey(tester, 'onb-skip');

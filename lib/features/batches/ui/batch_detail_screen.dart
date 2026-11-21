@@ -59,11 +59,12 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
     }
   }
 
-  Future<void> _openMenu(Batch b) async {
+  Future<void> _openMenu(Batch b, BuildContext anchor) async {
     final l10n = context.l10n;
     final _MenuAction? a = await showBhorPanel<_MenuAction>(
       context,
       kind: BhorPanelKind.list,
+      anchor: anchor,
       width: 320,
       title: b.name,
       builder: (BuildContext ctx) => Column(
@@ -150,10 +151,12 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
               icon: BhorIcons.edit,
               onPressed: () => showBatchFormPanel(context, batchId: b.id),
             ),
-            BhorIconButton(
-              semanticLabel: l10n.commonMore,
-              icon: BhorIcons.overflowVertical,
-              onPressed: () => _openMenu(b),
+            Builder(
+              builder: (BuildContext bc) => BhorIconButton(
+                semanticLabel: l10n.commonMore,
+                icon: BhorIcons.overflowVertical,
+                onPressed: () => _openMenu(b, bc),
+              ),
             ),
           ],
           fab: (showFab && compact)
