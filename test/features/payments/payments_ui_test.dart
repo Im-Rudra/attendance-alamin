@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
@@ -30,19 +31,19 @@ class _Launcher extends StatelessWidget {
   final Future<void> Function(BuildContext context) onTap;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => BhorScaffold(
         body: Center(
-          child: ElevatedButton(onPressed: () => onTap(context), child: const Text('open')),
+          child: BhorButton(label: 'open', onPressed: () => onTap(context)),
         ),
       );
 }
 
 Finder _key(String k) => find.byKey(ValueKey<String>(k));
-Finder _bar() => find.descendant(of: _key('pay-bar'), matching: find.byType(FilledButton));
+Finder _bar() => find.descendant(of: _key('pay-bar'), matching: find.byType(BhorButton));
 
-String _label(WidgetTester t) => (t.widget<FilledButton>(_bar()).child! as Text).data!;
-bool _enabled(WidgetTester t) => t.widget<FilledButton>(_bar()).onPressed != null;
-String _amountText(WidgetTester t) => t.widget<TextField>(_key('pay-amount')).controller!.text;
+String _label(WidgetTester t) => t.widget<BhorButton>(_bar()).label;
+bool _enabled(WidgetTester t) => t.widget<BhorButton>(_bar()).onPressed != null;
+String _amountText(WidgetTester t) => t.widget<BhorTextField>(_key('pay-amount')).controller!.text;
 String _monthsText(WidgetTester t) => t.widget<Text>(_key('pay-months')).data!;
 
 List<Payment> _receipts(SeededFakes f, {String student = kStuRahim}) => <Payment>[
@@ -128,7 +129,7 @@ void main() {
 
     testScreenMatrix(
       'payment history',
-      () => const Scaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
+      () => const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
       overrides: () => seedFakes().overrides,
       verify: (WidgetTester tester) async {
         await tester.pump();
@@ -333,7 +334,7 @@ void main() {
       final SeededFakes f = await _openCollect(tester);
       await _save(tester);
       expect(_receipts(f).length, 3);
-      await tester.tap(find.byType(SnackBarAction));
+      await tester.tap(_key('pay-snack-undo'));
       await tester.pumpAndSettle();
       expect(_receipts(f).length, 2);
       expect(find.text('জমা বাতিল করা হয়েছে'), findsOneWidget);
@@ -436,7 +437,7 @@ void main() {
       final SeededFakes f = seedFakes();
       await pumpApp(
         tester,
-        const Scaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuSara))),
+        const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuSara))),
         overrides: f.overrides,
       );
       await tester.pump();
@@ -533,7 +534,7 @@ void main() {
       final SeededFakes f = seedFakes();
       await pumpApp(
         tester,
-        const Scaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
+        const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
       await tester.pump();
@@ -543,12 +544,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('এই পেমেন্ট (৳ ১,০০০, অক্টোবর) মুছে ফেলবেন?'), findsOneWidget);
       // Cancel keeps it.
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).first);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isTrue);
       await tester.tap(_key('pay-receipt-delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isFalse);
       expect(find.text('পেমেন্ট মুছে ফেলা হয়েছে'), findsOneWidget);
@@ -558,7 +559,7 @@ void main() {
       final SeededFakes f = seedFakes();
       await pumpApp(
         tester,
-        const Scaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
+        const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
       await tester.pump();
@@ -621,7 +622,7 @@ void main() {
       await f.payments.waive(kEnrRahimPhys, _nov, reason: 'কারণ');
       await pumpApp(
         tester,
-        const Scaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
+        const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
       await tester.pump();
@@ -630,7 +631,7 @@ void main() {
       await tester.tap(_key('pay-unwaive-${Ids.waiver(kEnrRahimPhys, _nov)}'));
       await tester.pumpAndSettle();
       expect(find.text('নভেম্বর ২০২৬-এর মাফ তুলে নেবেন?'), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
       expect(find.text('নভেম্বর ২০২৬ · মাফ'), findsNothing);
@@ -644,7 +645,7 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).first);
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
     });

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/backup/backup_files.dart';
@@ -53,7 +54,7 @@ Future<void> _pumpMany(WidgetTester tester) async {
 Future<void> _press(WidgetTester tester, String key) async {
   final Finder f = find.byKey(ValueKey<String>(key));
   expect(f, findsOneWidget);
-  final VoidCallback? onPressed = tester.widget<ButtonStyleButton>(f).onPressed;
+  final VoidCallback? onPressed = tester.widget<BhorButton>(f).onPressed;
   expect(onPressed, isNotNull, reason: 'button is enabled');
   onPressed!();
   await tester.pump();
@@ -209,7 +210,7 @@ void main() {
   group('export sheet', () {
     testScreenMatrix(
       'csv sheet: lists the three files',
-      () => const Scaffold(body: CsvExportSheet(initialMonth: _nov)),
+      () => const BhorScaffold(body: CsvExportSheet(initialMonth: _nov)),
       overrides: () => seedFakes().overrides,
       verify: (WidgetTester tester) async {
         expect(find.byKey(const ValueKey<String>('csv-save-students')), findsOneWidget);
@@ -223,7 +224,7 @@ void main() {
       final _FakeFiles files = _FakeFiles();
       await pumpApp(
         tester,
-        const Scaffold(body: CsvExportSheet(initialMonth: _nov)),
+        const BhorScaffold(body: CsvExportSheet(initialMonth: _nov)),
         overrides: <Override>[...seedFakes().overrides, backupFilesProvider.overrideWithValue(files)],
       );
       await _press(tester, 'csv-save-students');

@@ -2,13 +2,14 @@
 // sheet) and one per waived month (with "মাফ তুলে নিন"). Shrink-wrapped: it sits
 // inside the profile's scroll view.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
@@ -73,23 +74,20 @@ class _PaymentHistoryBodyState extends ConsumerState<PaymentHistoryBody> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final AsyncValue<List<Payment>> rowsAsync = ref.watch(payStudentPaymentsProvider(widget.studentId));
     final List<EnrollmentTerms> terms =
         ref.watch(enrollmentTermsProvider).value ?? const <EnrollmentTerms>[];
     if (rowsAsync.hasError) return Text(l10n.commonLoadingFailed);
     final List<Payment>? rows = rowsAsync.value;
     if (rows == null) {
-      return const SizedBox(height: 72, child: Center(child: CircularProgressIndicator()));
+      return const SizedBox(height: 72, child: Center(child: BhorSpinner()));
     }
     final List<HistoryEntry> entries = groupHistory(rows);
     if (entries.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Text(
-          l10n.payHistoryEmpty,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s16),
+        child: Text(l10n.payHistoryEmpty, style: b.type.body.copyWith(color: b.colors.text2)),
       );
     }
     final Map<String, String> batchOf = <String, String>{
@@ -114,11 +112,11 @@ class _PaymentHistoryBodyState extends ConsumerState<PaymentHistoryBody> {
         if (entries.length > _kCollapsedCount)
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
+            child: BhorButton(
               key: const ValueKey<String>('pay-history-toggle'),
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              variant: BhorButtonVariant.ghost,
               onPressed: () => setState(() => _all = !_all),
-              child: Text(_all ? l10n.payHistoryLess : l10n.payHistoryMore),
+              label: _all ? l10n.payHistoryLess : l10n.payHistoryMore,
             ),
           ),
       ],
@@ -137,8 +135,7 @@ class _HistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final Payment p = entry.first;
 
     if (entry.waived) {
@@ -147,29 +144,24 @@ class _HistoryTile extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         child: Row(
           children: <Widget>[
-            Icon(Icons.do_not_disturb_on, color: tokens.textSecondary),
-            const SizedBox(width: 12),
+            Icon(Icons.do_not_disturb_on, color: b.colors.text2),
+            const SizedBox(width: BhorSpace.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Text(l10n.payWaivedRow(month), style: tt.bodyLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(l10n.payWaivedRow(month), style: b.type.body, maxLines: 2, overflow: TextOverflow.ellipsis),
                   if ((p.note ?? '').isNotEmpty)
-                    Text(
-                      p.note!,
-                      style: tt.bodySmall?.copyWith(color: tokens.textSecondary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(p.note!, style: b.type.meta, maxLines: 2, overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
-            TextButton(
+            BhorButton(
               key: ValueKey<String>('pay-unwaive-${p.id}'),
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+              variant: BhorButtonVariant.ghost,
               onPressed: () => runUnwaiveDialog(context, enrollmentId: p.enrollmentId, month: p.billingMonth),
-              child: Text(l10n.payUnwaive),
+              label: l10n.payUnwaive,
             ),
           ],
         ),
@@ -182,40 +174,31 @@ class _HistoryTile extends StatelessWidget {
     final String sub = batchName == null
         ? l10n.payHistorySub(fmt.date(p.paidOn), method)
         : l10n.payHistorySubBatch(fmt.date(p.paidOn), method, batchName!);
-    return Semantics(
-      button: true,
-      label: l10n.payA11yReceipt(months, amount),
-      excludeSemantics: true,
+    return BhorPressable(
       onTap: () => showReceiptSheet(context, receiptId: entry.receiptId),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => showReceiptSheet(context, receiptId: entry.receiptId),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 56),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.receipt_long, color: tokens.accent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(months, style: tt.bodyLarge, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    Text(
-                      sub,
-                      style: tt.bodySmall?.copyWith(color: tokens.textSecondary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+      semanticLabel: l10n.payA11yReceipt(months, amount),
+      excludeChildSemantics: true,
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.receipt_long, color: b.colors.accent),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(months, style: b.type.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(sub, style: b.type.meta, maxLines: 2, overflow: TextOverflow.ellipsis),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(amount, style: tt.titleSmall),
-              Icon(Icons.chevron_right, color: tokens.textSecondary),
-            ],
-          ),
+            ),
+            const SizedBox(width: BhorSpace.s8),
+            Text(amount, style: b.type.bodyStrong),
+            Icon(Icons.chevron_right, color: b.colors.text2),
+          ],
         ),
       ),
     );

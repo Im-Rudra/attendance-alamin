@@ -3,16 +3,16 @@
 // collection summary's "অন্যান্য" line (read from the same repository) and can
 // be shared as a receipt.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/app_date_picker.dart';
 import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
@@ -42,41 +42,29 @@ class SavedOtherIncome {
 /// Opens the sheet; true when an income was saved. Shows the "recorded"
 /// snackbar (with undo) on the caller's screen.
 Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) async {
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final ProviderContainer container = ProviderScope.containerOf(context);
-  final SavedOtherIncome? saved = await showModalBottomSheet<SavedOtherIncome>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    // Above the floating nav pill, never behind it (C15).
-    useRootNavigator: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
-    builder: (BuildContext ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-      child: OtherIncomeForm(
-        studentId: studentId,
-        onClose: () => Navigator.of(ctx).pop(),
-        onSaved: (SavedOtherIncome s) => Navigator.of(ctx).pop(s),
-      ),
+  final SavedOtherIncome? saved = await showBhorSheet<SavedOtherIncome>(
+    context,
+    title: context.l10n.extraIncomeTitle,
+    // Root navigator: above the bottom navigation, never behind it (C15).
+    builder: (BuildContext ctx) => OtherIncomeForm(
+      studentId: studentId,
+      onClose: () => Navigator.of(ctx).pop(),
+      onSaved: (SavedOtherIncome s) => Navigator.of(ctx).pop(s),
     ),
   );
   if (saved == null || !context.mounted) return saved != null;
   final l10n = context.l10n;
   final String message = l10n.extraIncomeSaved(context.fmt.money(saved.income.amount), saved.income.label);
-  if (messenger != null) {
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 8),
-        persist: false,
-        action: SnackBarAction(
-          label: l10n.commonUndo,
-          onPressed: () => container.read(otherIncomeRepositoryProvider).softDelete(saved.id),
-        ),
-      ));
-  }
+  BhorToast.show(
+    context,
+    message: message,
+    tone: BhorTone.ok,
+    actionLabel: l10n.commonUndo,
+    onAction: () => container.read(otherIncomeRepositoryProvider).softDelete(saved.id),
+    duration: const Duration(seconds: 8),
+    bottomOffset: context.bhorIsWide ? 0 : 64,
+  );
   if (saved.share) {
     final String text = await _receiptText(context, container, saved.income);
     if (context.mounted) await ShareService.shareText(context, text);
@@ -160,11 +148,13 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
-    final DateTime? picked = await showAppDatePicker(
-      context: context,
+    final DateTime? picked = await showBhorDatePicker(
+      context,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,
       lastDate: last,
+      weekStart: ref.read(weekStartProvider).value ?? DateTime.saturday,
+      today: last,
     );
     if (picked == null || !mounted) return;
     setState(() => _date = LocalDate(picked.year, picked.month, picked.day));
@@ -219,8 +209,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
     final LocalDate date = _date ?? today;
     final List<PaymentMethod> methods = ref.watch(paymentMethodsConfigProvider).visible;
@@ -234,119 +223,110 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     } else if (_amountValue == null) {
       reason = l10n.payDisabledAmount;
     }
+    final List<String> quickLabels = <String>[
+      l10n.extraIncomeAdmission,
+      l10n.extraIncomeExam,
+      l10n.extraIncomeNotes,
+    ];
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewPaddingOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(child: Semantics(header: true, child: Text(l10n.extraIncomeTitle, style: tt.titleLarge))),
-              IconButton(
-                tooltip: l10n.commonClose,
-                icon: const Icon(Icons.close),
-                onPressed: widget.onClose,
-              ),
-            ],
-          ),
-          Text(l10n.extraIncomeHelp, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary)),
+          Text(l10n.extraIncomeHelp, style: b.type.body.copyWith(color: b.colors.text2)),
           if (student.value != null) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(l10n.extraIncomeFromStudent(student.value!.name), style: tt.titleSmall),
+            const SizedBox(height: BhorSpace.s8),
+            Text(l10n.extraIncomeFromStudent(student.value!.name), style: b.type.bodyStrong),
           ],
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: BhorSpace.s16),
+          BhorTextField(
             key: const ValueKey<String>('income-label'),
             controller: _label,
-            textCapitalization: TextCapitalization.sentences,
             textInputAction: TextInputAction.next,
-            decoration: InputDecoration(labelText: l10n.extraIncomeLabelField),
+            label: l10n.extraIncomeLabelField,
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s8),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s4,
             children: <Widget>[
-              for (final String s in <String>[l10n.extraIncomeAdmission, l10n.extraIncomeExam, l10n.extraIncomeNotes])
-                ActionChip(
-                  label: Text(s),
-                  onPressed: () => setState(() => _label.text = s),
+              for (int i = 0; i < quickLabels.length; i++)
+                BhorChip(
+                  key: ValueKey<String>('income-quick-$i'),
+                  label: quickLabels[i],
+                  selected: _label.text == quickLabels[i],
+                  onSelected: (bool _) => setState(() => _label.text = quickLabels[i]),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: BhorSpace.s16),
+          BhorTextField(
             key: const ValueKey<String>('income-amount'),
             controller: _amount,
             keyboardType: TextInputType.number,
             inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
-            decoration: InputDecoration(
-              labelText: l10n.payAmountLabel,
-              prefixText: '৳ ',
-              errorText: _amountError(l10n),
-              errorMaxLines: 2,
-              helperText: _amountValue == null ? null : fmt.money(_amountValue!),
-            ),
+            tabular: true,
+            label: l10n.payAmountLabel,
+            prefix: Text('৳', style: b.type.body.copyWith(color: b.colors.text2)),
+            error: _amountError(l10n),
+            helper: _amountValue == null ? null : fmt.money(_amountValue!),
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 16),
-          Text(l10n.payMethodLabel, style: tt.labelLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: BhorSpace.s16),
+          Text(l10n.payMethodLabel, style: b.type.label),
+          const SizedBox(height: BhorSpace.s8),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s4,
             children: <Widget>[
               for (final PaymentMethod m in methods)
-                ChoiceChip(
+                BhorChip(
                   key: ValueKey<String>('income-method-${m.code}'),
-                  label: Text(paymentMethodLabel(l10n, m)),
+                  label: paymentMethodLabel(l10n, m),
                   selected: m == method,
-                  onSelected: (_) => setState(() => _method = m),
+                  onSelected: (bool _) => setState(() => _method = m),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
+          const SizedBox(height: BhorSpace.s16),
+          BhorButton(
             key: const ValueKey<String>('income-date'),
+            variant: BhorButtonVariant.secondary,
+            icon: Icons.calendar_today_outlined,
+            label: '${l10n.payDateLabel}: ${fmt.date(date)}',
+            expand: true,
             onPressed: () => _pickDate(today, date),
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-            icon: const Icon(Icons.calendar_today_outlined, size: 18),
-            label: Text('${l10n.payDateLabel}: ${fmt.date(date)}'),
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: BhorSpace.s16),
+          BhorTextField(
             key: const ValueKey<String>('income-note'),
             controller: _note,
-            decoration: InputDecoration(labelText: l10n.payNoteLabel),
+            label: l10n.payNoteLabel,
           ),
           if (_error != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(_error!, style: tt.bodyMedium?.copyWith(color: tokens.error)),
+            const SizedBox(height: BhorSpace.s12),
+            Text(_error!, style: b.type.body.copyWith(color: b.colors.danger)),
           ],
-          const SizedBox(height: 20),
-          FilledButton(
+          const SizedBox(height: BhorSpace.s20),
+          BhorButton(
             key: const ValueKey<String>('income-save'),
+            label: l10n.commonSave,
+            expand: true,
             onPressed: _canSave ? () => _save(share: false) : null,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-            child: Text(l10n.commonSave),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton(
+          const SizedBox(height: BhorSpace.s8),
+          BhorButton(
             key: const ValueKey<String>('income-save-send'),
+            variant: BhorButtonVariant.secondary,
+            label: l10n.extraIncomeSaveSend,
+            expand: true,
             onPressed: _canSave ? () => _save(share: true) : null,
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-            child: Text(l10n.extraIncomeSaveSend),
           ),
           if (reason != null) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(
-              reason,
-              textAlign: TextAlign.center,
-              style: tt.bodySmall?.copyWith(color: tokens.textSecondary),
-            ),
+            const SizedBox(height: BhorSpace.s8),
+            Text(reason, textAlign: TextAlign.center, style: b.type.meta),
           ],
         ],
       ),

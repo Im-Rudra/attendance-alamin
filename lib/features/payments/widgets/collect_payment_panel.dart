@@ -1,11 +1,11 @@
 // The desktop side panel of the dues screen: the same form as the sheet, drawn
-// in place. After a save it shows the "recorded" snackbar and starts over for
+// in place. After a save it shows the "recorded" toast and starts over for
 // the next payment.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:attendance_alamin/app/widgets/glass_card.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/features/payments/controllers/collect_payment_controller.dart';
 import 'package:attendance_alamin/features/payments/widgets/collect_payment_form.dart';
 import 'package:attendance_alamin/features/payments/widgets/collect_payment_sheet.dart';
@@ -32,9 +32,8 @@ class _CollectPaymentPanelBodyState extends ConsumerState<CollectPaymentPanelBod
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.only(top: 12),
+    return BhorCard(
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s12, BhorSpace.s12, 0),
       child: CollectPaymentForm(
         key: ValueKey<String>('${widget.studentId}/${widget.enrollmentId}/$_generation'),
         studentId: widget.studentId,

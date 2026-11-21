@@ -3,21 +3,79 @@
 // 2. cash in during the calendar month: by method, other income, total, and
 //    the receipts behind it.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
+
+// ---- small pieces -------------------------------------------------------------
+
+/// A stat card: the amount big over its label, with an optional caption and
+/// footer line. Tappable when [onTap] is set.
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    super.key,
+    required this.label,
+    required this.amount,
+    this.caption,
+    this.footer,
+    this.onTap,
+  });
+
+  final String label;
+  final int amount;
+  final String? caption;
+  final Widget? footer;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return BhorCard(
+      onTap: onTap,
+      semanticLabel: label,
+      padding: const EdgeInsets.all(BhorSpace.s12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: BhorMoney(amount, style: b.type.stat),
+          ),
+          if (caption != null) Text(caption!, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
+          if (footer != null) ...<Widget>[const SizedBox(height: BhorSpace.s4), footer!],
+        ],
+      ),
+    );
+  }
+}
+
+/// One hairline.
+class _Rule extends StatelessWidget {
+  const _Rule();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: 1,
+        margin: const EdgeInsets.symmetric(vertical: BhorSpace.s8),
+        color: context.bhor.colors.line,
+      );
+}
 
 // ---- block 1: the billing month ---------------------------------------------
 
@@ -33,19 +91,17 @@ class BillingBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final MonthTotals t = summary.totals;
     final BillingStatus? status = ref.watch(billingStatusProvider).value;
     final bool nothing = t.expected == 0 && t.waivedCount == 0;
 
     final List<Widget> children = <Widget>[
-      SectionHeader(title: l10n.collBillingBlock(fmt.monthYear(summary.month))),
+      BhorSectionHeader(title: l10n.collBillingBlock(fmt.monthYear(summary.month))),
     ];
     if (nothing) {
       children.add(
-        GlassCard(
-          dense: true,
+        BhorCard(
           child: status != null && status.notStarted
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,19 +109,17 @@ class BillingBlock extends ConsumerWidget {
                     Text(
                       l10n.duesNotStarted(fmt.monthYear(status.firstUpcoming!)),
                       key: const ValueKey<String>('coll-not-started'),
-                      style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
+                      style: b.type.body,
                     ),
-                    TextButton(
-                      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                    const SizedBox(height: BhorSpace.s8),
+                    BhorButton(
+                      label: l10n.duesSeeStudents,
+                      variant: BhorButtonVariant.ghost,
                       onPressed: () => GoRouter.maybeOf(context)?.go(Routes.students),
-                      child: Text(l10n.duesSeeStudents),
                     ),
                   ],
                 )
-              : Text(
-                  l10n.collNothingBilled,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                ),
+              : Text(l10n.collNothingBilled, style: b.type.body.copyWith(color: b.colors.text2)),
         ),
       );
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
@@ -76,14 +130,12 @@ class BillingBlock extends ConsumerWidget {
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Expanded(child: _StatCard(label: l10n.collExpected, amount: t.expected)),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
-            child: StatTile(label: l10n.collExpected, value: fmt.money(t.expected)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: StatTile(
+            child: _StatCard(
               label: l10n.collReceived,
-              value: fmt.money(t.received),
+              amount: t.received,
               caption: l10n.collPaidStudents(
                 fmt.number(t.paidStudents),
                 fmt.number(t.totalStudents),
@@ -92,70 +144,54 @@ class BillingBlock extends ConsumerWidget {
           ),
         ],
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: BhorSpace.s12),
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: StatTile(
+            child: _StatCard(
               label: l10n.collWaived,
-              value: fmt.money(t.waivedAmount),
+              amount: t.waivedAmount,
               caption: l10n.collWaivedCaption(fmt.number(t.waivedCount)),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
-            child: GestureDetector(
+            child: _StatCard(
               key: const ValueKey<String>('coll-outstanding'),
-              behavior: HitTestBehavior.opaque,
+              label: l10n.collOutstanding,
+              amount: t.outstanding,
               onTap: t.outstanding > 0 ? onSeeDues : null,
-              child: StatTile(
-                label: l10n.collOutstanding,
-                value: fmt.money(t.outstanding),
-                footer: t.outstanding > 0
-                    ? Row(
-                        children: <Widget>[
-                          Flexible(
-                            child: Text(
-                              l10n.collSeeDues,
-                              style: tt.labelMedium?.copyWith(
-                                color: tokens.accent,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+              footer: t.outstanding > 0
+                  ? Row(
+                      children: <Widget>[
+                        Flexible(
+                          child: Text(
+                            l10n.collSeeDues,
+                            style: b.type.label.copyWith(color: b.colors.accent),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward, size: 16, color: tokens.accent),
-                        ],
-                      )
-                    : null,
-              ),
+                        ),
+                        const SizedBox(width: BhorSpace.s4),
+                        Icon(Icons.arrow_forward, size: 16, color: b.colors.accent),
+                      ],
+                    )
+                  : null,
             ),
           ),
         ],
       ),
-      const SizedBox(height: 12),
-      Semantics(
-        container: true,
-        label: l10n.collProgressLabel(fmt.money(t.received), fmt.money(t.expected)),
-        excludeSemantics: true,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: ratio.clamp(0.0, 1.0).toDouble(),
-            minHeight: 10,
-            backgroundColor: tokens.track,
-            color: tokens.accent,
-          ),
-        ),
+      const SizedBox(height: BhorSpace.s12),
+      BhorProgress(
+        value: ratio.clamp(0.0, 1.0).toDouble(),
+        height: 10,
+        semanticLabel: l10n.collProgressLabel(fmt.money(t.received), fmt.money(t.expected)),
       ),
     ]);
 
     if (summary.batches.isNotEmpty) {
       children.addAll(<Widget>[
-        SectionHeader(title: l10n.collByBatch),
-        GlassCard(
-          dense: true,
+        BhorSectionHeader(title: l10n.collByBatch),
+        BhorCard(
           padding: EdgeInsets.zero,
           child: Column(
             children: <Widget>[
@@ -163,13 +199,13 @@ class BillingBlock extends ConsumerWidget {
                 _BatchLine(
                   name: summary.batches[i].batchName,
                   totals: summary.batches[i].totals,
-                  divider: i > 0,
+                  divider: i < summary.batches.length - 1 || summary.batches.length > 1,
                 ),
               if (summary.batches.length > 1)
                 _BatchLine(
                   name: l10n.collAllBatches,
                   totals: t,
-                  divider: true,
+                  divider: false,
                   bold: true,
                 ),
             ],
@@ -198,51 +234,45 @@ class _BatchLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return DecoratedBox(
+    final BhorThemeData b = context.bhor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s12),
       decoration: BoxDecoration(
-        border: divider ? Border(top: BorderSide(color: tokens.hairline)) : null,
+        border: divider ? Border(bottom: BorderSide(color: b.colors.line)) : null,
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.titleSmall?.copyWith(
-                      color: tokens.textPrimary,
-                      fontWeight: bold ? FontWeight.w700 : null,
-                    ),
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: bold ? b.type.heading : b.type.bodyStrong,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.collPaidStudents(
-                    fmt.number(totals.paidStudents),
-                    fmt.number(totals.totalStudents),
-                  ),
-                  style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              l10n.collBatchSummary(
-                fmt.money(totals.expected),
-                fmt.money(totals.received),
-                fmt.money(totals.outstanding),
               ),
-              style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+              const SizedBox(width: BhorSpace.s8),
+              Text(
+                l10n.collPaidStudents(
+                  fmt.number(totals.paidStudents),
+                  fmt.number(totals.totalStudents),
+                ),
+                style: b.type.meta,
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.collBatchSummary(
+              fmt.money(totals.expected),
+              fmt.money(totals.received),
+              fmt.money(totals.outstanding),
             ),
-          ],
-        ),
+            style: b.type.meta,
+          ),
+        ],
       ),
     );
   }
@@ -259,45 +289,37 @@ class CashBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final bool nothing = summary.cashTotal == 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SectionHeader(title: l10n.collCashBlock(fmt.monthYear(summary.month))),
-        GlassCard(
-          dense: true,
+        BhorSectionHeader(title: l10n.collCashBlock(fmt.monthYear(summary.month))),
+        BhorCard(
           child: nothing
-              ? Text(
-                  l10n.collLogEmpty,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                )
+              ? Text(l10n.collLogEmpty, style: b.type.body.copyWith(color: b.colors.text2))
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text(
-                      l10n.collByMethod,
-                      style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                    ),
-                    const SizedBox(height: 4),
+                    Text(l10n.collByMethod, style: b.type.meta),
+                    const SizedBox(height: BhorSpace.s4),
                     for (final MethodTotal m in summary.byMethod)
                       _KeyValue(
                         label: paymentMethodLabel(l10n, m.method),
-                        value: fmt.money(m.amount),
+                        amount: m.amount,
                       ),
-                    const Divider(height: 16),
-                    _KeyValue(label: l10n.collFeesTotal, value: fmt.money(summary.feesCash)),
+                    const _Rule(),
+                    _KeyValue(label: l10n.collFeesTotal, amount: summary.feesCash),
                     if (summary.otherIncome > 0)
                       _KeyValue(
                         key: const ValueKey<String>('coll-other-income'),
                         label: l10n.collOtherIncome,
-                        value: fmt.money(summary.otherIncome),
+                        amount: summary.otherIncome,
                       ),
-                    const Divider(height: 16),
+                    const _Rule(),
                     _KeyValue(
                       label: l10n.collCashTotal,
-                      value: fmt.money(summary.cashTotal),
+                      amount: summary.cashTotal,
                       bold: true,
                     ),
                   ],
@@ -309,26 +331,23 @@ class CashBlock extends StatelessWidget {
 }
 
 class _KeyValue extends StatelessWidget {
-  const _KeyValue({super.key, required this.label, required this.value, this.bold = false});
+  const _KeyValue({super.key, required this.label, required this.amount, this.bold = false});
 
   final String label;
-  final String value;
+  final int amount;
   final bool bold;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextStyle? style = Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: tokens.textPrimary,
-          fontWeight: bold ? FontWeight.w700 : null,
-        );
+    final BhorThemeData b = context.bhor;
+    final TextStyle style = bold ? b.type.heading : b.type.body;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
       child: Row(
         children: <Widget>[
           Expanded(child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: style)),
-          const SizedBox(width: 8),
-          Text(value, maxLines: 1, style: style),
+          const SizedBox(width: BhorSpace.s8),
+          BhorMoney(amount, style: style),
         ],
       ),
     );
@@ -346,25 +365,19 @@ class ReceiptLog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final Map<String, Student> students = ref.watch(duesStudentMapProvider);
     final List<ReceiptLine> receipts = summary.receipts;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SectionHeader(title: l10n.collLog),
+        BhorSectionHeader(title: l10n.collLog),
         if (receipts.isEmpty)
-          GlassCard(
-            dense: true,
-            child: Text(
-              l10n.collLogEmpty,
-              style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-            ),
+          BhorCard(
+            child: Text(l10n.collLogEmpty, style: b.type.body.copyWith(color: b.colors.text2)),
           )
         else
-          GlassCard(
-            dense: true,
+          BhorCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: <Widget>[
@@ -373,7 +386,7 @@ class ReceiptLog extends ConsumerWidget {
                     key: ValueKey<String>('coll-receipt-${receipts[i].receiptId}'),
                     name: students[receipts[i].studentId]?.name ?? '',
                     line: receipts[i],
-                    divider: i > 0,
+                    divider: i < receipts.length - 1,
                     methodLabel: paymentMethodLabel(l10n, receipts[i].method),
                     dateText: fmt.dateShort(receipts[i].paidOn),
                     monthsText: fmt.monthList(receipts[i].months, currentYear: summary.month.year),
@@ -407,66 +420,28 @@ class _ReceiptRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final String sub = <String>[dateText, methodLabel, monthsText]
         .where((String s) => s.isNotEmpty)
         .join(' · ');
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: divider ? Border(top: BorderSide(color: tokens.hairline)) : null,
-      ),
-      // Tapping the row opens the receipt (edit / delete), like the student
-      // profile's Payment history (QA-14).
-      child: InkWell(
-        key: ValueKey<String>('coll-receipt-open-${line.receiptId}'),
-        onTap: () => showReceipt(context, receiptId: line.receiptId),
-        child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16, top: 6, bottom: 6),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (name.isNotEmpty)
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.titleSmall?.copyWith(color: tokens.textPrimary),
-                      ),
-                    Text(
-                      sub,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                fmt.money(line.amount),
-                maxLines: 1,
-                style: tt.titleSmall?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              IconButton(
-                tooltip: l10n.collShareReceipt,
-                icon: const Icon(Icons.share, size: 20),
-                onPressed: () => shareReceipt(context, receiptId: line.receiptId),
-              ),
-            ],
+    // Tapping the row opens the receipt (edit / delete), like the student
+    // profile's Payment history (QA-14).
+    return BhorListRow(
+      key: ValueKey<String>('coll-receipt-open-${line.receiptId}'),
+      title: name.isNotEmpty ? name : sub,
+      subtitle: name.isNotEmpty ? sub : null,
+      divider: divider,
+      onTap: () => showReceipt(context, receiptId: line.receiptId),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          BhorMoney(line.amount, style: b.type.bodyStrong),
+          BhorIconButton(
+            icon: Icons.share,
+            semanticLabel: l10n.collShareReceipt,
+            onPressed: () => shareReceipt(context, receiptId: line.receiptId),
           ),
-        ),
-      ),
+        ],
       ),
     );
   }

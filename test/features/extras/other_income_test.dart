@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -24,15 +25,15 @@ const ValueKey<String> _save = ValueKey<String>('income-save');
 bool? _result;
 
 /// A page with one button that opens the sheet, like a real caller.
-Widget _host({String? studentId}) => Scaffold(
+Widget _host({String? studentId}) => BhorScaffold(
       body: Center(
         child: Builder(
-          builder: (BuildContext context) => ElevatedButton(
+          builder: (BuildContext context) => BhorButton(
             key: const ValueKey<String>('open-income'),
             onPressed: () async {
               _result = await showOtherIncomeSheet(context, studentId: studentId);
             },
-            child: const Text('open'),
+            label: 'open',
           ),
         ),
       ),
@@ -63,7 +64,9 @@ void main() {
       expect(find.byKey(_label), findsOneWidget);
       expect(find.byKey(_amount), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('income-method-cash')), findsOneWidget);
-      expect(find.byType(ActionChip), findsNWidgets(3));
+      for (final String k in <String>['income-quick-0', 'income-quick-1', 'income-quick-2']) {
+        expect(find.byKey(ValueKey<String>(k)), findsOneWidget);
+      }
       // Student line is filled once the student loads.
       expect(find.textContaining('রহিম উদ্দিন'), findsOneWidget);
     },
@@ -73,7 +76,7 @@ void main() {
     await pumpApp(tester, _host(), overrides: seedFakes().overrides);
     await _open(tester);
     await tester.ensureVisible(find.byKey(_save));
-    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNull);
+    expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNull);
     expect(find.text(bn.extraIncomeDisabledLabel), findsOneWidget);
 
     await tester.enterText(find.byKey(_label), 'পরীক্ষার ফি');
@@ -82,11 +85,11 @@ void main() {
 
     await tester.enterText(find.byKey(_amount), '০');
     await tester.pump();
-    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNull, reason: 'zero is not income');
+    expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNull, reason: 'zero is not income');
 
     await tester.enterText(find.byKey(_amount), '৫০০');
     await tester.pump();
-    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNotNull);
+    expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNotNull);
   });
 
   testWidgets('Latin digits typed become Bangla and the amount is previewed', (WidgetTester tester) async {
@@ -94,7 +97,7 @@ void main() {
     await _open(tester);
     await tester.enterText(find.byKey(_amount), '1500');
     await tester.pump();
-    expect(tester.widget<TextField>(find.byKey(_amount)).controller!.text, '১৫০০');
+    expect(tester.widget<BhorTextField>(find.byKey(_amount)).controller!.text, '১৫০০');
     expect(find.text(AppFormat(Lang.bn).money(1500)), findsOneWidget);
   });
 
@@ -106,7 +109,7 @@ void main() {
     await tester.pump();
     expect(find.text(bn.errAmountTooLarge), findsOneWidget);
     await tester.ensureVisible(find.byKey(_save));
-    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNull);
+    expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNull);
 
     await tester.enterText(find.byKey(_amount), '2000000');
     await tester.pump();
@@ -115,7 +118,7 @@ void main() {
     await tester.enterText(find.byKey(_amount), '500');
     await tester.pump();
     expect(find.text(bn.errAmountTooLarge), findsNothing);
-    expect(tester.widget<FilledButton>(find.byKey(_save)).onPressed, isNotNull);
+    expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNotNull);
   });
 
   testWidgets('saving records a labelled one-off payment with no dues, undo removes it',
@@ -156,7 +159,7 @@ void main() {
     await pumpApp(tester, _host(), overrides: f.overrides);
     await _open(tester);
     await tester.enterText(find.byKey(_label), 'নোট');
-    await tester.tap(find.byTooltip(bn.commonClose));
+    await tester.tap(find.byIcon(Icons.close_rounded));
     await _settle(tester);
     expect(_result, isFalse);
     expect(f.otherIncome.items, isEmpty);

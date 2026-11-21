@@ -3,7 +3,8 @@
 // two scrolling columns (billing month || cash in + receipts) so both fill the
 // height. Tapping "outstanding" opens the dues list filtered to that month.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,7 +12,7 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
@@ -39,83 +40,88 @@ class CollectionScreen extends ConsumerWidget {
       GoRouter.maybeOf(context)?.go(Routes.fees);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Semantics(header: true, child: Text(l10n.collTitle)),
+    Future<void> openMenu() async {
+      final String? v = await showBhorSheet<String>(
+        context,
+        builder: (BuildContext ctx) => BhorCard(
+          padding: EdgeInsets.zero,
+          child: BhorListRow(
+            key: const Key('coll-add-other-income'),
+            title: l10n.collOtherIncomeMenu,
+            divider: false,
+            onTap: () => Navigator.of(ctx).pop('other-income'),
+          ),
+        ),
+      );
+      if (v == 'other-income' && context.mounted) showOtherIncomeSheet(context);
+    }
+
+    return BhorScaffold(
+      header: BhorHeader(
+        title: l10n.collTitle,
         actions: <Widget>[
-          IconButton(
+          BhorIconButton(
             key: const Key('coll-export-csv'),
-            tooltip: l10n.collExportCsv,
-            icon: const Icon(Icons.table_view_outlined),
+            icon: Icons.table_view_outlined,
+            semanticLabel: l10n.collExportCsv,
             onPressed: () => runCsvExport(context, month: month),
           ),
-          PopupMenuButton<String>(
+          BhorIconButton(
             key: const Key('coll-menu'),
-            tooltip: l10n.payMenuTooltip,
-            onSelected: (String v) {
-              if (v == 'other-income') showOtherIncomeSheet(context);
-            },
-            itemBuilder: (BuildContext ctx) => <PopupMenuEntry<String>>[
-              PopupMenuItem<String>(
-                key: const Key('coll-add-other-income'),
-                value: 'other-income',
-                child: Text(l10n.collOtherIncomeMenu),
-              ),
-            ],
+            icon: Icons.more_vert,
+            semanticLabel: l10n.payMenuTooltip,
+            onPressed: openMenu,
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            const FeesSegments(selected: FeesSegment.collection),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: g),
-              child: MonthPickerRow(
-                month: month,
-                canPrev: canStepBack(month, earliest),
-                canNext: canStepForward(month, current),
-                onChanged: (YearMonth m) =>
-                    ref.read(collMonthProvider.notifier).select(m == current ? null : m),
-              ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const FeesSegments(selected: FeesSegment.collection),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: g),
+            child: MonthPickerRow(
+              month: month,
+              canPrev: canStepBack(month, earliest),
+              canNext: canStepForward(month, current),
+              onChanged: (YearMonth m) =>
+                  ref.read(collMonthProvider.notifier).select(m == current ? null : m),
             ),
-            Expanded(
-              child: async.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (Object e, StackTrace s) => EmptyState(
-                  icon: Icons.error_outline,
-                  message: l10n.commonLoadingFailed,
-                ),
-                data: (CollectionSummary summary) => LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints c) {
-                    final Widget billing = BillingBlock(summary: summary, onSeeDues: seeDues);
-                    final Widget cash = CashBlock(summary: summary);
-                    final Widget log = ReceiptLog(summary: summary);
-                    if (c.maxWidth >= twoColumnsFrom) {
-                      return Padding(
-                        padding: EdgeInsets.fromLTRB(g, 0, g, g),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(child: _Column(children: <Widget>[billing])),
-                            SizedBox(width: g),
-                            Expanded(child: _Column(children: <Widget>[cash, log])),
-                          ],
-                        ),
-                      );
-                    }
-                    return _Column(
-                      padding: EdgeInsets.fromLTRB(g, 0, g, 112),
-                      children: <Widget>[billing, cash, log],
+          ),
+          Expanded(
+            child: async.when(
+              loading: () => const Center(child: BhorSpinner()),
+              error: (Object e, StackTrace s) => BhorEmptyState(
+                icon: Icons.error_outline,
+                title: l10n.commonLoadingFailed,
+              ),
+              data: (CollectionSummary summary) => LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints c) {
+                  final Widget billing = BillingBlock(summary: summary, onSeeDues: seeDues);
+                  final Widget cash = CashBlock(summary: summary);
+                  final Widget log = ReceiptLog(summary: summary);
+                  if (c.maxWidth >= twoColumnsFrom) {
+                    return Padding(
+                      padding: EdgeInsets.fromLTRB(g, 0, g, g),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(child: _Column(children: <Widget>[billing])),
+                          SizedBox(width: g),
+                          Expanded(child: _Column(children: <Widget>[cash, log])),
+                        ],
+                      ),
                     );
-                  },
-                ),
+                  }
+                  return _Column(
+                    padding: EdgeInsets.fromLTRB(g, 0, g, 112),
+                    children: <Widget>[billing, cash, log],
+                  );
+                },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -134,7 +140,7 @@ class _Column extends StatelessWidget {
       padding: padding,
       children: <Widget>[
         for (int i = 0; i < children.length; i++) ...<Widget>[
-          if (i > 0) const SizedBox(height: 12),
+          if (i > 0) const SizedBox(height: BhorSpace.s12),
           children[i],
         ],
       ],

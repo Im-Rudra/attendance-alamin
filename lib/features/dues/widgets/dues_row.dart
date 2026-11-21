@@ -1,25 +1,27 @@
 // One student of the dues list (UX 2d): 4dp level bar, name and amount, the
-// severity badge (icon + word + day), batches and months, then Call / Remind
+// severity tag (icon + word + day), batches and months, then Call / Remind
 // and the Collect button. Also the shared row actions and the desktop
 // right-click menu (UX 3b: টাকা নিন · মনে করান · নম্বর কপি · মওকুফ).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/controllers/reminder_actions.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_tags.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
@@ -56,7 +58,7 @@ String inactiveReasonText(AppLocalizations l10n, InactiveReason? reason) =>
       null => l10n.duesInactiveGroup,
     };
 
-/// The severity badge of [row], or the grey reason for the grey group.
+/// The severity tag of [row], or the grey reason for the grey group.
 class DuesStatusBadge extends StatelessWidget {
   const DuesStatusBadge({super.key, required this.row, this.compact = false});
 
@@ -71,14 +73,12 @@ class DuesStatusBadge extends StatelessWidget {
         inactiveReasonText(context.l10n, row.reason),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context)
-            .textTheme
-            .labelMedium
-            ?.copyWith(color: context.aurora.textSecondary),
+        style: context.bhor.type.meta,
       );
     }
-    return SeverityBadge(
-      level: level,
+    return dueLevelTag(
+      context,
+      level,
       dayInDue: row.dayInDue,
       monthCount: row.monthCount,
       partialRemaining: row.partialRemaining,
@@ -103,10 +103,9 @@ class DuesRowTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final l10n = context.l10n;
-    final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final bool reminded =
         ref.watch(duesRemindedProvider).value?.contains(row.studentId) ?? false;
     final int year = ref.watch(todayProvider).year;
@@ -114,28 +113,37 @@ class DuesRowTile extends ConsumerWidget {
       row.batchNames.join(' · '),
       duesMonthsText(context, row, year),
     ].where((String s) => s.isNotEmpty).join(' · ');
+    final DueLevel? level = row.inactive ? null : row.level;
 
-    final Widget remind = TextButton.icon(
+    final Widget remind = BhorButton(
       key: ValueKey<String>('dues-remind-${row.studentId}'),
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+      variant: BhorButtonVariant.ghost,
+      icon: reminded ? Icons.check : Icons.share,
+      label: reminded ? l10n.duesRemindedToday : l10n.duesRemind,
       onPressed: () => duesRemind(context, row.studentId),
-      icon: Icon(reminded ? Icons.check : Icons.share, size: 18),
-      label: Text(reminded ? l10n.duesRemindedToday : l10n.duesRemind),
     );
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onSecondaryTapUp: (TapUpDetails d) =>
           showDuesContextMenu(context, ref, d.globalPosition, row),
-      child: Material(
-        color: selected ? tokens.accentContainer : tokens.surfaceDense,
-        child: InkWell(
-          onTap: onOpen,
-          hoverColor: tokens.track,
+      child: BhorPressable(
+        onTap: onOpen,
+        semanticLabel: row.name,
+        selected: selected,
+        radius: BhorRadius.card,
+        builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+          duration: BhorMotion.fast,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: selected ? c.accentTint : c.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.card),
+            border: Border.all(color: selected || s.hovered ? c.accentLine : c.line),
+          ),
           child: Stack(
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 12, 8),
+                padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 10, BhorSpace.s12, BhorSpace.s8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -148,60 +156,51 @@ class DuesRowTile extends ConsumerWidget {
                             row.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+                            style: b.type.heading,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          fmt.money(row.total),
-                          maxLines: 1,
-                          style: tt.titleMedium?.copyWith(
-                            color: row.inactive ? tokens.textSecondary : tokens.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        const SizedBox(width: BhorSpace.s8),
+                        BhorMoney(
+                          row.total,
+                          style: b.type.heading,
+                          color: row.inactive ? c.text2 : null,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: BhorSpace.s4),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: DuesStatusBadge(row: row),
                     ),
                     if (subtitle.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
-                      ),
+                      const SizedBox(height: BhorSpace.s4),
+                      Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
                     ],
-                    const SizedBox(height: 4),
+                    const SizedBox(height: BhorSpace.s4),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
                         Expanded(
                           child: Wrap(
-                            spacing: 4,
+                            spacing: BhorSpace.s4,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: <Widget>[
-                              TextButton.icon(
+                              BhorButton(
                                 key: ValueKey<String>('dues-call-${row.studentId}'),
-                                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                                variant: BhorButtonVariant.ghost,
+                                icon: ContactActions.icon,
+                                label: ContactActions.label(l10n),
                                 onPressed: () => duesCall(context, ref, row.studentId),
-                                icon: Icon(ContactActions.icon, size: 18),
-                                label: Text(ContactActions.label(l10n)),
                               ),
                               remind,
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton(
+                        const SizedBox(width: BhorSpace.s8),
+                        BhorButton(
                           key: ValueKey<String>('dues-collect-${row.studentId}'),
-                          style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                          label: l10n.duesCollect,
                           onPressed: () => duesCollect(context, row.studentId),
-                          child: Text(l10n.duesCollect),
                         ),
                       ],
                     ),
@@ -212,7 +211,12 @@ class DuesRowTile extends ConsumerWidget {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                child: LevelEdgeBar(level: row.inactive ? null : row.level),
+                child: ExcludeSemantics(
+                  child: Container(
+                    width: 4,
+                    color: level == null ? null : c.sevHue[level.severityLevel.index],
+                  ),
+                ),
               ),
             ],
           ),
@@ -226,7 +230,8 @@ class DuesRowTile extends ConsumerWidget {
 
 enum _MenuAction { collect, remind, copy, waive, open }
 
-/// Desktop context menu on a dues row or table row.
+/// Desktop context menu on a dues row or table row (a small dialog of the
+/// student's actions; [position] is kept for the callers' signature).
 Future<void> showDuesContextMenu(
   BuildContext context,
   WidgetRef ref,
@@ -234,27 +239,36 @@ Future<void> showDuesContextMenu(
   DuesRow row,
 ) async {
   final l10n = context.l10n;
-  final RenderObject? overlay = Overlay.maybeOf(context)?.context.findRenderObject();
-  if (overlay is! RenderBox) return;
   final Student? student = ref.read(duesStudentMapProvider)[row.studentId];
   final String? number = student?.callNumber;
   final String? waiveEnrollment = row.waiveEnrollmentId;
   final YearMonth? waiveMonth = row.waiveMonth;
-  final _MenuAction? choice = await showMenu<_MenuAction>(
-    context: context,
-    position: RelativeRect.fromRect(
-      Rect.fromLTWH(position.dx, position.dy, 0, 0),
-      Offset.zero & overlay.size,
+  final List<(_MenuAction, String)> entries = <(_MenuAction, String)>[
+    (_MenuAction.collect, l10n.duesCollect),
+    (_MenuAction.remind, l10n.duesRemind),
+    if (number != null) (_MenuAction.copy, l10n.commonCopyNumber),
+    if (waiveEnrollment != null && waiveMonth != null) (_MenuAction.waive, l10n.duesMenuWaive),
+    (_MenuAction.open, l10n.duesOpenProfile),
+  ];
+  final _MenuAction? choice = await showBhorDialog<_MenuAction>(
+    context,
+    builder: (BuildContext ctx) => BhorDialog(
+      title: row.name,
+      body: BhorCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int i = 0; i < entries.length; i++)
+              BhorListRow(
+                title: entries[i].$2,
+                divider: i < entries.length - 1,
+                onTap: () => Navigator.of(ctx).pop(entries[i].$1),
+              ),
+          ],
+        ),
+      ),
     ),
-    items: <PopupMenuEntry<_MenuAction>>[
-      PopupMenuItem<_MenuAction>(value: _MenuAction.collect, child: Text(l10n.duesCollect)),
-      PopupMenuItem<_MenuAction>(value: _MenuAction.remind, child: Text(l10n.duesRemind)),
-      if (number != null)
-        PopupMenuItem<_MenuAction>(value: _MenuAction.copy, child: Text(l10n.commonCopyNumber)),
-      if (waiveEnrollment != null && waiveMonth != null)
-        PopupMenuItem<_MenuAction>(value: _MenuAction.waive, child: Text(l10n.duesMenuWaive)),
-      PopupMenuItem<_MenuAction>(value: _MenuAction.open, child: Text(l10n.duesOpenProfile)),
-    ],
   );
   if (choice == null || !context.mounted) return;
   switch (choice) {
@@ -263,10 +277,9 @@ Future<void> showDuesContextMenu(
     case _MenuAction.remind:
       await duesRemind(context, row.studentId);
     case _MenuAction.copy:
-      final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
       final String copied = l10n.commonCopied;
       await Clipboard.setData(ClipboardData(text: number ?? ''));
-      messenger?.showSnackBar(SnackBar(content: Text(copied)));
+      if (context.mounted) BhorToast.show(context, message: copied);
     case _MenuAction.waive:
       if (waiveEnrollment != null && waiveMonth != null) {
         await showWaiveDialog(context, enrollmentId: waiveEnrollment, month: waiveMonth);

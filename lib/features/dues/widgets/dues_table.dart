@@ -1,18 +1,28 @@
 // The dues data table of large windows (UX 3b): নাম · ব্যাচ · মাস · পরিমাণ ·
-// অবস্থা · মনে করানো · actions, severity sorted, on `surfaceDense` with a
-// sticky header. The grey group follows the active rows when it is expanded.
+// অবস্থা · মনে করানো · actions, severity sorted, on a card with a sticky
+// header. The grey group follows the active rows when it is expanded.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
+
+/// One column of the table: header label, flex, cell builder.
+class _Col {
+  const _Col({required this.label, required this.cell, this.flex = 1, this.numeric = false});
+
+  final String label;
+  final Widget Function(DuesRow row) cell;
+  final int flex;
+  final bool numeric;
+}
 
 class DuesTable extends ConsumerWidget {
   const DuesTable({
@@ -30,24 +40,21 @@ class DuesTable extends ConsumerWidget {
   /// out.
   static const double wideColumnsFrom = 760;
 
+  static const double _rowHeight = 48;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final l10n = context.l10n;
-    final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final Set<String> reminded = ref.watch(duesRemindedProvider).value ?? const <String>{};
     final int year = ref.watch(todayProvider).year;
-    DuesRow? selected;
-    for (final DuesRow r in rows) {
-      if (r.studentId == selectedId) selected = r;
-    }
 
     return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints c) {
-        final bool extras = c.maxWidth >= wideColumnsFrom;
-        final List<DenseColumn<DuesRow>> columns = <DenseColumn<DuesRow>>[
-          DenseColumn<DuesRow>(
+      builder: (BuildContext context, BoxConstraints box) {
+        final bool extras = box.maxWidth >= wideColumnsFrom;
+        final List<_Col> columns = <_Col>[
+          _Col(
             label: l10n.duesColName,
             flex: 3,
             cell: (DuesRow r) => SizedBox(
@@ -56,51 +63,43 @@ class DuesTable extends ConsumerWidget {
                 behavior: HitTestBehavior.translucent,
                 onSecondaryTapUp: (TapUpDetails d) =>
                     showDuesContextMenu(context, ref, d.globalPosition, r),
-                child: Text(
-                  r.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
-                ),
+                child: Text(r.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.body),
               ),
             ),
           ),
           if (extras)
-            DenseColumn<DuesRow>(
+            _Col(
               label: l10n.duesColBatch,
               flex: 2,
               cell: (DuesRow r) => Text(
                 r.batchNames.join(', '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.body.copyWith(color: c.text2),
               ),
             ),
           if (extras)
-            DenseColumn<DuesRow>(
+            _Col(
               label: l10n.duesColMonths,
               flex: 2,
               cell: (DuesRow r) => Text(
                 duesMonthsText(context, r, year),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                style: b.type.body.copyWith(color: c.text2),
               ),
             ),
-          DenseColumn<DuesRow>(
+          _Col(
             label: l10n.duesColAmount,
             flex: 2,
             numeric: true,
-            cell: (DuesRow r) => Text(
-              fmt.money(r.total),
-              maxLines: 1,
-              style: tt.bodyMedium?.copyWith(
-                color: r.inactive ? tokens.textSecondary : tokens.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+            cell: (DuesRow r) => BhorMoney(
+              r.total,
+              style: b.type.bodyStrong,
+              color: r.inactive ? c.text2 : null,
             ),
           ),
-          DenseColumn<DuesRow>(
+          _Col(
             label: l10n.duesColStatus,
             flex: 3,
             cell: (DuesRow r) => FittedBox(
@@ -110,17 +109,17 @@ class DuesTable extends ConsumerWidget {
             ),
           ),
           if (extras)
-            DenseColumn<DuesRow>(
+            _Col(
               label: l10n.duesColReminded,
               flex: 1,
               cell: (DuesRow r) => reminded.contains(r.studentId)
-                  ? Tooltip(
+                  ? BhorTooltip(
                       message: l10n.duesRemindedToday,
-                      child: Icon(Icons.check_circle_outline, size: 20, color: tokens.accent),
+                      child: Icon(Icons.check_circle_outline, size: 20, color: c.accent),
                     )
-                  : Text('—', style: tt.bodyMedium?.copyWith(color: tokens.textDisabled)),
+                  : Text('—', style: b.type.body.copyWith(color: c.text3)),
             ),
-          DenseColumn<DuesRow>(
+          _Col(
             label: l10n.duesColActions,
             flex: 3,
             cell: (DuesRow r) => FittedBox(
@@ -129,21 +128,20 @@ class DuesTable extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  IconButton(
-                    tooltip: ContactActions.label(l10n),
-                    icon: Icon(ContactActions.icon, size: 20),
+                  BhorIconButton(
+                    icon: ContactActions.icon,
+                    semanticLabel: ContactActions.label(l10n),
                     onPressed: () => duesCall(context, ref, r.studentId),
                   ),
-                  IconButton(
-                    tooltip: reminded.contains(r.studentId)
-                        ? l10n.duesRemindedToday
-                        : l10n.duesRemind,
-                    icon: Icon(reminded.contains(r.studentId) ? Icons.check : Icons.share, size: 20),
+                  BhorIconButton(
+                    icon: reminded.contains(r.studentId) ? Icons.check : Icons.share,
+                    semanticLabel:
+                        reminded.contains(r.studentId) ? l10n.duesRemindedToday : l10n.duesRemind,
                     onPressed: () => duesRemind(context, r.studentId),
                   ),
-                  IconButton(
-                    tooltip: l10n.duesCollect,
-                    icon: const Icon(Icons.payments_outlined, size: 20),
+                  BhorIconButton(
+                    icon: Icons.payments_outlined,
+                    semanticLabel: l10n.duesCollect,
                     onPressed: () => duesCollect(context, r.studentId),
                   ),
                 ],
@@ -151,11 +149,78 @@ class DuesTable extends ConsumerWidget {
             ),
           ),
         ];
-        return DenseTable<DuesRow>(
-          columns: columns,
-          rows: rows,
-          selected: selected,
-          onRowTap: (DuesRow r) => onSelect(r.studentId),
+
+        Widget cells(DuesRow? row) => Row(
+              children: <Widget>[
+                for (final _Col col in columns)
+                  Expanded(
+                    flex: col.flex,
+                    child: row == null
+                        ? Semantics(
+                            header: true,
+                            child: Text(
+                              col.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: col.numeric ? TextAlign.end : TextAlign.start,
+                              style: b.type.label.copyWith(color: c.text2),
+                            ),
+                          )
+                        : Align(
+                            alignment: col.numeric
+                                ? AlignmentDirectional.centerEnd
+                                : AlignmentDirectional.centerStart,
+                            child: col.cell(row),
+                          ),
+                  ),
+              ],
+            );
+
+        final Widget list = ListView.builder(
+          padding: EdgeInsets.zero,
+          itemCount: rows.length,
+          itemBuilder: (BuildContext context, int i) {
+            final DuesRow r = rows[i];
+            final bool selected = r.studentId == selectedId;
+            return BhorPressable(
+              onTap: () => onSelect(r.studentId),
+              semanticLabel: r.name,
+              selected: selected,
+              scaleOnPress: false,
+              radius: 0,
+              builder: (BuildContext context, BhorStates s) => Container(
+                constraints: const BoxConstraints(minHeight: _rowHeight),
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
+                decoration: BoxDecoration(
+                  color: selected ? c.accentTint : (s.hovered ? c.surface2 : null),
+                  border: Border(bottom: BorderSide(color: c.line)),
+                ),
+                child: cells(r),
+              ),
+            );
+          },
+        );
+
+        return Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(BhorRadius.card),
+            border: Border.all(color: c.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Container(
+                constraints: const BoxConstraints(minHeight: _rowHeight),
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
+                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.line))),
+                alignment: Alignment.centerLeft,
+                child: cells(null),
+              ),
+              Expanded(child: list),
+            ],
+          ),
         );
       },
     );

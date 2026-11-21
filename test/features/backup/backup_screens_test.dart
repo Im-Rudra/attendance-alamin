@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/data/backup/backup_repository.dart';
 import 'package:attendance_alamin/domain/sync/sync_models.dart';
 import 'package:attendance_alamin/features/backup/controllers/backup_state.dart';
@@ -185,7 +185,7 @@ void main() {
       expect(find.text(_bn.backupRestoreTitle), findsOneWidget);
       expect(repo.restored, isEmpty, reason: 'nothing before the confirmation');
 
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(_bn.backupRestoreConfirm)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.text(_bn.backupRestoreConfirm)));
       await tester.pumpAndSettle();
       expect(repo.restored, <String>['s2']);
       expect(find.text(_bn.backupRestoreDone), findsOneWidget);
@@ -324,7 +324,7 @@ void main() {
         reason: 'deletions are listed before the table',
       );
       final DecoratedBox box = tester.widget<DecoratedBox>(deletions);
-      expect((box.decoration as BoxDecoration).color, tester.element(deletions).aurora.errorContainer);
+      expect((box.decoration as BoxDecoration).color, tester.element(deletions).bhor.colors.dangerBg);
 
       // Samples: at most 3 per bucket plus "+N more", payments as name · money · date.
       expect(find.text('তানভীর হাসান'), findsOneWidget);
@@ -350,7 +350,7 @@ void main() {
         ],
       ));
       expect(find.text(_bn.backupHeadlineNone), findsOneWidget, reason: allTexts(tester));
-      final FilledButton apply = tester.widget<FilledButton>(find.byKey(const Key('review-apply')));
+      final BhorButton apply = tester.widget<BhorButton>(find.byKey(const Key('review-apply')));
       expect(apply.onPressed, isNull);
       expect(find.text(_bn.backupApplyDisabledNone), findsOneWidget);
       expect(find.byKey(const Key('review-deletions')), findsNothing);
@@ -374,7 +374,7 @@ void main() {
       ));
       expect(find.text(_bn.backupHeadlineKeptOnly(_f.number(1))), findsOneWidget, reason: allTexts(tester));
       expect(find.text(_bn.backupHeadlineNone), findsNothing);
-      expect(tester.widget<FilledButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
+      expect(tester.widget<BhorButton>(find.byKey(const Key('review-apply'))).onPressed, isNull);
     });
 
     testWidgets('desktop: numbers on one side, named details on the other, no clipped area',

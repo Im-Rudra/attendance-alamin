@@ -3,15 +3,16 @@
 // column. Desktop: the numbers (info, headline, table) on one side, the named
 // details (deletions, clashes, samples, explanations) on the other.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/domain/sync/sync_models.dart';
@@ -40,17 +41,17 @@ class BackupReviewScreen extends ConsumerWidget {
 
   Future<void> _undo(BuildContext context, WidgetRef ref) async {
     final l10n = context.l10n;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final bool ok = await ref.read(importControllerProvider.notifier).undo();
     if (!context.mounted) return;
     if (ok) {
       requestRemindersReplan(context);
-      messenger.showSnackBar(SnackBar(content: Text(l10n.backupUndone)));
+      // The toast lives on the root overlay: it outlasts this screen.
+      BhorToast.show(context, message: l10n.backupUndone, tone: BhorTone.ok);
       _close(context);
     } else {
       final String? code = ref.read(importControllerProvider).errorCode;
       if (code != null) {
-        messenger.showSnackBar(SnackBar(content: Text(errorTextForCode(l10n, code))));
+        BhorToast.show(context, message: errorTextForCode(l10n, code), tone: BhorTone.danger);
       }
     }
   }
@@ -73,11 +74,11 @@ class BackupReviewScreen extends ConsumerWidget {
           icon: Icons.upload_file_outlined,
           message: l10n.backupReviewEmpty,
           actions: <Widget>[
-            FilledButton(
+            BhorButton(
               key: const Key('review-pick'),
+              label: l10n.backupPickFile,
+              expand: true,
               onPressed: () => _pickOther(ref),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-              child: Text(l10n.backupPickFile),
             ),
           ],
         );
@@ -86,9 +87,9 @@ class BackupReviewScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(l10n.backupLoading, style: Theme.of(context).textTheme.bodyLarge),
+              const BhorSpinner(size: 32),
+              const SizedBox(height: BhorSpace.s16),
+              Text(l10n.backupLoading, style: context.bhor.type.body),
             ],
           ),
         );
@@ -99,11 +100,11 @@ class BackupReviewScreen extends ConsumerWidget {
           title: l10n.backupFailedTitle,
           message: errorTextForCode(l10n, s.errorCode ?? 'unknown'),
           actions: <Widget>[
-            FilledButton(
+            BhorButton(
               key: const Key('review-pick-other'),
+              label: l10n.backupPickOther,
+              expand: true,
               onPressed: () => _pickOther(ref),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-              child: Text(l10n.backupPickOther),
             ),
           ],
         );
@@ -131,17 +132,14 @@ class BackupReviewScreen extends ConsumerWidget {
 
     return PopScope(
       canPop: !busy,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: l10n.commonClose,
-            icon: const Icon(Icons.close),
-            onPressed: busy ? null : () => _close(context),
-          ),
-          title: Semantics(header: true, child: Text(l10n.shellTitleBackupReview)),
+      child: BhorScaffold(
+        header: BhorHeader(
+          title: l10n.shellTitleBackupReview,
+          showBack: true,
+          onBack: busy ? null : () => _close(context),
         ),
-        body: SafeArea(top: false, bottom: bottom == null, child: body),
-        bottomNavigationBar: bottom,
+        body: body,
+        bottomNav: bottom,
       ),
     );
   }
@@ -268,29 +266,24 @@ class ReviewError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return Semantics(
       liveRegion: true,
       container: true,
       child: DecoratedBox(
         key: const Key('review-error'),
         decoration: BoxDecoration(
-          color: tokens.errorContainer,
-          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-          border: Border.all(color: tokens.errorContainerBorder),
+          color: b.colors.dangerBg,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: b.colors.danger.withValues(alpha: 0.35)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(BhorSpace.s12),
           child: Row(
             children: <Widget>[
-              Icon(Icons.error_outline, color: tokens.onErrorContainer),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  text,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: tokens.onErrorContainer),
-                ),
-              ),
+              Icon(Icons.error_outline, color: b.colors.danger),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(child: Text(text, style: b.type.body.copyWith(color: b.colors.danger))),
             ],
           ),
         ),

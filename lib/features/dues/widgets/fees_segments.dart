@@ -1,14 +1,14 @@
 // The two segments of the Fees tab (UX 1: বকেয়া · আদায়) and the month picker
 // row shared by the collection screen and the batch fees tab.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 
 enum FeesSegment { dues, collection }
@@ -25,12 +25,13 @@ class FeesSegments extends StatelessWidget {
     final l10n = context.l10n;
     final double g = WindowClass.of(context).gutter;
     return Padding(
-      padding: EdgeInsets.fromLTRB(g, 4, g, 8),
-      child: SegmentedChoice<FeesSegment>(
-        options: FeesSegment.values,
-        selected: selected,
-        labelOf: (FeesSegment s) =>
-            s == FeesSegment.dues ? l10n.duesSegDues : l10n.duesSegCollection,
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, BhorSpace.s8),
+      child: BhorSegmented<FeesSegment>(
+        segments: <BhorSegment<FeesSegment>>[
+          BhorSegment<FeesSegment>(FeesSegment.dues, l10n.duesSegDues),
+          BhorSegment<FeesSegment>(FeesSegment.collection, l10n.duesSegCollection),
+        ],
+        value: selected,
         onChanged: (FeesSegment s) {
           if (s == selected) return;
           GoRouter.maybeOf(context)
@@ -59,12 +60,11 @@ class MonthPickerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
     return Row(
       children: <Widget>[
-        IconButton(
-          tooltip: l10n.collPrevMonth,
-          icon: const Icon(Icons.chevron_left),
+        BhorIconButton(
+          icon: Icons.chevron_left,
+          semanticLabel: l10n.collPrevMonth,
           onPressed: canPrev ? () => onChanged(month.addMonths(-1)) : null,
         ),
         Expanded(
@@ -75,16 +75,13 @@ class MonthPickerRow extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: tokens.textPrimary),
+              style: context.bhor.type.heading,
             ),
           ),
         ),
-        IconButton(
-          tooltip: l10n.collNextMonth,
-          icon: const Icon(Icons.chevron_right),
+        BhorIconButton(
+          icon: Icons.chevron_right,
+          semanticLabel: l10n.collNextMonth,
           onPressed: canNext ? () => onChanged(month.addMonths(1)) : null,
         ),
       ],

@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/time/date_range.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -84,12 +85,12 @@ void main() {
       expect(preview.data, bn.extraHolidayPreview('১', '১'));
 
       await tester.enterText(find.byKey(const ValueKey<String>('holiday-reason')), 'ঈদের ছুটি');
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const ValueKey<String>('holiday-run')));
       await _settle(tester);
 
       // The confirm dialog repeats the number.
       expect(find.text(bn.extraHolidayConfirmTitle('১', '১')), findsOneWidget);
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.tap(find.descendant(of: find.byType(BhorDialog), matching: find.byType(BhorButton)).last);
       await _settle(tester);
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -120,7 +121,7 @@ void main() {
       expect(tester.widget<Text>(find.byKey(const ValueKey<String>('holiday-preview'))).data,
           bn.extraHolidayRestorePreview('১'));
 
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const ValueKey<String>('holiday-run')));
       await _settle(tester);
       expect(f.store.exceptions.where((e) => e.kind == ExceptionKind.cancel), isEmpty);
       expect(find.text(bn.extraHolidayRestored('১')), findsOneWidget);

@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/data/backup/backup_providers.dart';
 import 'package:attendance_alamin/data/backup/backup_repository.dart';
@@ -151,19 +152,19 @@ GoRouter hostRouter() => GoRouter(
       routes: <RouteBase>[
         GoRoute(
           path: '/',
-          builder: (BuildContext context, GoRouterState state) => Scaffold(
+          builder: (BuildContext context, GoRouterState state) => BhorScaffold(
             body: Builder(
               builder: (BuildContext context) => Column(
                 children: <Widget>[
-                  TextButton(
+                  BhorButton(
                     key: const Key('host-import'),
                     onPressed: () => runImportBackup(context),
-                    child: const Text('import'),
+                    label: 'import',
                   ),
-                  TextButton(
+                  BhorButton(
                     key: const Key('host-export'),
                     onPressed: () => runExportBackup(context),
-                    child: const Text('export'),
+                    label: 'export',
                   ),
                 ],
               ),

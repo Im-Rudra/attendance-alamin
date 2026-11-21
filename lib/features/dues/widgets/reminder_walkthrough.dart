@@ -2,13 +2,14 @@
 // at a time. No SMS gateway: every message goes through the share sheet, the
 // teacher picks WhatsApp / SMS / Messenger and comes back for the next one.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/services/share_service.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
@@ -17,17 +18,17 @@ import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 
 /// Opens the walk-through for [rows] (the students still to remind today).
 Future<void> showReminderWalkthrough(BuildContext context, List<DuesRow> rows) {
-  return showDialog<void>(
-    context: context,
-    builder: (BuildContext ctx) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: ReminderWalkthrough(rows: rows),
-      ),
+  return showBhorDialog<void>(
+    context,
+    builder: (BuildContext ctx) => BhorDialog(
+      title: ctx.l10n.duesWalkTitle,
+      body: SingleChildScrollView(child: ReminderWalkthrough(rows: rows)),
     ),
   );
 }
 
+/// The body of the walk-through dialog: progress, the current student, the
+/// message to share, and Skip / Share.
 class ReminderWalkthrough extends ConsumerStatefulWidget {
   const ReminderWalkthrough({super.key, required this.rows});
 
@@ -78,29 +79,28 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final bool done = _index >= widget.rows.length;
 
     final Widget body;
     if (done) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Icon(Icons.check_circle, size: 56, color: tokens.accent),
-          const SizedBox(height: 12),
+          Icon(Icons.check_circle, size: 56, color: b.colors.accent),
+          const SizedBox(height: BhorSpace.s12),
           Text(
             l10n.duesWalkDone(fmt.number(_sent)),
             textAlign: TextAlign.center,
-            style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+            style: b.type.heading,
           ),
-          const SizedBox(height: 16),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+          const SizedBox(height: BhorSpace.s16),
+          BhorButton(
+            label: l10n.commonDone,
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.commonDone),
           ),
         ],
       );
@@ -117,48 +117,42 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
                   row.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+                  style: b.type.heading,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                fmt.money(row.total),
-                style: tt.titleMedium?.copyWith(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              const SizedBox(width: BhorSpace.s8),
+              BhorMoney(row.total, style: b.type.heading),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: BhorSpace.s4),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: DuesStatusBadge(row: row),
           ),
-          const SizedBox(height: 12),
-          Text(l10n.duesWalkMessage, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
-          const SizedBox(height: 4),
+          const SizedBox(height: BhorSpace.s12),
+          Text(l10n.duesWalkMessage, style: b.type.meta),
+          const SizedBox(height: BhorSpace.s4),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 200, minHeight: 72),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: tokens.track,
-                borderRadius: BorderRadius.circular(AuroraMetrics.radiusChip),
+                color: b.colors.surface2,
+                borderRadius: BorderRadius.circular(BhorRadius.chip),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(BhorSpace.s12),
                 child: FutureBuilder<String?>(
                   key: ValueKey<int>(_index),
                   future: _message,
                   builder: (BuildContext context, AsyncSnapshot<String?> snap) {
                     if (snap.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: BhorSpinner());
                     }
                     final String text = snap.data ?? '';
                     return SingleChildScrollView(
                       child: Text(
                         text.isEmpty ? l10n.duesReminderFailed : text,
-                        style: tt.bodyMedium?.copyWith(color: tokens.textPrimary),
+                        style: b.type.body,
                       ),
                     );
                   },
@@ -166,28 +160,27 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: BhorSpace.s16),
           Row(
             children: <Widget>[
               Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: BhorButton(
+                  variant: BhorButtonVariant.secondary,
+                  label: l10n.duesWalkSkip,
                   onPressed: _advance,
-                  child: Text(l10n.duesWalkSkip),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: FutureBuilder<String?>(
                   key: ValueKey<String>('send-$_index'),
                   future: _message,
                   builder: (BuildContext context, AsyncSnapshot<String?> snap) {
                     final String? text = snap.data;
-                    return FilledButton.icon(
-                      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                    return BhorButton(
+                      icon: Icons.share,
+                      label: l10n.duesWalkSend,
                       onPressed: (text == null || text.isEmpty) ? null : () => _send(text),
-                      icon: const Icon(Icons.share, size: 18),
-                      label: Text(l10n.duesWalkSend),
                     );
                   },
                 ),
@@ -198,46 +191,33 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      l10n.duesWalkTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.titleLarge?.copyWith(color: tokens.textPrimary),
+            Expanded(
+              child: done
+                  ? const SizedBox.shrink()
+                  : Text(
+                      l10n.duesWalkProgress(
+                        fmt.number(_index + 1),
+                        fmt.number(widget.rows.length),
+                      ),
+                      style: b.type.label.copyWith(color: b.colors.text2),
                     ),
-                  ),
-                ),
-                if (!done)
-                  Text(
-                    l10n.duesWalkProgress(
-                      fmt.number(_index + 1),
-                      fmt.number(widget.rows.length),
-                    ),
-                    style: tt.labelLarge?.copyWith(color: tokens.textSecondary),
-                  ),
-                IconButton(
-                  tooltip: l10n.commonClose,
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
             ),
-            const SizedBox(height: 8),
-            body,
+            BhorIconButton(
+              icon: Icons.close,
+              semanticLabel: l10n.commonClose,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: BhorSpace.s8),
+        body,
+      ],
     );
   }
 }
