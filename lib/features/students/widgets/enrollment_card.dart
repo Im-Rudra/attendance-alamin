@@ -1,15 +1,16 @@
 // One card per enrollment on the student profile (UX 3): batch, fee, the month
 // strip, outstanding dues, attendance summary and [টাকা নিন].
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -47,9 +48,8 @@ class EnrollmentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final LocalDate today = ref.watch(todayProvider);
     final List<Batch> batches = ref.watch(stuBatchesProvider).value ?? const <Batch>[];
     Batch? batch;
@@ -67,9 +67,8 @@ class EnrollmentCard extends ConsumerWidget {
       feeText = f.missing ? l10n.stuFeeNotSet : l10n.stuMonthlyFee(fmt.money(f.fee));
     }
 
-    return GlassCard(
-      dense: true,
-      padding: const EdgeInsets.all(16),
+    return BhorCard(
+      padding: const EdgeInsets.all(BhorSpace.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -84,53 +83,57 @@ class EnrollmentCard extends ConsumerWidget {
                       batch?.name ?? '',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
+                      style: b.type.heading,
                     ),
                     if (feeText != null)
-                      Text(feeText,
-                          style: tt.labelMedium
-                              ?.copyWith(color: tokens.textSecondary)),
+                      Text(feeText, style: b.type.label.copyWith(color: b.colors.text2)),
                     Text(
                       l10n.stuBillingStartLine(fmt.monthYear(enrollment.startMonth)),
-                      style:
-                          tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                      style: b.type.label.copyWith(color: b.colors.text2),
                     ),
                   ],
                 ),
               ),
-              PopupMenuButton<_CardAction>(
-                tooltip: l10n.commonMore,
-                onSelected: (_CardAction a) async {
+              BhorIconButton(
+                icon: Icons.more_vert,
+                semanticLabel: l10n.commonMore,
+                onPressed: () async {
+                  final _CardAction? a = await showBhorSheet<_CardAction>(
+                    context,
+                    builder: (BuildContext ctx) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        BhorListRow(
+                          title: l10n.stuChangeBillingStart,
+                          divider: !ended && active,
+                          onTap: () => Navigator.of(ctx).pop(_CardAction.startMonth),
+                        ),
+                        if (!ended && active)
+                          BhorListRow(
+                            title: l10n.stuRemoveFromBatchTitle,
+                            divider: false,
+                            onTap: () => Navigator.of(ctx).pop(_CardAction.remove),
+                          ),
+                      ],
+                    ),
+                  );
+                  if (a == null || !context.mounted) return;
                   switch (a) {
                     case _CardAction.startMonth:
                       await _editStartMonth(context, ref, today);
                     case _CardAction.remove:
-                      await openLeaveDialog(context,
-                          studentId: student.id, enrollmentId: enrollment.id);
+                      await openLeaveDialog(context, studentId: student.id, enrollmentId: enrollment.id);
                   }
                 },
-                itemBuilder: (BuildContext ctx) =>
-                    <PopupMenuEntry<_CardAction>>[
-                  PopupMenuItem<_CardAction>(
-                    value: _CardAction.startMonth,
-                    child: Text(l10n.stuChangeBillingStart),
-                  ),
-                  if (!ended && active)
-                    PopupMenuItem<_CardAction>(
-                      value: _CardAction.remove,
-                      child: Text(l10n.stuRemoveFromBatchTitle),
-                    ),
-                ],
               ),
             ],
           ),
           if (ended) ...<Widget>[
-            const SizedBox(height: 4),
+            const SizedBox(height: BhorSpace.s4),
             Row(
               children: <Widget>[
-                Icon(Icons.person_off_outlined,
-                    size: 16, color: tokens.textSecondary),
-                const SizedBox(width: 6),
+                Icon(Icons.person_off_outlined, size: 16, color: b.colors.text2),
+                const SizedBox(width: BhorSpace.s8),
                 Expanded(
                   child: Text(
                     enrollment.endMonth == null
@@ -139,7 +142,7 @@ class EnrollmentCard extends ConsumerWidget {
                             fmt.date(enrollment.endDate!),
                             fmt.monthYear(enrollment.endMonth!),
                           ),
-                    style: tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                    style: b.type.label.copyWith(color: b.colors.text2),
                   ),
                 ),
               ],
@@ -147,7 +150,7 @@ class EnrollmentCard extends ConsumerWidget {
           ],
           if (dues != null && dues.months.isNotEmpty) ...<Widget>[
             const SizedBox(height: 8),
-            MonthStrip(months: stripMonths(dues.months, today.yearMonth)),
+            _MonthStrip(months: stripMonths(dues.months, today.yearMonth)),
           ],
           if (dues != null && dues.totalOutstanding > 0) ...<Widget>[
             const SizedBox(height: 8),
@@ -158,15 +161,10 @@ class EnrollmentCard extends ConsumerWidget {
               children: <Widget>[
                 Text(
                   l10n.stuOutstanding(fmt.money(dues.totalOutstanding)),
-                  style: tt.titleSmall?.copyWith(color: tokens.textPrimary),
+                  style: b.type.bodyStrong,
                 ),
                 if (dues.worst != null && !dues.inactive)
-                  SeverityBadge(
-                    level: dues.worst!,
-                    dayInDue: dues.worstDay,
-                    monthCount: dues.openDue.length,
-                    compact: true,
-                  ),
+                  _LevelTag(level: dues.worst!, dayInDue: dues.worstDay, monthCount: dues.openDue.length),
               ],
             ),
           ],
@@ -177,9 +175,9 @@ class EnrollmentCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.payments_outlined),
-                label: Text(l10n.stuCollect),
+              child: BhorButton(
+                icon: Icons.payments_outlined,
+                label: l10n.stuCollect,
                 onPressed: () => showCollectPaymentSheet(context,
                     studentId: student.id, enrollmentId: enrollment.id),
               ),
@@ -192,8 +190,8 @@ class EnrollmentCard extends ConsumerWidget {
 
   Future<void> _editStartMonth(
       BuildContext context, WidgetRef ref, LocalDate today) async {
-    final YearMonth? picked = await showDialog<YearMonth>(
-      context: context,
+    final YearMonth? picked = await showBhorDialog<YearMonth>(
+      context,
       builder: (BuildContext ctx) => _StartMonthDialog(
         current: enrollment.startMonth,
         around: today.yearMonth,
@@ -202,13 +200,12 @@ class EnrollmentCard extends ConsumerWidget {
     if (picked == null || picked == enrollment.startMonth) return;
     if (!context.mounted) return;
     final l10n = context.l10n;
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await ref
           .read(enrollmentsRepositoryProvider)
           .setStartMonth(enrollment.id, picked);
     } on AppException catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      if (context.mounted) BhorToast.show(context, message: errorText(l10n, e));
     }
   }
 }
@@ -229,43 +226,119 @@ class _StartMonthDialogState extends State<_StartMonthDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(l10n.stuChangeBillingStart,
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              MonthDropdown(
-                label: l10n.stuBillingStart,
-                value: _value,
-                months: monthChoices(widget.around.addMonths(-24),
-                    widget.around.addMonths(12), _value),
-                onChanged: (YearMonth m) => setState(() => _value = m),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                children: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(l10n.commonCancel),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(_value),
-                    child: Text(l10n.commonSave),
-                  ),
-                ],
-              ),
-            ],
-          ),
+    return BhorDialog(
+      title: l10n.stuChangeBillingStart,
+      body: MonthDropdown(
+        label: l10n.stuBillingStart,
+        value: _value,
+        months: monthChoices(widget.around.addMonths(-24), widget.around.addMonths(12), _value),
+        onChanged: (YearMonth m) => setState(() => _value = m),
+      ),
+      actions: <Widget>[
+        BhorButton(
+          label: l10n.commonCancel,
+          variant: BhorButtonVariant.ghost,
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        BhorButton(label: l10n.commonSave, onPressed: () => Navigator.of(context).pop(_value)),
+      ],
+    );
+  }
+}
+
+/// A due level as a tag: icon + word + day count, never colour alone.
+class _LevelTag extends StatelessWidget {
+  const _LevelTag({required this.level, required this.dayInDue, required this.monthCount});
+
+  final DueLevel level;
+  final int? dayInDue;
+  final int monthCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final fmt = context.fmt;
+    final List<String> parts = <String>[level.label(l10n)];
+    if (dayInDue != null && level != DueLevel.upcoming) parts.add(l10n.uiDayCount(fmt.number(dayInDue!)));
+    return BhorTag.severity(level: level.severityLevel, label: parts.join(' · '), icon: level.icon);
+  }
+}
+
+/// Horizontally scrollable strip of the enrollment's months: month name over
+/// a state tag (icon + word).
+class _MonthStrip extends StatelessWidget {
+  const _MonthStrip({required this.months});
+
+  final List<MonthDue> months;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+      child: Row(
+        children: <Widget>[
+          for (int i = 0; i < months.length; i++) ...<Widget>[
+            if (i > 0) const SizedBox(width: BhorSpace.s8),
+            _MonthTile(key: ValueKey<int>(months[i].month.toInt()), due: months[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthTile extends StatelessWidget {
+  const _MonthTile({super.key, required this.due});
+
+  final MonthDue due;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final l10n = context.l10n;
+    final fmt = context.fmt;
+    final Widget tag;
+    final String word;
+    switch (due.state) {
+      case MonthState.paid:
+        final bool advance = !due.isDue;
+        word = advance ? l10n.uiStateAdvance : l10n.uiStatePaid;
+        tag = BhorTag(
+          label: word,
+          tone: BhorTone.ok,
+          icon: advance ? Icons.add_circle : Icons.check_circle,
+        );
+      case MonthState.waived:
+        word = l10n.uiStateWaived;
+        tag = BhorTag(label: word, icon: Icons.do_not_disturb_on);
+      case MonthState.free:
+        word = l10n.uiStateFree;
+        tag = BhorTag(label: word, icon: Icons.circle_outlined);
+      case MonthState.partial:
+      case MonthState.unpaid:
+        final DueLevel? level = due.level;
+        final bool partial = due.state == MonthState.partial;
+        if (level == null || level == DueLevel.upcoming) {
+          word = partial ? l10n.uiPartialLeft(fmt.money(due.remaining)) : l10n.uiLevelUpcoming;
+          tag = BhorTag(label: word, icon: Icons.schedule);
+        } else {
+          word = partial ? l10n.uiPartialLeft(fmt.money(due.remaining)) : level.label(l10n);
+          tag = BhorTag.severity(level: level.severityLevel, label: word, icon: level.icon);
+        }
+    }
+    return Semantics(
+      container: true,
+      label: l10n.a11yMonthChip(fmt.monthYear(due.month), word),
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(fmt.monthShort(due.month.month), style: b.type.label),
+          const SizedBox(height: BhorSpace.s4),
+          tag,
+        ],
       ),
     );
   }

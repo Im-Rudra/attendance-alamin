@@ -1,11 +1,13 @@
-// Batch detail (UX table "Batch detail"): glass header card, tabs
+// Batch detail (UX table "Batch detail"): header card, tabs
 // শিক্ষার্থী · হাজিরা · বেতন · সময়সূচি. The last three tabs belong to other
 // features and are reached through their entry files.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
@@ -13,8 +15,6 @@ import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
@@ -42,21 +42,8 @@ class BatchDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<BatchDetailScreen> createState() => _BatchDetailScreenState();
 }
 
-class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 4, vsync: this)..addListener(_onTab);
-
-  void _onTab() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _tabs
-      ..removeListener(_onTab)
-      ..dispose();
-    super.dispose();
-  }
+class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
+  int _tab = 0;
 
   Future<void> _onMenu(_MenuAction a) async {
     switch (a) {
@@ -70,6 +57,35 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
     }
   }
 
+  Future<void> _openMenu(Batch b) async {
+    final l10n = context.l10n;
+    final _MenuAction? a = await showBhorSheet<_MenuAction>(
+      context,
+      title: b.name,
+      builder: (BuildContext ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (b.archived)
+            BhorListRow(
+              title: l10n.batchMenuUnarchive,
+              onTap: () => Navigator.of(ctx).pop(_MenuAction.unarchive),
+            )
+          else
+            BhorListRow(
+              title: l10n.batchMenuArchive,
+              onTap: () => Navigator.of(ctx).pop(_MenuAction.archive),
+            ),
+          BhorListRow(
+            title: l10n.batchMenuDelete,
+            divider: false,
+            onTap: () => Navigator.of(ctx).pop(_MenuAction.delete),
+          ),
+        ],
+      ),
+    );
+    if (a != null && mounted) await _onMenu(a);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -78,83 +94,60 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
 
     Widget frame({String title = '', List<Widget> actions = const <Widget>[], Widget? fab, required Widget body}) {
       final double g = WindowClass.of(context).gutter;
-      return Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: !embedded,
-          title: Semantics(header: true, child: Text(title)),
-          actions: <Widget>[...actions, const SizedBox(width: 8)],
-        ),
-        floatingActionButton: fab,
-        body: SafeArea(
-          top: false,
-          child: Padding(padding: EdgeInsets.fromLTRB(g, 4, g, 0), child: body),
-        ),
+      return BhorScaffold(
+        header: BhorHeader(title: title, actions: actions, showBack: embedded ? false : null),
+        floating: fab,
+        body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
       );
     }
 
     return async.when(
-      loading: () => frame(body: const Center(child: CircularProgressIndicator())),
+      loading: () => frame(body: const Center(child: BhorSpinner())),
       error: (Object e, StackTrace s) => frame(
-        body: EmptyState(
+        body: BhorEmptyState(
           icon: Icons.error_outline,
-          message: l10n.commonLoadingFailed,
-          actionLabel: l10n.commonRetry,
-          onAction: () => ref.invalidate(batchByIdProvider(widget.batchId)),
+          title: l10n.commonLoadingFailed,
+          action: BhorButton(
+            label: l10n.commonRetry,
+            variant: BhorButtonVariant.secondary,
+            onPressed: () => ref.invalidate(batchByIdProvider(widget.batchId)),
+          ),
         ),
       ),
       data: (Batch? b) {
         if (b == null) {
-          return frame(
-            body: EmptyState(icon: Icons.search_off, message: l10n.errNotFound),
-          );
+          return frame(body: BhorEmptyState(icon: Icons.search_off, title: l10n.errNotFound));
         }
         final bool compact = !WindowClass.of(context).usesRail;
-        final bool showFab = _tabs.index == 0 && !b.archived;
+        final bool showFab = _tab == 0 && !b.archived;
         return frame(
           title: b.name,
           actions: <Widget>[
             if (!b.archived)
-              IconButton(
+              BhorIconButton(
                 key: const Key('batch-bulk-add'),
-                tooltip: l10n.batchBulkAdd,
-                icon: const Icon(Icons.group_add_outlined),
+                semanticLabel: l10n.batchBulkAdd,
+                icon: Icons.group_add_outlined,
                 onPressed: () => context.push(Routes.batchBulkAdd(b.id)),
               ),
-            IconButton(
-              tooltip: l10n.commonEdit,
-              icon: const Icon(Icons.edit_outlined),
+            BhorIconButton(
+              semanticLabel: l10n.commonEdit,
+              icon: Icons.edit_outlined,
               onPressed: () => context.push(Routes.batchEdit(b.id)),
             ),
-            PopupMenuButton<_MenuAction>(
-              tooltip: l10n.commonMore,
-              onSelected: _onMenu,
-              itemBuilder: (BuildContext ctx) => <PopupMenuEntry<_MenuAction>>[
-                if (b.archived)
-                  PopupMenuItem<_MenuAction>(
-                    value: _MenuAction.unarchive,
-                    child: Text(l10n.batchMenuUnarchive),
-                  )
-                else
-                  PopupMenuItem<_MenuAction>(
-                    value: _MenuAction.archive,
-                    child: Text(l10n.batchMenuArchive),
-                  ),
-                const PopupMenuDivider(),
-                PopupMenuItem<_MenuAction>(
-                  value: _MenuAction.delete,
-                  child: Text(l10n.batchMenuDelete),
-                ),
-              ],
+            BhorIconButton(
+              semanticLabel: l10n.commonMore,
+              icon: Icons.more_vert,
+              onPressed: () => _openMenu(b),
             ),
           ],
           fab: showFab
               ? Padding(
                   padding: EdgeInsets.only(bottom: compact ? 84 : 0),
-                  child: FloatingActionButton.extended(
-                    heroTag: null,
+                  child: BhorButton(
+                    icon: Icons.person_add_alt_1,
+                    label: l10n.batchAddStudent,
                     onPressed: () => showAddStudentToBatchSheet(context, batchId: b.id),
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: Text(l10n.batchAddStudent),
                   ),
                 )
               : null,
@@ -162,21 +155,20 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _BatchHeader(batch: b),
-              const SizedBox(height: 8),
-              TabBar(
-                controller: _tabs,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: <Widget>[
-                  Tab(text: l10n.batchTabStudents),
-                  Tab(text: l10n.batchTabAttendance),
-                  Tab(text: l10n.batchTabFees),
-                  Tab(text: l10n.batchTabSchedule),
+              const SizedBox(height: BhorSpace.s8),
+              BhorTabs(
+                tabs: <String>[
+                  l10n.batchTabStudents,
+                  l10n.batchTabAttendance,
+                  l10n.batchTabFees,
+                  l10n.batchTabSchedule,
                 ],
+                index: _tab,
+                onChanged: (int i) => setState(() => _tab = i),
               ),
               Expanded(
-                child: TabBarView(
-                  controller: _tabs,
+                child: IndexedStack(
+                  index: _tab,
                   children: <Widget>[
                     BatchStudentsTab(batchId: b.id, archived: b.archived),
                     BatchAttendanceTab(batchId: b.id),
@@ -193,7 +185,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen>
   }
 }
 
-/// Glass header: subject, fee, billing pill, take-attendance, and (wide) the
+/// Header card: subject, fee, billing pill, take-attendance, and (wide) the
 /// three stat tiles.
 class _BatchHeader extends ConsumerWidget {
   const _BatchHeader({required this.batch});
@@ -204,8 +196,7 @@ class _BatchHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
 
     String subjectName = '';
@@ -230,7 +221,7 @@ class _BatchHeader extends ConsumerWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) {
         final bool tiles = c.maxWidth >= 480 && MediaQuery.sizeOf(context).height >= 600;
-        return GlassCard(
+        return BhorCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -242,57 +233,43 @@ class _BatchHeader extends ConsumerWidget {
                       subjectName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                      style: th.type.body.copyWith(color: th.colors.text2),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: BhorSpace.s8),
                   BillingPill(type: batch.billingType),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: BhorSpace.s4),
               if (!tiles)
-                Text(
-                  facts.join(' · '),
-                  style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                )
+                Text(facts.join(' · '), style: th.type.body)
               else ...<Widget>[
-                if (fee != null)
-                  Text(
-                    l10n.batchFeePerMonth(fmt.money(fee)),
-                    style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
-                  ),
-                const SizedBox(height: 8),
+                if (fee != null) Text(l10n.batchFeePerMonth(fmt.money(fee)), style: th.type.heading),
+                const SizedBox(height: BhorSpace.s8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    Expanded(child: BhorStatText(label: l10n.batchStatStudents, value: fmt.number(students))),
+                    const SizedBox(width: BhorSpace.s8),
                     Expanded(
-                      child: StatTile(label: l10n.batchStatStudents, value: fmt.number(students)),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StatTile(
+                      child: BhorStatText(
                         label: l10n.batchStatToday,
                         value: pct == null ? l10n.batchStatNone : fmt.percent(pct),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StatTile(
-                        label: l10n.batchStatDues,
-                        value: fmt.money(dues?.total ?? 0),
-                      ),
-                    ),
+                    const SizedBox(width: BhorSpace.s8),
+                    Expanded(child: BhorStatText.money(label: l10n.batchStatDues, amount: dues?.total ?? 0)),
                   ],
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: BhorSpace.s8),
               if (batch.archived)
                 _ArchivedBanner(batch: batch)
               else
-                FilledButton.icon(
+                BhorButton(
+                  icon: Icons.how_to_reg_outlined,
+                  label: l10n.batchTakeAttendance,
                   onPressed: () => openRollCallForBatchDate(context, batchId: batch.id, date: today),
-                  icon: const Icon(Icons.how_to_reg_outlined),
-                  label: Text(l10n.batchTakeAttendance),
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
                 ),
             ],
           ),
@@ -309,24 +286,24 @@ class _ArchivedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData th = context.bhor;
     final l10n = context.l10n;
     final LocalDate? on = batch.archivedOn;
     return Wrap(
-      spacing: 12,
-      runSpacing: 8,
+      spacing: BhorSpace.s12,
+      runSpacing: BhorSpace.s8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        Icon(Icons.inventory_2_outlined, color: tokens.textSecondary),
+        Icon(Icons.inventory_2_outlined, color: th.colors.text2),
         if (on != null)
           Text(
             l10n.batchArchivedBanner(context.fmt.date(on)),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.textSecondary),
+            style: th.type.body.copyWith(color: th.colors.text2),
           ),
-        OutlinedButton(
+        BhorButton(
+          label: l10n.batchMenuUnarchive,
+          variant: BhorButtonVariant.secondary,
           onPressed: () => showUnarchiveBatchFlow(context, batchId: batch.id),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-          child: Text(l10n.batchMenuUnarchive),
         ),
       ],
     );

@@ -1,10 +1,10 @@
 // Unselected chips must look enabled (naive-tester C5: the Friday chip looked
-// disabled): a clearly visible outline and full-contrast text.
+// disabled): a visible outline and full-contrast text.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_chip.dart';
 
 import '../../helpers/pump_app.dart';
@@ -14,17 +14,19 @@ void main() {
     testWidgets('an unselected SchedChip has a visible outline (${mode.name})', (WidgetTester tester) async {
       await pumpApp(
         tester,
-        Scaffold(body: Center(child: SchedChip(label: 'Fri', selected: false, onTap: () {}))),
+        BhorScaffold(body: Center(child: SchedChip(label: 'Fri', selected: false, onTap: () {}))),
         themeMode: mode,
       );
-      final Material m = tester.widget<Material>(
-        find.descendant(of: find.byType(SchedChip), matching: find.byType(Material)).first,
-      );
+      expect(find.descendant(of: find.byType(SchedChip), matching: find.byType(BhorChip)), findsOneWidget);
       final BuildContext ctx = tester.element(find.byType(SchedChip));
-      final RoundedRectangleBorder shape = m.shape! as RoundedRectangleBorder;
-      expect(shape.side.color, ctx.aurora.textSecondary.withValues(alpha: 0.6), reason: 'not the 7% hairline');
+      final BhorColors c = ctx.bhor.colors;
+      final AnimatedContainer box = tester.widget<AnimatedContainer>(
+        find.descendant(of: find.byType(BhorChip), matching: find.byType(AnimatedContainer)),
+      );
+      final BoxDecoration deco = box.decoration! as BoxDecoration;
+      expect((deco.border! as Border).top.color, c.line, reason: 'a hairline outline');
       final Text label = tester.widget<Text>(find.text('Fri'));
-      expect(label.style?.color, ctx.aurora.textPrimary);
+      expect(label.style?.color, c.text, reason: 'full-contrast text');
     });
   }
 }

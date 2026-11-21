@@ -1,15 +1,16 @@
 // Small shared helpers of the batches feature: schedule text, billing pill,
-// the dues mini-badge and navigation.
+// the dues mini-badge, a notice strip and navigation.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -55,20 +56,9 @@ class BillingPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
     final l10n = context.l10n;
     final String label = type == BillingType.prepaid ? l10n.batchPillAdvance : l10n.batchPillAfter;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 28),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: ShapeDecoration(color: tokens.accentContainer, shape: const StadiumBorder()),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        maxLines: 1,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: tokens.onAccentContainer),
-      ),
-    );
+    return BhorTag(label: label, tone: BhorTone.accent);
   }
 }
 
@@ -83,33 +73,77 @@ class BatchDuesBadge extends ConsumerWidget {
     final BatchDuesSummary? d = ref.watch(batchDuesProvider(batchId)).value;
     final DueLevel? worst = d?.worst;
     if (d == null || worst == null || d.count == 0) return const SizedBox.shrink();
-    final sev = context.severity;
-    final SeverityLevel s = worst.severityLevel;
-    final Color text = sev.badgeText(s);
-    final Color? border = sev.badgeBorder(s);
     final String label = context.l10n.batchDuesCount(context.fmt.number(d.count));
     return Semantics(
       container: true,
       label: label,
       excludeSemantics: true,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: ShapeDecoration(
-          color: sev.badgeFill(s),
-          shape: StadiumBorder(
-            side: border == null
-                ? BorderSide.none
-                : BorderSide(color: border, width: sev.badgeBorderWidth(s)),
-          ),
+      child: BhorTag.severity(level: worst.severityLevel, label: label, icon: worst.icon),
+    );
+  }
+}
+
+/// A due level as a tag: icon + word, never colour alone. [monthCount] > 1
+/// adds "3 months due".
+class DueTag extends StatelessWidget {
+  const DueTag({super.key, required this.level, this.monthCount = 1});
+
+  final DueLevel level;
+  final int monthCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final List<String> parts = <String>[
+      level.label(l10n),
+      if (monthCount > 1) l10n.uiMonthsDue(context.fmt.number(monthCount)),
+    ];
+    return BhorTag.severity(level: level.severityLevel, label: parts.join(' · '), icon: level.icon);
+  }
+}
+
+/// A tinted strip with an icon and a sentence: [warn] uses the danger tint,
+/// otherwise a quiet hairline box. Announced as a live region.
+class BatchNotice extends StatelessWidget {
+  const BatchNotice({super.key, required this.text, this.warn = true, this.icon, this.children = const <Widget>[]});
+
+  final String text;
+  final bool warn;
+  final IconData? icon;
+
+  /// Extra lines under the sentence.
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    final Color fg = warn ? c.danger : c.text2;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: warn ? c.dangerBg : c.surface2,
+          borderRadius: BorderRadius.circular(BhorRadius.control),
+          border: Border.all(color: warn ? c.danger : c.line),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(worst.icon, size: 14, color: text),
-            const SizedBox(width: 4),
-            Text(label, maxLines: 1, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: text)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(BhorSpace.s12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(icon ?? (warn ? Icons.error_outline : Icons.check_circle_outline), color: fg),
+                  const SizedBox(width: BhorSpace.s8),
+                  Expanded(child: Text(text, style: b.type.body.copyWith(color: fg))),
+                ],
+              ),
+              ...children,
+            ],
+          ),
         ),
       ),
     );

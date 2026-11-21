@@ -2,18 +2,19 @@
 // created inline (never a destination of its own); billing is two radio cards
 // in plain words, default = last used; a fee change asks "কোন মাস থেকে?".
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -30,6 +31,7 @@ import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
 import 'package:attendance_alamin/features/batches/widgets/fee_change_sheet.dart';
 
@@ -167,7 +169,6 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
       _error = null;
     });
     final l10n = context.l10n;
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     final GoRouter? router = GoRouter.maybeOf(context);
     try {
       if (_editing) {
@@ -176,12 +177,14 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           if (mounted) setState(() => _saving = false);
           return;
         }
-        messenger?.showSnackBar(SnackBar(content: Text(l10n.batchSavedToast)));
-        if (mounted) _close();
+        if (mounted) {
+          BhorToast.show(context, message: l10n.batchSavedToast);
+          _close();
+        }
       } else {
         final String id = await _saveCreate();
-        messenger?.showSnackBar(SnackBar(content: Text(l10n.batchCreatedToast)));
         if (!mounted) return;
+        BhorToast.show(context, message: l10n.batchCreatedToast);
         if (router != null) {
           router.go(Routes.batch(id));
         } else {
@@ -256,19 +259,12 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.commonClose,
-          icon: const Icon(Icons.close),
-          onPressed: _close,
-        ),
-        title: Semantics(
-          header: true,
-          child: Text(_editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew),
-        ),
+    return BhorScaffold(
+      header: BhorHeader(
+        title: _editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew,
+        onBack: _close,
       ),
-      body: SafeArea(top: false, child: _body(context)),
+      body: _body(context),
     );
   }
 
@@ -282,24 +278,26 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     }
     if (_loaded) {
       return _notFound
-          ? EmptyState(icon: Icons.search_off, message: l10n.errNotFound)
+          ? BhorEmptyState(icon: Icons.search_off, title: l10n.errNotFound)
           : _form(context);
     }
     if (seed.hasError) {
-      return EmptyState(
+      return BhorEmptyState(
         icon: Icons.error_outline,
-        message: l10n.commonLoadingFailed,
-        actionLabel: l10n.commonRetry,
-        onAction: () => ref.invalidate(batchFormSeedProvider(widget.batchId)),
+        title: l10n.commonLoadingFailed,
+        action: BhorButton(
+          label: l10n.commonRetry,
+          variant: BhorButtonVariant.secondary,
+          onPressed: () => ref.invalidate(batchFormSeedProvider(widget.batchId)),
+        ),
       );
     }
-    return const Center(child: CircularProgressIndicator());
+    return const Center(child: BhorSpinner());
   }
 
   Widget _form(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
     final String? reason = _reason();
     final List<Subject> subjects = ref.watch(batchSubjectsProvider).value ?? const <Subject>[];
@@ -323,8 +321,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           runSpacing: 8,
           children: <Widget>[
             for (final String n in names)
-              ChoiceChip(
-                label: Text(n),
+              BhorChip(
+                label: n,
                 selected: typed.toLowerCase() == n.toLowerCase(),
                 onSelected: (_) => _subject.text = n,
               ),
@@ -341,29 +339,27 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(g, 8, g, 24),
                 children: <Widget>[
-                  TextField(
+                  BhorTextField(
                     key: const Key('batch-form-subject'),
                     controller: _subject,
                     enabled: !_editing,
                     textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: l10n.batchSubjectLabel,
-                      hintText: l10n.batchSubjectHint,
-                      helperText: _editing ? l10n.batchSubjectLocked : null,
-                    ),
+                    label: l10n.batchSubjectLabel,
+                    hint: l10n.batchSubjectHint,
+                    helper: _editing ? l10n.batchSubjectLocked : null,
                   ),
                   if (!_editing) ...<Widget>[
                     if (isNewSubject)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: BhorSpace.s8),
                         child: Row(
                           children: <Widget>[
-                            Icon(Icons.add_circle_outline, size: 18, color: tokens.accent),
-                            const SizedBox(width: 6),
+                            Icon(Icons.add_circle_outline, size: 18, color: th.colors.accent),
+                            const SizedBox(width: BhorSpace.s8),
                             Expanded(
                               child: Text(
                                 l10n.batchSubjectNew(typed),
-                                style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                                style: th.type.body.copyWith(color: th.colors.text2),
                               ),
                             ),
                           ],
@@ -371,38 +367,38 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                       ),
                     const SizedBox(height: 8),
                     if (subjects.isNotEmpty) ...<Widget>[
-                      Text(l10n.batchSubjectPick, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+                      Text(l10n.batchSubjectPick, style: th.type.label.copyWith(color: th.colors.text2)),
                       const SizedBox(height: 4),
                       chips(<String>[for (final Subject s in subjects) s.name]),
                     ] else ...<Widget>[
-                      Text(l10n.batchSubjectSuggest, style: tt.labelMedium?.copyWith(color: tokens.textSecondary)),
+                      Text(l10n.batchSubjectSuggest, style: th.type.label.copyWith(color: th.colors.text2)),
                       const SizedBox(height: 4),
                       chips(suggestions),
                     ],
                   ],
                   const SizedBox(height: 16),
-                  TextField(
+                  BhorTextField(
                     key: const Key('batch-form-name'),
                     controller: _name,
                     textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(labelText: l10n.batchNameLabel),
+                    label: l10n.batchNameLabel,
                   ),
                   const SizedBox(height: 16),
                   if (_editing)
-                    Card(
-                      margin: EdgeInsets.zero,
-                      child: ListTile(
-                        minVerticalPadding: 12,
+                    BhorCard(
+                      padding: EdgeInsets.zero,
+                      child: BhorListRow(
                         leading: const Icon(Icons.schedule),
-                        title: Text(l10n.batchEditSchedule),
+                        title: l10n.batchEditSchedule,
                         trailing: const Icon(Icons.chevron_right),
+                        divider: false,
                         onTap: () => context.push(Routes.batchSlots(widget.batchId!)),
                       ),
                     )
                   else ...<Widget>[
                     Semantics(
                       header: true,
-                      child: Text(l10n.batchScheduleLabel, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+                      child: Text(l10n.batchScheduleLabel, style: th.type.heading),
                     ),
                     const SizedBox(height: 8),
                     buildSlots(
@@ -414,81 +410,87 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  TextField(
+                  BhorTextField(
                     key: const Key('batch-form-fee'),
                     controller: _fee,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: l10n.batchFeeLabel,
-                      prefixText: '৳ ',
-                      errorText: _feeError(),
-                    ),
+                    label: l10n.batchFeeLabel,
+                    prefix: Text('৳ ', style: th.type.body.copyWith(color: th.colors.text2)),
+                    error: _feeError(),
+                    tabular: true,
                   ),
                   const SizedBox(height: 16),
                   Semantics(
                     header: true,
-                    child: Text(l10n.batchBillingTitle, style: tt.titleMedium?.copyWith(color: tokens.textPrimary)),
+                    child: Text(l10n.batchBillingTitle, style: th.type.heading),
                   ),
                   const SizedBox(height: 8),
                   BillingCards(value: _billing, onChanged: (BillingType t) => setState(() => _billing = t)),
                   const SizedBox(height: 16),
-                  TextField(
+                  BhorTextField(
                     controller: _notes,
                     minLines: 1,
                     maxLines: 3,
-                    decoration: InputDecoration(labelText: l10n.commonNotes),
+                    label: l10n.commonNotes,
                   ),
                   if (_editing && _batch != null && !_batch!.archived) ...<Widget>[
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
+                    BhorButton(
+                      variant: BhorButtonVariant.secondary,
+                      expand: true,
                       onPressed: () async {
                         final bool done = await showArchiveBatchDialog(context, batchId: _batch!.id);
                         if (done && mounted) _close();
                       },
-                      icon: const Icon(Icons.inventory_2_outlined),
-                      label: Text(l10n.batchMenuArchive),
-                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                      icon: Icons.inventory_2_outlined,
+                      label: l10n.batchMenuArchive,
                     ),
                   ],
                   if (_error != null) ...<Widget>[
-                    const SizedBox(height: 16),
-                    Semantics(
-                      liveRegion: true,
-                      container: true,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: tokens.errorContainer,
-                          borderRadius: BorderRadius.circular(AuroraMetrics.radiusDenseList),
-                          border: Border.all(color: tokens.errorContainerBorder),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.error_outline, color: tokens.onErrorContainer),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: tt.bodyLarge?.copyWith(color: tokens.onErrorContainer),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: BhorSpace.s16),
+                    BatchNotice(text: _error!),
                   ],
                 ],
               ),
             ),
           ),
         ),
-        StickyActionBar(
-          label: l10n.commonSave,
-          onPressed: reason == null && !_saving ? _save : null,
-          disabledReason: reason,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: th.colors.surface,
+            border: Border(top: BorderSide(color: th.colors.line)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(g, BhorSpace.s12, g, BhorSpace.s12),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    BhorButton(
+                      label: l10n.commonSave,
+                      expand: true,
+                      onPressed: reason == null && !_saving ? _save : null,
+                      disabledReason: reason,
+                    ),
+                    if (reason != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: BhorSpace.s8),
+                        child: Text(
+                          reason,
+                          textAlign: TextAlign.center,
+                          style: th.type.meta,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );

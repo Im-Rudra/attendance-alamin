@@ -2,17 +2,17 @@
 // blank area) and the context pane of the selected batch (UX 3b: week slots,
 // dues by level, 8-week attendance trend).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
@@ -21,6 +21,7 @@ import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
 
 /// What the detail pane shows while no batch is selected.
 class BatchesOverview extends ConsumerWidget {
@@ -30,8 +31,7 @@ class BatchesOverview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
     final LocalDate today = ref.watch(todayProvider);
     final List<SubjectGroup> groups = ref.watch(batchGroupsProvider).value ?? const <SubjectGroup>[];
@@ -43,115 +43,98 @@ class BatchesOverview extends ConsumerWidget {
     }
     final int classes = ref.watch(dayPlanProvider(today)).value?.classes.length ?? 0;
 
-    Widget tile(String label, String value) => StatTile(label: label, value: value);
+    Widget tile(String label, String value) => BhorCard(child: BhorStatText(label: label, value: value));
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Semantics(header: true, child: Text(l10n.shellTitleOverview)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints c) {
-            final int cols = c.maxWidth >= 560 ? 4 : 2;
-            final double w = (c.maxWidth - 2 * g - 12 * (cols - 1)) / cols;
-            final Widget pickHint = GlassCard(
-              child: Row(
-                children: <Widget>[
-                  Icon(Icons.touch_app_outlined, color: tokens.accent),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      l10n.batchOverviewPick,
-                      style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
+    return BhorScaffold(
+      header: BhorHeader(title: l10n.shellTitleOverview, showBack: false),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          final int cols = c.maxWidth >= 560 ? 4 : 2;
+          final double w = (c.maxWidth - 2 * g - BhorSpace.s12 * (cols - 1)) / cols;
+          final Widget pickHint = BhorCard(
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.touch_app_outlined, color: th.colors.accent),
+                const SizedBox(width: BhorSpace.s12),
+                Expanded(child: Text(l10n.batchOverviewPick, style: th.type.body)),
+              ],
+            ),
+          );
+          final Widget duesByBatch = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              BhorSectionHeader(title: l10n.batchOverviewDuesByBatch),
+              BhorCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: <Widget>[
+                    for (int i = 0; i < all.length; i++)
+                      BhorListRow(
+                        title: all[i].batch.name,
+                        divider: i != all.length - 1,
+                        onTap: () => openPath(context, Routes.batch(all[i].batch.id)),
+                        trailing: _DuesOrClear(batchId: all[i].batch.id),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final List<BatchCardData> bySize = <BatchCardData>[...all]
+            ..sort((BatchCardData a, BatchCardData b) => b.studentCount.compareTo(a.studentCount));
+          final Widget studentsByBatch = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              BhorSectionHeader(title: l10n.batchOverviewByStudents),
+              BatchBarList(
+                entries: <BatchBarEntry>[
+                  for (final BatchCardData b in bySize.take(8))
+                    BatchBarEntry(
+                      label: b.batch.name,
+                      value: b.studentCount,
+                      valueText: fmt.number(b.studentCount),
+                      onTap: () => openPath(context, Routes.batch(b.batch.id)),
                     ),
+                ],
+              ),
+            ],
+          );
+          return ListView(
+            padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
+            children: <Widget>[
+              Wrap(
+                spacing: BhorSpace.s12,
+                runSpacing: BhorSpace.s12,
+                children: <Widget>[
+                  SizedBox(width: w, child: tile(l10n.batchOverviewBatches, fmt.number(all.length))),
+                  SizedBox(width: w, child: tile(l10n.batchOverviewStudents, fmt.number(students))),
+                  SizedBox(width: w, child: tile(l10n.batchOverviewClasses, fmt.number(classes))),
+                  SizedBox(
+                    width: w,
+                    child: BhorCard(child: BhorStatText.money(label: l10n.batchOverviewDues, amount: due)),
                   ),
                 ],
               ),
-            );
-            final Widget duesByBatch = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SectionHeader(title: l10n.batchOverviewDuesByBatch),
-                for (final BatchCardData b in all)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: GlassCard(
-                      dense: true,
-                      onTap: () => openPath(context, Routes.batch(b.batch.id)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              b.batch.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tt.titleMedium?.copyWith(color: tokens.textPrimary),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _DuesOrClear(batchId: b.batch.id),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            );
-            final List<BatchCardData> bySize = <BatchCardData>[...all]
-              ..sort((BatchCardData a, BatchCardData b) => b.studentCount.compareTo(a.studentCount));
-            final Widget studentsByBatch = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SectionHeader(title: l10n.batchOverviewByStudents),
-                BarListCard(
-                  entries: <BarEntry>[
-                    for (final BatchCardData b in bySize.take(8))
-                      BarEntry(
-                        label: b.batch.name,
-                        value: b.studentCount,
-                        valueText: fmt.number(b.studentCount),
-                        onTap: () => openPath(context, Routes.batch(b.batch.id)),
-                      ),
-                  ],
-                ),
-              ],
-            );
-            return ListView(
-              padding: EdgeInsets.fromLTRB(g, 4, g, g),
-              children: <Widget>[
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+              const SizedBox(height: BhorSpace.s16),
+              if (all.isNotEmpty && c.maxWidth >= 640)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    SizedBox(width: w, child: tile(l10n.batchOverviewBatches, fmt.number(all.length))),
-                    SizedBox(width: w, child: tile(l10n.batchOverviewStudents, fmt.number(students))),
-                    SizedBox(width: w, child: tile(l10n.batchOverviewClasses, fmt.number(classes))),
-                    SizedBox(width: w, child: tile(l10n.batchOverviewDues, fmt.money(due))),
+                    Expanded(child: duesByBatch),
+                    const SizedBox(width: BhorSpace.s12),
+                    Expanded(child: studentsByBatch),
                   ],
-                ),
-                const SizedBox(height: 16),
-                if (all.isNotEmpty && c.maxWidth >= 640)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(child: duesByBatch),
-                      const SizedBox(width: 12),
-                      Expanded(child: studentsByBatch),
-                    ],
-                  )
-                else if (all.isNotEmpty) ...<Widget>[
-                  duesByBatch,
-                  const SizedBox(height: 8),
-                  studentsByBatch,
-                ],
-                const SizedBox(height: 12),
-                pickHint,
+                )
+              else if (all.isNotEmpty) ...<Widget>[
+                duesByBatch,
+                const SizedBox(height: BhorSpace.s8),
+                studentsByBatch,
               ],
-            );
-          },
-        ),
+              const SizedBox(height: BhorSpace.s12),
+              pickHint,
+            ],
+          );
+        },
       ),
     );
   }
@@ -164,21 +147,16 @@ class _DuesOrClear extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final BhorThemeData th = context.bhor;
     final BatchDuesSummary? d = ref.watch(batchDuesProvider(batchId)).value;
     if (d == null || d.count == 0) {
-      return Text(
-        context.l10n.batchAllPaid,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: context.aurora.textSecondary),
-      );
+      return Text(context.l10n.batchAllPaid, style: th.type.label.copyWith(color: th.colors.text2));
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          context.fmt.money(d.total),
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.aurora.textPrimary),
-        ),
-        const SizedBox(width: 8),
+        BhorMoney(d.total, style: th.type.label),
+        const SizedBox(width: BhorSpace.s8),
         BatchDuesBadge(batchId: batchId),
       ],
     );
@@ -195,8 +173,7 @@ class BatchContextPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
     final LocalDate today = ref.watch(todayProvider);
 
@@ -243,29 +220,23 @@ class BatchContextPane extends ConsumerWidget {
     }
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(g, 12, g, g),
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s12, g, g),
       children: <Widget>[
-        SectionHeader(title: l10n.batchContextWeek),
-        GlassCard(
-          dense: true,
+        BhorSectionHeader(title: l10n.batchContextWeek),
+        BhorCard(
           child: slots.isEmpty
-              ? Text(l10n.batchNoSlots, style: tt.bodyMedium?.copyWith(color: tokens.textSecondary))
+              ? Text(l10n.batchNoSlots, style: th.type.body.copyWith(color: th.colors.text2))
               : Column(
                   children: <Widget>[
                     for (final Slot s in slots)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
                         child: Row(
                           children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                fmt.weekdayName(s.weekday),
-                                style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                              ),
-                            ),
+                            Expanded(child: Text(fmt.weekdayName(s.weekday), style: th.type.body)),
                             Text(
                               fmt.timeRange(s.startMin, s.endMin),
-                              style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                              style: th.type.body.copyWith(color: th.colors.text2),
                             ),
                           ],
                         ),
@@ -273,18 +244,18 @@ class BatchContextPane extends ConsumerWidget {
                   ],
                 ),
         ),
-        SectionHeader(title: l10n.batchContextDues),
-        GlassCard(
-          dense: true,
+        const SizedBox(height: BhorSpace.s12),
+        BhorSectionHeader(title: l10n.batchContextDues),
+        BhorCard(
           child: levels.isEmpty
               ? Row(
                   children: <Widget>[
-                    Icon(Icons.check_circle_outline, color: tokens.textSecondary),
-                    const SizedBox(width: 8),
+                    Icon(Icons.check_circle_outline, color: th.colors.text2),
+                    const SizedBox(width: BhorSpace.s8),
                     Expanded(
                       child: Text(
                         l10n.batchContextNoDues,
-                        style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                        style: th.type.body.copyWith(color: th.colors.text2),
                       ),
                     ),
                   ],
@@ -293,33 +264,30 @@ class BatchContextPane extends ConsumerWidget {
                   children: <Widget>[
                     for (final DueLevel lv in levels)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
                         child: Row(
                           children: <Widget>[
                             Expanded(
                               child: Align(
                                 alignment: AlignmentDirectional.centerStart,
-                                child: SeverityBadge(level: lv, compact: true),
+                                child: DueTag(level: lv),
                               ),
                             ),
-                            Text(
-                              l10n.batchContextStudentsOne(fmt.number(byLevel[lv] ?? 0)),
-                              style: tt.bodyLarge?.copyWith(color: tokens.textPrimary),
-                            ),
+                            Text(l10n.batchContextStudentsOne(fmt.number(byLevel[lv] ?? 0)), style: th.type.body),
                           ],
                         ),
                       ),
                   ],
                 ),
         ),
-        SectionHeader(title: l10n.batchContextTrend),
-        GlassCard(
-          dense: true,
+        const SizedBox(height: BhorSpace.s12),
+        BhorSectionHeader(title: l10n.batchContextTrend),
+        BhorCard(
           child: any
               ? _Trend(weeks: weeks)
               : Text(
                   l10n.batchContextNoAttendance,
-                  style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
+                  style: th.type.body.copyWith(color: th.colors.text2),
                 ),
         ),
       ],
@@ -335,9 +303,8 @@ class _Trend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData th = context.bhor;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final String summary = <String>[
       for (final AttendanceTally t in weeks) t.percent == null ? '-' : fmt.percent(t.percent!),
     ].join(', ');
@@ -361,13 +328,13 @@ class _Trend extends StatelessWidget {
                         Text(
                           fmt.number(t.percent!),
                           maxLines: 1,
-                          style: tt.labelSmall?.copyWith(color: tokens.textSecondary),
+                          style: th.type.caption,
                         ),
                       const SizedBox(height: 2),
                       Container(
                         height: t.percent == null ? 4 : (4 + 60 * t.percent! / 100).toDouble(),
                         decoration: BoxDecoration(
-                          color: t.percent == null ? tokens.track : tokens.accent,
+                          color: t.percent == null ? th.colors.line : th.colors.accent,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),

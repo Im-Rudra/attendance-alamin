@@ -4,18 +4,18 @@
 // ever a lonely card in a sea of space. Save is blocked, with the reason under
 // the button, until the live check is clear; saving asks "কবে থেকে নতুন সময়?".
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
@@ -82,10 +82,10 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
   }
 
   Future<void> _confirmLeave() async {
-    final bool discard = await showConfirmDialog(
+    final bool discard = await showBhorConfirm(
       context,
       title: context.l10n.schedDiscardTitle,
-      body: context.l10n.schedDiscardBody,
+      message: context.l10n.schedDiscardBody,
       confirmLabel: context.l10n.schedDiscardConfirm,
       destructive: true,
     );
@@ -102,7 +102,6 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
       _saving = true;
       _saveClash = null;
     });
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     try {
       await ref
@@ -110,9 +109,7 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           .replaceSlots(widget.batchId, c.slots, from: from);
       if (!mounted) return;
       setState(() => _leaving = true);
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.schedSaved)));
+      BhorToast.show(context, message: l10n.schedSaved);
       _close();
     } on ScheduleClashException catch (e) {
       if (!mounted) return;
@@ -123,9 +120,7 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
     } on Object catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      BhorToast.show(context, message: errorText(l10n, e));
     }
   }
 
@@ -140,12 +135,11 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
 
     if (schedule == null) {
       // Loading, or no such batch: the shell's plain chrome.
-      return StubScreen(
-        name: l10n.shellTitleSlotEditor,
-        icon: Icons.schedule,
-        fullScreen: true,
-        message: async.isLoading ? null : l10n.errNotFound,
-        body: async.isLoading ? const Center(child: CircularProgressIndicator()) : null,
+      return BhorScaffold(
+        header: BhorHeader(title: l10n.shellTitleSlotEditor, onBack: _close),
+        body: async.isLoading
+            ? const Center(child: BhorSpinner())
+            : BhorEmptyState(icon: Icons.schedule, title: l10n.errNotFound),
       );
     }
 
@@ -174,10 +168,10 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
         };
 
         final Widget title = Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: BhorSpace.s12),
           child: Text(
             '${found.subjectName} · ${found.batch.name}',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: context.bhor.type.heading,
           ),
         );
         final SlotCheckResult? saveClash = _saveClash;
@@ -200,10 +194,31 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           ),
         );
 
-        final Widget bar = StickyActionBar(
-          label: l10n.commonSave,
-          onPressed: canSave ? () => _save(c) : null,
-          disabledReason: reason,
+        final Widget bar = DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.bhor.colors.surface,
+            border: Border(top: BorderSide(color: context.bhor.colors.line)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s12, gutter, BhorSpace.s12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                BhorButton(
+                  label: l10n.commonSave,
+                  expand: true,
+                  onPressed: canSave ? () => _save(c) : null,
+                  disabledReason: reason,
+                ),
+                if (reason != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: BhorSpace.s8),
+                    child: Text(reason, textAlign: TextAlign.center, style: context.bhor.type.meta),
+                  ),
+              ],
+            ),
+          ),
         );
 
         final Widget body;
@@ -259,26 +274,16 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
           onPopInvokedWithResult: (bool didPop, Object? _) {
             if (!didPop) _confirmLeave();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                tooltip: l10n.commonClose,
-                icon: const Icon(Icons.close),
-                onPressed: _close,
-              ),
-              title: Semantics(header: true, child: Text(l10n.shellTitleSlotEditor)),
-            ),
-            body: SafeArea(
-              top: false,
-              child: wide
-                  ? body
-                  : Column(
-                      children: <Widget>[
-                        Expanded(child: body),
-                        bar,
-                      ],
-                    ),
-            ),
+          child: BhorScaffold(
+            header: BhorHeader(title: l10n.shellTitleSlotEditor, onBack: _close),
+            body: wide
+                ? body
+                : Column(
+                    children: <Widget>[
+                      Expanded(child: body),
+                      bar,
+                    ],
+                  ),
           ),
         );
       },

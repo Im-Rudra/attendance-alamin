@@ -78,6 +78,12 @@ final Map<String, Type> _routes = <String, Type>{
   '/no/such/page': NotFoundScreen,
 };
 
+/// A page frame: the Material one (not yet migrated) or the Bhor one.
+Finder _anyScaffold() => find.byWidgetPredicate(
+      (Widget w) => w is Scaffold || w is BhorScaffold,
+      description: 'Scaffold or BhorScaffold',
+    );
+
 void main() {
   group('every route renders', () {
     for (final MapEntry<String, Type> r in _routes.entries) {
@@ -88,7 +94,7 @@ void main() {
       });
       testWidgets('desktop dark en ${r.key}', (WidgetTester tester) async {
         await pumpShell(tester, location: r.key, size: kDesktop, lang: Lang.en, themeMode: ThemeMode.dark);
-        expect(find.byWidgetPredicate((Widget w) => w is Scaffold || w is BhorScaffold), findsWidgets);
+        expect(_anyScaffold(), findsWidgets);
         expect(tester.takeException(), isNull);
       });
     }
@@ -101,7 +107,7 @@ void main() {
           for (final Size size in <Size>[kPhone, kDesktop]) {
             testWidgets('$loc ${mode.name} ${lang.name} ${size.width.toInt()}', (WidgetTester tester) async {
               await pumpShell(tester, location: loc, size: size, lang: lang, themeMode: mode);
-              expect(find.byWidgetPredicate((Widget w) => w is Scaffold || w is BhorScaffold), findsWidgets);
+              expect(_anyScaffold(), findsWidgets);
               expect(tester.takeException(), isNull);
             });
           }
@@ -143,7 +149,9 @@ void main() {
     expect(find.byType(BatchDetailScreen), findsOneWidget);
     expect(find.byType(BatchesScreen), findsNothing);
     // Back arrow returns to the list.
-    await tester.tap(find.byType(BackButton));
+    await tester.tap(find.byWidgetPredicate(
+      (Widget w) => w is BhorIconButton && w.icon == Icons.arrow_back_rounded,
+    ));
     await tester.pumpAndSettle();
     expect(find.byType(BatchesScreen), findsOneWidget);
   });

@@ -2,9 +2,11 @@
 // enrollment (month strip, attendance summary, [টাকা নিন]), payment history.
 // Wide windows lay the profile out in two columns.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/attendance_providers.dart';
@@ -13,8 +15,6 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/services/contact_actions.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
@@ -53,69 +53,87 @@ class StudentProfileScreen extends ConsumerWidget {
     return StudentKeys(
       onEdit: student == null ? null : edit,
       onCollect: student == null ? null : collect,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: !embedded,
-          title: Semantics(
-              header: true, child: Text(l10n.shellTitleStudentProfile)),
+      child: BhorScaffold(
+        header: BhorHeader(
+          title: l10n.shellTitleStudentProfile,
+          showBack: embedded ? false : null,
           actions: <Widget>[
             if (student != null) ...<Widget>[
-              IconButton(
-                tooltip: l10n.commonEdit,
-                icon: const Icon(Icons.edit_outlined),
+              BhorIconButton(
+                semanticLabel: l10n.commonEdit,
+                icon: Icons.edit_outlined,
                 onPressed: edit,
               ),
-              PopupMenuButton<_ProfileMenu>(
-                tooltip: l10n.commonMore,
-                onSelected: (_ProfileMenu m) =>
-                    _onMenu(context, ref, student, m),
-                itemBuilder: (BuildContext ctx) =>
-                    <PopupMenuEntry<_ProfileMenu>>[
-                  if (student.status == StudentStatus.active) ...<PopupMenuEntry<_ProfileMenu>>[
-                    PopupMenuItem<_ProfileMenu>(
-                      value: _ProfileMenu.enroll,
-                      child: Text(l10n.stuEnrollOther),
-                    ),
-                    PopupMenuItem<_ProfileMenu>(
-                      value: _ProfileMenu.left,
-                      child: Text(l10n.stuMenuLeft),
-                    ),
-                  ] else
-                    PopupMenuItem<_ProfileMenu>(
-                      value: _ProfileMenu.rejoin,
-                      child: Text(l10n.stuRejoin),
-                    ),
-                  PopupMenuItem<_ProfileMenu>(
-                    value: _ProfileMenu.delete,
-                    child: Text(l10n.commonDelete),
-                  ),
-                ],
+              BhorIconButton(
+                semanticLabel: l10n.commonMore,
+                icon: Icons.more_vert,
+                onPressed: () => _openMenu(context, ref, student),
               ),
             ],
-            const SizedBox(width: 8),
           ],
         ),
-        bottomNavigationBar: (student != null && !wide)
-            ? StickyActionBar(label: l10n.stuCollect, onPressed: collect)
+        bottomNav: (student != null && !wide)
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.bhor.colors.surface,
+                  border: Border(top: BorderSide(color: context.bhor.colors.line)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(BhorSpace.s12),
+                    child: BhorButton(label: l10n.stuCollect, expand: true, onPressed: collect),
+                  ),
+                ),
+              )
             : null,
-        body: SafeArea(
-          top: false,
-          child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object e, StackTrace st) => EmptyState(
-              icon: Icons.error_outline,
-              message: l10n.commonLoadingFailed,
-            ),
-            data: (Student? s) => s == null
-                ? EmptyState(
-                    icon: Icons.person_off_outlined,
-                    message: l10n.stuNotFound,
-                  )
-                : _ProfileBody(student: s),
+        body: async.when(
+          loading: () => const Center(child: BhorSpinner()),
+          error: (Object e, StackTrace st) => BhorEmptyState(
+            icon: Icons.error_outline,
+            title: l10n.commonLoadingFailed,
           ),
+          data: (Student? s) => s == null
+              ? BhorEmptyState(icon: Icons.person_off_outlined, title: l10n.stuNotFound)
+              : _ProfileBody(student: s),
         ),
       ),
     );
+  }
+
+  Future<void> _openMenu(BuildContext context, WidgetRef ref, Student student) async {
+    final l10n = context.l10n;
+    final bool active = student.status == StudentStatus.active;
+    final _ProfileMenu? m = await showBhorSheet<_ProfileMenu>(
+      context,
+      title: student.name,
+      builder: (BuildContext ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (active) ...<Widget>[
+            BhorListRow(
+              title: l10n.stuEnrollOther,
+              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.enroll),
+            ),
+            BhorListRow(
+              title: l10n.stuMenuLeft,
+              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.left),
+            ),
+          ] else
+            BhorListRow(
+              title: l10n.stuRejoin,
+              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.rejoin),
+            ),
+          BhorListRow(
+            title: l10n.commonDelete,
+            divider: false,
+            onTap: () => Navigator.of(ctx).pop(_ProfileMenu.delete),
+          ),
+        ],
+      ),
+    );
+    if (m == null || !context.mounted) return;
+    await _onMenu(context, ref, student, m);
   }
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, Student s,
@@ -135,14 +153,13 @@ class StudentProfileScreen extends ConsumerWidget {
   Future<void> _delete(BuildContext context, WidgetRef ref, Student s) async {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     final repo = ref.read(studentsRepositoryProvider);
     final impact = await repo.deleteImpact(s.id);
     if (!context.mounted) return;
-    final bool ok = await showConfirmDialog(
+    final bool ok = await showBhorConfirm(
       context,
       title: l10n.stuDeleteTitle(s.name),
-      body: l10n.stuDeleteBody(
+      message: l10n.stuDeleteBody(
           fmt.number(impact.sessions), fmt.number(impact.payments)),
       confirmLabel: l10n.commonDelete,
       destructive: true,
@@ -153,7 +170,7 @@ class StudentProfileScreen extends ConsumerWidget {
       if (!context.mounted) return;
       stuGo(context, Routes.students);
     } on AppException catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+      if (context.mounted) BhorToast.show(context, message: errorText(l10n, e));
     }
   }
 }
@@ -188,28 +205,23 @@ class _ProfileBody extends ConsumerWidget {
           showCollect: enrollments.length > 1,
         ),
       if (enrollments.isEmpty)
-        GlassCard(
-          dense: true,
-          child: Text(l10n.stuNoEnrollments),
-        ),
+        BhorCard(child: Text(l10n.stuNoEnrollments)),
       if (student.status == StudentStatus.active)
-        OutlinedButton.icon(
+        BhorButton(
           key: const ValueKey<String>('stu-enroll-other'),
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.stuEnrollOther),
+          variant: BhorButtonVariant.secondary,
+          expand: true,
+          icon: Icons.add,
+          label: l10n.stuEnrollOther,
           onPressed: () => showEnrollSheet(context, studentId: student.id),
         ),
     ];
     final List<Widget> right = <Widget>[
-      SectionHeader(title: l10n.stuPaymentHistory),
-      GlassCard(
-        dense: true,
-        child: PaymentHistoryList(studentId: student.id),
-      ),
+      BhorSectionHeader(title: l10n.stuPaymentHistory),
+      BhorCard(child: PaymentHistoryList(studentId: student.id)),
       if ((student.notes ?? '').isNotEmpty) ...<Widget>[
-        SectionHeader(title: l10n.commonNotes),
-        GlassCard(dense: true, child: Text(student.notes!)),
+        BhorSectionHeader(title: l10n.commonNotes),
+        BhorCard(child: Text(student.notes!)),
       ],
     ];
 
@@ -217,7 +229,7 @@ class _ProfileBody extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             for (int i = 0; i < items.length; i++) ...<Widget>[
-              if (i > 0) const SizedBox(height: 12),
+              if (i > 0) const SizedBox(height: BhorSpace.s12),
               items[i],
             ],
           ],
@@ -227,7 +239,7 @@ class _ProfileBody extends ConsumerWidget {
       builder: (BuildContext context, BoxConstraints c) {
         final bool twoColumns = c.maxWidth >= 880;
         return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(gutter, 4, gutter, gutter),
+          padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, gutter),
           child: twoColumns
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,84 +270,80 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData th = context.bhor;
     final fmt = context.fmt;
-    final TextTheme tt = Theme.of(context).textTheme;
     final String? roll = student.roll;
     final String? guardian = student.guardianPhone;
     final String? own = student.phone;
 
-    Widget callButton(String role, String number) => OutlinedButton.icon(
-          icon: Icon(ContactActions.icon),
-          label: Text(l10n.stuContactButton(role, ContactActions.label(l10n))),
+    Widget callButton(String role, String number) => BhorButton(
+          variant: BhorButtonVariant.secondary,
+          icon: ContactActions.icon,
+          label: l10n.stuContactButton(role, ContactActions.label(l10n)),
           onPressed: () => ContactActions.callOrCopy(context, number),
         );
 
-    return GlassCard(
-      blur: true,
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
             children: <Widget>[
               StudentAvatar(student: student, size: 64),
-              const SizedBox(width: 16),
+              const SizedBox(width: BhorSpace.s16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Semantics(
                       header: true,
-                      child: Text(student.name,
-                          style: tt.titleLarge
-                              ?.copyWith(color: tokens.textPrimary)),
+                      child: Text(student.name, style: th.type.title),
                     ),
                     if (roll != null && roll.isNotEmpty)
-                      Text(l10n.stuRollLine(fmt.digits(roll)),
-                          style: tt.labelMedium
-                              ?.copyWith(color: tokens.textSecondary)),
+                      Text(
+                        l10n.stuRollLine(fmt.digits(roll)),
+                        style: th.type.label.copyWith(color: th.colors.text2),
+                      ),
                     if (student.guardianName != null)
                       Text(
-                          l10n.stuGuardianLine(student.guardianName!),
-                          style: tt.labelMedium
-                              ?.copyWith(color: tokens.textSecondary)),
+                        l10n.stuGuardianLine(student.guardianName!),
+                        style: th.type.label.copyWith(color: th.colors.text2),
+                      ),
                     Text(
                       l10n.stuAdmittedOn(fmt.date(student.admissionDate)),
-                      style:
-                          tt.labelMedium?.copyWith(color: tokens.textSecondary),
+                      style: th.type.label.copyWith(color: th.colors.text2),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: BhorSpace.s12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s8,
             children: <Widget>[
               if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
               if (own != null) callButton(l10n.stuRoleStudent, own),
               if (guardian == null && own == null)
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.add_call),
-                  label: Text(l10n.stuAddPhone),
-                  onPressed: () =>
-                      stuPush(context, Routes.studentEdit(student.id)),
+                BhorButton(
+                  variant: BhorButtonVariant.secondary,
+                  icon: Icons.add_call,
+                  label: l10n.stuAddPhone,
+                  onPressed: () => stuPush(context, Routes.studentEdit(student.id)),
                 ),
               if (dues != null)
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.share),
-                  label: Text(l10n.stuRemind),
-                  onPressed: () =>
-                      shareDuesReminder(context, studentId: student.id),
+                BhorButton(
+                  variant: BhorButtonVariant.secondary,
+                  icon: Icons.share,
+                  label: l10n.stuRemind,
+                  onPressed: () => shareDuesReminder(context, studentId: student.id),
                 ),
               if (showCollect)
-                FilledButton.icon(
-                  icon: const Icon(Icons.payments_outlined),
-                  label: Text(l10n.stuCollect),
-                  onPressed: () =>
-                      showCollectPaymentSheet(context, studentId: student.id),
+                BhorButton(
+                  icon: Icons.payments_outlined,
+                  label: l10n.stuCollect,
+                  onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
                 ),
             ],
           ),
@@ -353,27 +361,25 @@ class _LeftCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
+    final BhorThemeData th = context.bhor;
     final leftDate = student.leftDate;
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       child: Row(
         children: <Widget>[
-          Icon(Icons.person_off_outlined, color: tokens.textSecondary),
-          const SizedBox(width: 12),
+          Icon(Icons.person_off_outlined, color: th.colors.text2),
+          const SizedBox(width: BhorSpace.s12),
           Expanded(
             child: Text(
-              leftDate == null
-                  ? l10n.stuStatusLeft
-                  : l10n.stuLeftOn(context.fmt.date(leftDate)),
-              style: Theme.of(context).textTheme.titleSmall,
+              leftDate == null ? l10n.stuStatusLeft : l10n.stuLeftOn(context.fmt.date(leftDate)),
+              style: th.type.bodyStrong,
             ),
           ),
-          const SizedBox(width: 8),
-          FilledButton.tonal(
+          const SizedBox(width: BhorSpace.s8),
+          BhorButton(
             key: const ValueKey<String>('stu-rejoin'),
+            variant: BhorButtonVariant.secondary,
+            label: l10n.stuRejoin,
             onPressed: () => runRejoinFlow(context, ref, student),
-            child: Text(l10n.stuRejoin),
           ),
         ],
       ),
@@ -389,19 +395,15 @@ class _DuesTotalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
-    return GlassCard(
-      dense: true,
+    final BhorThemeData th = context.bhor;
+    return BhorCard(
       child: Wrap(
-        spacing: 12,
-        runSpacing: 4,
+        spacing: BhorSpace.s12,
+        runSpacing: BhorSpace.s4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
-          Text(l10n.stuTotalOutstanding,
-              style: tt.labelLarge?.copyWith(color: tokens.textSecondary)),
-          MoneyText(context.fmt.money(dues.totalOutstanding),
-              style: tt.titleLarge?.copyWith(color: tokens.textPrimary)),
+          Text(l10n.stuTotalOutstanding, style: th.type.label.copyWith(color: th.colors.text2)),
+          BhorMoney(dues.totalOutstanding, style: th.type.title),
           StudentDuesBadge(dues: dues, compact: false),
         ],
       ),

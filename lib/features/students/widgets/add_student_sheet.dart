@@ -2,15 +2,15 @@
 // existing students are offered first ("এই ব্যাচে যোগ করুন"), so nobody is added
 // twice. A new student needs only a name and a guardian phone.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -29,12 +29,9 @@ import 'package:attendance_alamin/features/students/widgets/student_dialogs.dart
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<String?> openAddStudentSheet(BuildContext context, String batchId) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  return showBhorSheet<String>(
+    context,
+    title: context.l10n.stuAddTitle,
     builder: (BuildContext ctx) => AddStudentSheet(batchId: batchId),
   );
 }
@@ -182,8 +179,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData th = context.bhor;
     final AppFormat fmt = context.fmt;
     final List<Student> roster = ref.watch(stuRosterProvider).value ?? const <Student>[];
     final List<Enrollment> enrollments =
@@ -216,162 +212,128 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
           if (s.status == StudentStatus.active && studentMatchesQuery(s, q)) s,
     ].take(6).toList();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(l10n.stuAddTitle, style: tt.titleLarge),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (model == null) ...<Widget>[
+            BhorTextField(
+              key: const ValueKey<String>('stu-add-search'),
+              controller: _query,
+              autofocus: true,
+              onChanged: (_) => setState(() => _error = null),
+              prefix: const Icon(Icons.search),
+              label: l10n.stuSearchFirstHint,
             ),
-            const SizedBox(height: 12),
-            if (model == null) ...<Widget>[
-              TextField(
-                key: const ValueKey<String>('stu-add-search'),
-                controller: _query,
-                autofocus: true,
-                onChanged: (_) => setState(() => _error = null),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  labelText: l10n.stuSearchFirstHint,
-                ),
+            const SizedBox(height: BhorSpace.s8),
+            if (q.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: BhorSpace.s12),
+                child: Text(l10n.stuAddSearchHelp, style: th.type.body.copyWith(color: th.colors.text2)),
               ),
-              const SizedBox(height: 8),
-              if (q.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    l10n.stuAddSearchHelp,
-                    style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
-                  ),
-                ),
-              for (final Student s in matches)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: GlassCard(
-                    dense: true,
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            StudentAvatar(student: s, size: 40),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    s.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tt.titleMedium,
-                                  ),
-                                  Text(
-                                    <String>[
-                                      if (s.callNumber != null)
-                                        maskPhone(fmt, s.callNumber!),
-                                      batchesOf(s.id),
-                                    ].where((String t) => t.isNotEmpty).join(' · '),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tt.labelMedium
-                                        ?.copyWith(color: tokens.textSecondary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        if (inThisBatch.contains(s.id))
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              Icon(Icons.check_circle,
-                                  size: 18, color: tokens.textSecondary),
-                              const SizedBox(width: 6),
-                              Text(l10n.stuAlreadyInBatch,
-                                  style: tt.labelLarge
-                                      ?.copyWith(color: tokens.textSecondary)),
-                            ],
-                          )
-                        else
-                          Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: FilledButton.tonal(
-                              onPressed: _busy ? null : () => _enrollExisting(s),
-                              child: Text(l10n.stuAddToThisBatch),
+            for (final Student s in matches)
+              Padding(
+                padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+                child: BhorCard(
+                  padding: const EdgeInsets.all(BhorSpace.s12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          StudentAvatar(student: s, size: 40),
+                          const SizedBox(width: BhorSpace.s12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: th.type.heading),
+                                Text(
+                                  <String>[
+                                    if (s.callNumber != null) maskPhone(fmt, s.callNumber!),
+                                    batchesOf(s.id),
+                                  ].where((String t) => t.isNotEmpty).join(' · '),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: th.type.label.copyWith(color: th.colors.text2),
+                                ),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: BhorSpace.s8),
+                      if (inThisBatch.contains(s.id))
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            Icon(Icons.check_circle, size: 18, color: th.colors.text2),
+                            const SizedBox(width: BhorSpace.s8),
+                            Text(l10n.stuAlreadyInBatch, style: th.type.label.copyWith(color: th.colors.text2)),
+                          ],
+                        )
+                      else
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: BhorButton(
+                            variant: BhorButtonVariant.secondary,
+                            label: l10n.stuAddToThisBatch,
+                            onPressed: _busy ? null : () => _enrollExisting(s),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              if (q.isNotEmpty)
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('stu-add-new'),
-                  style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48)),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: Text(l10n.stuNewStudentNamed(q),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  onPressed: _busy ? null : _startCreating,
+              ),
+            if (q.isNotEmpty)
+              BhorButton(
+                key: const ValueKey<String>('stu-add-new'),
+                variant: BhorButtonVariant.secondary,
+                expand: true,
+                icon: Icons.person_add_alt_1_outlined,
+                label: l10n.stuNewStudentNamed(q),
+                onPressed: _busy ? null : _startCreating,
+              ),
+          ] else ...<Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(child: Text(l10n.stuNewStudent, style: th.type.heading)),
+                BhorIconButton(
+                  semanticLabel: l10n.commonBack,
+                  icon: Icons.arrow_back,
+                  onPressed: _busy ? null : _stopCreating,
                 ),
-            ] else ...<Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(l10n.stuNewStudent, style: tt.titleMedium),
-                  ),
-                  IconButton(
-                    tooltip: l10n.commonBack,
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: _busy ? null : _stopCreating,
-                  ),
-                ],
-              ),
-              StudentFieldsView(
-                model: model,
-                today: today,
-                autofocusName: true,
-              ),
-              const SizedBox(height: 8),
-              if (choice != null)
-                ListenableBuilder(
-                  listenable: model,
-                  builder: (BuildContext context, Widget? _) =>
-                      StartMonthFeeFields(
-                    choice: choice,
-                    join: model.admissionDate,
-                    cutoff: cutoff,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              FilledButton(
-                key: const ValueKey<String>('stu-add-save'),
-                style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(56)),
-                onPressed: _busy ? null : _saveNew,
-                child: Text(l10n.stuSave),
-              ),
-            ],
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(_error!,
-                      style: tt.bodyMedium?.copyWith(color: tokens.error)),
+              ],
+            ),
+            StudentFieldsView(model: model, today: today, autofocusName: true),
+            const SizedBox(height: BhorSpace.s8),
+            if (choice != null)
+              ListenableBuilder(
+                listenable: model,
+                builder: (BuildContext context, Widget? _) => StartMonthFeeFields(
+                  choice: choice,
+                  join: model.admissionDate,
+                  cutoff: cutoff,
                 ),
               ),
+            const SizedBox(height: BhorSpace.s16),
+            BhorButton(
+              key: const ValueKey<String>('stu-add-save'),
+              label: l10n.stuSave,
+              expand: true,
+              onPressed: _busy ? null : _saveNew,
+            ),
           ],
-        ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: BhorSpace.s8),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(_error!, style: th.type.body.copyWith(color: th.colors.danger)),
+              ),
+            ),
+        ],
       ),
     );
   }

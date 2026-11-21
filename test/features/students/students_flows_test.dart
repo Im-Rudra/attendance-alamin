@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
@@ -355,7 +356,7 @@ void main() {
       await tester.enterText(
           find.byKey(const ValueKey<String>('stu-field-guardian-phone')),
           _rahimGuardianPhone);
-      await tester.tap(find.widgetWithText(FilledButton, 'সেভ করুন'));
+      await tester.tap(find.widgetWithText(BhorButton, 'সেভ করুন'));
       await tester.pumpAndSettle();
       expect(find.text('এই নম্বর আগে থেকে আছে'), findsOneWidget);
       await tester.tap(find.text('হ্যাঁ, তাকেই যোগ করুন'));
@@ -377,7 +378,7 @@ void main() {
           find.byKey(const ValueKey<String>('stu-field-name')), 'ঠিক নাম');
       await tester.enterText(
           find.byKey(const ValueKey<String>('stu-field-guardian-phone')), '123');
-      await tester.tap(find.widgetWithText(FilledButton, 'সেভ করুন'));
+      await tester.tap(find.widgetWithText(BhorButton, 'সেভ করুন'));
       await tester.pumpAndSettle();
       expect(f.students.students.length, kStudents.length);
       expect(f.students.writes, 0);
@@ -391,7 +392,7 @@ void main() {
         const StudentFormScreen(),
         overrides: f.overrides,
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'সেভ করুন'));
+      await tester.tap(find.widgetWithText(BhorButton, 'সেভ করুন'));
       await tester.pumpAndSettle();
       expect(f.students.students.length, kStudents.length);
     });
@@ -415,7 +416,7 @@ void main() {
       // Physics A is his current batch: marked, not selectable.
       expect(find.text('এই ব্যাচে আছে'), findsOneWidget);
       final Finder confirm = find.byKey(const ValueKey<String>('stu-enroll-confirm'));
-      expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+      expect(tester.widget<BhorButton>(confirm).onPressed, isNull);
 
       await tester.tap(find.text('কেমিস্ট্রি বি'));
       await tester.pumpAndSettle();
@@ -475,7 +476,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('নভেম্বর ২০২৬'), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButton<YearMonth>));
+      await tester.tap(find.byType(BhorSelect<YearMonth>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('সেপ্টেম্বর ২০২৬').last);
       await tester.pumpAndSettle();

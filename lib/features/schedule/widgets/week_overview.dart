@@ -2,11 +2,10 @@
 // slot editor's preview card). A day without class says so, so the card never
 // looks half empty.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 
 class WeekOverview extends StatelessWidget {
@@ -27,19 +26,17 @@ class WeekOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final tokens = context.aurora;
-    final TextTheme tt = Theme.of(context).textTheme;
+    final BhorThemeData b = context.bhor;
     final List<int> order = <int>[
       for (var i = 0; i < 7; i++) ((weekStart - 1 + i) % 7) + 1,
     ];
-    return GlassCard(
-      dense: true,
+    return BhorCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          SectionHeader(title: title ?? l10n.schedPreviewTitle),
+          BhorSectionHeader(title: title ?? l10n.schedPreviewTitle),
           for (var i = 0; i < order.length; i++) ...<Widget>[
-            if (i > 0) Divider(height: 1, color: tokens.hairline),
+            if (i > 0) ColoredBox(color: b.colors.line, child: const SizedBox(height: 1)),
             _DayRow(
               dayName: fmt.weekdayName(order[i]),
               ranges: <String>[
@@ -48,7 +45,6 @@ class WeekOverview extends StatelessWidget {
                   fmt.timeRange(s.startMin, s.endMin),
               ],
               emptyText: l10n.schedNoClass,
-              tt: tt,
             ),
           ],
         ],
@@ -62,22 +58,20 @@ class _DayRow extends StatelessWidget {
     required this.dayName,
     required this.ranges,
     required this.emptyText,
-    required this.tt,
   });
 
   final String dayName;
   final List<String> ranges;
   final String emptyText;
-  final TextTheme tt;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorThemeData b = context.bhor;
     return MergeSemantics(
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 52),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: BhorSpace.s8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
@@ -85,32 +79,29 @@ class _DayRow extends StatelessWidget {
                 width: 112,
                 child: Text(
                   dayName,
-                  style: tt.titleSmall?.copyWith(
-                    color: ranges.isEmpty ? tokens.textSecondary : tokens.textPrimary,
-                  ),
+                  style: b.type.bodyStrong.copyWith(color: ranges.isEmpty ? b.colors.text2 : b.colors.text),
                 ),
               ),
               Expanded(
                 child: ranges.isEmpty
-                    ? Text(emptyText,
-                        style: tt.bodyMedium?.copyWith(color: tokens.textSecondary))
+                    ? Text(emptyText, style: b.type.body.copyWith(color: b.colors.text2))
                     : Wrap(
-                        spacing: 8,
+                        spacing: BhorSpace.s8,
                         runSpacing: 6,
                         children: <Widget>[
                           for (final String r in ranges)
                             DecoratedBox(
                               decoration: BoxDecoration(
-                                color: tokens.accentContainer,
-                                borderRadius:
-                                    BorderRadius.circular(AuroraMetrics.radiusChip),
+                                color: b.colors.accentTint,
+                                borderRadius: BorderRadius.circular(BhorRadius.chip),
+                                border: Border.all(color: b.colors.accentLine),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                child: Text(r,
-                                    style: tt.labelLarge
-                                        ?.copyWith(color: tokens.onAccentContainer)),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                child: Text(
+                                  r,
+                                  style: BhorType.tabular(b.type.label.copyWith(color: b.colors.accent)),
+                                ),
                               ),
                             ),
                         ],

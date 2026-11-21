@@ -4,8 +4,10 @@
 // the data table (sticky header, UX 3b columns).
 // `/students/:studentId` passes [selectedId].
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
@@ -69,45 +71,42 @@ class _ListScaffold extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) {
         final bool table = large && c.maxWidth >= StudentsScreen.tableMinPaneWidth;
-        return Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: !PaneScope.isEmbedded(context),
-            title: Semantics(header: true, child: Text(l10n.navStudents)),
+        return BhorScaffold(
+          header: BhorHeader(
+            title: l10n.navStudents,
+            large: true,
+            showBack: PaneScope.isEmbedded(context) ? false : null,
             actions: <Widget>[
               if (table)
-                FilledButton.icon(
+                BhorButton(
                   key: const ValueKey<String>('stu-new-button'),
                   onPressed: () => stuPush(context, Routes.studentNew),
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: Text(l10n.stuNewStudent),
+                  icon: Icons.person_add_alt_1,
+                  label: l10n.stuNewStudent,
+                  size: BhorButtonSize.sm,
                 ),
-              IconButton(
-                tooltip: l10n.commonSearch,
-                icon: const Icon(Icons.manage_search),
+              BhorIconButton(
+                semanticLabel: l10n.commonSearch,
+                icon: Icons.manage_search,
                 onPressed: () => stuPush(context, Routes.search),
               ),
-              const SizedBox(width: 8),
             ],
           ),
-          floatingActionButton: table
+          floating: table
               ? null
               : Padding(
-                  // Lift the FAB above the floating nav pill on phones (QA-03).
+                  // Lift the button above the floating nav pill on phones (QA-03).
                   padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
-                  child: FloatingActionButton.extended(
+                  child: BhorButton(
                     key: const ValueKey<String>('stu-fab-new'),
-                    heroTag: null,
                     onPressed: () => stuPush(context, Routes.studentNew),
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: Text(l10n.stuNewStudent),
+                    icon: Icons.person_add_alt_1,
+                    label: l10n.stuNewStudent,
                   ),
                 ),
-          body: SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(g, 4, g, g),
-              child: StudentsListPane(selectedId: selectedId, table: table),
-            ),
+          body: Padding(
+            padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
+            child: StudentsListPane(selectedId: selectedId, table: table),
           ),
         );
       },

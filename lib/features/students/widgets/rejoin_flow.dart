@@ -2,9 +2,10 @@
 // when the months between the last billable month and today would otherwise
 // become owed.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
@@ -19,7 +20,6 @@ import 'package:attendance_alamin/features/students/widgets/student_dialogs.dart
 Future<bool> runRejoinFlow(
     BuildContext context, WidgetRef ref, Student student) async {
   final l10n = context.l10n;
-  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
   final today = ref.read(todayProvider);
   final List<Enrollment> enrollments = await ref
       .read(enrollmentsRepositoryProvider)
@@ -37,11 +37,10 @@ Future<bool> runRejoinFlow(
     await ref
         .read(studentsRepositoryProvider)
         .rejoin(student.id, waiveGap: waive);
-    messenger?.showSnackBar(
-        SnackBar(content: Text(l10n.stuRejoined(student.name))));
+    if (context.mounted) BhorToast.show(context, message: l10n.stuRejoined(student.name));
     return true;
   } on AppException catch (e) {
-    messenger?.showSnackBar(SnackBar(content: Text(errorText(l10n, e))));
+    if (context.mounted) BhorToast.show(context, message: errorText(l10n, e));
     return false;
   }
 }
