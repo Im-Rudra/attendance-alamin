@@ -300,7 +300,7 @@
   "@stuTopDues": {
     "description": "Overview section title."
   },
-  "stuNoOneOwes": "কারও বকেয়া নেই ✓",
+  "stuNoOneOwes": "কারও বকেয়া নেই",
   "@stuNoOneOwes": {
     "description": "Overview empty state."
   },
