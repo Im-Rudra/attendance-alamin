@@ -238,6 +238,7 @@ class _WeekGridState extends State<WeekGrid> {
           ),
           BhorButton(
             label: l10n.clsAddExtraButton,
+            icon: BhorIcons.add,
             variant: BhorButtonVariant.secondary,
             size: BhorButtonSize.sm,
             onPressed: _newExtra,

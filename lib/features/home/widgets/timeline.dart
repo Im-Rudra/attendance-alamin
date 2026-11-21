@@ -63,6 +63,7 @@ class TodayTimeline extends ConsumerWidget {
               ? null
               : BhorButton(
                   label: l10n.todayAddExtra,
+                  icon: BhorIcons.add,
                   variant: BhorButtonVariant.ghost,
                   size: BhorButtonSize.sm,
                   onPressed: () => showExtraClassSheet(context, date: date),

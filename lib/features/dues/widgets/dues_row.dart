@@ -205,7 +205,14 @@ class DuesRowTile extends ConsumerWidget {
                 children: <Widget>[
                   amount,
                   const SizedBox(height: BhorSpace.s4),
-                  collect,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (!row.inactive) remind,
+                      const SizedBox(width: BhorSpace.s4),
+                      collect,
+                    ],
+                  ),
                 ],
               ),
             ],

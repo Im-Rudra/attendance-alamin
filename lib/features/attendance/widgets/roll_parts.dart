@@ -35,3 +35,38 @@ Widget attendanceTag(BuildContext context, AttendanceStatus s, {bool short = fal
     icon: statusIcon(s),
   );
 }
+
+/// One line under the header of the phone roll call: what each icon of the
+/// attendance toggle means (✓ present · ✕ absent · clock late).
+class RollLegend extends StatelessWidget {
+  const RollLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final l10n = context.l10n;
+    const List<AttendanceStatus> shown = <AttendanceStatus>[
+      AttendanceStatus.present,
+      AttendanceStatus.absent,
+      AttendanceStatus.late,
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+      child: Wrap(
+        spacing: BhorSpace.s16,
+        runSpacing: BhorSpace.s4,
+        children: <Widget>[
+          for (final AttendanceStatus s in shown)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(s.icon, size: 16, color: b.colors.text2),
+                const SizedBox(width: BhorSpace.s4),
+                Text(s.label(l10n), style: b.type.meta),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}

@@ -26,6 +26,10 @@
   "duesRemindedToday": "Reminded today",
   "duesCollect": "Collect",
   "duesNoPhone": "No phone number saved",
+  "duesRemindNoPhone": "This student has no phone number",
+  "@duesRemindNoPhone": {
+    "description": "Toast when reminding a student with no phone number; the message can still be copied."
+  },
   "duesNothingToRemind": "Nothing is due for this student",
   "duesRemindAll": "Remind everyone",
   "duesWalkTitle": "Remind one by one",

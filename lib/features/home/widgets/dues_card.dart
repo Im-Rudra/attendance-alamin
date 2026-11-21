@@ -13,6 +13,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
+import 'package:attendance_alamin/features/dues/dues_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
@@ -174,7 +175,6 @@ class _DueRow extends StatelessWidget {
     return BhorPressable(
       onTap: () => showCollectPaymentSheet(context, studentId: dues.studentId),
       semanticLabel: '${dues.name}, ${context.fmt.money(dues.totalOutstanding)}',
-      excludeChildSemantics: true,
       radius: BhorRadius.control,
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.of(context, BhorMotion.instant),
@@ -197,6 +197,15 @@ class _DueRow extends StatelessWidget {
             ],
             const SizedBox(width: BhorSpace.s8),
             BhorMoney(dues.totalOutstanding, style: b.type.bodyStrong),
+            const SizedBox(width: BhorSpace.s4),
+            // The row opens the payment; the reminder is one tap away here.
+            BhorIconButton(
+              key: ValueKey<String>('today-remind-${dues.studentId}'),
+              icon: BhorIcons.share,
+              semanticLabel: l10n.duesRemind,
+              size: BhorButtonSize.sm,
+              onPressed: () => shareDuesReminder(context, studentId: dues.studentId),
+            ),
           ],
         ),
       ),

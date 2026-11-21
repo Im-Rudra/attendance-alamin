@@ -33,6 +33,7 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_call_controller.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
@@ -738,7 +739,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       if (c.students.isNotEmpty && !c.readOnly) _gap(_actionsRow(c)),
     ];
 
-    final Widget roster;
+    Widget roster;
     if (c.students.isEmpty) {
       roster = Padding(
         padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
@@ -772,6 +773,14 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
           final Widget row = _row(context, c, rows[i], i, dense: dense, keyed: keyed);
           return keyed ? row : BhorStagger(index: i, child: row);
         },
+      );
+    }
+
+    // Phones show icon-only toggles: a one-line legend says what they mean.
+    if (!dense && rows.isNotEmpty && !c.readOnly) {
+      roster = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[const RollLegend(), roster],
       );
     }
 
