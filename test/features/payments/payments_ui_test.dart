@@ -241,7 +241,7 @@ void main() {
       await tester.tap(_key('pay-month-202612'));
       await tester.pump();
       expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
-      expect(_label(tester), 'ডিসেম্বরের ৳ ১,০০০ অগ্রিম জমা করুন');
+      expect(_label(tester), 'ডিসেম্বরের ${AppFormat(Lang.bn).money(1000)} অগ্রিম জমা করুন');
       await tester.tap(_key('pay-month-202611'));
       await tester.pump();
       expect(_monthsText(tester), 'নভেম্বর');
