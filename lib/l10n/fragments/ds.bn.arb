@@ -1,0 +1,59 @@
+{
+  "@@locale": "bn",
+  "dsPeriodDawn": "ভোর",
+  "@dsPeriodDawn": {
+    "description": "Day period 04:00-05:59 in the time picker."
+  },
+  "dsPeriodMorning": "সকাল",
+  "@dsPeriodMorning": {
+    "description": "Day period 06:00-11:59 in the time picker."
+  },
+  "dsPeriodNoon": "দুপুর",
+  "@dsPeriodNoon": {
+    "description": "Day period 12:00-14:59 in the time picker."
+  },
+  "dsPeriodAfternoon": "বিকাল",
+  "@dsPeriodAfternoon": {
+    "description": "Day period 15:00-17:59 in the time picker."
+  },
+  "dsPeriodEvening": "সন্ধ্যা",
+  "@dsPeriodEvening": {
+    "description": "Day period 18:00-19:59 in the time picker."
+  },
+  "dsPeriodNight": "রাত",
+  "@dsPeriodNight": {
+    "description": "Day period 20:00-03:59 in the time picker."
+  },
+  "dsTimePeriod": "সময়ের ভাগ",
+  "@dsTimePeriod": {
+    "description": "Time picker step 1 heading (choose the part of the day)."
+  },
+  "dsTimeHour": "ঘণ্টা",
+  "@dsTimeHour": {
+    "description": "Time picker step 2 heading."
+  },
+  "dsTimeMinute": "মিনিট",
+  "@dsTimeMinute": {
+    "description": "Time picker step 3 heading."
+  },
+  "dsPickDate": "তারিখ বেছে নিন",
+  "@dsPickDate": {
+    "description": "Title of the date picker sheet."
+  },
+  "dsPickTime": "সময় বেছে নিন",
+  "@dsPickTime": {
+    "description": "Title of the time picker sheet."
+  },
+  "dsPrevMonth": "আগের মাস",
+  "@dsPrevMonth": {
+    "description": "Date picker button: show the previous month."
+  },
+  "dsNextMonth": "পরের মাস",
+  "@dsNextMonth": {
+    "description": "Date picker button: show the next month."
+  },
+  "dsGalleryTitle": "ডিজাইন সিস্টেম",
+  "@dsGalleryTitle": {
+    "description": "Title of the hidden developer gallery of Bhor components."
+  }
+}
