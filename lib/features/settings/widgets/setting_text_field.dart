@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -121,6 +122,9 @@ class _SettingTextFieldState extends ConsumerState<SettingTextField> {
       child: BhorTextField(
         controller: _controller,
         keyboardType: widget.isPhone ? TextInputType.phone : TextInputType.text,
+        inputFormatters: widget.isPhone
+            ? <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)]
+            : null,
         textInputAction: TextInputAction.done,
         maxLength: widget.maxLength,
         label: widget.label,

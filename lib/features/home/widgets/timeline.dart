@@ -288,10 +288,12 @@ class _ClassRow extends ConsumerWidget {
               ),
             ),
           ),
-          BhorIconButton(
-            semanticLabel: l10n.todayClassOptions,
-            icon: BhorIcons.overflowVertical,
-            onPressed: () => showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today),
+          Builder(
+            builder: (BuildContext bc) => BhorIconButton(
+              semanticLabel: l10n.todayClassOptions,
+              icon: BhorIcons.overflowVertical,
+              onPressed: () => showClassActionsSheet(context, occ: dc.occ, returnTo: Routes.today, anchor: bc),
+            ),
           ),
         ],
       ),

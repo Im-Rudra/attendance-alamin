@@ -5,6 +5,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
@@ -109,6 +110,7 @@ class StudentsStep extends StatelessWidget {
                 key: const Key('onb-student-phone'),
                 controller: phone,
                 keyboardType: TextInputType.phone,
+                inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)],
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => onAdd(),
                 label: l10n.onbStudentPhone,

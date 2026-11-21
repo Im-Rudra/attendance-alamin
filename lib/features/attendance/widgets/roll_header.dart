@@ -161,8 +161,9 @@ class AdHocTimeCard extends StatelessWidget {
 
   final int startMin;
   final int endMin;
-  final VoidCallback onStart;
-  final VoidCallback onEnd;
+  /// Called with the tapped tile's context (the time popover anchors to it).
+  final ValueChanged<BuildContext> onStart;
+  final ValueChanged<BuildContext> onEnd;
   final bool enabled;
 
   @override
@@ -172,18 +173,22 @@ class AdHocTimeCard extends StatelessWidget {
     return Row(
       children: <Widget>[
         Expanded(
-          child: _TimeTile(
-            label: l10n.rollAdHocStart,
-            value: fmt.time(startMin),
-            onTap: enabled ? onStart : null,
+          child: Builder(
+            builder: (BuildContext bc) => _TimeTile(
+              label: l10n.rollAdHocStart,
+              value: fmt.time(startMin),
+              onTap: enabled ? () => onStart(bc) : null,
+            ),
           ),
         ),
         const SizedBox(width: BhorSpace.s8),
         Expanded(
-          child: _TimeTile(
-            label: l10n.rollAdHocEnd,
-            value: fmt.time(endMin),
-            onTap: enabled ? onEnd : null,
+          child: Builder(
+            builder: (BuildContext bc) => _TimeTile(
+              label: l10n.rollAdHocEnd,
+              value: fmt.time(endMin),
+              onTap: enabled ? () => onEnd(bc) : null,
+            ),
           ),
         ),
       ],

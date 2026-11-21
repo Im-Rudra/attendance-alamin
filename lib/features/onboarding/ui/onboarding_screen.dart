@@ -528,76 +528,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _scrollBody(double gutter) {
-    final bool reduced = BhorMotion.reduced(context);
-    final int dir = _dir;
-    final Widget page = Align(
-      key: ValueKey<int>(_step),
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 24),
-          child: _stepBody(),
+    return BhorStepTransition(
+      step: _step,
+      forward: _dir >= 0,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 24),
+            child: _stepBody(),
+          ),
         ),
       ),
     );
-    return _fadeThrough(page, reduced: reduced, dir: dir, keepOutgoing: true);
   }
 
-  /// Fade-through shared axis: the outgoing step fades (and slides) out over the
-  /// first 30% of the transition and is fully hidden before the incoming step
-  /// starts to appear, so two steps' text never overlap. With [keepOutgoing]
-  /// false the outgoing child is dropped at once (the footer).
-  Widget _fadeThrough(
-    Widget child, {
-    required bool reduced,
-    required int dir,
-    required bool keepOutgoing,
-  }) {
-    return AnimatedSwitcher(
-      duration: reduced ? BhorMotion.reducedFade : BhorMotion.base,
-      layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
-        alignment: Alignment.topCenter,
-        children: <Widget>[
-          if (keepOutgoing) ...previous,
-          if (current != null) current,
-        ],
-      ),
-      transitionBuilder: (Widget c, Animation<double> a) {
-        final bool entering = c.key == child.key;
-        // Incoming runs 0..1; outgoing runs 1..0 in reverse, so its useful
-        // range is the last 30% of the controller (the first 30% of time).
-        final Animation<double> fade = CurvedAnimation(
-          parent: a,
-          curve: entering ? const Interval(0.3, 1) : const Interval(0.7, 1),
-        );
-        final Widget faded = IgnorePointer(
-          ignoring: !entering,
-          child: FadeTransition(opacity: fade, child: c),
-        );
-        if (reduced || dir == 0) return faded;
-        final double from = (entering ? 1 : -1) * dir * 0.06;
-        final Animation<double> slide = CurvedAnimation(
-          parent: a,
-          curve: entering ? const Interval(0.3, 1, curve: BhorMotion.ease) : const Interval(0.7, 1),
-        );
-        return SlideTransition(
-          position: Tween<Offset>(begin: Offset(from, 0), end: Offset.zero).animate(slide),
-          child: faded,
-        );
-      },
-      child: child,
-    );
-  }
-
-  /// The footer changes with the same fade-through as the body, so it never
-  /// jumps ahead of the content it belongs to.
+  /// The footer changes with the same step transition as the body, so it
+  /// never jumps ahead of the content it belongs to.
   Widget _footer() {
-    return _fadeThrough(
-      KeyedSubtree(key: ValueKey<String>('foot-$_step-${_created != null}'), child: _actionBar()),
-      reduced: BhorMotion.reduced(context),
-      dir: 0,
-      keepOutgoing: false,
+    return BhorStepTransition(
+      step: 'foot-$_step-${_created != null}',
+      forward: _dir >= 0,
+      alignment: AlignmentDirectional.bottomStart,
+      child: _actionBar(),
     );
   }
 

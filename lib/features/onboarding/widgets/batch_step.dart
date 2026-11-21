@@ -6,6 +6,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
@@ -168,6 +169,7 @@ class BatchStep extends StatelessWidget {
           key: const Key('onb-fee'),
           controller: fee,
           keyboardType: TextInputType.number,
+          inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt)],
           textInputAction: TextInputAction.done,
           label: l10n.batchFeeLabel,
           prefix: Text('৳', style: b.type.body.copyWith(color: b.colors.text3)),

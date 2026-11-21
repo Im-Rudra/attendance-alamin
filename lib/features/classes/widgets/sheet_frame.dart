@@ -46,13 +46,14 @@ class SheetFrame extends StatelessWidget {
 
 /// The save button pinned under a class sheet, with the reason when disabled.
 class ClassSaveBar extends StatelessWidget {
-  const ClassSaveBar({super.key, required this.label, required this.onPressed, this.disabledReason});
+  const ClassSaveBar({super.key, required this.label, required this.onPressed, this.disabledReason, this.loading = false});
 
   final String label;
 
   /// Null disables the button.
   final VoidCallback? onPressed;
   final String? disabledReason;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +62,7 @@ class ClassSaveBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        BhorButton(label: label, expand: true, onPressed: onPressed, disabledReason: disabledReason),
+        BhorButton(label: label, expand: true, loading: loading, onPressed: onPressed, disabledReason: disabledReason),
         if (onPressed == null && disabledReason != null) ...<Widget>[
           const SizedBox(height: BhorSpace.s8),
           Text(disabledReason!, textAlign: TextAlign.center, style: b.type.meta),
@@ -144,10 +145,12 @@ Future<T?> showClassSheet<T>(
   BhorPanelKind kind = BhorPanelKind.confirm,
   bool expand = false,
   double? width,
+  BuildContext? anchor,
 }) {
   return showBhorPanel<T>(
     context,
     kind: kind,
+    anchor: anchor,
     expand: expand,
     width: width,
     scroll: false,

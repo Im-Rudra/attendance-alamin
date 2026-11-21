@@ -325,6 +325,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
               key: const ValueKey<String>('stu-add-save'),
               label: l10n.stuSave,
               expand: true,
+              loading: _busy,
               onPressed: _busy ? null : _saveNew,
             ),
           ],

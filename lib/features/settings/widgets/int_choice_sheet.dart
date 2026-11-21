@@ -6,6 +6,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/widgets/digits_formatter.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
@@ -126,8 +127,7 @@ class _IntChoiceSheetState extends State<IntChoiceSheet> {
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.done,
                       inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9০-৯]')),
-                        LengthLimitingTextInputFormatter(4),
+                        DigitsFormatter(context.fmt, maxLength: 4),
                       ],
                       label: l10n.setCustomOther,
                       helper: range,

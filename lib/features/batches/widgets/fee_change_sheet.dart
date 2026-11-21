@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/widgets/chip_wrap.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -94,7 +95,7 @@ class _FeeChangeSheetState extends State<FeeChangeSheet> {
             style: b.type.body.copyWith(color: b.colors.text2),
           ),
           const SizedBox(height: BhorSpace.s12),
-          Wrap(
+          ChipWrap(
             spacing: BhorSpace.s8,
             runSpacing: BhorSpace.s8,
             children: <Widget>[

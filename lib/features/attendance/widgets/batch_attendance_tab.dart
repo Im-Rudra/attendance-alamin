@@ -168,10 +168,11 @@ class _TabContentState extends State<_TabContent> {
   static const int _preview = 8;
   bool _all = false;
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate(BuildContext anchor) async {
     final LocalDate today = widget.today;
     final DateTime? picked = await showBhorDatePicker(
       context,
+      anchor: anchor,
       initialDate: DateTime(today.year, today.month, today.day),
       firstDate: DateTime(today.year - 2, today.month, today.day),
       lastDate: DateTime(today.year, today.month, today.day),
@@ -228,11 +229,13 @@ class _TabContentState extends State<_TabContent> {
                 icon: BhorIcons.rollCall,
                 onPressed: () => pushRollCallBatchDate(context, widget.batchId, widget.today),
               ),
-              BhorButton(
-                label: l10n.rollTabOtherDate,
-                icon: BhorIcons.calendar,
-                variant: BhorButtonVariant.secondary,
-                onPressed: _pickDate,
+              Builder(
+                builder: (BuildContext bc) => BhorButton(
+                  label: l10n.rollTabOtherDate,
+                  icon: BhorIcons.calendar,
+                  variant: BhorButtonVariant.secondary,
+                  onPressed: () => _pickDate(bc),
+                ),
               ),
             ],
           ),

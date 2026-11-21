@@ -64,11 +64,12 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
     openPath(context, Routes.batch(r));
   }
 
-  Future<void> _menu(BatchCardData d, Offset at) async {
+  Future<void> _menu(BatchCardData d, Offset at, BuildContext anchor) async {
     final l10n = context.l10n;
     final String? choice = await showBhorPanel<String>(
       context,
       kind: BhorPanelKind.list,
+      anchor: anchor,
       width: 320,
       title: d.batch.name,
       builder: (BuildContext ctx) => Column(
@@ -165,11 +166,13 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                               width: w,
                               child: BhorStagger(
                                 index: staggerAt++,
-                                child: BatchCard(
-                                  data: d,
-                                  selected: d.batch.id == widget.selectedId,
-                                  onTap: () => openPath(context, Routes.batch(d.batch.id)),
-                                  onSecondaryTap: (Offset at) => _menu(d, at),
+                                child: Builder(
+                                  builder: (BuildContext cardContext) => BatchCard(
+                                    data: d,
+                                    selected: d.batch.id == widget.selectedId,
+                                    onTap: () => openPath(context, Routes.batch(d.batch.id)),
+                                    onSecondaryTap: (Offset at) => _menu(d, at, cardContext),
+                                  ),
                                 ),
                               ),
                             ),

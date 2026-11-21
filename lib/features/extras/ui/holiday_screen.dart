@@ -7,6 +7,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/chip_wrap.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -48,7 +49,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
   LocalDate _fromOr(LocalDate today) => _from ?? today;
   LocalDate _toOr(LocalDate today) => _to ?? _fromOr(today);
 
-  Future<void> _pick({required bool start, required LocalDate today}) async {
+  Future<void> _pick({required bool start, required LocalDate today, required BuildContext anchor}) async {
     final LocalDate current = start ? _fromOr(today) : _toOr(today);
     final DateTime first = _dt(today.addDays(-60));
     final DateTime last = _dt(today.addDays(400));
@@ -57,6 +58,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
     if (initial.isAfter(last)) initial = last;
     final DateTime? picked = await showBhorDatePicker(
       context,
+      anchor: anchor,
       initialDate: initial,
       firstDate: first,
       lastDate: last,
@@ -204,17 +206,21 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
           ),
           const SizedBox(height: BhorSpace.s16),
           LayoutBuilder(builder: (BuildContext context, BoxConstraints c) {
-            final Widget a = _DateTile(
-              key: const ValueKey<String>('holiday-from'),
-              label: l10n.extraHolidayFrom,
-              value: fmt.date(from),
-              onTap: () => _pick(start: true, today: today),
+            final Widget a = Builder(
+              builder: (BuildContext bc) => _DateTile(
+                key: const ValueKey<String>('holiday-from'),
+                label: l10n.extraHolidayFrom,
+                value: fmt.date(from),
+                onTap: () => _pick(start: true, today: today, anchor: bc),
+              ),
             );
-            final Widget b = _DateTile(
-              key: const ValueKey<String>('holiday-to'),
-              label: l10n.extraHolidayTo,
-              value: fmt.date(to),
-              onTap: () => _pick(start: false, today: today),
+            final Widget b = Builder(
+              builder: (BuildContext bc) => _DateTile(
+                key: const ValueKey<String>('holiday-to'),
+                label: l10n.extraHolidayTo,
+                value: fmt.date(to),
+                onTap: () => _pick(start: false, today: today, anchor: bc),
+              ),
             );
             if (c.maxWidth >= 420) {
               return Row(children: <Widget>[
@@ -239,7 +245,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: BhorSpace.s4),
-            Wrap(
+            ChipWrap(
               spacing: BhorSpace.s8,
               runSpacing: BhorSpace.s4,
               children: <Widget>[

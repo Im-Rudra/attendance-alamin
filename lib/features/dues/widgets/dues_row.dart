@@ -262,24 +262,21 @@ Future<void> showDuesContextMenu(
     if (waiveEnrollment != null && waiveMonth != null) (_MenuAction.waive, l10n.duesMenuWaive),
     (_MenuAction.open, l10n.duesOpenProfile),
   ];
-  final _MenuAction? choice = await showBhorDialog<_MenuAction>(
+  final _MenuAction? choice = await showBhorPanel<_MenuAction>(
     context,
-    builder: (BuildContext ctx) => BhorDialog(
-      title: row.name,
-      body: BhorCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (int i = 0; i < entries.length; i++)
-              BhorListRow(
-                title: entries[i].$2,
-                divider: i < entries.length - 1,
-                onTap: () => Navigator.of(ctx).pop(entries[i].$1),
-              ),
-          ],
-        ),
-      ),
+    kind: BhorPanelKind.menu,
+    anchor: context,
+    title: row.name,
+    builder: (BuildContext ctx) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (int i = 0; i < entries.length; i++)
+          BhorListRow(
+            title: entries[i].$2,
+            divider: i < entries.length - 1,
+            onTap: () => Navigator.of(ctx).pop(entries[i].$1),
+          ),
+      ],
     ),
   );
   if (choice == null || !context.mounted) return;

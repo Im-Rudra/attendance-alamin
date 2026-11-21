@@ -64,9 +64,10 @@ bool pickerMatches(Student s, String query) {
 
 /// Opens the picker (sheet on phones, centred dialog on desktop), then the
 /// collect-payment sheet / side panel of the chosen student.
-Future<void> showTakeMoneyPicker(BuildContext context) async {
+Future<void> showTakeMoneyPicker(BuildContext context, {BuildContext? anchor}) async {
   final String? id = await showBhorPanel<String>(
     context,
+    anchor: anchor,
     title: context.l10n.duesPickerTitle,
     kind: BhorPanelKind.list,
     scroll: false,

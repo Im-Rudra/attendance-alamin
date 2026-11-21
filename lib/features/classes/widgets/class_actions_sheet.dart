@@ -29,13 +29,15 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// Opens the actions of [occ]; carries out what the sheet asks for afterwards
 /// (reschedule sheet, roll call, the undo snackbar of a cancel).
-Future<void> showClassActionsSheet(BuildContext context, {required String occ, String? returnTo}) async {
+Future<void> showClassActionsSheet(BuildContext context,
+    {required String occ, String? returnTo, BuildContext? anchor}) async {
   final ProviderContainer container = ProviderScope.containerOf(context);
   final AppLocalizations l10n = context.l10n;
   final ClassSheetResult? result = await showClassSheet<ClassSheetResult>(
     context,
     (BuildContext ctx) => ClassActionsSheet(occ: occ),
     kind: BhorPanelKind.list,
+    anchor: anchor,
     width: 440,
   );
   if (result == null || !context.mounted) return;

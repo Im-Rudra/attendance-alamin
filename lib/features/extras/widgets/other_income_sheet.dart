@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/widgets/chip_wrap.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -145,13 +146,14 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
   bool get _labelOk => _label.text.trim().isNotEmpty;
   bool get _canSave => !_busy && _labelOk && _amountValue != null;
 
-  Future<void> _pickDate(LocalDate today, LocalDate current) async {
+  Future<void> _pickDate(LocalDate today, LocalDate current, BuildContext anchor) async {
     final DateTime last = DateTime(today.year, today.month, today.day);
     DateTime first = DateTime(today.year - 2, 1, 1);
     final DateTime initial = DateTime(current.year, current.month, current.day);
     if (initial.isBefore(first)) first = initial;
     final DateTime? picked = await showBhorDatePicker(
       context,
+      anchor: anchor,
       initialDate: initial.isAfter(last) ? last : initial,
       firstDate: first,
       lastDate: last,
@@ -251,7 +253,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: BhorSpace.s8),
-          Wrap(
+          ChipWrap(
             spacing: BhorSpace.s8,
             runSpacing: BhorSpace.s4,
             children: <Widget>[
@@ -280,7 +282,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
           const SizedBox(height: BhorSpace.s16),
           Text(l10n.payMethodLabel, style: b.type.label),
           const SizedBox(height: BhorSpace.s8),
-          Wrap(
+          ChipWrap(
             spacing: BhorSpace.s8,
             runSpacing: BhorSpace.s4,
             children: <Widget>[
@@ -294,13 +296,15 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             ],
           ),
           const SizedBox(height: BhorSpace.s16),
-          BhorButton(
-            key: const ValueKey<String>('income-date'),
-            variant: BhorButtonVariant.secondary,
-            icon: BhorIcons.calendar,
-            label: '${l10n.payDateLabel}: ${fmt.date(date)}',
-            expand: true,
-            onPressed: () => _pickDate(today, date),
+          Builder(
+            builder: (BuildContext bc) => BhorButton(
+              key: const ValueKey<String>('income-date'),
+              variant: BhorButtonVariant.secondary,
+              icon: BhorIcons.calendar,
+              label: '${l10n.payDateLabel}: ${fmt.date(date)}',
+              expand: true,
+              onPressed: () => _pickDate(today, date, bc),
+            ),
           ),
           const SizedBox(height: BhorSpace.s16),
           BhorTextField(
@@ -317,6 +321,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             key: const ValueKey<String>('income-save'),
             label: l10n.commonSave,
             expand: true,
+            loading: _busy,
             onPressed: _canSave ? () => _save(share: false) : null,
           ),
           const SizedBox(height: BhorSpace.s8),
