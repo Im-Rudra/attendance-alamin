@@ -61,16 +61,35 @@ class BatchCard extends ConsumerWidget {
           tween: Tween<double>(end: selected ? 1 : 0),
           duration: BhorMotion.of(context, BhorMotion.fast),
           curve: BhorMotion.curveOf(context, BhorMotion.ease),
-          builder: (BuildContext context, double t, Widget? child) => DecoratedBox(
-            position: DecorationPosition.foreground,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(BhorRadius.card),
-              border: Border.all(
-                color: Color.lerp(th.colors.accent.withValues(alpha: 0), th.colors.accent, t)!,
-                width: 1.5,
+          builder: (BuildContext context, double t, Widget? child) => Stack(
+            children: <Widget>[
+              child!,
+              // Selected = soft accent wash + a 3 px leading bar, no outline.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: th.colors.accentTint.withValues(alpha: 0.55 * t),
+                      borderRadius: BorderRadius.circular(BhorRadius.card),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: child,
+              Positioned(
+                left: 0,
+                top: BhorSpace.s12,
+                bottom: BhorSpace.s12,
+                width: 3,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: th.colors.accent.withValues(alpha: t),
+                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           child: BhorCard(
             onTap: onTap,
@@ -78,7 +97,7 @@ class BatchCard extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                BhorAvatar(name: data.batch.name, size: 40),
+                BatchAvatar(name: data.batch.name, size: 40),
                 const SizedBox(width: BhorSpace.s12),
                 Expanded(
                   child: Column(

@@ -138,20 +138,22 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
           return _Table(rows: rows, selectedId: widget.selectedId, onOpen: _open);
         }
         return BhorStaggerScope(
-          child: BhorCard(
-            padding: EdgeInsets.zero,
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 88),
-              itemCount: rows.length,
-              itemBuilder: (BuildContext c, int i) => BhorStagger(
-                index: i,
-                child: StudentRowTile(
-                  key: ValueKey<String>('stu-row-${rows[i].id}'),
-                  row: rows[i],
-                  selected: rows[i].id == widget.selectedId,
-                  onTap: () => _open(rows[i].id),
-                ),
-              ),
+          // The card hugs its rows; 88 px of tail clears the FAB.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 88),
+            child: BhorList(
+              children: <Widget>[
+                for (int i = 0; i < rows.length; i++)
+                  BhorStagger(
+                    index: i,
+                    child: StudentRowTile(
+                      key: ValueKey<String>('stu-row-${rows[i].id}'),
+                      row: rows[i],
+                      selected: rows[i].id == widget.selectedId,
+                      onTap: () => _open(rows[i].id),
+                    ),
+                  ),
+              ],
             ),
           ),
         );
@@ -198,64 +200,79 @@ class _Table extends StatelessWidget {
           child: child,
         );
 
-    return BatchTable<StudentRow>(
-      rows: rows,
-      semanticLabel: (StudentRow r) => r.student.name,
-      isSelected: (StudentRow r) => r.id == selectedId,
-      onRowTap: (StudentRow r) => onOpen(r.id),
-      columns: <BatchColumn<StudentRow>>[
-        BatchColumn<StudentRow>(
-          label: l10n.stuColRoll,
-          flex: 2,
-          cell: (StudentRow r) => menu(r, text(r.student.roll == null ? '—' : fmt.digits(r.student.roll!))),
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColName,
-          flex: 6,
-          cell: (StudentRow r) => menu(r, text(r.student.name, override: b.type.bodyStrong)),
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColBatch,
-          flex: 5,
-          cell: (StudentRow r) => menu(r, text(batchNames(r.batches))),
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColGuardianPhone,
-          flex: 4,
-          cell: (StudentRow r) {
-            final Student s = r.student;
-            final String? p = s.guardianPhone ?? s.phone;
-            return menu(r, text(p == null ? '—' : fmt.digits(p)));
-          },
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColAttendance,
-          flex: 3,
-          numeric: true,
-          cell: (StudentRow r) =>
-              menu(r, text(r.attendancePercent == null ? '—' : fmt.percent(r.attendancePercent!))),
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColDues,
-          flex: 6,
-          cell: (StudentRow r) => menu(
-            r,
-            r.dues == null
-                ? text('—')
-                : FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: StudentDuesBadge(dues: r.dues),
-                  ),
-          ),
-        ),
-        BatchColumn<StudentRow>(
-          label: l10n.stuColLastPayment,
-          flex: 4,
-          cell: (StudentRow r) =>
-              menu(r, text(r.lastPaidOn == null ? '—' : fmt.dateShort(r.lastPaidOn!))),
-        ),
-      ],
+    // Fixed widths for phone / percent / tag so nothing collides; name and
+    // batch share the rest and are the only columns that ellipsize.
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        final bool showBatch = box.maxWidth >= 800;
+        final bool showLast = box.maxWidth >= 960;
+        return BatchTable<StudentRow>(
+          rows: rows,
+          semanticLabel: (StudentRow r) => r.student.name,
+          isSelected: (StudentRow r) => r.id == selectedId,
+          onRowTap: (StudentRow r) => onOpen(r.id),
+          columns: <BatchColumn<StudentRow>>[
+            BatchColumn<StudentRow>(
+              label: l10n.stuColRoll,
+              fixedWidth: 48,
+              cell: (StudentRow r) => menu(r, text(r.student.roll == null ? '—' : fmt.digits(r.student.roll!))),
+            ),
+            BatchColumn<StudentRow>(
+              label: l10n.stuColName,
+              flex: 6,
+              cell: (StudentRow r) => menu(r, text(r.student.name, override: b.type.bodyStrong)),
+            ),
+            if (showBatch)
+              BatchColumn<StudentRow>(
+                label: l10n.stuColBatch,
+                flex: 4,
+                cell: (StudentRow r) => menu(r, text(batchNames(r.batches))),
+              ),
+            BatchColumn<StudentRow>(
+              label: l10n.stuColGuardianPhone,
+              fixedWidth: 128,
+              cell: (StudentRow r) {
+                final Student s = r.student;
+                final String? p = s.guardianPhone ?? s.phone;
+                return menu(r, text(p == null ? '—' : fmt.digits(p)));
+              },
+            ),
+            BatchColumn<StudentRow>(
+              label: l10n.stuColAttendance,
+              fixedWidth: 72,
+              numeric: true,
+              cell: (StudentRow r) => menu(
+                r,
+                text(
+                  r.attendancePercent == null ? '—' : fmt.percent(r.attendancePercent!),
+                  override: BhorType.tabular(style),
+                ),
+              ),
+            ),
+            BatchColumn<StudentRow>(
+              label: l10n.stuColDues,
+              fixedWidth: 168,
+              cell: (StudentRow r) => menu(
+                r,
+                r.dues == null
+                    ? text('—')
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: StudentDuesBadge(dues: r.dues),
+                      ),
+              ),
+            ),
+            if (showLast)
+              BatchColumn<StudentRow>(
+                label: l10n.stuColLastPayment,
+                fixedWidth: 96,
+                cell: (StudentRow r) =>
+                    menu(r, text(r.lastPaidOn == null ? '—' : fmt.dateShort(r.lastPaidOn!))),
+              ),
+          ],
+        );
+      },
     );
   }
 }

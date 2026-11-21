@@ -280,6 +280,7 @@ class _HeaderCard extends StatelessWidget {
 
     Widget callButton(String role, String number) => BhorButton(
           variant: BhorButtonVariant.secondary,
+          expand: true,
           icon: ContactActions.icon,
           label: l10n.stuContactButton(role, ContactActions.label(l10n)),
           onPressed: () => ContactActions.callOrCopy(context, number),
@@ -321,33 +322,45 @@ class _HeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: BhorSpace.s12),
-          Wrap(
-            spacing: BhorSpace.s8,
-            runSpacing: BhorSpace.s8,
-            children: <Widget>[
-              if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
-              if (own != null) callButton(l10n.stuRoleStudent, own),
-              if (guardian == null && own == null)
-                BhorButton(
-                  variant: BhorButtonVariant.secondary,
-                  icon: BhorIcons.phone,
-                  label: l10n.stuAddPhone,
-                  onPressed: () => showStudentFormPanel(context, studentId: student.id),
-                ),
-              if (dues != null)
-                BhorButton(
-                  variant: BhorButtonVariant.secondary,
-                  icon: BhorIcons.share,
-                  label: l10n.stuRemind,
-                  onPressed: () => shareDuesReminder(context, studentId: student.id),
-                ),
-              if (showCollect)
-                BhorButton(
-                  icon: BhorIcons.takeMoney,
-                  label: l10n.stuCollect,
-                  onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
-                ),
-            ],
+          // Equal-width buttons in an even grid (no ragged stack).
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints box) {
+              final List<Widget> actions = <Widget>[
+                if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
+                if (own != null) callButton(l10n.stuRoleStudent, own),
+                if (guardian == null && own == null)
+                  BhorButton(
+                    variant: BhorButtonVariant.secondary,
+                    icon: BhorIcons.phone,
+                    label: l10n.stuAddPhone,
+                    expand: true,
+                    onPressed: () => showStudentFormPanel(context, studentId: student.id),
+                  ),
+                if (dues != null)
+                  BhorButton(
+                    variant: BhorButtonVariant.secondary,
+                    icon: BhorIcons.share,
+                    label: l10n.stuRemind,
+                    expand: true,
+                    onPressed: () => shareDuesReminder(context, studentId: student.id),
+                  ),
+                if (showCollect)
+                  BhorButton(
+                    icon: BhorIcons.takeMoney,
+                    label: l10n.stuCollect,
+                    expand: true,
+                    onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
+                  ),
+              ];
+              const double gap = BhorSpace.s8;
+              final int cols = box.maxWidth >= 560 ? (actions.length < 4 ? actions.length : 4) : 2;
+              final double w = (box.maxWidth - gap * (cols - 1)) / cols;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[for (final Widget a in actions) SizedBox(width: w, child: a)],
+              );
+            },
           ),
         ],
       ),
