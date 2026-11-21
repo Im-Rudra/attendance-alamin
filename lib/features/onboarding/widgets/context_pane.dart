@@ -2,7 +2,6 @@
 // steps (done / now / next) and a plain tip for the current one, so the wide
 // window never has an empty half. No illustration, only words.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -41,9 +40,35 @@ class OnbContextPane extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: <Widget>[
-            Icon(
-              done ? Icons.check_circle : (now ? Icons.radio_button_checked : Icons.radio_button_unchecked),
-              color: now || done ? c.onHero : onHero2,
+            AnimatedSwitcher(
+              duration: BhorMotion.base,
+              switchInCurve: BhorMotion.spring,
+              transitionBuilder: (Widget w, Animation<double> a) => ScaleTransition(scale: a, child: w),
+              child: done
+                  ? Icon(
+                      BhorIcons.checkCircleFill,
+                      key: const ValueKey<String>('done'),
+                      color: c.onHero,
+                    )
+                  : AnimatedContainer(
+                      key: const ValueKey<String>('open'),
+                      duration: BhorMotion.base,
+                      curve: BhorMotion.ease,
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: now ? c.onHero : onHero2, width: 2),
+                      ),
+                      child: AnimatedContainer(
+                        duration: BhorMotion.base,
+                        curve: BhorMotion.spring,
+                        width: now ? 10 : 0,
+                        height: now ? 10 : 0,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: c.onHero),
+                      ),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -88,7 +113,7 @@ class OnbContextPane extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Icon(Icons.lightbulb_outline, color: c.onHero),
+                              Icon(BhorIcons.sparkle, color: c.onHero),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(

@@ -3,7 +3,6 @@
 // uninstalling the app wipes its data.
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +19,10 @@ import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 class DiagnosticsScreen extends ConsumerWidget {
-  const DiagnosticsScreen({super.key});
+  const DiagnosticsScreen({super.key, this.embedded = false});
+
+  /// True inside a desktop dialog: only the content, no page chrome.
+  final bool embedded;
 
   String _platformName(AppLocalizations l10n) {
     if (kIsWeb) return l10n.setPlatformWeb;
@@ -35,21 +37,11 @@ class DiagnosticsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final double g = WindowClass.of(context).gutter;
-    final bool embedded = PaneScope.isEmbedded(context);
+    final bool inPane = PaneScope.isEmbedded(context);
     final String deviceName = ref.watch(deviceNameProvider).value ?? '';
     final String version = ref.watch(appVersionProvider).value ?? l10n.setVersionUnknown;
 
-    return BhorScaffold(
-      header: BhorHeader(title: l10n.shellTitleDiagnostics, showBack: embedded ? false : null),
-      body: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints c) {
-            final bool wide = c.maxWidth >= WindowClass.expandedMin;
-            return ListView(
-              padding: EdgeInsets.fromLTRB(g, 8, g, g),
-              children: <Widget>[
-                SettingsColumns(
-                  twoUp: wide,
-                  children: <Widget>[
+    final List<Widget> cards = <Widget>[
                     ValueListenableBuilder<WebStorageInfo?>(
                       valueListenable: webStorageReport,
                       builder: (BuildContext context, WebStorageInfo? info, Widget? _) {
@@ -58,18 +50,18 @@ class DiagnosticsScreen extends ConsumerWidget {
                           if (info != null && info.missingFeatures.isNotEmpty)
                             SettingRow(
                               key: const Key('diag-missing'),
-                              icon: Icons.extension_off_outlined,
+                              icon: BhorIcons.warning,
                               title: l10n.setDiagMissing(info.missingFeatures.join(', ')),
                             ),
                           SettingRow(
                             key: const Key('diag-platform'),
-                            icon: Icons.devices_outlined,
+                            icon: BhorIcons.desktop,
                             title: l10n.setDiagPlatform,
                             value: _platformName(l10n),
                           ),
                           SettingRow(
                             key: const Key('diag-device-name'),
-                            icon: Icons.smartphone_outlined,
+                            icon: BhorIcons.phoneDevice,
                             title: l10n.setDiagDeviceName,
                             value: deviceName.trim().isEmpty
                                 ? l10n.setDiagDeviceNameEmpty
@@ -81,7 +73,7 @@ class DiagnosticsScreen extends ConsumerWidget {
                             onLongPress: () => context.push(Routes.moreDesignSystem),
                             child: SettingRow(
                               key: const Key('diag-version'),
-                              icon: Icons.info_outline,
+                              icon: BhorIcons.info,
                               title: l10n.setVersion,
                               value: version,
                             ),
@@ -90,7 +82,30 @@ class DiagnosticsScreen extends ConsumerWidget {
                       },
                     ),
                     _WarningCard(body: _warningBody(l10n)),
-                  ],
+    ];
+    if (embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int i = 0; i < cards.length; i++) ...<Widget>[
+            if (i > 0) const SizedBox(height: 12),
+            cards[i],
+          ],
+        ],
+      );
+    }
+    return BhorScaffold(
+      header: BhorHeader(title: l10n.shellTitleDiagnostics, showBack: inPane ? false : null),
+      body: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints c) {
+            final bool wide = c.maxWidth >= WindowClass.expandedMin;
+            return ListView(
+              padding: EdgeInsets.fromLTRB(g, 8, g, g),
+              children: <Widget>[
+                SettingsColumns(
+                  twoUp: wide,
+                  children: cards,
                 ),
               ],
             );
@@ -109,7 +124,7 @@ class DiagnosticsScreen extends ConsumerWidget {
     if (info == null) {
       return SettingRow(
         key: const Key('diag-storage'),
-        icon: Icons.storage_outlined,
+        icon: BhorIcons.storage,
         title: l10n.setDiagStorage,
         value: l10n.setDiagStorageNative,
       );
@@ -117,7 +132,7 @@ class DiagnosticsScreen extends ConsumerWidget {
     if (!info.persistent) {
       return SettingRow(
         key: const Key('diag-storage'),
-        icon: Icons.warning_amber_rounded,
+        icon: BhorIcons.warning,
         title: l10n.setDiagStorage,
         value: l10n.setDiagStorageWebMemory,
         destructive: true,
@@ -125,7 +140,7 @@ class DiagnosticsScreen extends ConsumerWidget {
     }
     return SettingRow(
       key: const Key('diag-storage'),
-      icon: Icons.storage_outlined,
+      icon: BhorIcons.storage,
       title: l10n.setDiagStorage,
       value: l10n.setDiagStorageWebOk(info.implementation),
     );
@@ -154,7 +169,7 @@ class _WarningCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.warning_amber_rounded, color: c.danger),
+              Icon(BhorIcons.warning, color: c.danger),
               const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Semantics(
@@ -171,7 +186,7 @@ class _WarningCard extends StatelessWidget {
             alignment: AlignmentDirectional.centerStart,
             child: BhorButton(
               key: const Key('diag-backup-now'),
-              icon: Icons.save_alt_outlined,
+              icon: BhorIcons.backupUp,
               label: l10n.setBackupNow,
               onPressed: () => runExportBackup(context),
             ),

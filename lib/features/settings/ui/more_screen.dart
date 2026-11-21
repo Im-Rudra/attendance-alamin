@@ -1,8 +1,7 @@
 // More tab = Settings (Product 3.12, UX 3a). One scrolling list of groups on
 // phones; on wide windows a group index (240) next to the selected group's
-// cards (two columns when there is room), so no area is left blank.
+// cards in one calm column (max 720).
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,9 +20,6 @@ const double kMoreSplitMinWidth = 720;
 
 /// Width of the group index in the split layout.
 const double kMoreIndexWidth = 240;
-
-/// Content width from which a group's cards sit in two columns.
-const double kMoreTwoUpMinWidth = 640;
 
 class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
@@ -49,8 +45,10 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         showBack: embedded ? false : null,
         actions: <Widget>[
           BhorIconButton(
-            icon: Icons.search,
+            icon: BhorIcons.search,
             semanticLabel: l10n.commonSearch,
+            variant: BhorButtonVariant.secondary,
+            circle: true,
             onPressed: () => context.push(Routes.search),
           ),
         ],
@@ -82,7 +80,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
   Widget _split(BuildContext context, BoxConstraints c, double g) {
     final l10n = context.l10n;
-    final double contentWidth = c.maxWidth - 2 * g - kMoreIndexWidth - g;
     return Padding(
       padding: EdgeInsets.fromLTRB(g, 4, g, g),
       child: Row(
@@ -96,18 +93,24 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             ),
           ),
           SizedBox(width: g),
+          // One calm column (max 720); switching groups cross-fades and rises.
           Expanded(
-            child: SingleChildScrollView(
-              key: ValueKey<SettingsGroup>(_selected),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  SettingsHeader(_selected.title(l10n)),
-                  SettingsGroupBody(
-                    group: _selected,
-                    twoUp: contentWidth >= kMoreTwoUpMinWidth,
+            child: BhorPaneSwitcher(
+              paneKey: _selected,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        SettingsHeader(_selected.title(l10n)),
+                        SettingsGroupBody(group: _selected),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -126,26 +129,30 @@ class _Index extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // A light sub-navigation, not a card: the selected row is tinted.
     return Semantics(
       container: true,
       label: l10n.setIndexLabel,
-      child: BhorCard(
-        padding: const EdgeInsets.all(BhorSpace.s8),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              for (final SettingsGroup group in SettingsGroup.values)
-                BhorListRow(
-                  key: Key('more-index-${group.name}'),
-                  leading: Icon(group.icon),
-                  title: group.title(l10n),
-                  selected: group == selected,
-                  divider: false,
-                  onTap: () => onSelect(group),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (final SettingsGroup group in SettingsGroup.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: BhorSpace.s4),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(BhorRadius.control),
+                  child: BhorListRow(
+                    key: Key('more-index-${group.name}'),
+                    leading: Icon(group.icon, size: BhorIconSize.row),
+                    title: group.title(l10n),
+                    selected: group == selected,
+                    divider: false,
+                    onTap: () => onSelect(group),
+                  ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

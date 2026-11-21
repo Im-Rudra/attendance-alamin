@@ -45,6 +45,8 @@ class _SettingTextFieldState extends ConsumerState<SettingTextField> {
   final TextEditingController _controller = TextEditingController();
   late final SettingsRepository _repo = ref.read(settingsRepositoryProvider);
   Timer? _timer;
+  Timer? _savedTimer;
+  bool _saved = false;
   bool _touched = false;
   Object? _error;
 
@@ -91,12 +93,20 @@ class _SettingTextFieldState extends ConsumerState<SettingTextField> {
     if (!_touched) return;
     final String? v = _valueToStore();
     if (v == null) return;
-    _repo.set<String>(widget.settingKey, v).catchError((Object _) {});
+    _repo.set<String>(widget.settingKey, v).then((_) {
+      if (!mounted) return;
+      setState(() => _saved = true);
+      _savedTimer?.cancel();
+      _savedTimer = Timer(const Duration(milliseconds: 1600), () {
+        if (mounted) setState(() => _saved = false);
+      });
+    }, onError: (Object _) {});
   }
 
   @override
   void dispose() {
     _commit();
+    _savedTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -119,6 +129,24 @@ class _SettingTextFieldState extends ConsumerState<SettingTextField> {
         error: _error == null ? null : errorText(l10n, _error!),
         onChanged: _changed,
         onSubmitted: (_) => _commit(),
+        suffix: AnimatedSwitcher(
+          duration: BhorMotion.base,
+          switchInCurve: BhorMotion.ease,
+          child: _saved
+              ? Row(
+                  key: const ValueKey<String>('saved'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(BhorIcons.checkCircleFill, size: 16, color: context.bhor.colors.ok),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.setSavedTick,
+                      style: context.bhor.type.meta.copyWith(color: context.bhor.colors.ok),
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(key: ValueKey<String>('idle')),
+        ),
       ),
     );
   }

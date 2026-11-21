@@ -3,7 +3,6 @@
 // clash check, the monthly fee and the two billing cards in plain words.
 // Once the batch is saved the form is replaced by a calm "ready" card.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -122,9 +121,7 @@ class BatchStep extends StatelessWidget {
         const SizedBox(height: 8),
         Text(l10n.batchSubjectSuggest, style: b.type.meta),
         const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        _ChipRow(
           children: <Widget>[
             for (final String s in suggestions)
               BhorChip(
@@ -137,9 +134,7 @@ class BatchStep extends StatelessWidget {
         const SizedBox(height: 12),
         Text(l10n.onbClassPick, style: b.type.meta),
         const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        _ChipRow(
           children: <Widget>[
             for (final String c in classes)
               BhorChip(
@@ -215,6 +210,27 @@ class BatchStep extends StatelessWidget {
   }
 }
 
+/// One horizontally scrolling row of chips (no chip walls).
+class _ChipRow extends StatelessWidget {
+  const _ChipRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          children: <Widget>[
+            for (int i = 0; i < children.length; i++) ...<Widget>[
+              if (i > 0) const SizedBox(width: BhorSpace.s8),
+              children[i],
+            ],
+          ],
+        ),
+      );
+}
+
 /// "Math — Class 10 / Batch 1 · ৳1,000 / month" as it will look in the app.
 class _Preview extends StatelessWidget {
   const _Preview({required this.subject, required this.name, required this.fee});
@@ -242,7 +258,7 @@ class _Preview extends StatelessWidget {
       key: const Key('onb-preview'),
       child: Row(
         children: <Widget>[
-          Icon(Icons.groups_2_outlined, color: b.colors.accent, size: 32),
+          Icon(BhorIcons.batches, color: b.colors.accent, size: 32),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -277,7 +293,7 @@ class _CreatedCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.check_circle, color: b.colors.accent, size: 32),
+          Icon(BhorIcons.checkCircleFill, color: b.colors.accent, size: 32),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

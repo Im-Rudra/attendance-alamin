@@ -663,5 +663,9 @@
   "setCsvExportValue": "এই মাসের শিক্ষার্থী, বেতন, হাজিরা",
   "@setCsvExportValue": {
     "description": "Subtitle of the CSV export row."
+  },
+  "setSavedTick": "সেভ হয়েছে",
+  "@setSavedTick": {
+    "description": "Tiny confirmation shown inside a settings text field for a moment after it saved by itself."
   }
 }

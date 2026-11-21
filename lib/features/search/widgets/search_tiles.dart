@@ -1,6 +1,5 @@
 // Result rows and the preview pane of the search screen.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -55,7 +54,7 @@ class SearchStudentTile extends StatelessWidget {
             ? entry.student.name
             : '${context.fmt.digits(roll)} · ${entry.student.name}',
         subtitle: sub.isEmpty ? null : sub.join(' · '),
-        trailing: Icon(Icons.chevron_right, color: context.bhor.colors.text3),
+        trailing: Icon(BhorIcons.chevronRight, color: context.bhor.colors.text3),
         selected: selected,
         onTap: onTap,
       ),
@@ -76,7 +75,7 @@ class _BatchGlyph extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
-      child: Icon(Icons.groups_outlined, size: size / 2, color: c.accent),
+      child: Icon(BhorIcons.batches, size: size / 2, color: c.accent),
     );
   }
 }
@@ -107,7 +106,7 @@ class SearchBatchTile extends StatelessWidget {
           if (entry.subjectName.isNotEmpty) entry.subjectName,
           count,
         ].join(' · '),
-        trailing: Icon(Icons.chevron_right, color: context.bhor.colors.text3),
+        trailing: Icon(BhorIcons.chevronRight, color: context.bhor.colors.text3),
         selected: selected,
         onTap: onTap,
       ),
@@ -240,7 +239,7 @@ class SearchPreview extends StatelessWidget {
                 child: BhorButton(
                   key: const ValueKey<String>('search-open'),
                   onPressed: onOpen,
-                  icon: s != null ? Icons.person_outline : Icons.groups_outlined,
+                  icon: s != null ? BhorIcons.user : BhorIcons.batches,
                   label: s != null ? l10n.searchOpenStudent : l10n.searchOpenBatch,
                 ),
               ),

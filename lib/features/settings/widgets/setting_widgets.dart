@@ -2,7 +2,6 @@
 // two-line row (label + current value), a switch row, an info chip, a header
 // and a two-column arrangement for wide windows.
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -74,16 +73,28 @@ class SettingRow extends StatelessWidget {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final Widget? end = trailing ??
-        (onTap == null ? null : Icon(Icons.chevron_right, color: c.text3));
-    Widget row(BhorStates s) => Container(
+        (onTap == null ? null : Icon(BhorIcons.chevronRight, size: BhorIconSize.chip, color: c.text3));
+    Widget row(BhorStates s) => AnimatedContainer(
+          duration: BhorMotion.fast,
+          curve: BhorMotion.ease,
           constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 10),
-          color: s.hovered || s.pressed ? c.surface2 : null,
+          color: s.hovered || s.pressed ? c.soft : null,
           child: Row(
             children: <Widget>[
               if (icon != null) ...<Widget>[
-                Icon(icon, color: destructive ? c.danger : c.accent),
-                const SizedBox(width: BhorSpace.s16),
+                // A soft tinted square keeps the icons calm and aligned.
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: destructive ? c.dangerBg : c.accentTint,
+                    borderRadius: BorderRadius.circular(BhorRadius.control - 4),
+                  ),
+                  child: Icon(icon, size: BhorIconSize.row, color: destructive ? c.danger : c.accent),
+                ),
+                const SizedBox(width: BhorSpace.s12),
               ],
               Expanded(
                 child: Column(
@@ -200,7 +211,7 @@ class SettingInfoChip extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.info_outline, size: 20, color: c.accent),
+          Icon(BhorIcons.info, size: 20, color: c.accent),
           const SizedBox(width: BhorSpace.s8),
           Expanded(child: Text(message, style: b.type.meta.copyWith(color: c.text))),
           if (actionLabel != null && onAction != null)

@@ -7,7 +7,6 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -119,7 +118,7 @@ class _CoachOverlay extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(target == null ? Icons.touch_app_outlined : Icons.arrow_downward, color: c.accent),
+                    Icon(target == null ? BhorIcons.sparkle : BhorIcons.chevronDown, color: c.accent),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Padding(

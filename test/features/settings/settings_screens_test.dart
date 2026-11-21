@@ -88,7 +88,7 @@ void main() {
       expect(find.byKey(const Key('more-version')), findsNothing);
 
       await tester.tap(find.byKey(const Key('more-index-about')));
-      await tester.pump();
+      await tester.pumpAndSettle(); // the pane cross-fades to the next group
       expect(find.byKey(const Key('more-version')), findsOneWidget);
       expect(find.text(_bn.shellTitleArchived), findsNothing);
     });
@@ -130,6 +130,28 @@ void main() {
       await tester.tap(find.byKey(const ValueKey<String>('theme-swatch-dark')));
       await tester.pump(const Duration(milliseconds: 50));
       expect(container.read(themeModeProvider), ThemeMode.dark);
+    });
+
+    testWidgets('desktop opens help and templates over the settings layout, not as routes', (tester) async {
+      final SeededFakes fakes = seedFakes();
+      await pumpApp(tester, const MoreScreen(),
+          viewport: TestViewport.desktop, overrides: _overrides(fakes));
+      await tester.tap(find.byKey(const Key('more-index-about')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('more-help')));
+      await tester.pumpAndSettle();
+      expect(find.byType(HelpScreen), findsOneWidget);
+      expect(find.byType(MoreScreen), findsOneWidget);
+      Navigator.of(tester.element(find.byType(HelpScreen))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(HelpScreen), findsNothing);
+
+      await tester.tap(find.byKey(const Key('more-index-fees')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('more-template-reminder')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TemplateEditorScreen), findsOneWidget);
+      expect(find.byKey(const Key('template-field')), findsOneWidget);
     });
 
     testWidgets('reduced effects switch is saved', (tester) async {

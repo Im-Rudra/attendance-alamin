@@ -143,5 +143,6 @@
   "setHelpQ6": "How do I message a guardian?",
   "setHelpA6": "Tap remind on the fees list or a student's page. You can edit the wording under Messages on the More page.",
   "setCsvExport": "CSV export (Excel)",
-  "setCsvExportValue": "This month's students, fees, attendance"
+  "setCsvExportValue": "This month's students, fees, attendance",
+  "setSavedTick": "Saved"
 }
