@@ -1,4 +1,4 @@
-// Per-date actions of one class (UX 2g): "শুধু {date}" with change time,
+// Per-date actions of one class (UX 2g): "à¦¶à§à¦§à§ {date}" with change time,
 // cancel (undo snackbar + guardians' notice), roll call and restore.
 
 import 'dart:async';
@@ -24,7 +24,6 @@ import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
-import 'package:attendance_alamin/features/classes/widgets/clash_panel.dart';
 import 'package:attendance_alamin/features/classes/widgets/reschedule_sheet.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
