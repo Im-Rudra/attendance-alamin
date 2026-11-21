@@ -553,5 +553,19 @@
   "todayGreetEvening": "শুভ সন্ধ্যা",
   "@todayGreetEvening": {
     "description": "Greeting on Today from 5 pm."
+  },
+  "todayNewMenu": "নতুন…",
+  "@todayNewMenu": {
+    "description": "Desktop Today header menu button that lists the quick actions."
+  },
+  "todayDuesMore": "আরও {count} জন",
+  "@todayDuesMore": {
+    "description": "Last row of the Today dues card when more students owe than fit.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "x"
+      }
+    }
   }
 }

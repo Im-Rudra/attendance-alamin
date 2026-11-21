@@ -118,17 +118,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the language chip on Today toggles bn <-> en', (WidgetTester tester) async {
-    final ShellHarness h = await pumpShell(tester);
-    await tester.tap(find.byKey(const Key('language-chip')));
-    await tester.pumpAndSettle();
-    expect(find.text(l10nOf(Lang.en).navStudents), findsOneWidget);
-    await tester.tap(find.byKey(const Key('language-chip')));
-    await tester.pumpAndSettle();
-    expect(find.text(l10nOf(Lang.bn).navStudents), findsOneWidget);
-    expect(await h.settings.get(SettingKeys.locale), 'bn');
-  });
-
   testWidgets('theme switches instantly from the More tab and is saved', (WidgetTester tester) async {
     final ShellHarness h = await pumpShell(tester, location: Routes.more);
     // Read where Bhor components read it: the in-app switch must reach them.

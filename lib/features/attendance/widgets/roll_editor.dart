@@ -671,9 +671,6 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final bool past = widget.date.isBefore(today);
     final bool archived = t.batch.archived;
     final RollCounts k = c.counts;
-    final String countsText = k.leave > 0
-        ? l10n.rollCountsWithLeave(fmt.number(k.present), fmt.number(k.absent), fmt.number(k.late), fmt.number(k.leave))
-        : l10n.rollCounts(fmt.number(k.present), fmt.number(k.absent), fmt.number(k.late));
     final bool canSave = c.readOnly || _canSave(t, c);
 
     String? reason;
@@ -695,7 +692,6 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       loading: c.saving && !c.saved,
       done: _celebrate,
       disabledReason: reason,
-      summary: wide ? null : countsText,
     );
 
     final Widget stateLine = _StateLine(saved: c.saved, saving: c.saving);
@@ -769,7 +765,11 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         rows: rows,
         columns: wide || wc == WindowClass.medium ? _columns(wc) : 1,
         gap: BhorSpace.s8,
-        builder: (int i) => _row(context, c, rows[i], i, dense: dense, keyed: wide || wc == WindowClass.medium),
+        builder: (int i) {
+          final bool keyed = wide || wc == WindowClass.medium;
+          final Widget row = _row(context, c, rows[i], i, dense: dense, keyed: keyed);
+          return keyed ? row : BhorStagger(index: i, child: row);
+        },
       );
     }
 
@@ -787,11 +787,20 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       ],
     );
 
-    final Widget menu = BhorIconButton(
-      semanticLabel: l10n.commonMore,
-      icon: BhorIcons.overflowVertical,
-      onPressed: () => unawaited(_openMenu(c, t)),
-    );
+    // The menu only earns its place when it has more than the note: a saved
+    // roll call can also be deleted. Otherwise "note" is a direct button.
+    final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
+    final Widget menu = canDelete
+        ? BhorIconButton(
+            semanticLabel: l10n.commonMore,
+            icon: BhorIcons.overflowVertical,
+            onPressed: () => unawaited(_openMenu(c, t)),
+          )
+        : BhorIconButton(
+            semanticLabel: l10n.rollMenuNote,
+            icon: BhorIcons.notes,
+            onPressed: () => unawaited(_editNote()),
+          );
     final bool hasMenu = !c.readOnly;
 
     final Widget body;
@@ -831,7 +840,6 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         ],
       );
     } else {
-      final bool twoCol = wc == WindowClass.medium;
       body = BhorStaggerScope(
         child: Column(
         children: <Widget>[
@@ -845,21 +853,10 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: header),
                   ),
                 ),
-                if (twoCol || c.students.isEmpty || rows.isEmpty)
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
-                    sliver: SliverToBoxAdapter(child: roster),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
-                    sliver: SliverList.separated(
-                      itemCount: rows.length,
-                      separatorBuilder: (BuildContext _, int __) => const SizedBox(height: BhorSpace.s8),
-                      itemBuilder: (BuildContext ctx, int i) =>
-                          BhorStagger(index: i, child: _row(ctx, c, rows[i], i, dense: false, keyed: false)),
-                    ),
-                  ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
+                  sliver: SliverToBoxAdapter(child: roster),
+                ),
               ],
             ),
           ),
@@ -885,7 +882,9 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
               divider: true,
               leading: BhorIconButton(
                 semanticLabel: l10n.commonClose,
-                icon: BhorIcons.close,
+                icon: wide ? BhorIcons.backDesktop : BhorIcons.back,
+                variant: BhorButtonVariant.secondary,
+                size: BhorButtonSize.sm,
                 color: context.bhor.colors.text,
                 onPressed: _close,
               ),
@@ -1148,18 +1147,41 @@ class _Roster extends StatelessWidget {
     final int n = rows.length;
     final int cols = columns < 1 ? 1 : columns;
     final int perCol = (n / cols).ceil();
+    final BhorColors c = context.bhor.colors;
+    // One surface list per column: rows are separated by inset hairlines,
+    // never by individual outlined cards.
+    Widget group(int from, int to) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(BhorRadius.card),
+          border: Border.all(color: c.line),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(BhorRadius.card - 1),
+          child: Column(
+            children: <Widget>[
+              for (var i = from; i < to; i++) ...<Widget>[
+                if (i > from)
+                  Padding(
+                    padding: const EdgeInsets.only(left: BhorSpace.s16),
+                    child: SizedBox(height: 1, width: double.infinity, child: ColoredBox(color: c.line)),
+                  ),
+                builder(i),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         for (var col = 0; col < cols; col++) ...<Widget>[
           if (col > 0) SizedBox(width: gap + BhorSpace.s4),
           Expanded(
-            child: Column(
-              children: <Widget>[
-                for (var i = col * perCol; i < n && i < (col + 1) * perCol; i++)
-                  Padding(padding: EdgeInsets.only(bottom: gap), child: builder(i)),
-              ],
-            ),
+            child: col * perCol < n ? group(col * perCol, n < (col + 1) * perCol ? n : (col + 1) * perCol) : const SizedBox.shrink(),
           ),
         ],
       ],

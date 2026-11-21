@@ -135,11 +135,10 @@ class _DayChip extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 56, minWidth: 40),
           padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
           decoration: BoxDecoration(
-            color: selected ? c.accentTint : (s.hovered ? c.surface2 : null),
+            color: selected ? c.accentTint : (s.hovered ? c.soft : null),
             borderRadius: BorderRadius.circular(BhorRadius.control),
-            border: (selected || isToday)
-                ? Border.all(color: selected ? c.accentLine : c.accent)
-                : null,
+            // Selected = accent tint fill, no outline (spec: soft, filled).
+            border: (isToday && !selected) ? Border.all(color: c.accentLine) : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
