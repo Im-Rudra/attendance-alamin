@@ -90,7 +90,6 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   int _cursor = -1;
   String _digits = '';
   bool _leaving = false;
-  bool _closing = false;
 
   /// The "everyone is present" hint of a fresh roll call. Decided once on load
   /// and kept for the whole visit, so the roster never jumps under a tap.
@@ -415,8 +414,6 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   }
 
   void _close() {
-    if (_closing) return;
-    _closing = true;
     final GoRouter? router = GoRouter.maybeOf(context);
     if (router == null) {
       Navigator.of(context).maybePop();
@@ -887,7 +884,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         autofocus: wide,
         onKeyEvent: _onKey,
         child: IgnorePointer(
-          ignoring: _leaving,
+          ignoring: _leaving && GoRouter.maybeOf(context) != null,
           child: Scaffold(
           appBar: AppBar(
             leading: IconButton(

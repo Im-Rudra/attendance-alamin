@@ -323,8 +323,7 @@ void main() {
       final Finder bar = _bar();
       await tester.ensureVisible(bar);
       await tester.tap(bar);
-      await tester.tap(bar, warnIfMissed: false);
-      await tester.pumpAndSettle();
+      // Second tap lands in the same frame, before the sheet has closed.
       await tester.tap(bar, warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(_receipts(f).length, before + 1);
