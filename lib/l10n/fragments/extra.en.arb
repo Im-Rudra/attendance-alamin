@@ -92,5 +92,18 @@
   "extraAttPresent": "Present",
   "extraAttAbsent": "Absent",
   "extraAttLate": "Late",
-  "extraAttLeave": "Leave"
+  "extraAttLeave": "Leave",
+  "extraImportButton": "Add from CSV file",
+  "extraImportFound": "{n} students found",
+  "extraImportSkipped": "{n} rows will be skipped",
+  "extraImportHint": "One student per line: name, guardian phone, roll (phone and roll are optional). Example: Ayesha Khatun, 01712345678, 5",
+  "extraImportProblemName": "No name — skipped",
+  "extraImportProblemPhone": "Invalid phone — skipped",
+  "extraImportProblemDuplicate": "Same name or phone already exists — skipped",
+  "extraImportAddAll": "Add all ({n})",
+  "extraImportSaving": "Adding… {done}/{total}",
+  "extraImportDone": "{n} students added",
+  "extraImportDonePartial": "{n} added, {failed} could not be added",
+  "extraImportNone": "No students were found in the file",
+  "extraImportReadFailed": "The file could not be read"
 }
