@@ -66,7 +66,7 @@ class OnbProgressDots extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: ColoredBox(
-                    color: c.soft,
+                    color: c.soft2,
                     child: AnimatedFractionallySizedBox(
                       alignment: AlignmentDirectional.centerStart,
                       duration: reduced ? BhorMotion.reducedFade : BhorMotion.slow,

@@ -13,7 +13,6 @@ import 'package:go_router/go_router.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/features/search/controllers/search_engine.dart';
 import 'package:attendance_alamin/features/search/controllers/search_providers.dart';
@@ -110,7 +109,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      if (_text.text.isNotEmpty) {
+      if (_text.text.trim().isNotEmpty) {
         _setQuery('');
       } else {
         _close();
@@ -254,13 +253,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
     );
     final Widget body = wide
-        ? PaneSplit(
-            screen: 'search',
-            list: listPane,
-            detail: BhorPaneSwitcher(paneKey: effective, child: preview),
-            preferList: true,
-            listMax: 520,
-            detailMax: 900,
+        // The preview only appears once there is something to preview, so the
+        // palette never shows two empty states side by side.
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(flex: 5, child: listPane),
+              if (effective != null) ...<Widget>[
+                const SizedBox(width: BhorSpace.s12),
+                Expanded(flex: 4, child: BhorPaneSwitcher(paneKey: effective, child: preview)),
+              ],
+            ],
           )
         : listPane;
 
@@ -274,12 +277,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     // Up / Down move through the results, Enter opens).
     final BhorColors c = context.bhor.colors;
     return BhorScaffold(
-      body: Align(
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints box) => Align(
         alignment: Alignment.topCenter,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(g, BhorSpace.s32, g, g),
+          // A 640 x 520 palette, 15% down from the top of the window.
+          padding: EdgeInsets.fromLTRB(g, box.maxHeight * 0.15, g, g),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1040),
+            constraints: const BoxConstraints(maxWidth: 640, maxHeight: 520),
             child: DecoratedBox(
               key: const Key('search-palette'),
               decoration: BoxDecoration(
@@ -304,6 +309,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

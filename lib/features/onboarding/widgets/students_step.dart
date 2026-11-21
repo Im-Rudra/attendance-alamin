@@ -61,10 +61,14 @@ class StudentsStep extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(
-              batch == null ? BhorIcons.info : BhorIcons.batches,
-              size: 20,
-              color: c.text3,
+            // Centre the icon on the first text line.
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                batch == null ? BhorIcons.info : BhorIcons.batches,
+                size: 18,
+                color: c.text3,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -98,6 +102,7 @@ class StudentsStep extends StatelessWidget {
                 autofocus: true,
                 textInputAction: TextInputAction.next,
                 label: l10n.onbStudentName,
+                error: error != null && phone.text.trim().isEmpty ? error : null,
               ),
               const SizedBox(height: 12),
               BhorTextField(
@@ -109,6 +114,7 @@ class StudentsStep extends StatelessWidget {
                 label: l10n.onbStudentPhone,
                 prefix: const Icon(BhorIcons.phone),
                 tabular: true,
+                error: error != null && phone.text.trim().isNotEmpty ? error : null,
               ),
               const SizedBox(height: 12),
               BhorButton(
@@ -141,10 +147,6 @@ class StudentsStep extends StatelessWidget {
             ],
           ),
         ),
-        if (error != null) ...<Widget>[
-          const SizedBox(height: 12),
-          OnbErrorBox(message: error!),
-        ],
         const SizedBox(height: 20),
         if (saved.isEmpty)
           Text(

@@ -8,11 +8,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/features/batches/ui/archived_batches_screen.dart';
+import 'package:attendance_alamin/features/extras/ui/holiday_screen.dart';
 import 'package:attendance_alamin/features/settings/widgets/settings_groups.dart';
+import 'package:attendance_alamin/features/students/ui/left_students_screen.dart';
 import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart';
 
 /// Window width (of the content area) from which the index ‖ content layout is used.
@@ -32,6 +34,18 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
   // The split layout always opens on the first group (UX 3b).
   SettingsGroup _selected = SettingsGroup.values.first;
 
+  /// Route of a sub-page (archived batches, left students, holidays) shown in
+  /// the right pane on wide windows instead of leaving More; null = the
+  /// selected group's cards.
+  String? _inline;
+
+  Widget? _inlinePage() => switch (_inline) {
+        Routes.moreArchived => const ArchivedBatchesScreen(),
+        Routes.moreLeft => const LeftStudentsScreen(),
+        Routes.moreHolidays => const HolidayScreen(),
+        _ => null,
+      };
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -40,7 +54,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.navMore,
-        subtitle: context.fmt.weekdayDate(ref.watch(todayProvider)),
         large: true,
         showBack: embedded ? false : null,
         actions: <Widget>[
@@ -80,6 +93,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 
   Widget _split(BuildContext context, BoxConstraints c, double g) {
     final l10n = context.l10n;
+    final Widget? inline = _inlinePage();
     return Padding(
       padding: EdgeInsets.fromLTRB(g, 4, g, g),
       child: Row(
@@ -89,15 +103,20 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             width: kMoreIndexWidth,
             child: _Index(
               selected: _selected,
-              onSelect: (SettingsGroup v) => setState(() => _selected = v),
+              onSelect: (SettingsGroup v) => setState(() {
+                _selected = v;
+                _inline = null;
+              }),
             ),
           ),
           SizedBox(width: g),
           // One calm column (max 720); switching groups cross-fades and rises.
           Expanded(
             child: BhorPaneSwitcher(
-              paneKey: _selected,
-              child: Align(
+              paneKey: _inline ?? _selected,
+              child: inline != null
+                  ? PaneScope(child: inline)
+                  : Align(
                 alignment: Alignment.topLeft,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 720),
@@ -106,7 +125,10 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
                         SettingsHeader(_selected.title(l10n)),
-                        SettingsGroupBody(group: _selected),
+                        SettingsGroupBody(
+                          group: _selected,
+                          onOpenInline: (String route) => setState(() => _inline = route),
+                        ),
                       ],
                     ),
                   ),

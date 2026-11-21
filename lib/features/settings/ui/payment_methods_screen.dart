@@ -180,7 +180,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
             ),
             const SizedBox(width: 12),
             Padding(
-              padding: const EdgeInsets.only(top: 22),
+              padding: const EdgeInsets.only(top: 5), // centres the 46 px button on the 56 px field
               child: BhorButton(
                 key: const Key('pm-add-button'),
                 onPressed: () => _add(config),

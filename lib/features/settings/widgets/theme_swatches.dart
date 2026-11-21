@@ -23,6 +23,17 @@ class ThemeSwatches extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A 3-up grid with a 12 px gap; each tile is at most 120 x 72.
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 3 * 120 + 2 * 12),
+        child: _row(),
+      ),
+    );
+  }
+
+  Widget _row() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -31,7 +42,7 @@ class ThemeSwatches extends StatelessWidget {
           ThemeMode.light,
           ThemeMode.dark,
         ]) ...<Widget>[
-          if (m != ThemeMode.system) const SizedBox(width: 10),
+          if (m != ThemeMode.system) const SizedBox(width: 12),
           Expanded(
             child: _Swatch(
               mode: m,
@@ -105,7 +116,7 @@ class _Swatch extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           AspectRatio(
-            aspectRatio: 1.6,
+            aspectRatio: 120 / 72,
             child: Stack(
               fit: StackFit.expand,
               children: <Widget>[

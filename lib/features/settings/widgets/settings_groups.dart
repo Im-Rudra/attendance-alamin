@@ -100,10 +100,14 @@ Future<void> openSettingsSubPage(
 
 /// The cards of one group, in one column or two (wide content pane).
 class SettingsGroupBody extends ConsumerWidget {
-  const SettingsGroupBody({super.key, required this.group, this.twoUp = false});
+  const SettingsGroupBody({super.key, required this.group, this.twoUp = false, this.onOpenInline});
 
   final SettingsGroup group;
   final bool twoUp;
+
+  /// When set (wide More), archive sub-pages open in the right pane via this
+  /// instead of navigating away.
+  final ValueChanged<String>? onOpenInline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,6 +123,15 @@ class SettingsGroupBody extends ConsumerWidget {
     return SettingsColumns(twoUp: twoUp, children: cards);
   }
 
+  void _openSub(BuildContext context, String route) {
+    final ValueChanged<String>? inline = onOpenInline;
+    if (inline != null) {
+      inline(route);
+    } else {
+      context.go(route);
+    }
+  }
+
   // ---- archive ----
   List<Widget> _archive(BuildContext context) {
     final l10n = context.l10n;
@@ -128,19 +141,19 @@ class SettingsGroupBody extends ConsumerWidget {
           icon: BhorIcons.archive,
           title: l10n.shellTitleArchived,
           value: l10n.setArchivedValue,
-          onTap: () => context.go(Routes.moreArchived),
+          onTap: () => _openSub(context, Routes.moreArchived),
         ),
         SettingRow(
           icon: BhorIcons.leftStudents,
           title: l10n.shellTitleLeft,
           value: l10n.setLeftValue,
-          onTap: () => context.go(Routes.moreLeft),
+          onTap: () => _openSub(context, Routes.moreLeft),
         ),
         SettingRow(
           icon: BhorIcons.holiday,
           title: l10n.shellTitleHolidays,
           value: l10n.setHolidaysValue,
-          onTap: () => context.go(Routes.moreHolidays),
+          onTap: () => _openSub(context, Routes.moreHolidays),
         ),
       ]),
     ];
@@ -239,8 +252,6 @@ class SettingsGroupBody extends ConsumerWidget {
           isPhone: true,
           maxLength: 20,
         )),
-      ]),
-      SettingsCard(children: <Widget>[
         pad(SettingTextField(
           key: const Key('more-center-address'),
           settingKey: SettingKeys.centerAddress,
