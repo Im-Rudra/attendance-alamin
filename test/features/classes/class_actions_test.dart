@@ -623,7 +623,8 @@ void main() {
       await tester.pump();
 
       // QA-17: state marks are icons, never font glyphs the font lacks.
-      expect(find.byKey(const Key('week-block-extra')), findsOneWidget);
+      // Two extras this week: Physics A Saturday morning and Chem B Thursday.
+      expect(find.byKey(const Key('week-block-extra')), findsNWidgets(2));
       expect(find.text(fmt.timeRange(480, 540)), findsOneWidget);
       // The cancelled Monday class is struck through.
       final Iterable<Text> struck = tester.widgetList<Text>(find.byType(Text)).where(

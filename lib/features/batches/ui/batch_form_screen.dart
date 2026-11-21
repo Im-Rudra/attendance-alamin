@@ -19,6 +19,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
+import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
@@ -224,7 +225,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     if (oldFee != null && newFee != oldFee) {
       // QA-01: a migrated student's past months may carry the fee, so offer
       // months back to the earliest first billable month (at least 24 back).
-      final List<Enrollment> enrolled = await ref.read(batchEnrollmentsProvider(batch.id).future);
+      final List<Enrollment> enrolled = await ref.read(enrollmentsRepositoryProvider).watchForBatch(batch.id).first;
       if (!mounted) return false;
       YearMonth earliest = today.yearMonth.addMonths(-24);
       for (final Enrollment e in enrolled) {
