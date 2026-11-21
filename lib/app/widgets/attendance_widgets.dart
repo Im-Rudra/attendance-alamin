@@ -117,7 +117,7 @@ class AttendanceToggleRow extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: <Widget>[
-                        InitialsAvatar(name: name),
+                        InitialsAvatar(name: name, background: text.withValues(alpha: 0.16), foreground: text),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(

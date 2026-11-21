@@ -63,6 +63,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _classLabel;
   bool _batchNameSeeded = false;
 
+  /// The last name this screen wrote into the batch name field; once the field
+  /// differs the teacher has typed their own and it is never overwritten.
+  String? _autoBatchName;
+
   String? _batchId;
   ({String subject, String batch})? _created;
   final List<SavedStudent> _students = <SavedStudent>[];
@@ -123,12 +127,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _go(int step) {
     if (step == 1 && !_batchNameSeeded) {
       _batchNameSeeded = true;
-      _batchName.text = context.l10n.batchDefaultName(context.fmt.number(1));
+      _setAutoBatchName();
     }
     setState(() {
       _step = step;
       _error = null;
     });
+  }
+
+  /// "বিকাল ৪টার ব্যাচ": the default batch name from the first class time.
+  String _timeBatchName(int startMin) {
+    final String t = context.fmt.time(startMin);
+    final String hourOnly = t.replaceFirst(RegExp(r':(00|০০)'), '');
+    return context.l10n.onbBatchTimeName(hourOnly);
+  }
+
+  void _setAutoBatchName() {
+    if (_slots.isEmpty) return;
+    final String? last = _autoBatchName;
+    if (last != null && _batchName.text != last) return; // typed by the teacher
+    final String next = _timeBatchName(_slots.first.startMin);
+    _autoBatchName = next;
+    _batchName.text = next;
   }
 
   void _back() {
@@ -250,19 +270,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final l10n = context.l10n;
     final bool empty = _studentName.text.trim().isEmpty;
     if (empty && !requireName && _studentPhone.text.trim().isEmpty) return true;
+    // Clear the fields now, before the save: anything typed while it runs is
+    // the next student and must survive.
+    final String typedName = _studentName.text;
+    final String typedPhone = _studentPhone.text;
+    _studentName.clear();
+    _studentPhone.clear();
     setState(() {
       _busy = true;
       _error = null;
     });
+    _nameFocus.requestFocus();
     try {
       final SavedStudent s = await ref.read(onboardingServiceProvider).addStudent(
-            name: _studentName.text,
-            guardianPhone: _studentPhone.text,
+            name: typedName,
+            guardianPhone: typedPhone,
             batchId: _batchId,
           );
       if (!mounted) return true;
-      _studentName.clear();
-      _studentPhone.clear();
       setState(() {
         _busy = false;
         _students.add(s);
@@ -272,6 +297,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return true;
     } on Object catch (e) {
       if (mounted) {
+        if (_studentName.text.isEmpty && _studentPhone.text.isEmpty) {
+          _studentName.text = typedName;
+          _studentPhone.text = typedPhone;
+        }
         setState(() {
           _busy = false;
           _error = errorText(l10n, e);
@@ -332,7 +361,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           billing: _billing,
           onBilling: (BillingType t) => setState(() => _billing = t),
           slots: _slots,
-          onSlots: (List<SlotDraft> s) => _defer(() => _slots = s),
+          onSlots: (List<SlotDraft> s) => _defer(() {
+            _slots = s;
+            if (_batchNameSeeded) _setAutoBatchName();
+          }),
           onCheck: (SlotCheckResult r) => _defer(() => _check = r),
           classLabel: _classLabel,
           onSubjectChip: _onSubjectChip,
@@ -348,6 +380,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onAdd: () => _addStudent(requireName: true),
           saved: _students,
           batchName: _created?.batch,
+          billingMonth: context.fmt.monthYear(ref.read(todayProvider).yearMonth),
           busy: _busy,
           error: _error,
           lastAdded: _lastAdded,

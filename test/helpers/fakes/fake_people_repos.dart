@@ -76,6 +76,9 @@ class FakeStudentsRepository with _FakeBase implements StudentsRepository {
       : students = [...students];
 
   final List<Student> students;
+
+  /// When set, [create] waits for it (tests of typing during a slow save).
+  Future<void>? createGate;
   final Map<String, Uint8List> photos = {};
   DeleteImpact impact = const DeleteImpact(sessions: 0, payments: 0, students: 1);
 
@@ -154,6 +157,8 @@ class FakeStudentsRepository with _FakeBase implements StudentsRepository {
 
   @override
   Future<String> create(StudentDraft d) async {
+    final Future<void>? gate = createGate;
+    if (gate != null) await gate;
     _write();
     final id = Ids.v4();
     _replace(Student(

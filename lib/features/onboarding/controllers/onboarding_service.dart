@@ -16,7 +16,6 @@ import 'package:attendance_alamin/data/repositories/settings_repository.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/data/repositories/students_repository.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
-import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
@@ -100,12 +99,12 @@ class OnboardingService {
     ));
     if (batchId != null) {
       try {
-        final int cutoff = await settings.get(SettingKeys.billingCutoffDay);
+        // Existing students: billing starts this month (Product 3.2).
         await enrollments.enroll(
           studentId: id,
           batchId: batchId,
           joinDate: d,
-          startMonth: DuesEngine.defaultFirstBillableMonth(d, cutoff),
+          startMonth: d.yearMonth,
         );
       } catch (_) {
         await students.softDelete(id);

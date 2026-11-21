@@ -194,8 +194,10 @@ ThemeData buildTheme(Brightness brightness) {
       backgroundColor: t.surfaceDense,
       selectedColor: t.accentContainer,
       disabledColor: t.track,
-      side: hair,
-      labelStyle: textTheme.labelMedium,
+      // A clearly visible outline: the 7% hairline made unselected chips look
+      // disabled (naive-tester C5).
+      side: BorderSide(color: t.textSecondary.withValues(alpha: 0.6), width: 1.2),
+      labelStyle: textTheme.labelMedium?.copyWith(color: t.textPrimary),
       secondaryLabelStyle: textTheme.labelMedium?.copyWith(color: t.onAccentContainer),
       checkmarkColor: t.onAccentContainer,
       shape: RoundedRectangleBorder(

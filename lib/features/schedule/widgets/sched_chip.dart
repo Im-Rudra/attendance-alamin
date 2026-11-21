@@ -42,8 +42,8 @@ class SchedChip extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: br,
           side: BorderSide(
-            color: selected ? tokens.accent : tokens.hairline,
-            width: selected ? 2 : 1,
+            color: selected ? tokens.accent : tokens.textSecondary.withValues(alpha: 0.6),
+            width: selected ? 2 : 1.2,
           ),
         ),
         child: InkWell(

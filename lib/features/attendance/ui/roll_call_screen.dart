@@ -15,10 +15,14 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_editor.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/attendance/widgets/session_chooser_sheet.dart';
 
 class RollCallScreen extends ConsumerWidget {
-  const RollCallScreen({super.key, required this.occ});
+  const RollCallScreen({super.key, required this.occ, this.returnTo});
+
+  /// Route "Done" returns to (the opener passes it as the router `extra`).
+  final String? returnTo;
 
   /// Occurrence id (`s.<slot>.<yyyymmdd>` or `x.<id>`).
   final String occ;
@@ -34,6 +38,7 @@ class RollCallScreen extends ConsumerWidget {
         batchId: loc.batchId,
         date: loc.date,
         occ: occ,
+        returnTo: returnTo,
       );
     }
     if (where.hasError) {
@@ -49,7 +54,7 @@ class RollCallScreen extends ConsumerWidget {
         name: l10n.shellTitleRollCall,
         icon: Icons.fact_check_outlined,
         fullScreen: true,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const RollSkeleton(),
       );
     }
     return StubScreen(
@@ -65,7 +70,9 @@ class RollCallScreen extends ConsumerWidget {
 /// directly, 2+ ask first, none becomes an ad-hoc extra class) and keeps that
 /// choice while the schedule changes underneath.
 class RollCallPage extends ConsumerStatefulWidget {
-  const RollCallPage({super.key, required this.batchId, required this.date, this.occ});
+  const RollCallPage({super.key, required this.batchId, required this.date, this.occ, this.returnTo});
+
+  final String? returnTo;
 
   final String batchId;
   final LocalDate date;
@@ -134,13 +141,27 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
           choicesFor(batchId: widget.batchId, plan: plan, summaries: summaries),
     );
     final List<SessionChoice>? choices = async.value;
+    // A known class needs no chooser: open its roster at once and let the
+    // class chips (2+ classes that day) fill in when the day plan is ready.
+    if (_resolved && _occ != null) {
+      return RollEditor(
+        key: ValueKey<String>('${_date.toIso()}|$_occ'),
+        batchId: widget.batchId,
+        date: _date,
+        occ: _occ,
+        choices: choices ?? const <SessionChoice>[],
+        onDate: _goTo,
+        onPick: (String occ) => setState(() => _occ = occ),
+        returnTo: widget.returnTo,
+      );
+    }
     if (choices == null) {
       return StubScreen(
         name: l10n.shellTitleRollCall,
         icon: Icons.fact_check_outlined,
         fullScreen: true,
         message: async.hasError ? errorText(l10n, async.error!) : null,
-        body: async.hasError ? null : const Center(child: CircularProgressIndicator()),
+        body: async.hasError ? null : const RollSkeleton(),
       );
     }
     if (!_resolved) {
@@ -150,7 +171,7 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
         name: l10n.shellTitleRollCall,
         icon: Icons.fact_check_outlined,
         fullScreen: true,
-        body: choices.length > 1 ? const SizedBox.shrink() : const Center(child: CircularProgressIndicator()),
+        body: choices.length > 1 ? const SizedBox.shrink() : const RollSkeleton(),
       );
     }
     return RollEditor(
@@ -161,6 +182,7 @@ class _RollCallPageState extends ConsumerState<RollCallPage> {
       choices: choices,
       onDate: _goTo,
       onPick: (String occ) => setState(() => _occ = occ),
+      returnTo: widget.returnTo,
     );
   }
 }

@@ -17,7 +17,6 @@ import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
-import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
@@ -64,6 +63,10 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
     final l10n = context.l10n;
     final String name = _name.text;
     final String phone = _phone.text;
+    // Clear now, not after the save: whatever is typed while the save runs
+    // belongs to the next student and must not be wiped.
+    _name.clear();
+    _phone.clear();
     setState(() {
       _busy = true;
       _error = null;
@@ -76,6 +79,7 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
         final Student? owner = await phoneOwner(students, phone);
         if (!mounted) return;
         if (owner != null) {
+          _restore(name, phone);
           setState(() {
             _busy = false;
             _phoneOwner = owner;
@@ -87,15 +91,12 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
       final BulkAdded added = await bulkAddStudent(
         students: students,
         enrollments: ref.read(enrollmentsRepositoryProvider),
-        settings: ref.read(settingsRepositoryProvider),
         batchId: widget.batchId,
         name: name,
         guardianPhone: phone,
         today: ref.read(todayProvider),
       );
       if (!mounted) return;
-      _name.clear();
-      _phone.clear();
       setState(() {
         _added.insert(0, added);
         _busy = false;
@@ -105,10 +106,20 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
       _nameFocus.requestFocus();
     } on Object catch (e) {
       if (!mounted) return;
+      _restore(name, phone);
       setState(() {
         _busy = false;
         _error = errorText(l10n, e);
       });
+    }
+  }
+
+  /// Puts a row that was not saved back, unless the teacher already started
+  /// typing the next one.
+  void _restore(String name, String phone) {
+    if (_name.text.isEmpty && _phone.text.isEmpty) {
+      _name.text = name;
+      _phone.text = phone;
     }
   }
 
@@ -224,6 +235,12 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           Text(
             l10n.extraBulkIntoBatch(batch.name),
             style: tt.titleSmall?.copyWith(color: tokens.accent),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.onbBillingStartNote(context.fmt.monthYear(ref.watch(todayProvider).yearMonth)),
+            key: const ValueKey<String>('bulk-billing-note'),
+            style: tt.bodyMedium?.copyWith(color: tokens.textSecondary),
           ),
           const SizedBox(height: 12),
           TextField(

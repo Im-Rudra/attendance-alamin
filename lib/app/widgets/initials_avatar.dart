@@ -20,10 +20,14 @@ String initialsOf(String name) {
 }
 
 class InitialsAvatar extends StatelessWidget {
-  const InitialsAvatar({super.key, required this.name, this.size = 40});
+  const InitialsAvatar({super.key, required this.name, this.size = 40, this.background, this.foreground});
 
   final String name;
   final double size;
+
+  /// Overrides for a coloured row (e.g. the roll-call slab); default tokens.
+  final Color? background;
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +39,12 @@ class InitialsAvatar extends StatelessWidget {
         width: size,
         height: size,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: tokens.avatarBg, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: background ?? tokens.avatarBg, shape: BoxShape.circle),
         child: Text(
           initialsOf(name),
           maxLines: 1,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: tokens.avatarText,
+                color: foreground ?? tokens.avatarText,
                 fontSize: fontSize,
                 height: 1.2,
               ),

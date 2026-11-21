@@ -283,6 +283,32 @@ class StartMonthFeeFields extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                l10n.stuBillingStartLine(context.fmt.monthYear(start)),
+                key: const ValueKey<String>('stu-billing-start-line'),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(
+                        color: context.aurora.textPrimary,
+                        fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (start == base || start == base.addMonths(1)) ...<Widget>[
+              SegmentedChoice<bool>(
+                key: const ValueKey<String>('stu-billing-toggle'),
+                options: const <bool>[true, false],
+                selected: start == base,
+                onChanged: (bool thisMonth) =>
+                    choice.setStart(thisMonth ? base : base.addMonths(1)),
+                labelOf: (bool thisMonth) =>
+                    thisMonth ? l10n.stuStartThisMonth : l10n.stuStartNextMonth,
+              ),
+              const SizedBox(height: 12),
+            ],
             MonthDropdown(
               label: l10n.stuBillingStart,
               value: start,

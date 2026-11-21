@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
@@ -21,6 +22,7 @@ import 'package:attendance_alamin/features/attendance/ui/batch_roll_call_launche
 import 'package:attendance_alamin/features/attendance/ui/roll_call_screen.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
+import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/attendance/widgets/session_chooser_sheet.dart';
 
 import '../../helpers/fixtures.dart';
@@ -176,6 +178,51 @@ void main() {
     expect(marks[kStuNila], AttendanceStatus.present);
     expect(f.localMeta.values.keys, isNot(contains('rollcall_draft:$occ')));
     await unmount(tester);
+  });
+
+  testWidgets('Done returns to the screen the teacher came from, not a tab', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    final String occ = physOcc('2026-11-21');
+    final GoRouter router = GoRouter(
+      initialLocation: '/rollcall',
+      routes: <RouteBase>[
+        GoRoute(path: '/today', builder: (_, __) => const Scaffold(body: Text('TODAY-PAGE'))),
+        GoRoute(path: '/students', builder: (_, __) => const Scaffold(body: Text('STUDENTS-PAGE'))),
+        GoRoute(path: '/rollcall', builder: (_, __) => RollCallScreen(occ: occ, returnTo: '/today')),
+      ],
+    );
+    addTearDown(router.dispose);
+    await open(tester, Router.withConfig(config: router), f);
+    await tester.tap(find.text('Save attendance (3)'));
+    await tester.pumpAndSettle();
+    expect(find.text('TODAY-PAGE'), findsOneWidget);
+    expect(find.text('STUDENTS-PAGE'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('while loading the roll call shows a roster skeleton, not a spinner', (WidgetTester tester) async {
+    await pumpApp(tester, const Scaffold(body: RollSkeleton()));
+    expect(find.byKey(const Key('roll-skeleton')), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('dark mode: an absent row is the ink-slate slab with a readable avatar', (WidgetTester tester) async {
+    await pumpApp(
+      tester,
+      const Scaffold(
+        body: RollRow(name: 'রহিম উদ্দিন', roll: 1, status: AttendanceStatus.absent),
+      ),
+      themeMode: ThemeMode.dark,
+    );
+    final Material card = tester.widget<Material>(
+      find.descendant(of: find.byType(RollRow), matching: find.byType(Material)).first,
+    );
+    expect(card.color, const Color(0xFF3F4660));
+    // White name text on the slab (≈9:1), never dark-on-light.
+    final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
+    expect(name.style?.color, const Color(0xFFFFFFFF));
+    final Text initials = tester.widget<Text>(find.text('রউ'));
+    expect(initials.style?.color, const Color(0xFFFFFFFF));
   });
 
   testWidgets('reopening a saved day: late counts as attended and autosaves', (WidgetTester tester) async {
