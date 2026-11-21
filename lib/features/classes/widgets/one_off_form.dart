@@ -170,7 +170,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   }
 
   Future<void> _pickTime() async {
-    final int? m = await showBhorTimePicker(context, initial: _start);
+    final int? m = await showBhorTimePicker(context, initial: _start, title: context.l10n.clsFieldTime);
     if (m == null || !mounted) return;
     _setStart(m);
   }

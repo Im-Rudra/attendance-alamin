@@ -1,9 +1,10 @@
 // Enum bridges between domain enums and the theme-local enums (Lead notes,
 // M3-B). Features never repeat the index arithmetic.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
-import 'package:attendance_alamin/app/theme/theme_x.dart';
+import 'package:attendance_alamin/app/theme/tokens.dart' show AttendanceKind, SeverityLevel;
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';

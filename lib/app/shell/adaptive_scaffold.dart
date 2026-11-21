@@ -1,488 +1,150 @@
-// The navigation shell (UX 1, 3b, 4 "Floating nav").
+// The navigation shell (UX 1, 3b; Bhor: docs/council/10-design-system-bhor.md).
 //
-// - compact (< 600): a floating frosted pill (glassNav, 64dp, inset 12dp from
-//   the edges and above the gesture bar); the selected item sits in an
-//   accentContainer pill. Hidden while the keyboard is open.
-// - medium / expanded (600–1199): a full-height frosted rail, 80dp, icons +
-//   labels.
-// - large / extra-large (≥ 1200): an extended rail with labels, 220dp,
-//   collapsible to 80dp.
-// Desktop keys: Ctrl+1…5 destinations, Ctrl+F / Ctrl+K search, `?` shortcut
-// list. The mesh is painted once behind the whole window by App.
+// - compact (< 600): BhorScaffold + BhorBottomNav, a flat bar with a top
+//   hairline; the active icon sits in an accent-tint pill. Hidden while the
+//   keyboard is open. Bottom toasts are lifted above it (BhorToastInset).
+// - medium / expanded (600–1199): BhorSidebar collapsed to icons (72).
+// - large / extra-large (≥ 1200): the full BhorSidebar (brand, labels,
+//   badges, 248), collapsible to icons.
+// The বেতন item carries the number of overdue students. Desktop keys:
+// Ctrl+1…5 destinations, Ctrl+F / Ctrl+K search, `?` shortcut list.
 
-import 'dart:ui' show ImageFilter;
-
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
-class AdaptiveScaffold extends ConsumerWidget {
+class AdaptiveScaffold extends ConsumerStatefulWidget {
   const AdaptiveScaffold({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  static const Key pillKey = Key('shell-nav-pill');
-  static const Key railKey = Key('shell-nav-rail');
+  static const Key bottomNavKey = Key('shell-bottom-nav');
+  static const Key sidebarKey = Key('shell-sidebar');
 
-  void _select(int index) =>
-      navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
+  /// Height of the phone bottom nav (without the gesture-bar inset).
+  static const double bottomNavHeight = 64;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdaptiveScaffold> createState() => _AdaptiveScaffoldState();
+}
+
+class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
+  /// The user folded the full sidebar to icons (large windows).
+  bool _collapsed = false;
+
+  StatefulNavigationShell get _shell => widget.navigationShell;
+
+  void _select(int index) => _shell.goBranch(index, initialLocation: index == _shell.currentIndex);
+
+  @override
+  Widget build(BuildContext context) {
     final WindowClass wc = WindowClass.of(context);
+    final AppLocalizations l10n = context.l10n;
     // The বেতন item carries the number of overdue students (UX 1).
     final int overdue = ref.watch(duesReportProvider).value?.overdueStudents ?? 0;
-    final List<_Destination> dests = _Destination.all(context.l10n, feesBadge: overdue);
-    final int index = navigationShell.currentIndex;
+    final List<BhorNavItem> items = _items(context, l10n, overdue);
+    final int index = _shell.currentIndex;
     final Widget scaffold;
     if (!wc.usesRail) {
       final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-      scaffold = Scaffold(
-        extendBody: true,
-        resizeToAvoidBottomInset: false,
-        body: navigationShell,
-        bottomNavigationBar: keyboardOpen
+      scaffold = BhorScaffold(
+        wash: false,
+        body: BhorToastInset(
+          bottom: keyboardOpen ? 0 : AdaptiveScaffold.bottomNavHeight,
+          child: _shell,
+        ),
+        bottomNav: keyboardOpen
             ? null
-            : _NavPill(key: pillKey, destinations: dests, index: index, onSelect: _select),
+            : MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 1.3,
+                child: BhorBottomNav(
+                  key: AdaptiveScaffold.bottomNavKey,
+                  items: items,
+                  index: index,
+                  onTap: _select,
+                ),
+              ),
       );
     } else {
-      scaffold = Scaffold(
-        body: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _NavRail(
-              key: railKey,
-              destinations: dests,
-              index: index,
-              onSelect: _select,
-              canExtend: wc.extendedRail,
-            ),
-            Expanded(child: navigationShell),
-          ],
+      final bool canExtend = wc.extendedRail;
+      final bool collapsed = !canExtend || _collapsed;
+      scaffold = BhorScaffold(
+        wash: false,
+        sidebar: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.3,
+          child: BhorSidebar(
+            key: AdaptiveScaffold.sidebarKey,
+            brand: l10n.commonAppTitle,
+            items: items,
+            index: index,
+            onTap: _select,
+            collapsed: collapsed,
+            onToggleCollapsed: canExtend ? () => setState(() => _collapsed = !_collapsed) : null,
+            toggleLabel: collapsed ? l10n.shellRailExpand : l10n.shellRailCollapse,
+            footer: _SidebarSearch(collapsed: collapsed),
+          ),
         ),
+        body: _shell,
       );
     }
     return _ShellKeys(onSelect: _select, child: scaffold);
   }
-}
 
-class _Destination {
-  const _Destination(this.icon, this.selectedIcon, this.label, {this.badge = 0});
-
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-
-  /// Overdue count shown on the icon (0 = none).
-  final int badge;
-
-  static List<_Destination> all(AppLocalizations l10n, {int feesBadge = 0}) => <_Destination>[
-        _Destination(Icons.today_outlined, Icons.today, l10n.navToday),
-        _Destination(Icons.groups_outlined, Icons.groups, l10n.navBatches),
-        _Destination(Icons.person_outline, Icons.person, l10n.navStudents),
-        _Destination(Icons.payments_outlined, Icons.payments, l10n.navFees, badge: feesBadge),
-        _Destination(Icons.menu, Icons.menu, l10n.navMore),
-      ];
-
-  /// What a screen reader says: the label plus "Overdue 3".
-  String semanticLabel(BuildContext context) => badge > 0
-      ? '$label, ${context.l10n.uiOverdueCount(context.fmt.number(badge))}'
-      : label;
-}
-
-/// A destination icon with the red overdue count on its corner.
-class _NavIcon extends StatelessWidget {
-  const _NavIcon({required this.icon, required this.size, required this.color, required this.count});
-
-  final IconData icon;
-  final double size;
-  final Color color;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget glyph = Icon(icon, size: size, color: color);
-    if (count <= 0) return glyph;
-    final sev = context.severity;
-    final String text = count > 99 ? '${context.fmt.number(99)}+' : context.fmt.number(count);
-    return Badge(
-      backgroundColor: sev.badgeFill(SeverityLevel.overdue),
-      textColor: sev.badgeText(SeverityLevel.overdue),
-      label: Text(text),
-      child: glyph,
-    );
-  }
-}
-
-/// Frosted navigation surface: glassNav + blur σ24, or the solid fallback in
-/// reduced-effects mode.
-class _Frosted extends StatelessWidget {
-  const _Frosted({required this.borderRadius, required this.border, required this.child});
-
-  final BorderRadius borderRadius;
-  final Border border;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final bool reduced = EffectsMode.reducedOf(context);
-    Widget surface = DecoratedBox(
-      decoration: BoxDecoration(
-        color: reduced ? tokens.surfaceSolid.withValues(alpha: 0.92) : tokens.glassNav,
-        borderRadius: borderRadius,
-        border: border,
+  static List<BhorNavItem> _items(BuildContext context, AppLocalizations l10n, int overdue) {
+    final String? badge = overdue <= 0
+        ? null
+        : overdue > 99
+            ? '${context.fmt.number(99)}+'
+            : context.fmt.number(overdue);
+    return <BhorNavItem>[
+      BhorNavItem(icon: Icons.today_outlined, activeIcon: Icons.today, label: l10n.navToday),
+      BhorNavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: l10n.navBatches),
+      BhorNavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: l10n.navStudents),
+      BhorNavItem(
+        icon: Icons.payments_outlined,
+        activeIcon: Icons.payments,
+        label: l10n.navFees,
+        badge: badge,
+        // What a screen reader says: the label plus "Overdue 3".
+        semanticLabel: badge == null ? null : '${l10n.navFees}, ${l10n.uiOverdueCount(context.fmt.number(overdue))}',
       ),
-      child: child,
-    );
-    if (!reduced) {
-      surface = BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: AuroraMetrics.blurNav, sigmaY: AuroraMetrics.blurNav),
-        child: surface,
-      );
-    }
-    return ClipRRect(borderRadius: borderRadius, child: surface);
+      BhorNavItem(icon: Icons.menu, label: l10n.navMore),
+    ];
   }
 }
 
-// ---------------------------------------------------------------------------
-// Phone: floating pill
+/// Global search under the sidebar items: an icon when collapsed, an icon
+/// and the word when the sidebar is full width.
+class _SidebarSearch extends StatelessWidget {
+  const _SidebarSearch({required this.collapsed});
 
-class _NavPill extends StatelessWidget {
-  const _NavPill({super.key, required this.destinations, required this.index, required this.onSelect});
-
-  final List<_Destination> destinations;
-  final int index;
-  final ValueChanged<int> onSelect;
-
-  static const double height = 64;
-  static const double inset = 12;
+  final bool collapsed;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final double bottom = MediaQuery.viewPaddingOf(context).bottom;
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.3,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(inset, 0, inset, inset + bottom),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AuroraMetrics.radiusPill),
-            boxShadow: <BoxShadow>[
-              BoxShadow(color: tokens.scrim.withValues(alpha: 0.12), blurRadius: 24, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: _Frosted(
-            borderRadius: BorderRadius.circular(AuroraMetrics.radiusPill),
-            border: Border.all(color: tokens.hairline),
-            child: SizedBox(
-              height: height,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                child: Row(
-                  children: <Widget>[
-                    for (int i = 0; i < destinations.length; i++)
-                      Expanded(
-                        child: _PillItem(
-                          destination: destinations[i],
-                          selected: i == index,
-                          onTap: () => onSelect(i),
-                        ),
-                      ),
-                  ],
-                ),
+    final String label = context.l10n.commonSearch;
+    void open() => context.push(Routes.search);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s4, BhorSpace.s12, BhorSpace.s4),
+      child: Align(
+        alignment: collapsed ? Alignment.center : AlignmentDirectional.centerStart,
+        child: collapsed
+            ? BhorIconButton(icon: Icons.search, semanticLabel: label, onPressed: open)
+            : BhorButton(
+                label: label,
+                icon: Icons.search,
+                variant: BhorButtonVariant.ghost,
+                onPressed: open,
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PillItem extends StatelessWidget {
-  const _PillItem({required this.destination, required this.selected, required this.onTap});
-
-  final _Destination destination;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final Color fg = selected ? tokens.onAccentContainer : tokens.textSecondary;
-    final TextStyle? style = Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: fg,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-        );
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: destination.semanticLabel(context),
-      excludeSemantics: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: ShapeDecoration(
-              shape: const StadiumBorder(),
-              color: selected ? tokens.accentContainer : Colors.transparent,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                _NavIcon(
-                  icon: selected ? destination.selectedIcon : destination.icon,
-                  size: 22,
-                  color: fg,
-                  count: destination.badge,
-                ),
-                const SizedBox(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(destination.label, maxLines: 1, style: style),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tablet / desktop: frosted rail
-
-class _NavRail extends StatefulWidget {
-  const _NavRail({
-    super.key,
-    required this.destinations,
-    required this.index,
-    required this.onSelect,
-    required this.canExtend,
-  });
-
-  final List<_Destination> destinations;
-  final int index;
-  final ValueChanged<int> onSelect;
-
-  /// The window is wide enough for the 220dp labelled rail.
-  final bool canExtend;
-
-  static const double width = 80;
-  static const double extendedWidth = 220;
-
-  @override
-  State<_NavRail> createState() => _NavRailState();
-}
-
-class _NavRailState extends State<_NavRail> {
-  bool _collapsed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final l10n = context.l10n;
-    final bool extended = widget.canExtend && !_collapsed;
-    final TextTheme tt = Theme.of(context).textTheme;
-
-    final Widget header;
-    if (extended) {
-      header = Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.commonAppTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleMedium?.copyWith(color: tokens.textPrimary, fontWeight: FontWeight.w700),
-              ),
-            ),
-            IconButton(
-              tooltip: l10n.shellRailCollapse,
-              icon: const Icon(Icons.menu_open),
-              onPressed: () => setState(() => _collapsed = true),
-            ),
-          ],
-        ),
-      );
-    } else if (widget.canExtend) {
-      header = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: IconButton(
-          tooltip: l10n.shellRailExpand,
-          icon: const Icon(Icons.menu),
-          onPressed: () => setState(() => _collapsed = false),
-        ),
-      );
-    } else {
-      header = const SizedBox(height: 20);
-    }
-
-    final Widget search = extended
-        ? _RailItem(
-            destination: _Destination(Icons.search, Icons.search, l10n.commonSearch),
-            selected: false,
-            extended: true,
-            onTap: () => context.push(Routes.search),
-          )
-        : Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: IconButton(
-              tooltip: l10n.commonSearch,
-              icon: Icon(Icons.search, color: tokens.textSecondary),
-              onPressed: () => context.push(Routes.search),
-            ),
-          );
-
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.3,
-      child: SizedBox(
-        width: extended ? _NavRail.extendedWidth : _NavRail.width,
-        child: _Frosted(
-          borderRadius: BorderRadius.zero,
-          border: Border(right: BorderSide(color: tokens.hairline)),
-          child: SafeArea(
-            right: false,
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints c) => SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: c.maxHeight),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      header,
-                      for (int i = 0; i < widget.destinations.length; i++)
-                        _RailItem(
-                          destination: widget.destinations[i],
-                          selected: i == widget.index,
-                          extended: extended,
-                          onTap: () => widget.onSelect(i),
-                        ),
-                      const SizedBox(height: 8),
-                      search,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RailItem extends StatelessWidget {
-  const _RailItem({
-    required this.destination,
-    required this.selected,
-    required this.extended,
-    required this.onTap,
-  });
-
-  final _Destination destination;
-  final bool selected;
-  final bool extended;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final Color fg = selected ? tokens.onAccentContainer : tokens.textSecondary;
-    final TextTheme tt = Theme.of(context).textTheme;
-    final Widget icon = _NavIcon(
-      icon: selected ? destination.selectedIcon : destination.icon,
-      size: 24,
-      color: fg,
-      count: destination.badge,
-    );
-    final Color fill = selected ? tokens.accentContainer : Colors.transparent;
-
-    final Widget content;
-    if (extended) {
-      content = Container(
-        height: 52,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: ShapeDecoration(shape: const StadiumBorder(), color: fill),
-        child: Row(
-          children: <Widget>[
-            icon,
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                destination.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.labelLarge?.copyWith(color: selected ? fg : tokens.textPrimary),
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      content = Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 56,
-              height: 32,
-              decoration: ShapeDecoration(shape: const StadiumBorder(), color: fill),
-              child: icon,
-            ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  destination.label,
-                  maxLines: 1,
-                  style: tt.labelMedium?.copyWith(color: selected ? fg : tokens.textSecondary),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: destination.semanticLabel(context),
-      excludeSemantics: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          customBorder: extended ? const StadiumBorder() : null,
-          onTap: onTap,
-          child: content,
-        ),
       ),
     );
   }
@@ -558,22 +220,21 @@ class _ShellKeysState extends State<_ShellKeys> {
   Widget build(BuildContext context) => widget.child;
 }
 
-/// The `?` sheet: keyboard shortcuts handled by the shell.
+/// The `?` dialog: keyboard shortcuts handled by the shell.
 Future<void> showShortcutHelp(BuildContext context) {
-  final l10n = context.l10n;
+  final AppLocalizations l10n = context.l10n;
   final List<(String, String)> rows = <(String, String)>[
     (l10n.shellKeysDestinations, l10n.shellShortcutDestinations),
     (l10n.shellKeysSearch, l10n.shellShortcutSearch),
     (l10n.shellKeysHelp, l10n.shellShortcutHelp),
   ];
-  return showDialog<void>(
-    context: context,
+  return showBhorDialog<void>(
+    context,
     builder: (BuildContext ctx) {
-      final tokens = ctx.aurora;
-      final TextTheme tt = Theme.of(ctx).textTheme;
-      return AlertDialog(
-        title: Text(l10n.shellShortcutsTitle),
-        content: Column(
+      final BhorThemeData b = ctx.bhor;
+      return BhorDialog(
+        title: l10n.shellShortcutsTitle,
+        body: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -584,23 +245,28 @@ Future<void> showShortcutHelp(BuildContext context) {
                   children: <Widget>[
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: tokens.track,
-                        borderRadius: BorderRadius.circular(AuroraMetrics.radiusChip),
+                        color: b.colors.surface2,
+                        borderRadius: BorderRadius.circular(BhorRadius.tag),
+                        border: Border.all(color: b.colors.line),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Text(keys, style: tt.labelMedium?.copyWith(color: tokens.textPrimary)),
+                        child: Text(keys, style: BhorType.tabular(b.type.label)),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(what, style: tt.bodyMedium?.copyWith(color: tokens.textPrimary))),
+                    const SizedBox(width: BhorSpace.s12),
+                    Expanded(child: Text(what, style: b.type.body)),
                   ],
                 ),
               ),
           ],
         ),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(l10n.commonClose)),
+          BhorButton(
+            label: l10n.commonClose,
+            variant: BhorButtonVariant.ghost,
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
         ],
       );
     },

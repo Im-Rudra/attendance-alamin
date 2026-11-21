@@ -1,7 +1,6 @@
 // Public surface of the reminders feature (plan section 1 #32). Signatures
 // frozen by M5-A; bodies by M8-D.
 
-import 'package:flutter/material.dart' show MaterialPageRoute;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,7 +57,7 @@ Future<bool> showReminderPriming(BuildContext context) async {
     return granted;
   }
   final bool? granted = await Navigator.of(context, rootNavigator: true).push<bool>(
-    MaterialPageRoute<bool>(
+    BhorPageRoute<bool>(
       fullscreenDialog: true,
       builder: (BuildContext _) => const ReminderPrimingScreen(),
     ),

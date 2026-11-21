@@ -1,6 +1,6 @@
 # Bhor migration guide (Material / Aurora → ভোর)
 
-## SHELL STEP TODO (collected from the 4 migration PRs — do these in the shell migration)
+## SHELL STEP (done in `ds/shell`; kept for the record)
 1. **Provide BhorTheme at the app root** (and in `pumpApp`/`pumpShell` test harnesses) driven by the app's ThemeMode setting — today Bhor components fall back to platform brightness, so the in-app Light/Dark switch doesn't reach them.
 2. Replace MaterialApp with WidgetsApp.router (keep l10n delegates); AdaptiveScaffold/nav → BhorScaffold + BhorBottomNav (phone) + BhorSidebar (desktop); `stub_screen.dart`, startup/error/storage-banner screens → Bhor.
 3. `lib/app/services/share_service.dart` and `contact_actions.dart` show ScaffoldMessenger SnackBars → BhorToast via an app-level toast host; remove the test-only Scaffold wrappers in payments/home tests.
@@ -71,8 +71,10 @@ Binding spec: `10-design-system-bhor.md`. Library: `lib/app/ds/` (import only th
 - **Sheets.** Short choices and small forms use `showBhorSheet`; pop with `Navigator.of(ctx).pop(value)`. Long or
   scrolling content returns a `SingleChildScrollView` from the builder.
 - **Dialogs.** Only for confirmation: `showBhorConfirm(..., destructive: true)` for deletes.
-- **Toasts.** `BhorToast.show` after saves/undoable actions (undo = `actionLabel` + `onAction`). Pass
-  `bottomOffset: 64` on phone screens that sit above the bottom nav until the shell does it centrally.
+- **Toasts.** `BhorToast.show` after saves/undoable actions (undo = `actionLabel` + `onAction`; two buttons =
+  `actions: [BhorToastAction(...), BhorToastAction(...)]`). The app root hosts toasts (`BhorToastHost`) and the
+  shell lifts them above the phone bottom nav (`BhorToastInset`), so screens pass no `bottomOffset`. After an
+  async gap use `BhorToast.anchorOf(context)` captured before it.
 - **Dates/times.** Read the week start from settings (`SettingKeys.weekStart`) and pass it as `weekStart:`; pass the
   app clock's today as `today:`. Never call `DateTime.now()`.
 - **Strings.** Components take already-localised labels; numbers/money/dates are formatted with `context.fmt` (Bangla
@@ -88,5 +90,6 @@ Binding spec: `10-design-system-bhor.md`. Library: `lib/app/ds/` (import only th
    (e.g. `find.byType(Scaffold)` in `routes_test.dart`) are updated to the Bhor type in the same PR.
 5. Every tappable thing is a Bhor control or `BhorPressable` with a `semanticLabel`; targets ≥ 44 px (48 on phone rows).
 6. Screens still pass `testScreenMatrix` (light/dark × bn/en × phone/desktop, no overflow); check Bangla at 1.3× text.
-7. When every feature reports 0, the Lead removes `continue-on-error` from the "No visible Material" CI step and the
-   shell switches to `BhorScaffold` + `BhorBottomNav`/`BhorSidebar`.
+7. `tool/check_no_material.sh` is blocking in CI (0 uses across lib/). The app root is `WidgetsApp.router` +
+   `BhorAppRoot` (BhorTheme from the theme setting); the shell is `BhorScaffold` + `BhorBottomNav`/`BhorSidebar`.
+   Pages pushed outside the router use `BhorPageRoute`.

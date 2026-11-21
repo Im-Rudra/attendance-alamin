@@ -2,10 +2,11 @@
 // step 3): "এই ব্রাউজারে ডেটা সংরক্ষণ হবে না". Never dismissible, sits above
 // every route. Stays hidden on Android / Windows (report is null there).
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 import 'package:attendance_alamin/data/db/connection/web_storage_report.dart';
 
 class StorageBanner extends StatelessWidget {
@@ -44,22 +45,27 @@ class _InMemoryBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
-    final TextStyle? style = Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens.onError);
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     return Semantics(
       liveRegion: true,
       container: true,
-      child: Material(
-        color: tokens.error,
+      child: ColoredBox(
+        color: c.danger,
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 10),
             child: Row(
               children: <Widget>[
-                ExcludeSemantics(child: Icon(Icons.warning_amber_rounded, color: tokens.onError, size: 22)),
-                const SizedBox(width: 12),
-                Expanded(child: Text(context.l10n.shellStorageInMemory, style: style)),
+                ExcludeSemantics(child: Icon(Icons.warning_amber_rounded, color: c.onDanger, size: 22)),
+                const SizedBox(width: BhorSpace.s12),
+                Expanded(
+                  child: Text(
+                    context.l10n.shellStorageInMemory,
+                    style: b.type.bodyStrong.copyWith(color: c.onDanger),
+                  ),
+                ),
               ],
             ),
           ),

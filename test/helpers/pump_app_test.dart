@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
@@ -87,12 +88,36 @@ void main() {
       viewport: TestViewport.desktop,
       today: const LocalDate(2026, 12, 5),
     );
-    expect(Theme.of(captured).brightness, Brightness.dark);
+    expect(captured.bhor.brightness, Brightness.dark);
     expect(Localizations.localeOf(captured).languageCode, 'en');
     expect(MediaQuery.sizeOf(captured), TestViewport.desktop.size);
     final container = ProviderScope.containerOf(captured);
     expect(container.read(todayProvider), const LocalDate(2026, 12, 5));
     expectNoException(tester, 'after pumpApp');
+  });
+
+  testWidgets('pumpApp: ThemeMode.system follows the platform brightness', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    late BuildContext captured;
+    await pumpApp(
+      tester,
+      Builder(builder: (context) {
+        captured = context;
+        return const SizedBox.expand();
+      }),
+      themeMode: ThemeMode.system,
+    );
+    expect(captured.bhor.isDark, isTrue);
+    await pumpApp(
+      tester,
+      Builder(builder: (context) {
+        captured = context;
+        return const SizedBox.expand();
+      }),
+      themeMode: ThemeMode.light,
+    );
+    expect(captured.bhor.isDark, isFalse);
   });
 
   testWidgets('pumpApp wires the seeded fakes through overrides', (tester) async {

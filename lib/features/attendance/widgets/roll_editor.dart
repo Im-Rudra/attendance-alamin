@@ -35,7 +35,6 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_call_controller.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
-import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
@@ -317,7 +316,11 @@ class _RollEditorState extends ConsumerState<RollEditor> {
   Future<void> _pickTime({required bool start}) async {
     final RollTarget? t = _target;
     if (t == null) return;
-    final int? m = await showBhorTimePicker(context, initial: start ? t.startMin : t.endMin);
+    final int? m = await showBhorTimePicker(
+      context,
+      initial: start ? t.startMin : t.endMin,
+      title: start ? context.l10n.rollAdHocStart : context.l10n.rollAdHocEnd,
+    );
     if (m == null || !mounted) return;
     if (start) {
       final int duration = t.endMin - t.startMin;
@@ -677,7 +680,7 @@ class _RollEditorState extends ConsumerState<RollEditor> {
       }
     }
     final String saveLabel = (c.saved || c.readOnly) ? l10n.rollDone : l10n.rollSaveButton(fmt.number(c.students.length));
-    final Widget bar = RollSaveBar(
+    final Widget bar = BhorActionBar(
       label: saveLabel,
       onPressed: canSave ? () => unawaited(_save()) : null,
       disabledReason: reason,
@@ -863,10 +866,15 @@ class _RollEditorState extends ConsumerState<RollEditor> {
         child: IgnorePointer(
           ignoring: _leaving && GoRouter.maybeOf(context) != null,
           child: BhorScaffold(
-            header: _RollHeader(
-              closeLabel: l10n.commonClose,
-              onClose: _close,
-              title: Semantics(header: true, child: title),
+            header: BhorHeader(
+              divider: true,
+              leading: BhorIconButton(
+                semanticLabel: l10n.commonClose,
+                icon: Icons.close,
+                color: context.bhor.colors.text,
+                onPressed: _close,
+              ),
+              titleWidget: Semantics(header: true, child: title),
               actions: <Widget>[
                 if (!c.readOnly)
                   BhorIconButton(
@@ -1048,18 +1056,18 @@ class _RollEditorState extends ConsumerState<RollEditor> {
     ];
     final int duration = t.endMin - t.startMin;
     final FreeSuggestion? s = r.suggestion;
-    final List<RollClashFix> fixes = <RollClashFix>[];
+    final List<BhorClashFix> fixes = <BhorClashFix>[];
     if (s != null) {
       final int? primary = s.primaryStartMin;
       if (primary != null) {
-        fixes.add(RollClashFix(
+        fixes.add(BhorClashFix(
           label: l10n.rollFixUse(fmt.timeRange(primary, primary + duration)),
           onTap: () => _setTimes(primary, primary + duration),
           primary: true,
         ));
       }
     }
-    return RollClashCard(
+    return BhorClashCard(
       lines: lines,
       moreCount: r.groups.length > 3 ? r.groups.length - 3 : 0,
       fixes: fixes,
@@ -1187,34 +1195,3 @@ class _NoteDialogState extends State<_NoteDialog> {
   }
 }
 
-/// The roll call's top bar: close, title with the save state, actions.
-class _RollHeader extends StatelessWidget {
-  const _RollHeader({
-    required this.closeLabel,
-    required this.onClose,
-    required this.title,
-    required this.actions,
-  });
-
-  final String closeLabel;
-  final VoidCallback onClose;
-  final Widget title;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final BhorColors c = context.bhor.colors;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.fromLTRB(BhorSpace.s4, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.line))),
-      child: Row(
-        children: <Widget>[
-          BhorIconButton(semanticLabel: closeLabel, icon: Icons.close, color: c.text, onPressed: onClose),
-          Expanded(child: title),
-          ...actions,
-        ],
-      ),
-    );
-  }
-}

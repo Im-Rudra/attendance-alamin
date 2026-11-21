@@ -16,8 +16,7 @@
 #      (Icons, ThemeMode, ...) must be imported with `show`; prefer package:flutter/widgets.dart.
 #
 # Prints violation counts per area (lib/features/<feature>, lib/app/<dir>) and the total.
-# Exit 1 when anything is found (CI runs it with continue-on-error until the screen
-# migration lands; then the step becomes blocking). Needs GNU grep with -P.
+# Exit 1 when anything is found (a blocking CI step). Needs GNU grep with -P.
 # Usage: bash tool/check_no_material.sh [--list]   (--list prints every hit)
 set -euo pipefail
 
@@ -87,14 +86,14 @@ echo "check_no_material: ${#FILES[@]} files scanned"
 printf '%s\n' "$summary"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   {
-    echo "### No visible Material (Bhor) — report only until the migration"
+    echo "### No visible Material (Bhor)"
     printf '%s\n' "$summary"
   } >> "$GITHUB_STEP_SUMMARY"
 fi
 
 if [ "$total" -gt 0 ]; then
   if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-    echo "::warning title=no-material::${total} Material widget use(s) left in lib/app and lib/features (see job summary)"
+    echo "::error title=no-material::${total} Material widget use(s) left in lib/app and lib/features (see job summary)"
   fi
   exit 1
 fi

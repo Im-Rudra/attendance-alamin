@@ -58,7 +58,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
         if (!done.contains(r.studentId)) r,
     ];
     if (todo.isEmpty) {
-      BhorToast.show(context, message: context.l10n.duesWalkNobody, bottomOffset: 64);
+      BhorToast.show(context, message: context.l10n.duesWalkNobody);
       return;
     }
     await showReminderWalkthrough(context, todo);

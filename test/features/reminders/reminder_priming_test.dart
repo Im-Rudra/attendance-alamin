@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/domain/reminders/reminder_models.dart';
 import 'package:attendance_alamin/features/reminders/reminders_entry.dart';
@@ -21,14 +22,13 @@ class _Launcher extends StatelessWidget {
   final Future<void> Function(BuildContext context) action;
 
   @override
-  // A Scaffold so snackbars have somewhere to show.
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => BhorScaffold(
         body: Builder(
           builder: (BuildContext inner) => Center(
-            child: ElevatedButton(
+            child: BhorButton(
               key: const Key('launch'),
+              label: 'go',
               onPressed: () => action(inner),
-              child: const Text('go'),
             ),
           ),
         ),

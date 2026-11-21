@@ -22,7 +22,6 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/extras/controllers/holiday_logic.dart';
-import 'package:attendance_alamin/features/extras/widgets/extras_action_bar.dart';
 
 enum _HolidayMode { cancel, restore }
 
@@ -314,7 +313,7 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
           ),
         ),
       ),
-      bottomNav: ExtrasActionBar(
+      bottomNav: BhorActionBar(
         buttonKey: const ValueKey<String>('holiday-run'),
         label: cancelMode ? l10n.extraHolidayCancelButton(count) : l10n.extraHolidayRestoreButton(count),
         onPressed: canRun ? () => _run(range, preview) : null,

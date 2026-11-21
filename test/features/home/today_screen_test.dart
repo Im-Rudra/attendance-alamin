@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/bento_grid.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
@@ -244,7 +244,7 @@ Future<SeededFakes> _pumpPhone(
   final SeededFakes f = fakes ?? seedFakes();
   await pumpApp(
     tester,
-    const Scaffold(body: TodayScreen()),
+    const TodayScreen(),
     lang: lang,
     overrides: <Override>[...f.overrides, _prefs(lang), ..._clockAt(date, time)],
   );
@@ -299,7 +299,9 @@ void main() {
       expect(find.text(l10n.todayHeroNext(l10n.todayInHours(fmt.number(6)))), findsOneWidget);
       expect(find.text(l10n.clsClassLabel('পদার্থবিজ্ঞান', 'ফিজিক্স এ')), findsWidgets);
       expect(find.text(fmt.timeRange(kPhysStart, kPhysEnd)), findsWidgets);
-      expect(_inHero(fmt.weekdayDate(kToday)), findsOneWidget);
+      // The date shows once: in the header, not again in the hero.
+      expect(_inHero(fmt.weekdayDate(kToday)), findsNothing);
+      expect(find.text(fmt.weekdayDate(kToday)), findsOneWidget);
       expect(find.text(l10n.todayTakeAttendance), findsWidgets);
     });
 
@@ -361,7 +363,9 @@ void main() {
       await _pumpPhone(tester, lang: Lang.en);
       final AppLocalizations l10n = _l10n(Lang.en);
       expect(find.text(l10n.todayHeroNext(l10n.todayInHours('6'))), findsOneWidget);
-      expect(_inHero('Saturday, 21 Nov'), findsOneWidget);
+      // The weekday-date line is the header's, shown once (not in the hero).
+      expect(find.text('Saturday, 21 Nov'), findsOneWidget);
+      expect(_inHero('Saturday, 21 Nov'), findsNothing);
     });
   });
 

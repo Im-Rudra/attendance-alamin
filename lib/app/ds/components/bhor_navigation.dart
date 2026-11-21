@@ -12,7 +12,7 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 
 /// One destination of a [BhorBottomNav] / [BhorSidebar].
 class BhorNavItem {
-  const BhorNavItem({required this.icon, required this.label, this.activeIcon, this.badge});
+  const BhorNavItem({required this.icon, required this.label, this.activeIcon, this.badge, this.semanticLabel});
 
   final IconData icon;
   final IconData? activeIcon;
@@ -20,6 +20,12 @@ class BhorNavItem {
 
   /// Short badge text ("৩"); null hides it.
   final String? badge;
+
+  /// What a screen reader says (e.g. "বেতন, বকেয়া ৩"); defaults to the
+  /// label plus the badge.
+  final String? semanticLabel;
+
+  String get a11yLabel => semanticLabel ?? (badge == null ? label : '$label, $badge');
 }
 
 class _Badge extends StatelessWidget {
@@ -138,7 +144,7 @@ class BhorBottomNav extends StatelessWidget {
                   child: BhorPressable(
                     onTap: () => onTap(i),
                     selected: i == index,
-                    semanticLabel: items[i].badge == null ? items[i].label : '${items[i].label}, ${items[i].badge}',
+                    semanticLabel: items[i].a11yLabel,
                     excludeChildSemantics: true,
                     radius: 12,
                     builder: (BuildContext context, BhorStates s) {
@@ -211,6 +217,8 @@ class BhorSidebar extends StatelessWidget {
 
   /// Accessible name of the collapse button.
   final String? toggleLabel;
+
+  /// Shown under the items in both states (build it for [collapsed]).
   final Widget? footer;
 
   static const double width = 248;
@@ -228,7 +236,12 @@ class BhorSidebar extends StatelessWidget {
       child: SafeArea(
         right: false,
         child: ClipRect(
-          child: Column(
+          child: OverflowBox(
+            alignment: AlignmentDirectional.centerStart,
+            // Content at the target width while the box animates (clipped).
+            minWidth: (collapsed ? collapsedWidth : width) - 1,
+            maxWidth: (collapsed ? collapsedWidth : width) - 1,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               SizedBox(
@@ -269,8 +282,7 @@ class BhorSidebar extends StatelessWidget {
                           child: BhorPressable(
                             onTap: () => onTap(i),
                             selected: i == index,
-                            semanticLabel:
-                                items[i].badge == null ? items[i].label : '${items[i].label}, ${items[i].badge}',
+                            semanticLabel: items[i].a11yLabel,
                             excludeChildSemantics: true,
                             scaleOnPress: false,
                             builder: (BuildContext context, BhorStates s) {
@@ -286,7 +298,14 @@ class BhorSidebar extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: <Widget>[
-                                    Icon(on ? (items[i].activeIcon ?? items[i].icon) : items[i].icon, size: 22, color: fg),
+                                    Stack(
+                                      clipBehavior: Clip.none,
+                                      children: <Widget>[
+                                        Icon(on ? (items[i].activeIcon ?? items[i].icon) : items[i].icon, size: 22, color: fg),
+                                        if (collapsed && items[i].badge != null)
+                                          Positioned(top: -6, right: -10, child: _Badge(items[i].badge!)),
+                                      ],
+                                    ),
                                     if (!collapsed) ...<Widget>[
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -309,7 +328,7 @@ class BhorSidebar extends StatelessWidget {
                   ],
                 ),
               ),
-              if (footer != null && !collapsed) footer!,
+              ?footer,
               if (onToggleCollapsed != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
@@ -324,6 +343,7 @@ class BhorSidebar extends StatelessWidget {
                 ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -332,20 +352,30 @@ class BhorSidebar extends StatelessWidget {
 
 /// Screen header: optional back button, title + subtitle (date), actions.
 /// Usage: `BhorHeader(title: 'আজ', subtitle: fmt.weekdayDate(today), actions: [...])`.
+/// [titleWidget] replaces the title text (a search field, a two-line roll-call
+/// title); [leading] replaces the back button (e.g. a close button).
 class BhorHeader extends StatelessWidget {
   const BhorHeader({
     super.key,
-    required this.title,
+    this.title,
+    this.titleWidget,
     this.subtitle,
     this.actions = const <Widget>[],
     this.showBack,
     this.onBack,
+    this.leading,
     this.large = false,
     this.divider = false,
-  });
+  }) : assert(title != null || titleWidget != null, 'BhorHeader needs a title or a titleWidget');
 
-  final String title;
+  final String? title;
+
+  /// Custom title; wins over [title] and [subtitle].
+  final Widget? titleWidget;
   final String? subtitle;
+
+  /// Widget before the title instead of the automatic back button.
+  final Widget? leading;
   final List<Widget> actions;
 
   /// Null shows the back button when the navigator can pop.
@@ -360,13 +390,33 @@ class BhorHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final bool back = showBack ?? (onBack != null || (ModalRoute.of(context)?.canPop ?? false));
+    final bool back = leading == null && (showBack ?? (onBack != null || (ModalRoute.of(context)?.canPop ?? false)));
+    final Widget titleBlock = titleWidget ??
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Semantics(
+              header: true,
+              child: Text(
+                title!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: large ? b.type.display : b.type.title,
+              ),
+            ),
+            if (subtitle != null)
+              Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+          ],
+        );
     return Container(
       constraints: const BoxConstraints(minHeight: 56),
-      padding: EdgeInsets.fromLTRB(back ? BhorSpace.s4 : BhorSpace.s16, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
+      padding: EdgeInsets.fromLTRB(
+          back || leading != null ? BhorSpace.s4 : BhorSpace.s16, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
       decoration: divider ? BoxDecoration(border: Border(bottom: BorderSide(color: c.line))) : null,
       child: Row(
         children: <Widget>[
+          ?leading,
           if (back)
             BhorIconButton(
               icon: Icons.arrow_back_rounded,
@@ -374,25 +424,7 @@ class BhorHeader extends StatelessWidget {
               color: c.text,
               onPressed: onBack ?? () => Navigator.of(context).maybePop(),
             ),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Semantics(
-                  header: true,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: large ? b.type.display : b.type.title,
-                  ),
-                ),
-                if (subtitle != null)
-                  Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
-              ],
-            ),
-          ),
+          Expanded(child: titleBlock),
           ...actions,
         ],
       ),

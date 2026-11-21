@@ -26,7 +26,7 @@ import 'package:attendance_alamin/features/dues/reminder_text.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 void _toast(BuildContext context, String message) {
-  if (context.mounted) BhorToast.show(context, message: message, bottomOffset: 64);
+  if (context.mounted) BhorToast.show(context, message: message);
 }
 
 /// The reminder text for [studentId] in [lang], or `null` when the student has

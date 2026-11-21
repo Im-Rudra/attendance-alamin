@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/shell/adaptive_scaffold.dart';
+import 'package:attendance_alamin/app/widgets/effects_mode.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
@@ -130,7 +131,8 @@ void main() {
 
   testWidgets('theme switches instantly from the More tab and is saved', (WidgetTester tester) async {
     final ShellHarness h = await pumpShell(tester, location: Routes.more);
-    Brightness brightness() => Theme.of(tester.element(find.byType(BhorSegmented<ThemeMode>))).brightness;
+    // Read where Bhor components read it: the in-app switch must reach them.
+    Brightness brightness() => tester.element(find.byType(BhorSegmented<ThemeMode>)).bhor.brightness;
     expect(brightness(), Brightness.light);
 
     await tester.ensureVisible(find.text(l10nOf(Lang.bn).shellThemeDark));
@@ -154,7 +156,36 @@ void main() {
     await h.container(tester).read(langProvider.notifier).set(Lang.en);
     await tester.pumpAndSettle();
     expect(find.byType(TodayScreen), findsOneWidget);
-    expect(Theme.of(tester.element(find.byType(TodayScreen))).brightness, Brightness.dark);
+    expect(tester.element(find.byType(TodayScreen)).bhor.brightness, Brightness.dark);
+  });
+
+  testWidgets('the theme setting drives every Bhor component (light / dark / system)', (WidgetTester tester) async {
+    // The device is dark; the app's own setting must win over it.
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    final ShellHarness h = await pumpShell(tester, themeMode: ThemeMode.light);
+    BhorThemeData navTheme() => tester.element(find.byType(BhorBottomNav)).bhor;
+    BhorThemeData screenTheme() => tester.element(find.byType(TodayScreen)).bhor;
+    expect(find.byKey(AdaptiveScaffold.bottomNavKey), findsOneWidget);
+    expect(navTheme().isDark, isFalse);
+    expect(screenTheme().isDark, isFalse);
+    // The painted page follows: the shell's background is the light bg.
+    expect(navTheme().colors.bg, BhorThemeData.light().colors.bg);
+
+    await h.container(tester).read(themeModeProvider.notifier).set(ThemeMode.dark);
+    await tester.pumpAndSettle();
+    expect(navTheme().isDark, isTrue);
+    expect(screenTheme().isDark, isTrue);
+
+    await h.container(tester).read(themeModeProvider.notifier).set(ThemeMode.system);
+    await tester.pumpAndSettle();
+    expect(navTheme().isDark, isTrue, reason: 'system follows the dark device');
+
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pumpAndSettle();
+    expect(navTheme().isDark, isFalse, reason: 'system follows the device back to light');
+    expect(await h.settings.get(SettingKeys.themeMode), 'system');
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('reduced effects reaches EffectsMode', (WidgetTester tester) async {

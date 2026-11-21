@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
@@ -191,10 +191,8 @@ class _Host extends StatelessWidget {
   final void Function(BuildContext context) onOpen;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: ElevatedButton(onPressed: () => onOpen(context), child: const Text('open')),
-        ),
+  Widget build(BuildContext context) => BhorScaffold(
+        body: Center(child: BhorButton(label: 'open', onPressed: () => onOpen(context))),
       );
 }
 

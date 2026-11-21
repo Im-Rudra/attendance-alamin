@@ -25,6 +25,7 @@ class BhorTextField extends StatefulWidget {
     this.suffix,
     this.keyboardType,
     this.textInputAction,
+    this.textCapitalization = TextCapitalization.none,
     this.inputFormatters,
     this.obscureText = false,
     this.enabled = true,
@@ -57,6 +58,9 @@ class BhorTextField extends StatefulWidget {
   final Widget? suffix;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+
+  /// Soft-keyboard capitalisation (names: words, notes: sentences).
+  final TextCapitalization textCapitalization;
   final List<TextInputFormatter>? inputFormatters;
   final bool obscureText;
   final bool enabled;
@@ -158,6 +162,7 @@ class _BhorTextFieldState extends State<BhorTextField>
       selectionColor: c.accent.withValues(alpha: 0.24),
       keyboardType: widget.keyboardType ?? (multi ? TextInputType.multiline : TextInputType.text),
       textInputAction: widget.textInputAction,
+      textCapitalization: widget.textCapitalization,
       inputFormatters: <TextInputFormatter>[
         if (widget.maxLength != null) LengthLimitingTextInputFormatter(widget.maxLength),
         ...?widget.inputFormatters,

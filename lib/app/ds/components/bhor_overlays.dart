@@ -327,7 +327,7 @@ class BhorDialog extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------- Toast ----
+/// ---------------------------------------------------------------- Toast ----
 
 /// Lets the caller close a toast early.
 class BhorToastHandle {
@@ -338,48 +338,145 @@ class BhorToastHandle {
   void dismiss() => _dismiss();
 }
 
-/// Short message on the root Overlay, top or bottom, optional action,
-/// auto-dismissed after [duration]. A new toast replaces the old one.
-/// Usage: `BhorToast.show(context, message: 'সংরক্ষিত', actionLabel: 'ফেরান', onAction: undo)`.
+/// One button of a toast (a toast carries at most two).
+class BhorToastAction {
+  const BhorToastAction({required this.label, required this.onPressed, this.key});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  /// Key of the button (tests and automation tap it).
+  final Key? key;
+}
+
+/// App-level home of toasts that have no navigator to sit in: put it once at
+/// the root (above the navigator). [BhorToast.show] uses the root Overlay
+/// when the context has one (so a sheet opened later covers the toast, as
+/// before) and this host otherwise: contexts above the navigator, and the
+/// [BhorToast.anchorOf] context services keep across an async gap.
+class BhorToastHost extends StatefulWidget {
+  const BhorToastHost({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<BhorToastHost> createState() => _BhorToastHostState();
+}
+
+class _BhorToastHostState extends State<BhorToastHost> {
+  final List<(Key, WidgetBuilder)> _toasts = <(Key, WidgetBuilder)>[];
+
+  /// Adds a toast; the returned callback removes it.
+  VoidCallback _insert(WidgetBuilder builder) {
+    final Key key = UniqueKey();
+    setState(() => _toasts.add((key, builder)));
+    return () {
+      if (!mounted) return;
+      setState(() => _toasts.removeWhere(((Key, WidgetBuilder) t) => t.$1 == key));
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          widget.child,
+          for (final (Key key, WidgetBuilder builder) in _toasts)
+            KeyedSubtree(key: key, child: Builder(builder: builder)),
+        ],
+      );
+}
+
+/// Lifts bottom toasts above chrome that covers the bottom of the window
+/// (the phone bottom nav). The shell provides it; [BhorToast.show] reads it
+/// when no explicit `bottomOffset` is passed.
+class BhorToastInset extends InheritedWidget {
+  const BhorToastInset({super.key, required this.bottom, required super.child});
+
+  final double bottom;
+
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<BhorToastInset>()?.bottom ?? 0;
+
+  @override
+  bool updateShouldNotify(BhorToastInset oldWidget) => oldWidget.bottom != bottom;
+}
+
+/// Short message, top or bottom, with up to two actions, auto-dismissed after
+/// [duration] (null keeps it until an action is tapped). A new toast replaces
+/// the old one. Shown in the app's [BhorToastHost] (else the root Overlay).
+/// Usage: `BhorToast.show(context, message: 'সংরক্ষিত', actionLabel: 'ফেরান', onAction: undo)`
+/// or `actions: [BhorToastAction(label: 'রসিদ পাঠান', onPressed: send), BhorToastAction(...)]`.
 abstract final class BhorToast {
   static _ToastViewState? _current;
+
+  /// The host at or above [context] (the anchor context is the host's own).
+  static _BhorToastHostState? _hostOf(BuildContext context) {
+    if (context is StatefulElement && context.state is _BhorToastHostState) {
+      return context.state as _BhorToastHostState;
+    }
+    return context.findAncestorStateOfType<_BhorToastHostState>();
+  }
+
+  /// True when [show] has somewhere to put a toast from [context].
+  static bool canShowIn(BuildContext context) =>
+      Overlay.maybeOf(context, rootOverlay: true) != null || _hostOf(context) != null;
+
+  /// A context that outlives [context] for showing a toast after an async
+  /// gap (the host's own context; [context] itself without a host). Read
+  /// `BhorToastInset.of(context)` before the gap too and pass it as
+  /// `bottomOffset`.
+  static BuildContext anchorOf(BuildContext context) =>
+      _hostOf(context)?.context ?? context;
 
   static BhorToastHandle show(
     BuildContext context, {
     required String message,
     String? actionLabel,
     VoidCallback? onAction,
+    List<BhorToastAction> actions = const <BhorToastAction>[],
     BhorTone tone = BhorTone.neutral,
     IconData? icon,
-    Duration duration = const Duration(seconds: 4),
+    Duration? duration = const Duration(seconds: 4),
     bool top = false,
-    double bottomOffset = 0,
+    double? bottomOffset,
   }) {
-    final OverlayState overlay = Overlay.of(context, rootOverlay: true);
+    final List<BhorToastAction> all = <BhorToastAction>[
+      if (actionLabel != null) BhorToastAction(label: actionLabel, onPressed: onAction ?? () {}),
+      ...actions,
+    ];
+    assert(all.length <= 2, 'A BhorToast carries at most two actions');
+    final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
+    final _BhorToastHostState? host = overlay == null ? _hostOf(context) : null;
+    if (host == null && overlay == null) return BhorToastHandle._(() {});
     final BhorThemeData theme = context.bhor;
+    final double lift = bottomOffset ?? BhorToastInset.of(context);
     _current?.dismiss();
-    late final OverlayEntry entry;
     final GlobalKey<_ToastViewState> key = GlobalKey<_ToastViewState>();
-    entry = OverlayEntry(
-      builder: (BuildContext ctx) => BhorTheme(
-        data: theme,
-        child: _ToastView(
-          key: key,
-          message: message,
-          actionLabel: actionLabel,
-          onAction: onAction,
-          tone: tone,
-          icon: icon,
-          duration: duration,
-          top: top,
-          bottomOffset: bottomOffset,
-          onGone: () {
-            if (entry.mounted) entry.remove();
-          },
-        ),
-      ),
-    );
-    overlay.insert(entry);
+    VoidCallback remove = () {};
+    Widget build(BuildContext ctx) => BhorTheme(
+          data: theme,
+          child: _ToastView(
+            key: key,
+            message: message,
+            actions: all,
+            tone: tone,
+            icon: icon,
+            duration: duration,
+            top: top,
+            bottomOffset: lift,
+            onGone: () => remove(),
+          ),
+        );
+    if (host != null) {
+      remove = host._insert(build);
+    } else {
+      final OverlayEntry entry = OverlayEntry(builder: build);
+      overlay!.insert(entry);
+      remove = () {
+        if (entry.mounted) entry.remove();
+      };
+    }
     return BhorToastHandle._(() => key.currentState?.dismiss());
   }
 }
@@ -388,8 +485,7 @@ class _ToastView extends StatefulWidget {
   const _ToastView({
     super.key,
     required this.message,
-    required this.actionLabel,
-    required this.onAction,
+    required this.actions,
     required this.tone,
     required this.icon,
     required this.duration,
@@ -399,11 +495,10 @@ class _ToastView extends StatefulWidget {
   });
 
   final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
+  final List<BhorToastAction> actions;
   final BhorTone tone;
   final IconData? icon;
-  final Duration duration;
+  final Duration? duration;
   final bool top;
   final double bottomOffset;
   final VoidCallback onGone;
@@ -422,7 +517,8 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
     super.initState();
     BhorToast._current = this;
     _c.forward();
-    _timer = Timer(widget.duration, dismiss);
+    final Duration? d = widget.duration;
+    if (d != null) _timer = Timer(d, dismiss);
   }
 
   void dismiss() {
@@ -441,6 +537,17 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
     super.dispose();
   }
 
+  Widget _button(BhorToastAction a) => BhorButton(
+        key: a.key,
+        label: a.label,
+        variant: BhorButtonVariant.ghost,
+        size: BhorButtonSize.sm,
+        onPressed: () {
+          dismiss();
+          a.onPressed();
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
@@ -453,6 +560,11 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
       BhorTone.absent => c.absent,
       BhorTone.accent || BhorTone.neutral => c.accent,
     };
+    final Widget text = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(widget.message, style: b.type.body),
+    );
+    final bool two = widget.actions.length > 1;
     final Widget card = Container(
       constraints: const BoxConstraints(maxWidth: 480, minHeight: BhorSize.control + 8),
       padding: const EdgeInsets.fromLTRB(BhorSpace.s12, 6, 6, 6),
@@ -461,37 +573,47 @@ class _ToastViewState extends State<_ToastView> with SingleTickerProviderStateMi
         borderRadius: BorderRadius.circular(BhorRadius.control),
         border: Border.all(color: c.line),
       ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 3,
-            height: 24,
-            margin: const EdgeInsets.only(right: BhorSpace.s12),
-            decoration: BoxDecoration(color: edge, borderRadius: BorderRadius.circular(2)),
-          ),
-          if (widget.icon != null) ...<Widget>[
-            Icon(widget.icon, size: 18, color: edge),
-            const SizedBox(width: BhorSpace.s8),
-          ],
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(widget.message, style: b.type.body),
+      child: DefaultTextStyle(
+        style: b.type.body,
+        child: Row(
+          crossAxisAlignment: two ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              width: 3,
+              height: 24,
+              margin: EdgeInsets.only(right: BhorSpace.s12, top: two ? 6 : 0),
+              decoration: BoxDecoration(color: edge, borderRadius: BorderRadius.circular(2)),
             ),
-          ),
-          if (widget.actionLabel != null)
-            BhorButton(
-              label: widget.actionLabel!,
-              variant: BhorButtonVariant.ghost,
-              size: BhorButtonSize.sm,
-              onPressed: () {
-                widget.onAction?.call();
-                dismiss();
-              },
-            )
-          else
-            const SizedBox(width: 10),
-        ],
+            if (widget.icon != null) ...<Widget>[
+              Padding(
+                padding: EdgeInsets.only(top: two ? 9 : 0),
+                child: Icon(widget.icon, size: 18, color: edge),
+              ),
+              const SizedBox(width: BhorSpace.s8),
+            ],
+            Expanded(
+              child: two
+                  // Two actions: the message on top, the buttons under it, so
+                  // long Bangla labels never squeeze the text.
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        text,
+                        Wrap(
+                          alignment: WrapAlignment.end,
+                          children: <Widget>[for (final BhorToastAction a in widget.actions) _button(a)],
+                        ),
+                      ],
+                    )
+                  : text,
+            ),
+            if (widget.actions.length == 1)
+              _button(widget.actions.first)
+            else if (!two)
+              const SizedBox(width: 10),
+          ],
+        ),
       ),
     );
     final Animation<double> a = CurvedAnimation(parent: _c, curve: BhorMotion.curve);

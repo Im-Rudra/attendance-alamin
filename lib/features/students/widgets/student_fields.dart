@@ -52,6 +52,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
           children: <Widget>[
             BhorTextField(
               key: const ValueKey<String>('stu-field-name'),
+              textCapitalization: TextCapitalization.words,
               controller: model.name,
               autofocus: widget.autofocusName,
               textInputAction: TextInputAction.next,
@@ -107,6 +108,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
                     const SizedBox(height: BhorSpace.s12),
                     BhorTextField(
                       controller: model.guardianName,
+                      textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       label: l10n.stuFieldGuardianName,
                     ),

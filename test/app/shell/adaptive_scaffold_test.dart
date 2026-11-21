@@ -1,14 +1,16 @@
-// M5-A acceptance: phone pill vs rail at the UX 3b breakpoints, branch
-// switching (tap + Ctrl+1..5), Ctrl+F search, pane width remembered.
+// M5-A acceptance (Bhor shell): phone bottom nav vs sidebar at the UX 3b
+// breakpoints, branch switching (tap + Ctrl+1..5), Ctrl+F search, pane width
+// remembered.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/adaptive_scaffold.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/widgets.dart';
+import 'package:attendance_alamin/app/widgets/pane_layout.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
@@ -36,63 +38,94 @@ void main() {
     expect(WindowClass.large.extendedRail, isTrue);
   });
 
-  final Map<double, (bool pill, double? rail)> cases = <double, (bool, double?)>{
+  const double icons = BhorSidebar.collapsedWidth;
+  const double full = BhorSidebar.width;
+  final Map<double, (bool bottomNav, double? sidebar)> cases = <double, (bool, double?)>{
     360: (true, null),
     599: (true, null),
-    600: (false, 80),
-    839: (false, 80),
-    840: (false, 80),
-    1199: (false, 80),
-    1200: (false, 220),
-    1600: (false, 220),
+    600: (false, icons),
+    839: (false, icons),
+    840: (false, icons),
+    1199: (false, icons),
+    1200: (false, full),
+    1600: (false, full),
   };
   for (final MapEntry<double, (bool, double?)> c in cases.entries) {
     testWidgets('navigation at width ${c.key.toInt()}', (WidgetTester tester) async {
       await pumpShell(tester, size: Size(c.key, 800));
-      expect(find.byKey(AdaptiveScaffold.pillKey), c.value.$1 ? findsOneWidget : findsNothing);
-      final double? rail = c.value.$2;
-      if (rail == null) {
-        expect(find.byKey(AdaptiveScaffold.railKey), findsNothing);
+      expect(find.byKey(AdaptiveScaffold.bottomNavKey), c.value.$1 ? findsOneWidget : findsNothing);
+      final double? sidebar = c.value.$2;
+      if (sidebar == null) {
+        expect(find.byKey(AdaptiveScaffold.sidebarKey), findsNothing);
       } else {
-        expect(tester.getSize(find.byKey(AdaptiveScaffold.railKey)).width, rail);
+        expect(tester.getSize(find.byKey(AdaptiveScaffold.sidebarKey)).width, sidebar);
       }
       expect(tester.takeException(), isNull);
     });
   }
 
-  testWidgets('phone pill floats inset above the bottom edge', (WidgetTester tester) async {
+  testWidgets('phone bottom nav is a flat full-width bar on the bottom edge', (WidgetTester tester) async {
     await pumpShell(tester);
-    final Rect pill = tester.getRect(find.byKey(AdaptiveScaffold.pillKey));
-    expect(pill.bottom, kPhone.height);
-    // 12dp inset: the frosted surface is narrower than the window.
-    final Rect surface = tester.getRect(
-      find.descendant(of: find.byKey(AdaptiveScaffold.pillKey), matching: find.byType(ClipRRect)).first,
+    final Rect nav = tester.getRect(find.byKey(AdaptiveScaffold.bottomNavKey));
+    expect(nav.bottom, kPhone.height);
+    expect(nav.left, 0);
+    expect(nav.width, kPhone.width);
+    expect(nav.height, AdaptiveScaffold.bottomNavHeight);
+    // Top hairline, no floating inset or shadow.
+    final DecoratedBox bar = tester.widget<DecoratedBox>(
+      find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.byType(DecoratedBox)).first,
     );
-    expect(surface.left, 12);
-    expect(surface.height, 64);
+    final BoxDecoration d = bar.decoration as BoxDecoration;
+    expect((d.border! as Border).top.width, 1);
+    expect(d.boxShadow, isNull);
+    // The page above ends where the bar starts.
+    expect(tester.getRect(find.byType(TodayScreen)).bottom, nav.top);
   });
 
-  testWidgets('tapping the pill switches branches', (WidgetTester tester) async {
+  testWidgets('phone toasts sit above the bottom nav', (WidgetTester tester) async {
+    await pumpShell(tester);
+    BhorToast.show(tester.element(find.byType(TodayScreen)), message: 'toast-probe');
+    await tester.pumpAndSettle();
+    final Rect nav = tester.getRect(find.byKey(AdaptiveScaffold.bottomNavKey));
+    expect(tester.getRect(find.text('toast-probe')).bottom, lessThan(nav.top));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text('toast-probe'), findsNothing);
+  });
+
+  testWidgets('tapping the bottom nav switches branches', (WidgetTester tester) async {
     await pumpShell(tester);
     final l10n = l10nOf(Lang.bn);
-    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.pillKey), matching: find.text(l10n.navBatches)));
+    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navBatches)));
     await tester.pumpAndSettle();
     expect(find.byType(BatchesScreen), findsOneWidget);
-    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.pillKey), matching: find.text(l10n.navFees)));
+    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.bottomNavKey), matching: find.text(l10n.navFees)));
     await tester.pumpAndSettle();
     expect(find.byType(FeesScreen), findsOneWidget);
   });
 
-  testWidgets('rail collapses and expands on large windows', (WidgetTester tester) async {
+  testWidgets('sidebar collapses and expands on large windows', (WidgetTester tester) async {
     await pumpShell(tester, size: kDesktop);
     final l10n = l10nOf(Lang.bn);
-    expect(tester.getSize(find.byKey(AdaptiveScaffold.railKey)).width, 220);
-    await tester.tap(find.byTooltip(l10n.shellRailCollapse));
+    Finder toggle(String label) =>
+        find.byWidgetPredicate((Widget w) => w is BhorIconButton && w.semanticLabel == label);
+    final Finder sidebar = find.byKey(AdaptiveScaffold.sidebarKey);
+    expect(tester.getSize(sidebar).width, BhorSidebar.width);
+    expect(find.descendant(of: sidebar, matching: find.text(l10n.commonAppTitle)), findsOneWidget);
+    await tester.tap(toggle(l10n.shellRailCollapse));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byKey(AdaptiveScaffold.railKey)).width, 80);
-    await tester.tap(find.byTooltip(l10n.shellRailExpand));
+    expect(tester.getSize(sidebar).width, BhorSidebar.collapsedWidth);
+    await tester.tap(toggle(l10n.shellRailExpand));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byKey(AdaptiveScaffold.railKey)).width, 220);
+    expect(tester.getSize(sidebar).width, BhorSidebar.width);
+  });
+
+  testWidgets('the sidebar search opens search', (WidgetTester tester) async {
+    await pumpShell(tester, size: kDesktop);
+    final l10n = l10nOf(Lang.bn);
+    await tester.tap(find.descendant(of: find.byKey(AdaptiveScaffold.sidebarKey), matching: find.text(l10n.commonSearch)));
+    await tester.pumpAndSettle();
+    expect(find.byType(SearchScreen), findsOneWidget);
   });
 
   testWidgets('Ctrl+1..5 switch destinations, Ctrl+F opens search', (WidgetTester tester) async {
@@ -146,7 +179,7 @@ void main() {
   });
 
   testWidgets('no selection on a too-narrow wide window shows the list', (WidgetTester tester) async {
-    // 860 - 80 rail = 780 < 320 + 1 + 480: one pane only.
+    // 860 - 72 sidebar = 788 < 320 + 1 + 480: one pane only.
     await pumpShell(tester, location: Routes.batches, size: const Size(860, 700));
     expect(find.byType(PaneLayout), findsNothing);
     expect(find.byType(BatchesScreen), findsOneWidget);

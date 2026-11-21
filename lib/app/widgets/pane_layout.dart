@@ -7,11 +7,11 @@
 // handle (resize cursor); double-tap resets it. The parent remembers the width
 // (local preferences) and passes it back through [listWidth].
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemMouseCursors;
+import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/theme/theme_x.dart';
 
 /// Resulting pane widths (0 = pane not shown).
 class PaneWidths {
@@ -91,7 +91,7 @@ class PaneLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.aurora;
+    final BhorColors colors = context.bhor.colors;
     return LayoutBuilder(
       builder: (BuildContext ctx, BoxConstraints c) {
         final PaneWidths w = compute(
@@ -106,7 +106,7 @@ class PaneLayout extends StatelessWidget {
         if (w.list == 0) return detail;
         final Widget divider = SizedBox(
           width: dividerWidth,
-          child: ColoredBox(color: tokens.hairline),
+          child: ColoredBox(color: colors.line),
         );
         final bool bounded = c.hasBoundedHeight;
         final Widget panes = Row(

@@ -30,13 +30,9 @@ class _Launcher extends StatelessWidget {
 
   final Future<void> Function(BuildContext context) onTap;
 
-  // A Material Scaffold on purpose: ShareService (app/services) still reports
-  // through the ScaffoldMessenger until the services migrate.
   @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: ElevatedButton(onPressed: () => onTap(context), child: const Text('open')),
-        ),
+  Widget build(BuildContext context) => BhorScaffold(
+        body: Center(child: BhorButton(label: 'open', onPressed: () => onTap(context))),
       );
 }
 
@@ -223,6 +219,10 @@ void main() {
       expect(find.text('আংশিক — ৳ ৪০০ বাকি থাকবে'), findsOneWidget);
       await _save(tester);
       expect(_receipts(f).where((Payment p) => p.billingMonth == _nov).single.amount, 600);
+      // Let the 8 s "recorded" toast go: without the shell's nav inset it
+      // would sit over the next sheet's save bar.
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
 
       await _open(tester);
       expect(_amountText(tester), '৪০০');
