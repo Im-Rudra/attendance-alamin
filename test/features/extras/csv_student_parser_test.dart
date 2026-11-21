@@ -7,13 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/features/extras/csv_student_parser.dart';
 
-typedef _Want = ({String name, String? phone, String? roll, CsvProblem? problem});
+typedef _Want = ({String name, String? phone, String? roll, CsvProblem? problem, CsvNote? note});
 
-_Want w(String name, {String? phone, String? roll, CsvProblem? problem}) =>
-    (name: name, phone: phone, roll: roll, problem: problem);
+_Want w(String name, {String? phone, String? roll, CsvProblem? problem, CsvNote? note}) =>
+    (name: name, phone: phone, roll: roll, problem: problem, note: note);
 
 List<_Want> _view(List<CsvStudentRow> rows) =>
-    <_Want>[for (final CsvStudentRow r in rows) (name: r.name, phone: r.phone, roll: r.roll, problem: r.problem)];
+    <_Want>[for (final CsvStudentRow r in rows) (name: r.name, phone: r.phone, roll: r.roll, problem: r.problem, note: r.note)];
 
 void main() {
   final Map<String, ({String text, List<_Want> want})> cases = <String, ({String text, List<_Want> want})>{
@@ -65,13 +65,15 @@ void main() {
       want: <_Want>[w('Rahim', phone: '01712345678')],
     ),
     'bad rows are flagged': (
-      text: ',01712345678\nRahim,12345\nKarim,01712345678\nkarim,01812345678\nSalma,01712345678\n',
+      text: ',01712345678\nRahim,12345\nKarim,01712345678\nkarim,01812345678\nSalma,01712345678\nKARIM,01712345678\nkarim\n',
       want: <_Want>[
         w('', phone: '01712345678', problem: CsvProblem.emptyName),
         w('Rahim', problem: CsvProblem.badPhone),
         w('Karim', phone: '01712345678'),
-        w('karim', phone: '01812345678', problem: CsvProblem.duplicate),
-        w('Salma', phone: '01712345678', problem: CsvProblem.duplicate),
+        w('karim', phone: '01812345678', note: CsvNote.sameName),
+        w('Salma', phone: '01712345678', note: CsvNote.samePhone),
+        w('KARIM', phone: '01712345678', problem: CsvProblem.duplicate),
+        w('karim', note: CsvNote.sameName),
       ],
     ),
     'empty text': (text: '', want: <_Want>[]),

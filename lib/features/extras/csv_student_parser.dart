@@ -9,7 +9,11 @@ import 'dart:typed_data';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
 
+/// [duplicate] = same name AND same phone as an earlier row / saved student.
 enum CsvProblem { emptyName, badPhone, duplicate }
+
+/// Soft notes: the row is still added.
+enum CsvNote { samePhone, sameName }
 
 /// One data row of the file.
 class CsvStudentRow {
@@ -19,6 +23,7 @@ class CsvStudentRow {
     this.phone,
     this.roll,
     this.problem,
+    this.note,
   });
 
   /// 1-based line number of the row in the file (counting blank lines).
@@ -37,10 +42,16 @@ class CsvStudentRow {
   /// Rows with a problem are shown flagged and skipped on save.
   final CsvProblem? problem;
 
+  /// Shown on an ok row; does not stop it from being added.
+  final CsvNote? note;
+
   bool get ok => problem == null;
 
   CsvStudentRow withProblem(CsvProblem p) =>
       CsvStudentRow(line: line, name: name, phone: phone, roll: roll, problem: p);
+
+  CsvStudentRow withNote(CsvNote n) =>
+      CsvStudentRow(line: line, name: name, phone: phone, roll: roll, note: n);
 }
 
 /// Decodes [bytes] as UTF-8 (bad bytes tolerated) and parses.
@@ -68,6 +79,7 @@ List<CsvStudentRow> parseStudentCsv(String text) {
   String cell(List<String> cells, int i) => i >= 0 && i < cells.length ? cells[i].trim() : '';
 
   final List<CsvStudentRow> out = <CsvStudentRow>[];
+  final Set<String> pairs = <String>{};
   final Set<String> names = <String>{};
   final Set<String> phones = <String>{};
   for (int i = start; i < raws.length; i++) {
@@ -80,6 +92,7 @@ List<CsvStudentRow> parseStudentCsv(String text) {
 
     String? phone;
     CsvProblem? problem;
+    CsvNote? note;
     if (phoneRaw.isNotEmpty) {
       try {
         phone = Validators.phone(_fixLeadingZero(phoneRaw));
@@ -89,14 +102,24 @@ List<CsvStudentRow> parseStudentCsv(String text) {
     }
     if (name.isEmpty) {
       problem = CsvProblem.emptyName;
-    } else if (problem == null && (names.contains(name.toLowerCase()) || (phone != null && phones.contains(phone)))) {
-      problem = CsvProblem.duplicate;
+    } else if (problem == null) {
+      final String key = name.toLowerCase();
+      if (phone != null && pairs.contains('$key|$phone')) {
+        problem = CsvProblem.duplicate;
+      } else if (phone != null && phones.contains(phone)) {
+        note = CsvNote.samePhone;
+      } else if (names.contains(key)) {
+        note = CsvNote.sameName;
+      }
     }
-    if (problem == null) {
+    if (problem == null && name.isNotEmpty) {
       names.add(name.toLowerCase());
-      if (phone != null) phones.add(phone);
+      if (phone != null) {
+        phones.add(phone);
+        pairs.add('${name.toLowerCase()}|$phone');
+      }
     }
-    out.add(CsvStudentRow(line: r.line, name: name, phone: phone, roll: roll, problem: problem));
+    out.add(CsvStudentRow(line: r.line, name: name, phone: phone, roll: roll, problem: problem, note: note));
   }
   return out;
 }

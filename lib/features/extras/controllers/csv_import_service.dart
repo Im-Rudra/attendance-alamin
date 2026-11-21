@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/enrollments_repository.dart';
 import 'package:attendance_alamin/data/repositories/students_repository.dart';
+import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/csv_student_parser.dart';
 
@@ -25,15 +26,38 @@ final csvFilePickerProvider = Provider<CsvFilePicker>((ref) => () async {
       return file.readAsBytes();
     });
 
-/// Flags rows whose name or phone already belongs to a saved student.
+/// A saved student with the same name AND phone makes the row a duplicate
+/// (skipped); only the phone or only the name matching adds a soft note.
 Future<List<CsvStudentRow>> flagExistingDuplicates(
   StudentsRepository students,
   List<CsvStudentRow> rows,
 ) async {
   final List<CsvStudentRow> out = <CsvStudentRow>[];
   for (final CsvStudentRow r in rows) {
-    if (r.ok && (await students.findDuplicates(name: r.name, phone: r.phone)).isNotEmpty) {
+    if (!r.ok) {
+      out.add(r);
+      continue;
+    }
+    final List<Student> hits = await students.findDuplicates(name: r.name, phone: r.phone);
+    final String key = r.name.trim().toLowerCase();
+    bool nameHit = false;
+    bool phoneHit = false;
+    bool both = false;
+    for (final Student s in hits) {
+      final bool n = s.name.trim().toLowerCase() == key;
+      final bool p = r.phone != null && (s.phone == r.phone || s.guardianPhone == r.phone);
+      nameHit = nameHit || n;
+      phoneHit = phoneHit || p;
+      both = both || (n && p);
+    }
+    if (both) {
       out.add(r.withProblem(CsvProblem.duplicate));
+    } else if (r.note != null) {
+      out.add(r);
+    } else if (phoneHit) {
+      out.add(r.withNote(CsvNote.samePhone));
+    } else if (nameHit) {
+      out.add(r.withNote(CsvNote.sameName));
     } else {
       out.add(r);
     }

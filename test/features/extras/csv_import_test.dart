@@ -19,7 +19,9 @@ import '../../helpers/pump_app.dart';
 
 const String _csv = 'নাম,ফোন,রোল\n'
     'আয়েশা খাতুন,০১৭৭৭৭৭৭৭৭৭,\n'
-    'রহিম উদ্দিন,01999999999\n'
+    'ছোট ভাই,01811223344\n'
+    'করিম হোসেন,01999999999\n'
+    'রহিম উদ্দিন,01811223344\n'
     ',01712345678\n'
     'বিলাল,12345\n'
     'চন্দ্রা,01655555555,9\n';
@@ -48,12 +50,15 @@ void main() {
 
     await _openPreview(tester);
 
-    expect(find.text(bn.extraImportFound('৫')), findsOneWidget);
+    expect(find.text(bn.extraImportFound('৭')), findsOneWidget);
     expect(find.text(bn.extraImportSkipped('৩')), findsOneWidget);
-    expect(find.text(bn.extraImportAddAll('২')), findsOneWidget);
+    expect(find.text(bn.extraImportAddAll('৪')), findsOneWidget);
     expect(find.text(bn.extraImportProblemName), findsOneWidget);
     expect(find.text(bn.extraImportProblemPhone), findsOneWidget);
     expect(find.text(bn.extraImportProblemDuplicate), findsOneWidget);
+    // Soft notes: same guardian phone / same name still count and are added.
+    expect(find.text(bn.extraImportNoteSamePhone), findsOneWidget);
+    expect(find.text(bn.extraImportNoteSameName), findsOneWidget);
     expect(f.students.students.length, before, reason: 'nothing saved before confirming');
 
     await tester.tap(find.byKey(const ValueKey<String>('csv-add-all')));
@@ -61,7 +66,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(f.students.students.length, before + 2);
+    expect(f.students.students.length, before + 4);
     final Student a = f.students.students.firstWhere((Student s) => s.name == 'আয়েশা খাতুন');
     expect(a.guardianPhone, '01777777777');
     expect(a.roll, '05', reason: 'auto-filled after the four seed students');
@@ -73,7 +78,7 @@ void main() {
       expect(e.endDate, isNull);
     }
     expect(find.byKey(ValueKey<String>('bulk-added-${a.id}')), findsOneWidget);
-    expect(find.text(bn.extraImportDone('২')), findsOneWidget);
+    expect(find.text(bn.extraImportDone('৪')), findsOneWidget);
   });
 
   testWidgets('cancelling the preview saves nothing', (WidgetTester tester) async {

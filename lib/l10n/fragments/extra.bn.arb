@@ -520,7 +520,7 @@
   "@extraImportProblemPhone": {
     "description": "Row problem label."
   },
-  "extraImportProblemDuplicate": "একই নাম বা ফোন আগে থেকেই আছে — বাদ যাবে",
+  "extraImportProblemDuplicate": "একই নাম ও ফোন আগে থেকেই আছে — বাদ যাবে",
   "@extraImportProblemDuplicate": {
     "description": "Row problem label (duplicate in the file or among saved students)."
   },
@@ -573,5 +573,13 @@
   "extraImportReadFailed": "ফাইলটি পড়া যায়নি",
   "@extraImportReadFailed": {
     "description": "Snackbar when the picked file cannot be read."
+  },
+  "extraImportNoteSamePhone": "একই অভিভাবকের ফোন",
+  "@extraImportNoteSamePhone": {
+    "description": "Soft note on a CSV row whose phone is shared with another student; the row is still added."
+  },
+  "extraImportNoteSameName": "একই নামে আরেকজন আছে",
+  "@extraImportNoteSameName": {
+    "description": "Soft note on a CSV row whose name is shared with another student; the row is still added."
   }
 }

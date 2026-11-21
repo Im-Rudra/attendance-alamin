@@ -124,6 +124,11 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
     if (mounted) Navigator.of(context).pop(result);
   }
 
+  String _noteText(AppLocalizations l10n, CsvNote n) => switch (n) {
+        CsvNote.samePhone => l10n.extraImportNoteSamePhone,
+        CsvNote.sameName => l10n.extraImportNoteSameName,
+      };
+
   String _problemText(AppLocalizations l10n, CsvProblem p) => switch (p) {
         CsvProblem.emptyName => l10n.extraImportProblemName,
         CsvProblem.badPhone => l10n.extraImportProblemPhone,
@@ -196,7 +201,20 @@ class _CsvPreviewSheetState extends State<CsvPreviewSheet> {
                             _problemText(l10n, p),
                             style: TextStyle(color: tokens.onErrorContainer),
                           )
-                        : (detail.isEmpty ? null : Text(detail)),
+                        : (detail.isEmpty && r.note == null)
+                            ? null
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  if (detail.isNotEmpty) Text(detail),
+                                  if (r.note != null)
+                                    Text(
+                                      _noteText(l10n, r.note!),
+                                      key: ValueKey<String>('csv-note-$i'),
+                                      style: TextStyle(color: tokens.textSecondary),
+                                    ),
+                                ],
+                              ),
                   );
                 },
               ),
