@@ -2,6 +2,7 @@
 // The language switches the whole app the moment a card is tapped.
 
 import 'package:flutter/material.dart' show Icons, ThemeMode;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
