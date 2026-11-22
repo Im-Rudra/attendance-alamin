@@ -31,15 +31,12 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/attendance/ui/batch_roll_call_launcher.dart';
 import 'package:attendance_alamin/features/attendance/ui/roll_call_screen.dart';
 import 'package:attendance_alamin/features/backup/ui/backup_review_screen.dart';
-import 'package:attendance_alamin/features/backup/ui/backup_screen.dart';
-import 'package:attendance_alamin/features/batches/ui/archived_batches_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_detail_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
 import 'package:attendance_alamin/features/dues/ui/collection_screen.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
 import 'package:attendance_alamin/features/extras/ui/bulk_add_screen.dart';
-import 'package:attendance_alamin/features/extras/ui/holiday_screen.dart';
 import 'package:attendance_alamin/features/home/ui/today_screen.dart';
 import 'package:attendance_alamin/features/onboarding/ui/onboarding_screen.dart';
 import 'package:attendance_alamin/features/reminders/ui/reminder_priming_screen.dart';
@@ -50,7 +47,6 @@ import 'package:attendance_alamin/features/settings/ui/help_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/more_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/payment_methods_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/template_editor_screen.dart';
-import 'package:attendance_alamin/features/students/ui/left_students_screen.dart';
 import 'package:attendance_alamin/features/students/ui/student_form_screen.dart';
 import 'package:attendance_alamin/features/students/ui/student_profile_screen.dart';
 import 'package:attendance_alamin/features/students/ui/students_screen.dart';
@@ -107,6 +103,24 @@ Page<void> _fullPage(GoRouterState state, Widget child) => CustomTransitionPage<
       reverseTransitionDuration: BhorMotion.exit,
       transitionsBuilder: bhorFullscreenTransition,
     );
+
+/// Search (G4): on desktop a command palette over the current page, so the
+/// route is transparent (`opaque: false`) and only fades; on phones the
+/// full-screen page.
+Page<void> _searchPage(BuildContext context, GoRouterState state) {
+  if (!context.bhorIsWide) return _fullPage(state, const SearchScreen());
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    name: state.name,
+    opaque: false,
+    barrierDismissible: false,
+    child: const SearchScreen(),
+    transitionDuration: BhorMotion.of(context, BhorMotion.base),
+    reverseTransitionDuration: BhorMotion.of(context, BhorMotion.fast),
+    transitionsBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondary, Widget child) =>
+        FadeTransition(opacity: CurvedAnimation(parent: animation, curve: BhorMotion.ease), child: child),
+  );
+}
 
 GoRouter buildRouter(String initialLocation) {
   return GoRouter(
@@ -267,7 +281,7 @@ GoRouter buildRouter(String initialLocation) {
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'backup',
-                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const BackupScreen()),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const MoreRouteTarget(target: MoreTarget.backup)),
                     routes: <RouteBase>[
                       GoRoute(
                         path: 'review',
@@ -278,11 +292,11 @@ GoRouter buildRouter(String initialLocation) {
                   ),
                   GoRoute(
                     path: 'archived',
-                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const ArchivedBatchesScreen()),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const MoreRouteTarget(target: MoreTarget.archived)),
                   ),
                   GoRoute(
                     path: 'left',
-                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const LeftStudentsScreen()),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const MoreRouteTarget(target: MoreTarget.left)),
                   ),
                   GoRoute(
                     path: 'templates/:kind',
@@ -294,7 +308,7 @@ GoRouter buildRouter(String initialLocation) {
                   ),
                   GoRoute(
                     path: 'holidays',
-                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const HolidayScreen()),
+                    pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const MoreRouteTarget(target: MoreTarget.holidays)),
                   ),
                   GoRoute(
                     path: 'diagnostics',
@@ -319,7 +333,7 @@ GoRouter buildRouter(String initialLocation) {
       // Full-screen routes: top-level, so they live on the root navigator.
       GoRoute(
         path: Routes.search,
-        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, const SearchScreen()),
+        pageBuilder: _searchPage,
       ),
       GoRoute(
         path: Routes.onboarding,

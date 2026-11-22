@@ -9,6 +9,9 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/features/backup/controllers/backup_state.dart';
 import 'package:attendance_alamin/features/backup/widgets/export_sheet.dart';
 
+export 'package:attendance_alamin/features/backup/widgets/backup_section.dart'
+    show BackupSection, showSafetyCopiesPanel;
+
 /// One-tap export: build the snapshot, save or share the file.
 Future<void> runExportBackup(BuildContext context) => showExportSheet(context);
 

@@ -46,7 +46,10 @@ final _archivedRowsProvider = Provider<AsyncValue<List<_ArchivedRow>>>((ref) {
 });
 
 class ArchivedBatchesScreen extends ConsumerWidget {
-  const ArchivedBatchesScreen({super.key});
+  const ArchivedBatchesScreen({super.key, this.embedded = false});
+
+  /// Inside the More settings column (wide): only the content, no page chrome.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,6 +73,17 @@ class ArchivedBatchesScreen extends ConsumerWidget {
                 child: BhorEmptyState(icon: BhorIcons.archive, title: l10n.batchArchivedEmpty),
               );
             }
+            if (embedded) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = 0; i < rows.length; i++) ...<Widget>[
+                    if (i > 0) const SizedBox(height: 12),
+                    _ArchivedCard(row: rows[i]),
+                  ],
+                ],
+              );
+            }
             return LayoutBuilder(
               builder: (BuildContext context, BoxConstraints c) {
                 final int cols = c.maxWidth >= 720 ? 2 : 1;
@@ -89,6 +103,7 @@ class ArchivedBatchesScreen extends ConsumerWidget {
             );
           },
         );
+    if (embedded) return body;
     return BhorScaffold(
       header: BhorHeader(title: l10n.shellTitleArchived),
       body: Align(

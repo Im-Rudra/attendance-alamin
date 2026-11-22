@@ -26,7 +26,10 @@ import 'package:attendance_alamin/features/extras/controllers/holiday_logic.dart
 enum _HolidayMode { cancel, restore }
 
 class HolidayScreen extends ConsumerStatefulWidget {
-  const HolidayScreen({super.key});
+  const HolidayScreen({super.key, this.embedded = false});
+
+  /// Inside the More settings column (wide): only the content, no page chrome.
+  final bool embedded;
 
   @override
   ConsumerState<HolidayScreen> createState() => _HolidayScreenState();
@@ -302,58 +305,51 @@ class _HolidayScreenState extends ConsumerState<HolidayScreen> {
     );
 
     final bool canRun = rangeOk && !preview.isEmpty && !_busy && data != null;
-    final bool wide = WindowClass.of(context).isWide;
-    final Widget bar = BhorActionBar(
-      buttonKey: const ValueKey<String>('holiday-run'),
-      label: cancelMode ? l10n.extraHolidayCancelButton(count) : l10n.extraHolidayRestoreButton(count),
-      onPressed: canRun ? () => _run(range, preview) : null,
-      disabledReason: rangeOk && preview.isEmpty ? previewText : null,
+    final String runLabel = cancelMode ? l10n.extraHolidayCancelButton(count) : l10n.extraHolidayRestoreButton(count);
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[form, const SizedBox(height: BhorSpace.s12), previewCard],
     );
-    final Widget content = SingleChildScrollView(
-      child: Column(
+    if (widget.embedded) {
+      // Inside the settings column (M1, M2): the form, the live preview, then
+      // the action under them; no centred card, no page chrome.
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[form, const SizedBox(height: BhorSpace.s12), previewCard],
-      ),
-    );
+        children: <Widget>[
+          content,
+          const SizedBox(height: BhorSpace.s16),
+          BhorButton(
+            key: const ValueKey<String>('holiday-run'),
+            label: runLabel,
+            expand: true,
+            onPressed: canRun ? () => _run(range, preview) : null,
+          ),
+          if (rangeOk && preview.isEmpty) ...<Widget>[
+            const SizedBox(height: BhorSpace.s8),
+            Text(previewText, textAlign: TextAlign.center, style: th.type.meta),
+          ],
+        ],
+      );
+    }
+    // The page (phones): the full-width bar pinned under the scrolling form.
     return BhorScaffold(
       header: BhorHeader(title: l10n.shellTitleHolidays, large: true),
-      // Wide windows: a centred 560 dialog-style panel with the button inside
-      // it; phones keep the full-width bar.
-      body: wide
-          ? Padding(
-              padding: EdgeInsets.fromLTRB(g, BhorSpace.s16, g, g),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: th.colors.surface,
-                      borderRadius: BorderRadius.circular(BhorRadius.card),
-                      border: Border.all(color: th.colors.line),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(BhorRadius.card),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Flexible(
-                            child: Padding(padding: const EdgeInsets.all(BhorSpace.s16), child: content),
-                          ),
-                          bar,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : Padding(
-              padding: EdgeInsets.fromLTRB(g, 4, g, g),
-              child: Center(
-                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content),
-              ),
-            ),
-      bottomNav: wide ? null : bar,
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(g, 4, g, g),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: SingleChildScrollView(child: content),
+          ),
+        ),
+      ),
+      bottomNav: BhorActionBar(
+        buttonKey: const ValueKey<String>('holiday-run'),
+        label: runLabel,
+        onPressed: canRun ? () => _run(range, preview) : null,
+        disabledReason: rangeOk && preview.isEmpty ? previewText : null,
+      ),
     );
   }
 }

@@ -16,7 +16,10 @@ import 'package:attendance_alamin/features/students/widgets/rejoin_flow.dart';
 import 'package:attendance_alamin/features/students/widgets/student_avatar.dart';
 
 class LeftStudentsScreen extends ConsumerWidget {
-  const LeftStudentsScreen({super.key});
+  const LeftStudentsScreen({super.key, this.embedded = false});
+
+  /// Inside the More settings column (wide): only the content, no page chrome.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,11 +28,7 @@ class LeftStudentsScreen extends ConsumerWidget {
     final double g = WindowClass.of(context).gutter;
     final AsyncValue<List<StudentRow>> async = ref.watch(stuRowsProvider);
 
-    return BhorScaffold(
-      header: BhorHeader(title: l10n.shellTitleLeft),
-      body: Padding(
-        padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
-        child: async.when(
+    final Widget content = async.when(
           loading: () => const Center(child: BhorSpinner()),
           error: (Object e, StackTrace st) =>
               BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed),
@@ -48,6 +47,8 @@ class LeftStudentsScreen extends ConsumerWidget {
               padding: EdgeInsets.zero,
               child: ListView.builder(
                 padding: EdgeInsets.zero,
+                shrinkWrap: embedded,
+                physics: embedded ? const NeverScrollableScrollPhysics() : null,
                 itemCount: rows.length,
                 itemBuilder: (BuildContext c, int i) {
                   final StudentRow r = rows[i];
@@ -75,7 +76,13 @@ class LeftStudentsScreen extends ConsumerWidget {
               ),
             );
           },
-        ),
+    );
+    if (embedded) return content;
+    return BhorScaffold(
+      header: BhorHeader(title: l10n.shellTitleLeft),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
+        child: content,
       ),
     );
   }

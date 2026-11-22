@@ -119,6 +119,25 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('desktop: a 720 palette over a scrim, results and preview inside it (G4)',
+      (WidgetTester tester) async {
+    final SeededFakes f = seedFakes();
+    await pumpApp(tester, const SearchScreen(),
+        viewport: TestViewport.desktop, overrides: f.overrides);
+    expect(find.byKey(const Key('search-scrim')), findsOneWidget);
+    final Rect palette = tester.getRect(find.byKey(const Key('search-palette')));
+    expect(palette.width, lessThanOrEqualTo(720));
+    expect(palette.width, greaterThan(600));
+    // Centred over the window.
+    expect((palette.center.dx - tester.getSize(find.byType(SearchScreen)).width / 2).abs(), lessThan(2));
+    await _type(tester, 'করিম');
+    final Finder previewFinder = find.byWidgetPredicate((Widget w) =>
+        w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('search-preview-'));
+    final Rect preview = tester.getRect(previewFinder);
+    expect(palette.contains(preview.center), isTrue, reason: 'the preview sits inside the palette');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('a submitted search is saved in the recent list',
       (WidgetTester tester) async {
     final SeededFakes f = seedFakes();

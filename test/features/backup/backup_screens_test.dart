@@ -172,6 +172,10 @@ void main() {
       final FakeBackupRepository repo = _repo();
       await pumpApp(tester, const BackupScreen(),
           overrides: _overrides(seedFakes(), repo, FakeBackupFiles()));
+      // The safety copies open in a side panel (a sheet on phones).
+      await tester.ensureVisible(find.byKey(const Key('more-safety-copy')));
+      await tester.tap(find.byKey(const Key('more-safety-copy')));
+      await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(400, 2400);
       await tester.pump();
       expect(find.byKey(const Key('backup-restore-s1')), findsOneWidget);
@@ -194,25 +198,29 @@ void main() {
     testWidgets('no safety copies yet says so', (WidgetTester tester) async {
       await pumpApp(tester, const BackupScreen(),
           overrides: _overrides(seedFakes(), _repo(copies: false), FakeBackupFiles()));
+      await tester.ensureVisible(find.byKey(const Key('more-safety-copy')));
+      await tester.tap(find.byKey(const Key('more-safety-copy')));
+      await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(400, 2400);
       await tester.pump();
       expect(find.byKey(const Key('backup-safety-empty')), findsOneWidget, reason: allTexts(tester));
     });
 
-    testWidgets('desktop: the three cards sit side by side and fill the height', (WidgetTester tester) async {
+    testWidgets('desktop: one top-aligned column, the primary card first and no floating content',
+        (WidgetTester tester) async {
       await pumpApp(tester, const BackupScreen(),
           viewport: TestViewport.desktop, overrides: _overrides(seedFakes(), _repo(), FakeBackupFiles()));
-      final Rect export = tester.getRect(find.byKey(const Key('backup-export-card')));
-      final Rect import = tester.getRect(find.byKey(const Key('backup-import-card')));
-      final Rect safety = tester.getRect(find.byKey(const Key('backup-safety-card')));
-      expect(export.top, import.top);
-      expect(export.bottom, import.bottom);
-      expect(safety.top, export.top);
-      expect(safety.bottom, export.bottom);
-      expect(export.right, lessThan(import.left));
-      expect(import.right, lessThan(safety.left));
-      // The cards reach the bottom of the window (no blank band under them).
-      expect(export.bottom, greaterThan(700));
+      final Rect card = tester.getRect(find.byKey(const Key('backup-last-card')));
+      final Rect button = tester.getRect(find.byKey(const Key('backup-export-button')));
+      final Rect restore = tester.getRect(find.byKey(const Key('more-restore')));
+      // The "create backup" button is the primary action inside the top card.
+      expect(card.top, lessThan(120));
+      expect(button.top, greaterThan(card.top));
+      expect(button.bottom, lessThanOrEqualTo(card.bottom));
+      // The rows follow in the same column, under the card.
+      expect(restore.top, greaterThan(card.bottom));
+      expect(restore.left, greaterThanOrEqualTo(card.left));
+      expect(card.width, lessThanOrEqualTo(720));
     });
   });
 

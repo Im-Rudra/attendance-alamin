@@ -182,6 +182,27 @@ void main() {
       expect(end.text, 'abc{amount}');
     });
 
+    test('variables show as [label] pills and convert back to the stored {name}', () {
+      const Map<String, String> label = <String, String>{'student': 'ছাত্রের নাম', 'amount': 'টাকা'};
+      const Map<String, String> name = <String, String>{'ছাত্রের নাম': 'student', 'টাকা': 'amount'};
+      const String stored = 'প্রিয় {student}, {amount} বাকি {x}';
+      final String shown = toDisplayText(stored, label);
+      expect(shown, 'প্রিয় [ছাত্রের নাম], [টাকা] বাকি {x}');
+      expect(fromDisplayText(shown, name), stored, reason: 'a round trip stores the same placeholders');
+      // Brackets around anything else are plain text.
+      expect(fromDisplayText('see [note] [টাকা]', name), 'see [note] {amount}');
+    });
+
+    test('a pill token is inserted at the cursor like a placeholder', () {
+      final TextEditingValue v = insertPlaceholder(
+        const TextEditingValue(text: 'Dear , hi', selection: TextSelection.collapsed(offset: 5)),
+        'student',
+        token: '[Student]',
+      );
+      expect(v.text, 'Dear [Student], hi');
+      expect(v.selection.baseOffset, 14);
+    });
+
     test('placeholders per kind match the Product section 5 lists', () {
       expect(placeholdersOf(TemplateKind.reminder),
           <String>['student', 'batch', 'months', 'amount', 'center', 'teacher_phone']);
