@@ -13,6 +13,7 @@ import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
@@ -25,13 +26,13 @@ import 'package:attendance_alamin/features/batches/controllers/batch_providers.d
 import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_card.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_overview.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_students_tab.dart';
 import 'package:attendance_alamin/features/batches/widgets/delete_batch.dart';
 import 'package:attendance_alamin/features/dues/dues_entry.dart';
+import 'package:attendance_alamin/features/extras/ui/bulk_add_screen.dart';
 import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
-
-enum _MenuAction { bulkAdd, archive, unarchive, delete }
 
 class BatchDetailScreen extends ConsumerStatefulWidget {
   const BatchDetailScreen({super.key, required this.batchId});
@@ -45,60 +46,42 @@ class BatchDetailScreen extends ConsumerStatefulWidget {
 class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
   int _tab = 0;
 
-  Future<void> _onMenu(_MenuAction a) async {
-    switch (a) {
-      case _MenuAction.bulkAdd:
-        await context.push(Routes.batchBulkAdd(widget.batchId));
-      case _MenuAction.archive:
-        await showArchiveBatchDialog(context, batchId: widget.batchId);
-      case _MenuAction.unarchive:
-        await showUnarchiveBatchFlow(context, batchId: widget.batchId);
-      case _MenuAction.delete:
-        final bool gone = await confirmDeleteBatch(context, batchId: widget.batchId);
-        if (gone && mounted) GoRouter.maybeOf(context)?.go(Routes.batches);
-    }
-  }
-
   Future<void> _openMenu(Batch b, BuildContext anchor) async {
     final l10n = context.l10n;
-    final _MenuAction? a = await showBhorPanel<_MenuAction>(
+    await showBhorMenu(
       context,
-      kind: BhorPanelKind.list,
       anchor: anchor,
-      width: 320,
-      title: b.name,
-      builder: (BuildContext ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (!b.archived)
-            BatchMenuRow(
-              icon: BhorIcons.add,
-              label: l10n.batchBulkAdd,
-              onTap: () => Navigator.of(ctx).pop(_MenuAction.bulkAdd),
-            ),
-          if (b.archived)
-            BatchMenuRow(
-              icon: BhorIcons.archive,
-              label: l10n.batchMenuUnarchive,
-              onTap: () => Navigator.of(ctx).pop(_MenuAction.unarchive),
-            )
-          else
-            BatchMenuRow(
-              icon: BhorIcons.archive,
-              label: l10n.batchMenuArchive,
-              onTap: () => Navigator.of(ctx).pop(_MenuAction.archive),
-            ),
-          // Destructive: error colour, then the confirm dialog.
-          BatchMenuRow(
-            icon: BhorIcons.delete,
-            label: l10n.batchMenuDelete,
-            destructive: true,
-            onTap: () => Navigator.of(ctx).pop(_MenuAction.delete),
+      items: <BhorMenuItem>[
+        if (!b.archived)
+          BhorMenuItem(
+            icon: BhorIcons.add,
+            label: l10n.batchBulkAdd,
+            onTap: () => showBulkAddPanel(context, batchId: widget.batchId),
           ),
-        ],
-      ),
+        if (b.archived)
+          BhorMenuItem(
+            icon: BhorIcons.archive,
+            label: l10n.batchMenuUnarchive,
+            onTap: () => showUnarchiveBatchFlow(context, batchId: widget.batchId),
+          )
+        else
+          BhorMenuItem(
+            icon: BhorIcons.archive,
+            label: l10n.batchMenuArchive,
+            onTap: () => showArchiveBatchDialog(context, batchId: widget.batchId),
+          ),
+        // Destructive: last, in the error colour, then the confirm.
+        BhorMenuItem(
+          icon: BhorIcons.delete,
+          label: l10n.batchMenuDelete,
+          destructive: true,
+          onTap: () async {
+            final bool gone = await confirmDeleteBatch(context, batchId: widget.batchId);
+            if (gone && mounted) GoRouter.maybeOf(context)?.go(Routes.batches);
+          },
+        ),
+      ],
     );
-    if (a != null && mounted) await _onMenu(a);
   }
 
   @override
@@ -134,12 +117,13 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
           return frame(body: BhorEmptyState(icon: BhorIcons.search, title: l10n.errNotFound));
         }
         final bool compact = !WindowClass.of(context).usesRail;
+        // Phones: a FAB on the Students tab. Desktop: the header actions are
+        // the same on every tab (review B3), "Add student" always among them.
         final bool showFab = _tab == 0 && !b.archived;
         return frame(
           title: b.name,
           actions: <Widget>[
-            // Desktop: header button instead of a FAB (one add CTA per screen).
-            if (!compact && showFab)
+            if (!compact && !b.archived)
               BhorButton(
                 icon: BhorIcons.add,
                 label: l10n.batchAddStudent,
@@ -172,7 +156,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _BatchHeader(batch: b),
+              _BatchHeader(batch: b, foldInsights: BhorMasterDetailPage.foldedRailOf(context) != null),
               const SizedBox(height: BhorSpace.s8),
               BhorTabs(
                 tabs: <String>[
@@ -206,9 +190,13 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
 /// Header card: subject, fee, billing pill, take-attendance, and (wide) the
 /// three stat tiles.
 class _BatchHeader extends ConsumerWidget {
-  const _BatchHeader({required this.batch});
+  const _BatchHeader({required this.batch, this.foldInsights = false});
 
   final Batch batch;
+
+  /// The master-detail template folded its context rail (< 1600): show the
+  /// dues by level and the attendance trend here (review B1).
+  final bool foldInsights;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -280,15 +268,17 @@ class _BatchHeader extends ConsumerWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: BhorSpace.s8),
-              if (batch.archived)
-                _ArchivedBanner(batch: batch)
-              else
-                BhorButton(
-                  icon: BhorIcons.rollCall,
-                  label: l10n.batchTakeAttendance,
-                  onPressed: () => openRollCallForBatchDate(context, batchId: batch.id, date: today),
-                ),
+              // One "take attendance" lives in the Attendance tab (review B4).
+              if (foldInsights && tiles && !batch.archived && MediaQuery.sizeOf(context).height >= 700) ...<Widget>[
+                const SizedBox(height: BhorSpace.s12),
+                SizedBox(height: 1, child: ColoredBox(color: th.colors.line)),
+                const SizedBox(height: BhorSpace.s12),
+                BatchInsightsPanel(batchId: batch.id),
+              ],
+              if (batch.archived) ...<Widget>[
+                const SizedBox(height: BhorSpace.s8),
+                _ArchivedBanner(batch: batch),
+              ],
             ],
           ),
         );

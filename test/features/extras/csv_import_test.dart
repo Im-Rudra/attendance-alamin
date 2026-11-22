@@ -36,6 +36,9 @@ List<Override> _overrides(SeededFakes f) => <Override>[
 Future<void> _openPreview(WidgetTester tester) async {
   await tester.ensureVisible(find.byKey(_button));
   await tester.tap(find.byKey(_button));
+  await tester.pump(const Duration(milliseconds: 300));
+  // The expected columns are explained first; the picker opens on "choose".
+  await tester.tap(find.byKey(const ValueKey<String>('csv-choose-file')));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
 }
@@ -81,6 +84,32 @@ void main() {
     }
     expect(find.byKey(ValueKey<String>('bulk-added-${a.id}')), findsOneWidget);
     expect(find.text(bn.extraImportDone('৪')), findsOneWidget);
+  });
+
+  testWidgets('B10: the expected columns are explained before the file picker opens',
+      (WidgetTester tester) async {
+    final SeededFakes f = seedFakes();
+    int picked = 0;
+    await pumpApp(
+      tester,
+      const BulkAddScreen(batchId: kBatPhysA),
+      overrides: <Override>[
+        ...f.overrides,
+        csvFilePickerProvider.overrideWithValue(() async {
+          picked++;
+          return Uint8List.fromList(utf8.encode(_csv));
+        }),
+      ],
+    );
+    await tester.ensureVisible(find.byKey(_button));
+    await tester.tap(find.byKey(_button));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey<String>('csv-sample')), findsOneWidget);
+    expect(find.text(bn.batchCsvIntro), findsOneWidget);
+    expect(picked, 0, reason: 'the picker waits for "choose file"');
+    await tester.tap(find.byKey(const ValueKey<String>('csv-choose-file')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(picked, 1);
   });
 
   testWidgets('cancelling the preview saves nothing', (WidgetTester tester) async {

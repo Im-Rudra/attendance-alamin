@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -174,7 +175,12 @@ void main() {
       await pumpApp(tester, const BatchesScreen(selectedId: kBatPhysA),
           viewport: TestViewport.desktop, overrides: fakes.overrides);
       await settleSome(tester);
-      expect(find.text(bn.batchContextWeek), findsOneWidget);
+      // 1280 wide: no 4th column, the rail is folded into the detail
+      // overview; the weekly routine is shown once (Schedule tab) and not
+      // repeated in the rail.
+      expect(find.text(bn.batchContextDues), findsOneWidget);
+      expect(find.text(bn.batchContextTrend), findsOneWidget);
+      expect(find.text(bn.batchContextWeek), findsNothing);
       expect(find.text(bn.batchTabSchedule), findsOneWidget);
     });
   });
@@ -396,10 +402,7 @@ void main() {
         find.text(bn.batchArchiveLbmHelp(fmtBn.monthYear(const YearMonth(2026, 10)))),
         findsOneWidget,
       );
-      await tester.tap(find.descendant(
-        of: find.byType(BhorDialog),
-        matching: find.text(bn.batchArchiveConfirm),
-      ));
+      await tester.tap(find.text(bn.batchArchiveConfirm));
       await settleSome(tester, 8);
 
       expect(spy.lastBillable, const YearMonth(2026, 10));
@@ -433,10 +436,7 @@ void main() {
       await settleSome(tester, 8);
       expect(find.text(bn.batchUnarchiveTitle(kBatches[0].name)), findsOneWidget);
       expect(find.text(bn.batchUnarchiveClash), findsNothing);
-      await tester.tap(find.descendant(
-        of: find.byType(BhorDialog),
-        matching: find.text(bn.batchUnarchiveConfirm),
-      ));
+      await tester.tap(find.text(bn.batchUnarchiveConfirm));
       await settleSome(tester, 8);
 
       expect(spy.acceptedClashes, isFalse);
@@ -476,10 +476,7 @@ void main() {
       expect(find.text(bn.batchUnarchiveClash), findsOneWidget);
       expect(find.text(line), findsOneWidget);
       // The plain confirm is replaced by the fix-the-schedule one.
-      expect(
-        find.descendant(of: find.byType(BhorDialog), matching: find.text(bn.batchUnarchiveConfirm)),
-        findsNothing,
-      );
+      expect(find.text(bn.batchUnarchiveConfirm), findsNothing);
       await tester.tap(find.text(bn.batchUnarchiveFix));
       await settleSome(tester, 8);
 
@@ -504,6 +501,52 @@ void main() {
       await tester.tap(find.text(bn.commonCancel));
       await settleSome(tester, 5);
       expect(fakes.store.batches.length, 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('wave 2 (B1, B3, B9)', () {
+    testWidgets('B1: below 1600 there is no 4th column and the routine is not repeated',
+        (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchesScreen(selectedId: kBatPhysA),
+          viewport: TestViewport.desktop, overrides: fakes.overrides);
+      await settleSome(tester);
+      expect(find.byKey(BhorMasterDetailPage.railKey), findsNothing);
+      expect(find.byKey(BhorMasterDetailPage.masterKey), findsOneWidget);
+      expect(find.byKey(BhorMasterDetailPage.detailKey), findsOneWidget);
+      expect(find.text(bn.batchContextWeek), findsNothing);
+    });
+
+    testWidgets('B3: the header actions are the same on every tab', (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchesScreen(selectedId: kBatPhysA),
+          viewport: TestViewport.desktop, overrides: fakes.overrides);
+      await settleSome(tester);
+      expect(find.text(bn.batchAddStudent), findsWidgets);
+      await tester.tap(find.text(bn.batchTabFees));
+      await settleSome(tester);
+      expect(find.text(bn.batchAddStudent), findsWidgets);
+      await tester.tap(find.text(bn.batchTabSchedule));
+      await settleSome(tester);
+      expect(find.text(bn.batchAddStudent), findsWidgets);
+    });
+
+    testWidgets('B9: Save is off until something changes; the subject is read-only',
+        (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchFormScreen(batchId: kBatPhysA),
+          overrides: withBatches(fakes, fakes.batches));
+      await tallWindow(tester);
+      await settleSome(tester);
+      BhorButton save() => tester.widget<BhorButton>(find.widgetWithText(BhorButton, bn.commonSave));
+      expect(save().onPressed, isNull);
+      expect(tester.widget<BhorTextField>(find.byKey(const Key('batch-form-subject'))).readOnly, isTrue);
+      // Archive moved to the batch menu.
+      expect(find.text(bn.batchMenuArchive), findsNothing);
+      await tester.enterText(find.byKey(const Key('batch-form-name')), 'ফিজিক্স ডি');
+      await tester.pump();
+      expect(save().onPressed, isNotNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
