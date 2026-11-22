@@ -300,7 +300,10 @@ void main() {
 
       await tester.enterText(find.byType(BhorTextField), '19:30');
       await tester.pump();
-      await _tapText(tester, 'ঠিক আছে');
+      // Enter in the typed field confirms (the popover hugs the anchor, so
+      // the OK button may sit past the bottom edge of a short test window).
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
       expect(result, 19 * 60 + 30);
     });
 
