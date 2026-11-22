@@ -1,77 +1,96 @@
-// More tab = Settings (Product 3.12, UX 3a). One scrolling list of groups on
-// phones; on wide windows a group index (240) next to the selected group's
-// cards in one calm column (max 720).
+// More tab = Settings (Product 3.12, UX 3a). Every section uses
+// BhorSettingsPage (review M1, M2): a 240 section nav on wide windows, the
+// selected section in one top-aligned column of at most 720, so the highlighted
+// nav item always matches the content. Holidays is its own section; Archive
+// holds archived batches and left students, which open in the same column with
+// a crumb back to Archive. Phones show one scrolling list of groups.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/features/backup/ui/backup_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/archived_batches_screen.dart';
 import 'package:attendance_alamin/features/extras/ui/holiday_screen.dart';
 import 'package:attendance_alamin/features/settings/widgets/settings_groups.dart';
-import 'package:attendance_alamin/features/students/ui/left_students_screen.dart';
 import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart';
+import 'package:attendance_alamin/features/students/ui/left_students_screen.dart';
 
-/// Window width (of the content area) from which the index ‖ content layout is used.
-const double kMoreSplitMinWidth = 720;
+/// Window width (of the content area) from which the section nav ‖ content
+/// layout is used.
+const double kMoreSplitMinWidth = BhorSettingsPage.navMinWidth;
 
-/// Width of the group index in the split layout.
-const double kMoreIndexWidth = 240;
+/// Routed More sub-pages that sit inside the settings layout on wide windows
+/// and are plain pages on phones ([MoreRouteTarget]).
+enum MoreTarget { backup, holidays, archived, left }
+
+/// What a `/more/...` route shows: the settings layout opened on the right
+/// section (wide), or the page itself (phones).
+class MoreRouteTarget extends StatelessWidget {
+  const MoreRouteTarget({super.key, required this.target});
+
+  final MoreTarget target;
+
+  @override
+  Widget build(BuildContext context) {
+    if (WindowClass.of(context).isWide) {
+      return switch (target) {
+        MoreTarget.backup => const MoreScreen(initialGroup: SettingsGroup.backup),
+        MoreTarget.holidays => const MoreScreen(initialGroup: SettingsGroup.holidays),
+        MoreTarget.archived =>
+          const MoreScreen(initialGroup: SettingsGroup.archive, initialSub: MoreSub.archivedBatches),
+        MoreTarget.left => const MoreScreen(initialGroup: SettingsGroup.archive, initialSub: MoreSub.leftStudents),
+      };
+    }
+    return switch (target) {
+      MoreTarget.backup => const BackupScreen(),
+      MoreTarget.holidays => const HolidayScreen(),
+      MoreTarget.archived => const ArchivedBatchesScreen(),
+      MoreTarget.left => const LeftStudentsScreen(),
+    };
+  }
+}
 
 class MoreScreen extends ConsumerStatefulWidget {
-  const MoreScreen({super.key});
+  const MoreScreen({super.key, this.initialGroup, this.initialSub});
+
+  /// The section to open on (default: the first).
+  final SettingsGroup? initialGroup;
+
+  /// The Archive sub-page to open on.
+  final MoreSub? initialSub;
 
   @override
   ConsumerState<MoreScreen> createState() => _MoreScreenState();
 }
 
 class _MoreScreenState extends ConsumerState<MoreScreen> {
-  // The split layout always opens on the first group (UX 3b).
-  SettingsGroup _selected = SettingsGroup.values.first;
+  late SettingsGroup _selected = widget.initialGroup ?? SettingsGroup.values.first;
 
-  /// Route of a sub-page (archived batches, left students, holidays) shown in
-  /// the right pane on wide windows instead of leaving More; null = the
-  /// selected group's cards.
-  String? _inline;
-
-  Widget? _inlinePage() => switch (_inline) {
-        Routes.moreArchived => const ArchivedBatchesScreen(),
-        Routes.moreLeft => const LeftStudentsScreen(),
-        Routes.moreHolidays => const HolidayScreen(),
-        _ => null,
-      };
+  /// Open Archive sub-page; null = the section's own cards.
+  late MoreSub? _sub = widget.initialSub;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final double g = WindowClass.of(context).gutter;
-    final bool embedded = PaneScope.isEmbedded(context);
-    return BhorScaffold(
-      header: BhorHeader(
-        title: l10n.navMore,
-        large: true,
-        showBack: embedded ? false : null,
-        actions: <Widget>[
-          BhorIconButton(
-            icon: BhorIcons.search,
-            semanticLabel: l10n.commonSearch,
-            variant: BhorButtonVariant.secondary,
-            circle: true,
-            onPressed: () => context.push(Routes.search),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints c) {
+        if (c.maxWidth >= kMoreSplitMinWidth) return _wide(context);
+        final double g = WindowClass.of(context).gutter;
+        final bool embedded = PaneScope.isEmbedded(context);
+        return BhorScaffold(
+          header: BhorHeader(
+            title: l10n.navMore,
+            large: true,
+            showBack: embedded ? false : null,
           ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints c) {
-          if (c.maxWidth >= kMoreSplitMinWidth) return _split(context, c, g);
-          return _list(context, g);
-        },
-      ),
+          body: _list(context, g),
+        );
+      },
     );
   }
 
@@ -91,92 +110,32 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     );
   }
 
-  Widget _split(BuildContext context, BoxConstraints c, double g) {
+  Widget _wide(BuildContext context) {
     final l10n = context.l10n;
-    final Widget? inline = _inlinePage();
-    return Padding(
-      padding: EdgeInsets.fromLTRB(g, 4, g, g),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          SizedBox(
-            width: kMoreIndexWidth,
-            child: _Index(
-              selected: _selected,
-              onSelect: (SettingsGroup v) => setState(() {
-                _selected = v;
-                _inline = null;
-              }),
-            ),
-          ),
-          SizedBox(width: g),
-          // One calm column (max 720); switching groups cross-fades and rises.
-          Expanded(
-            child: BhorPaneSwitcher(
-              paneKey: _inline ?? _selected,
-              child: inline != null
-                  ? PaneScope(child: inline)
-                  : Align(
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        SettingsHeader(_selected.title(l10n)),
-                        SettingsGroupBody(
-                          group: _selected,
-                          onOpenInline: (String route) => setState(() => _inline = route),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Index extends StatelessWidget {
-  const _Index({required this.selected, required this.onSelect});
-
-  final SettingsGroup selected;
-  final ValueChanged<SettingsGroup> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    // A light sub-navigation, not a card: the selected row is tinted.
-    return Semantics(
-      container: true,
-      label: l10n.setIndexLabel,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            for (final SettingsGroup group in SettingsGroup.values)
-              Padding(
-                padding: const EdgeInsets.only(bottom: BhorSpace.s4),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(BhorRadius.control),
-                  child: BhorListRow(
-                    key: Key('more-index-${group.name}'),
-                    leading: Icon(group.icon, size: BhorIconSize.row),
-                    title: group.title(l10n),
-                    selected: group == selected,
-                    divider: false,
-                    onTap: () => onSelect(group),
-                  ),
-                ),
-              ),
-          ],
+    final MoreSub? sub = _sub;
+    final Widget body = switch (sub) {
+      MoreSub.archivedBatches => const ArchivedBatchesScreen(embedded: true),
+      MoreSub.leftStudents => const LeftStudentsScreen(embedded: true),
+      null => SettingsGroupBody(
+          group: _selected,
+          wide: true,
+          onOpenSub: (MoreSub s) => setState(() => _sub = s),
         ),
-      ),
+    };
+    return BhorSettingsPage(
+      sections: <BhorSettingsSection>[
+        for (final SettingsGroup g in SettingsGroup.values)
+          BhorSettingsSection(id: g.name, label: g.title(l10n), icon: g.icon),
+      ],
+      selected: _selected.name,
+      onSelect: (String id) => setState(() {
+        _selected = SettingsGroup.values.byName(id);
+        _sub = null;
+      }),
+      title: sub?.title(l10n) ?? _selected.title(l10n),
+      crumb: sub == null ? null : _selected.title(l10n),
+      onCrumb: () => setState(() => _sub = null),
+      child: BhorPaneSwitcher(paneKey: sub ?? _selected, child: body),
     );
   }
 }

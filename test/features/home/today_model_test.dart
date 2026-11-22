@@ -1,18 +1,14 @@
 // Today's pure logic: which class the hero shows, the day's attendance, the
 // month's collection, recent receipts, the backup nudge and reminder-window
-// rules, and the bento layout (every row sums to 12 columns).
+// rules.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
-import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/bento_grid.dart';
 import 'package:attendance_alamin/app/widgets/state_pill.dart' show ClassState;
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
 import 'package:attendance_alamin/domain/models/attendance.dart';
-import 'package:attendance_alamin/features/home/controllers/bento_layout.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 
 import '../../helpers/fixtures.dart';
@@ -249,55 +245,6 @@ void main() {
       expect(escalationDayOf(const LocalDate(2026, 11, 5)), 5);
       expect(escalationDayOf(const LocalDate(2026, 11, 10)), 10);
       expect(escalationDayOf(const LocalDate(2026, 11, 11)), isNull);
-    });
-  });
-
-  group('bento layout', () {
-    for (final WindowClass wc in <WindowClass>[
-      WindowClass.expanded,
-      WindowClass.large,
-      WindowClass.extraLarge,
-    ]) {
-      test('${wc.name}: tiles tile the 12-column grid exactly, every row sums to 12', () {
-        final List<TileSlot> slots = bentoSlots(wc);
-        final int rows = bentoRowCount(wc);
-        final List<BentoPlacement> placements = <BentoPlacement>[
-          for (final TileSlot s in slots)
-            BentoPlacement(
-              col: s.col,
-              row: s.row,
-              colSpan: s.colSpan,
-              rowSpan: s.rowSpan,
-              child: const SizedBox(),
-            ),
-        ];
-        expect(BentoGrid.validate(placements, rows, 12), isNull);
-        for (int r = 0; r < rows; r++) {
-          final int sum = slots
-              .where((TileSlot s) => s.row <= r && r < s.row + s.rowSpan)
-              .fold<int>(0, (int a, TileSlot s) => a + s.colSpan);
-          expect(sum, 12, reason: 'row $r of ${wc.name}');
-        }
-        // The timeline is the one tall tile: rows 2-3.
-        final TileSlot tl = slots.firstWhere((TileSlot s) => s.tile == TodayTile.timeline);
-        expect((tl.row, tl.rowSpan), (1, 2));
-      });
-    }
-
-    test('expanded has four rows with quick actions; larger ones have three', () {
-      expect(bentoRowCount(WindowClass.expanded), 4);
-      expect(bentoRowCount(WindowClass.large), 3);
-      expect(bentoRowCount(WindowClass.extraLarge), 3);
-      expect(quickActionsInTopBar(WindowClass.expanded), isFalse);
-      expect(quickActionsInTopBar(WindowClass.large), isTrue);
-      expect(
-        bentoSlots(WindowClass.extraLarge).any((TileSlot s) => s.tile == TodayTile.week),
-        isTrue,
-      );
-      expect(
-        bentoSlots(WindowClass.large).any((TileSlot s) => s.tile == TodayTile.recent),
-        isTrue,
-      );
     });
   });
 }

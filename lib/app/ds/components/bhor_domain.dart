@@ -489,7 +489,7 @@ class BhorClashCard extends StatelessWidget {
                     for (final BhorClashFix f in fixes)
                       BhorButton(
                         label: f.label,
-                        variant: f.primary ? BhorButtonVariant.danger : BhorButtonVariant.secondary,
+                        variant: f.primary ? BhorButtonVariant.primary : BhorButtonVariant.secondary,
                         onPressed: f.onTap,
                       ),
                   ],

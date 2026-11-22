@@ -22,10 +22,14 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 /// Hero card of [date]. [fill] is true inside the bento, where the tile has a
 /// fixed height the card must fill.
 class HeroClassCard extends ConsumerWidget {
-  const HeroClassCard({super.key, required this.date, this.fill = false});
+  const HeroClassCard({super.key, required this.date, this.fill = false, this.wide = false});
 
   final LocalDate date;
   final bool fill;
+
+  /// Desktop dashboard hero (review T2): full width, text column and action
+  /// column side by side (stacked when narrow), nothing ellipsized.
+  final bool wide;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +37,7 @@ class HeroClassCard extends ConsumerWidget {
     if (hero == null) {
       return _HeroShell(
         fill: fill,
+        wide: wide,
         texts: const <Widget>[SizedBox(height: 96)],
         actions: const <Widget>[],
       );
@@ -47,9 +52,12 @@ class HeroClassCard extends ConsumerWidget {
     final TextStyle title = b.type.display.copyWith(color: heroText);
     final TextStyle line = b.type.body.copyWith(color: heroText2);
 
-    Widget t(String text, TextStyle style, {int maxLines = 2}) => Text(
+    final bool expandPill = !fill && !wide;
+    final int titleLines = wide ? 3 : 2;
+
+    Widget t(String text, TextStyle style, {int? maxLines}) => Text(
           text,
-          maxLines: maxLines,
+          maxLines: maxLines ?? titleLines,
           overflow: TextOverflow.ellipsis,
           style: style,
         );
@@ -65,7 +73,7 @@ class HeroClassCard extends ConsumerWidget {
           ..add(const SizedBox(height: BhorSpace.s8))
           ..add(t(l10n.todaySetupBody, line, maxLines: 3));
         actions.add(_HeroPill(
-          expand: !fill,
+          expand: expandPill,
           label: l10n.todaySetupButton,
           onPressed: () => pushRoute(context, Routes.batchNew),
         ));
@@ -73,7 +81,7 @@ class HeroClassCard extends ConsumerWidget {
         texts.add(t(l10n.todayHeroRest, title));
         actions
           ..add(_HeroPill(
-            expand: !fill,
+            expand: expandPill,
             label: l10n.todayAddExtraLong,
             onPressed: () => showExtraClassSheet(context, date: date),
           ))
@@ -118,7 +126,7 @@ class HeroClassCard extends ConsumerWidget {
         if (focus != null) {
           actions.add(CoachMarkAnchor(
             child: _HeroPill(
-              expand: !fill,
+              expand: expandPill,
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -136,7 +144,7 @@ class HeroClassCard extends ConsumerWidget {
             ..add(t(fmt.timeRange(focus.startMin, focus.endMin), line, maxLines: 1));
           actions.add(CoachMarkAnchor(
             child: _HeroPill(
-              expand: !fill,
+              expand: expandPill,
               label: l10n.todayTakeAttendance,
               onPressed: () => openRollCall(context, focus.occ),
             ),
@@ -144,7 +152,7 @@ class HeroClassCard extends ConsumerWidget {
         }
     }
 
-    return _HeroShell(fill: fill, texts: texts, actions: actions);
+    return _HeroShell(fill: fill, wide: wide, texts: texts, actions: actions);
   }
 
   String _statusText(AppLocalizations l10n, AppFormat fmt, HeroState hero) {
@@ -189,9 +197,13 @@ String _leftText(AppLocalizations l10n, AppFormat fmt, int minutes) {
 /// card wraps its content with the actions below; in the bento it fills the
 /// tile (actions beside the text when the tile is short).
 class _HeroShell extends StatelessWidget {
-  const _HeroShell({required this.fill, required this.texts, required this.actions});
+  const _HeroShell({required this.fill, required this.texts, required this.actions, this.wide = false});
 
   final bool fill;
+
+  /// Desktop dashboard hero (review T2): full width, text column and action
+  /// column side by side (stacked when narrow), nothing ellipsized.
+  final bool wide;
   final List<Widget> texts;
   final List<Widget> actions;
 
@@ -209,6 +221,50 @@ class _HeroShell extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: actions,
     );
+
+    if (wide) {
+      // The primary button keeps its natural width (one line); the secondary
+      // link sits under it, centred on the same axis.
+      Widget actionColumn() => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              for (int i = 0; i < actions.length; i++) ...<Widget>[
+                if (i > 0) const SizedBox(height: BhorSpace.s4),
+                actions[i],
+              ],
+            ],
+          );
+      return BhorCard.hero(
+        padding: const EdgeInsets.all(BhorSpace.s20),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints c) {
+            if (actions.isEmpty) return textColumn;
+            // Side by side while the text keeps a comfortable column; the
+            // action column is as wide as its primary button (never wraps).
+            if (c.maxWidth >= 560) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(child: textColumn),
+                  const SizedBox(width: BhorSpace.s24),
+                  actionColumn(),
+                ],
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                textColumn,
+                const SizedBox(height: BhorSpace.s16),
+                actionColumn(),
+              ],
+            );
+          },
+        ),
+      );
+    }
 
     if (!fill) {
       return BhorCard.hero(

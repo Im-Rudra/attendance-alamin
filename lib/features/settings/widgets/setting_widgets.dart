@@ -19,11 +19,14 @@ class SettingsHeader extends StatelessWidget {
       );
 }
 
-/// A dense card holding rows separated by hairline dividers.
+/// A dense card holding rows separated by hairline dividers. [dividers] off
+/// is for a card of fields (Coaching center): the fields are separated by
+/// spacing only, never by a hairline inside the card (M6).
 class SettingsCard extends StatelessWidget {
-  const SettingsCard({super.key, required this.children});
+  const SettingsCard({super.key, required this.children, this.dividers = true});
 
   final List<Widget> children;
+  final bool dividers;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +38,7 @@ class SettingsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           for (int i = 0; i < children.length; i++) ...<Widget>[
-            if (i > 0)
+            if (i > 0 && dividers)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
                 child: SizedBox(height: 1, child: ColoredBox(color: c.line)),
@@ -120,6 +123,55 @@ class SettingRow extends StatelessWidget {
       scaleOnPress: false,
       radius: BhorRadius.control,
       builder: (BuildContext context, BhorStates s) => row(s),
+    );
+  }
+}
+
+/// A row that expands in place to show [body] (licences and fonts credit,
+/// M5): no dialog, nothing to close; tap the row again to fold it.
+class SettingExpandRow extends StatefulWidget {
+  const SettingExpandRow({super.key, required this.title, required this.body, this.value, this.icon});
+
+  final String title;
+  final String? value;
+  final IconData? icon;
+  final String body;
+
+  @override
+  State<SettingExpandRow> createState() => _SettingExpandRowState();
+}
+
+class _SettingExpandRowState extends State<SettingExpandRow> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Semantics(
+          expanded: _open,
+          child: SettingRow(
+            title: widget.title,
+            value: widget.value,
+            icon: widget.icon,
+            onTap: () => setState(() => _open = !_open),
+            trailing: Icon(
+              _open ? BhorIcons.chevronUp : BhorIcons.chevronDown,
+              size: BhorIconSize.chip,
+              color: c.text3,
+            ),
+          ),
+        ),
+        if (_open)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 0, BhorSpace.s16, BhorSpace.s16),
+            child: Text(widget.body, key: const Key('setting-expand-body'), style: b.type.meta.copyWith(color: c.text2)),
+          ),
+      ],
     );
   }
 }

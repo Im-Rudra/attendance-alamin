@@ -1,9 +1,11 @@
-// SearchScreen (UX 3 "Search"): full-screen global find reached from the top
-// bar, Ctrl+F or Ctrl+K. Results appear as you type, grouped into students and
-// batches; the filter is pure in-memory work over the repository streams.
-// Phones: one list. Wide windows: results list || preview pane (the preview
-// always shows something, never a blank area). Tap/Enter opens the profile or
-// batch; the query is remembered in the recent list (LocalMeta search_recent).
+// SearchScreen (UX 3 "Search", review G4): global find reached from the sidebar
+// search field, Ctrl+F or Ctrl+K. Results appear as you type, grouped into
+// students and batches; the filter is pure in-memory work over the repository
+// streams. Phones: one full-page list. Wide windows: a command palette (a
+// scrim plus a centred 720 card, results || preview) over the current page; its
+// route is transparent (see the router) so the page below stays visible. Esc or
+// a click on the scrim closes it. Tap/Enter opens the profile or batch; the
+// query is remembered in the recent list (LocalMeta search_recent).
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -56,7 +58,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _onEscape(KeyEvent event) {
     if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape || !mounted) return false;
     if (bhorOverlayAbove(context)) return false;
-    if (_text.text.isNotEmpty) {
+    // The desktop palette: Esc closes it. Phones: first clear the query.
+    if (_text.text.isNotEmpty && !context.bhorIsWide) {
       _setQuery('');
     } else {
       _close();
@@ -286,43 +289,72 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         body: Padding(padding: EdgeInsets.fromLTRB(g, 0, g, g), child: body),
       );
     }
-    // Desktop: a command palette floating over the page (Esc closes it,
-    // Up / Down move through the results, Enter opens).
-    final BhorColors c = context.bhor.colors;
-    return BhorScaffold(
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints box) => Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          // A 640 x 520 palette, 15% down from the top of the window.
-          padding: EdgeInsets.fromLTRB(g, box.maxHeight * 0.15, g, g),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640, maxHeight: 520),
-            child: DecoratedBox(
-              key: const Key('search-palette'),
-              decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: BorderRadius.circular(BhorRadius.hero),
-                border: Border.all(color: c.line),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(BhorRadius.hero),
-                child: Column(
-                  children: <Widget>[
-                    header,
-                    Container(height: 1, color: c.line),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(BhorSpace.s16),
-                        child: body,
+    // Desktop (G4): a command palette over the current page. The route is
+    // transparent (see the router), so the page below shows through a scrim;
+    // a click on the scrim or Esc closes it, Up / Down move through the
+    // results, Enter opens.
+    final BhorThemeData th = context.bhor;
+    final BhorColors c = th.colors;
+    return DefaultTextStyle(
+      style: th.type.body,
+      child: IconTheme(
+        data: IconThemeData(color: c.text2, size: 22),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) {
+            // A 720-wide palette, 12% down from the top of the window.
+            final double top = box.maxHeight * 0.12;
+            double height = box.maxHeight - top - g;
+            if (height > 560) height = 560;
+            if (height < 320) height = 320;
+            return Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: GestureDetector(
+                    key: const Key('search-scrim'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _close,
+                    child: ColoredBox(color: c.scrim),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(g, top, g, g),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: SizedBox(
+                        height: height,
+                        child: DecoratedBox(
+                          key: const Key('search-palette'),
+                          decoration: BoxDecoration(
+                            color: c.surface,
+                            borderRadius: BorderRadius.circular(BhorRadius.hero),
+                            border: Border.all(color: c.line),
+                            boxShadow: c.floatShadow,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(BhorRadius.hero),
+                            child: Column(
+                              children: <Widget>[
+                                header,
+                                Container(height: 1, color: c.line),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(BhorSpace.s16),
+                                    child: body,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
+              ],
+            );
+          },
         ),
       ),
     );

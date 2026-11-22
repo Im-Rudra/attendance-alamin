@@ -27,6 +27,13 @@ import 'package:attendance_alamin/features/classes/widgets/extra_class_sheet.dar
 
 const double _kLabelWidth = 64;
 
+/// The grid always shows at least this many hours.
+const int _kMinHours = 8;
+
+/// Smallest height of one hour: roomy enough for a padded block with a
+/// two-line title and the time.
+const double _kMinHourHeight = 72;
+
 /// Desktop week grid (7 columns x hours).
 class WeekGrid extends StatefulWidget {
   const WeekGrid({super.key, required this.weekStart, this.onSelectOcc});
@@ -88,12 +95,13 @@ class _WeekGridState extends State<WeekGrid> {
     });
   }
 
-  void _open(String occ) {
+  /// Opens the class popover of [occ], anchored to [anchor] (the clicked block).
+  void _open(String occ, {BuildContext? anchor}) {
     final ValueChanged<String>? cb = widget.onSelectOcc;
     if (cb != null) {
       cb(occ);
     } else {
-      showClassActionsSheet(context, occ: occ);
+      showClassActionsSheet(context, occ: occ, anchor: anchor);
     }
   }
 
@@ -313,9 +321,12 @@ class _WeekGridState extends State<WeekGrid> {
     }
     int fromH = math.max(0, minStart ~/ 60 - 1);
     int toH = math.min(24, (maxEnd + 59) ~/ 60 + 1);
-    if (toH - fromH < 4) {
-      toH = math.min(24, fromH + 4);
-      fromH = math.max(0, toH - 4);
+    // At least 8 hours are visible (review T4), centred on the classes.
+    if (toH - fromH < _kMinHours) {
+      final int extra = _kMinHours - (toH - fromH);
+      fromH = math.max(0, fromH - extra ~/ 2);
+      toH = math.min(24, fromH + _kMinHours);
+      fromH = math.max(0, toH - _kMinHours);
     }
     final int hours = toH - fromH;
     final int todayIdx = _start.daysUntil(today);
@@ -325,7 +336,7 @@ class _WeekGridState extends State<WeekGrid> {
         final Widget dayHeaders = _dayHeaders(context, plans, today);
         final Widget body = LayoutBuilder(
           builder: (BuildContext context, BoxConstraints c) {
-            final double hourH = math.max(48.0, (c.hasBoundedHeight ? c.maxHeight : 560) / hours);
+            final double hourH = math.max(_kMinHourHeight, (c.hasBoundedHeight ? c.maxHeight : 560) / hours);
             return SingleChildScrollView(
               child: SizedBox(
                 height: hourH * hours,
@@ -477,14 +488,25 @@ class _WeekGridState extends State<WeekGrid> {
               child: _ClassBlock(
                 dc: b.dc,
                 selected: b.dc.occ == _selectedOcc,
-                onTap: () {
+                height: math.max(24.0, (b.dc.endMin - b.dc.startMin) / 60 * hourH - 2),
+                // One click: the popover opens at once, anchored to the block.
+                onTap: (BuildContext blockContext) {
                   _focus.requestFocus();
+                  _open(b.dc.occ, anchor: blockContext);
                   _select(b.dc.occ);
-                  _open(b.dc.occ);
                 },
               ),
             ),
-          if (todayIdx >= 0 && todayIdx < 7 && nowMin >= fromH * 60 && nowMin <= toH * 60)
+          // The current-time line: a faint rule over the whole week, strong
+          // with a dot on today's column.
+          if (todayIdx >= 0 && todayIdx < 7 && nowMin >= fromH * 60 && nowMin <= toH * 60) ...<Widget>[
+            Positioned(
+              left: _kLabelWidth,
+              top: yOf(nowMin),
+              width: colW * 7,
+              height: 1,
+              child: IgnorePointer(child: ColoredBox(color: colors.accent.withValues(alpha: 0.25))),
+            ),
             Positioned(
               left: _kLabelWidth + todayIdx * colW,
               top: yOf(nowMin) - 1,
@@ -492,6 +514,16 @@ class _WeekGridState extends State<WeekGrid> {
               height: 2,
               child: IgnorePointer(child: ColoredBox(color: colors.accent)),
             ),
+            Positioned(
+              left: _kLabelWidth + todayIdx * colW - 4,
+              top: yOf(nowMin) - 4,
+              width: 8,
+              height: 8,
+              child: IgnorePointer(
+                child: DecoratedBox(decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle)),
+              ),
+            ),
+          ],
         ];
         return Stack(clipBehavior: Clip.hardEdge, children: children);
       },
@@ -520,27 +552,24 @@ class _GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Light grid (review T4): hour lines at 60% of the line colour, faint
+    // half-hour lines, quiet day separators; no quarter-hour lines.
     final Paint hourPaint = Paint()
-      ..color = hour
+      ..color = hour.withValues(alpha: hour.a * 0.6)
       ..strokeWidth = 1;
-    // Half-hour lines at line@50%; the quarter-hour ones even lighter.
-    final Paint quarterPaint = Paint()
-      ..color = quarter
-      ..strokeWidth = 1;
-    final Paint faintPaint = Paint()
+    final Paint halfPaint = Paint()
       ..color = quarter.withValues(alpha: quarter.a * 0.5)
       ..strokeWidth = 1;
-    for (int m = fromMin; m <= toMin; m += 15) {
+    final Paint dayPaint = Paint()
+      ..color = hour.withValues(alpha: hour.a * 0.45)
+      ..strokeWidth = 1;
+    for (int m = fromMin; m <= toMin; m += 30) {
       final double y = (m - fromMin) / 60 * hourH;
-      canvas.drawLine(
-        Offset(labelW, y),
-        Offset(size.width, y),
-        m % 60 == 0 ? hourPaint : (m % 30 == 0 ? quarterPaint : faintPaint),
-      );
+      canvas.drawLine(Offset(labelW, y), Offset(size.width, y), m % 60 == 0 ? hourPaint : halfPaint);
     }
     for (int d = 0; d <= 7; d++) {
       final double x = labelW + d * colW;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), hourPaint);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), dayPaint);
     }
   }
 
@@ -556,11 +585,14 @@ class _GridPainter extends CustomPainter {
 }
 
 class _ClassBlock extends StatelessWidget {
-  const _ClassBlock({required this.dc, required this.selected, required this.onTap});
+  const _ClassBlock({required this.dc, required this.selected, required this.onTap, required this.height});
 
   final DayClass dc;
   final bool selected;
-  final VoidCallback onTap;
+  final ValueChanged<BuildContext> onTap;
+
+  /// Height of the block: decides whether the title gets two lines.
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -586,6 +618,7 @@ class _ClassBlock extends StatelessWidget {
       if (!cancelled && dc.taken) _mark(BhorIcons.check, fg, iconSize, const Key('week-block-taken')),
     ];
     final String time = fmt.timeRange(dc.startMin, dc.endMin);
+    final int titleLines = height >= 64 ? 2 : 1;
     final String name = '${dc.subjectName} — ${dc.batch.name}';
     final String label = l10n.clsBlockLabel(dc.subjectName, dc.batch.name, time);
     final ClassState? st = dc.state;
@@ -596,14 +629,14 @@ class _ClassBlock extends StatelessWidget {
     final Widget content = ClipRRect(
       borderRadius: BorderRadius.circular(BhorRadius.chip),
       child: BhorPressable(
-      onTap: onTap,
+      onTap: () => onTap(context),
       radius: BhorRadius.chip,
       scaleOnPress: false,
       showFocusRing: false,
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.of(context, BhorMotion.fast),
         curve: BhorMotion.ease,
-        padding: const EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s4, BhorSpace.s4, BhorSpace.s4),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
         decoration: BoxDecoration(
           color: cancelled
               ? null
@@ -619,9 +652,9 @@ class _ClassBlock extends StatelessWidget {
           children: <Widget>[
             if (!cancelled)
               Positioned(
-                left: -BhorSpace.s8,
-                top: -BhorSpace.s4,
-                bottom: -BhorSpace.s4,
+                left: -BhorSpace.s12,
+                top: -BhorSpace.s8,
+                bottom: -BhorSpace.s8,
                 width: 3,
                 child: ColoredBox(color: c.accent),
               ),
@@ -634,16 +667,26 @@ class _ClassBlock extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  // The title wraps to two lines when the block is tall enough.
                   if (marks.isEmpty)
-                    Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: base)
+                    Text(name, maxLines: titleLines, overflow: TextOverflow.ellipsis, style: base)
                   else
                     Text.rich(
                       TextSpan(children: <InlineSpan>[...marks, TextSpan(text: name)]),
-                      maxLines: 1,
+                      maxLines: titleLines,
                       overflow: TextOverflow.ellipsis,
                       style: base,
                     ),
-                  Text(time, maxLines: 1, overflow: TextOverflow.ellipsis, style: base),
+                  Text(
+                    time,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: b.type.caption.copyWith(
+                      color: fg,
+                      decoration: cancelled ? TextDecoration.lineThrough : null,
+                      decorationColor: fg,
+                    ),
+                  ),
                 ],
               ),
             ),

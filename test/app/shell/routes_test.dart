@@ -91,7 +91,8 @@ void main() {
       });
       testWidgets('desktop dark en ${r.key}', (WidgetTester tester) async {
         await pumpShell(tester, location: r.key, size: kDesktop, lang: Lang.en, themeMode: ThemeMode.dark);
-        expect(_anyScaffold(), findsWidgets);
+        // Desktop search is a transparent palette over the page: no scaffold.
+        expect(r.key == Routes.search ? find.byType(SearchScreen) : _anyScaffold(), findsWidgets);
         expect(tester.takeException(), isNull);
       });
     }

@@ -1,6 +1,6 @@
 {
   "@@locale": "bn",
-  "clsSheetTitle": "শুধু {date}",
+  "clsSheetTitle": "{date}",
   "@clsSheetTitle": {
     "description": "Title of the per-date class actions sheet; date is a weekday and date.",
     "placeholders": {
@@ -10,7 +10,7 @@
       }
     }
   },
-  "clsSheetTitleAt": "শুধু {date} · {time}",
+  "clsSheetTitleAt": "{date} · {time}",
   "@clsSheetTitleAt": {
     "description": "Sheet title when the batch has 2+ classes that day, so the session is unambiguous.",
     "placeholders": {

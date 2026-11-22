@@ -17,10 +17,10 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/domain/reminders/reminder_models.dart';
 import 'package:attendance_alamin/features/backup/backup_entry.dart';
-import 'package:attendance_alamin/features/extras/extras_entry.dart';
 import 'package:attendance_alamin/features/reminders/reminders_entry.dart';
 import 'package:attendance_alamin/features/settings/controllers/settings_providers.dart';
 import 'package:attendance_alamin/features/settings/data/template_logic.dart';
+import 'package:attendance_alamin/features/extras/ui/holiday_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/diagnostics_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/help_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/payment_methods_screen.dart';
@@ -31,45 +31,58 @@ import 'package:attendance_alamin/features/settings/widgets/setting_widgets.dart
 import 'package:attendance_alamin/features/settings/widgets/theme_swatches.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
-/// Backups older than this many days turn the last-backup row into an info chip.
-const int kBackupStaleDays = 7;
-
 /// Reminder lead presets (minutes); anything 1..180 is allowed via "another".
 const List<int> kLeadOptions = <int>[5, 10, 15, 20, 30, 60];
 
 /// Billing cutoff presets (day of month); 1..28 allowed via "another".
 const List<int> kCutoffOptions = <int>[10, 15, 20, 25];
 
-/// Backup reminder presets (days); 0 = off.
-const List<int> kBackupReminderOptions = <int>[0, 3, 7, 14, 30];
-
 enum SettingsGroup {
-  archive,
   general,
   center,
   reminders,
   fees,
   backup,
+  holidays,
+  archive,
   about;
 
   String title(AppLocalizations l10n) => switch (this) {
-        SettingsGroup.archive => l10n.setGroupArchive,
         SettingsGroup.general => l10n.shellAppearance,
         SettingsGroup.center => l10n.setGroupCenter,
         SettingsGroup.reminders => l10n.setGroupReminders,
         SettingsGroup.fees => l10n.setGroupFees,
         SettingsGroup.backup => l10n.setGroupBackup,
+        SettingsGroup.holidays => l10n.shellTitleHolidays,
+        SettingsGroup.archive => l10n.setGroupArchive,
         SettingsGroup.about => l10n.setGroupAbout,
       };
 
   IconData get icon => switch (this) {
-        SettingsGroup.archive => BhorIcons.archive,
         SettingsGroup.general => BhorIcons.sliders,
         SettingsGroup.center => BhorIcons.batches,
         SettingsGroup.reminders => BhorIcons.bell,
         SettingsGroup.fees => BhorIcons.fees,
         SettingsGroup.backup => BhorIcons.storage,
+        SettingsGroup.holidays => BhorIcons.calendar,
+        SettingsGroup.archive => BhorIcons.archive,
         SettingsGroup.about => BhorIcons.info,
+      };
+}
+
+/// A sub-page of the Archive section (it shows a crumb back to its section).
+enum MoreSub {
+  archivedBatches,
+  leftStudents;
+
+  String title(AppLocalizations l10n) => switch (this) {
+        MoreSub.archivedBatches => l10n.shellTitleArchived,
+        MoreSub.leftStudents => l10n.shellTitleLeft,
+      };
+
+  String get route => switch (this) {
+        MoreSub.archivedBatches => Routes.moreArchived,
+        MoreSub.leftStudents => Routes.moreLeft,
       };
 }
 
@@ -81,8 +94,8 @@ String backupAgeText(AppLocalizations l10n, AppFormat fmt, int? days) {
 }
 
 /// Opens a settings sub-page: on desktop it floats over the settings layout
-/// (side panel for forms, dialog for the rest, 12-ux-review section 3), so
-/// the teacher never leaves More; on phones it is a normal push.
+/// as a side panel (never a popover hanging off the row, M5), so the teacher
+/// never leaves More; on phones it is a normal push.
 Future<void> openSettingsSubPage(
   BuildContext context, {
   required String route,
@@ -98,38 +111,56 @@ Future<void> openSettingsSubPage(
   }
 }
 
-/// The cards of one group, in one column or two (wide content pane).
+/// The cards of one group. [wide]: the settings layout (section nav + one
+/// column): Holidays shows its form right here and Archive opens its
+/// sub-pages in place ([onOpenSub]); on phones both are rows that open a page.
 class SettingsGroupBody extends ConsumerWidget {
-  const SettingsGroupBody({super.key, required this.group, this.twoUp = false, this.onOpenInline});
+  const SettingsGroupBody({super.key, required this.group, this.wide = false, this.onOpenSub});
 
   final SettingsGroup group;
-  final bool twoUp;
+  final bool wide;
 
-  /// When set (wide More), archive sub-pages open in the right pane via this
-  /// instead of navigating away.
-  final ValueChanged<String>? onOpenInline;
+  /// Wide More: an Archive sub-page opens in the same column via this.
+  final ValueChanged<MoreSub>? onOpenSub;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final List<Widget> cards = switch (group) {
-      SettingsGroup.archive => _archive(context),
       SettingsGroup.general => _general(context, ref),
       SettingsGroup.center => _center(context),
       SettingsGroup.reminders => _reminders(context, ref),
       SettingsGroup.fees => _fees(context, ref),
-      SettingsGroup.backup => _backup(context, ref),
+      SettingsGroup.backup => const <Widget>[BackupSection()],
+      SettingsGroup.holidays => _holidays(context),
+      SettingsGroup.archive => _archive(context),
       SettingsGroup.about => _about(context, ref),
     };
-    return SettingsColumns(twoUp: twoUp, children: cards);
+    return SettingsColumns(children: cards);
   }
 
-  void _openSub(BuildContext context, String route) {
-    final ValueChanged<String>? inline = onOpenInline;
-    if (inline != null) {
-      inline(route);
+  void _openSub(BuildContext context, MoreSub sub) {
+    final ValueChanged<MoreSub>? open = onOpenSub;
+    if (open != null) {
+      open(sub);
     } else {
-      context.go(route);
+      context.go(sub.route);
     }
+  }
+
+  // ---- holidays ----
+  List<Widget> _holidays(BuildContext context) {
+    final l10n = context.l10n;
+    if (wide) return const <Widget>[HolidayScreen(embedded: true)];
+    return <Widget>[
+      SettingsCard(children: <Widget>[
+        SettingRow(
+          icon: BhorIcons.calendar,
+          title: l10n.shellTitleHolidays,
+          value: l10n.setHolidaysValue,
+          onTap: () => context.go(Routes.moreHolidays),
+        ),
+      ]),
+    ];
   }
 
   // ---- archive ----
@@ -138,22 +169,18 @@ class SettingsGroupBody extends ConsumerWidget {
     return <Widget>[
       SettingsCard(children: <Widget>[
         SettingRow(
+          key: const Key('more-archived'),
           icon: BhorIcons.archive,
           title: l10n.shellTitleArchived,
           value: l10n.setArchivedValue,
-          onTap: () => _openSub(context, Routes.moreArchived),
+          onTap: () => _openSub(context, MoreSub.archivedBatches),
         ),
         SettingRow(
+          key: const Key('more-left'),
           icon: BhorIcons.leftStudents,
           title: l10n.shellTitleLeft,
           value: l10n.setLeftValue,
-          onTap: () => _openSub(context, Routes.moreLeft),
-        ),
-        SettingRow(
-          icon: BhorIcons.holiday,
-          title: l10n.shellTitleHolidays,
-          value: l10n.setHolidaysValue,
-          onTap: () => _openSub(context, Routes.moreHolidays),
+          onTap: () => _openSub(context, MoreSub.leftStudents),
         ),
       ]),
     ];
@@ -237,7 +264,7 @@ class SettingsGroupBody extends ConsumerWidget {
     Widget pad(Widget child) =>
         Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: child);
     return <Widget>[
-      SettingsCard(children: <Widget>[
+      SettingsCard(dividers: false, children: <Widget>[
         pad(SettingTextField(
           key: const Key('more-center-name'),
           settingKey: SettingKeys.centerName,
@@ -341,14 +368,15 @@ class SettingsGroupBody extends ConsumerWidget {
           value: enabled,
           onChanged: (bool on) => _toggleReminders(context, ref, on),
         ),
-        SettingRow(
+        Builder(
+          builder: (BuildContext rowContext) => SettingRow(
           key: const Key('more-default-lead'),
           icon: BhorIcons.clock,
           title: l10n.setDefaultLead,
           value: l10n.setLeadValue(fmt.digits(lead.toString())),
           onTap: () async {
             final int? v = await showIntChoiceSheet(
-              context,
+              rowContext,
               title: l10n.setLeadSheetTitle,
               options: kLeadOptions,
               current: lead,
@@ -360,7 +388,7 @@ class SettingsGroupBody extends ConsumerWidget {
               await saveSetting<int>(context, ref, SettingKeys.defaultReminderLead, v);
             }
           },
-        ),
+        )),
       ]),
       SettingsCard(children: second),
     ];
@@ -387,14 +415,15 @@ class SettingsGroupBody extends ConsumerWidget {
     final int methods = ref.watch(paymentMethodsConfigProvider).visibleCount;
     return <Widget>[
       SettingsCard(children: <Widget>[
-        SettingRow(
+        Builder(
+          builder: (BuildContext rowContext) => SettingRow(
           key: const Key('more-cutoff-day'),
           icon: BhorIcons.calendar,
           title: l10n.setCutoffDay,
           value: l10n.setCutoffValue(fmt.digits(cutoff.toString())),
           onTap: () async {
             final int? v = await showIntChoiceSheet(
-              context,
+              rowContext,
               title: l10n.setCutoffSheetTitle,
               options: kCutoffOptions,
               current: cutoff,
@@ -406,7 +435,7 @@ class SettingsGroupBody extends ConsumerWidget {
               await saveSetting<int>(context, ref, SettingKeys.billingCutoffDay, v);
             }
           },
-        ),
+        )),
         SettingRow(
           key: const Key('more-payment-methods'),
           icon: BhorIcons.fees,
@@ -431,7 +460,7 @@ class SettingsGroupBody extends ConsumerWidget {
             context,
             route: Routes.moreTemplate(TemplateKind.reminder.code),
             title: l10n.shellTitleTemplateReminder,
-            width: 560,
+            width: TemplateEditorScreen.panelWidth,
             builder: (BuildContext _) => TemplateEditorScreen(kind: TemplateKind.reminder.code, embedded: true),
           ),
         ),
@@ -444,96 +473,8 @@ class SettingsGroupBody extends ConsumerWidget {
             context,
             route: Routes.moreTemplate(TemplateKind.receipt.code),
             title: l10n.shellTitleTemplateReceipt,
-            width: 560,
+            width: TemplateEditorScreen.panelWidth,
             builder: (BuildContext _) => TemplateEditorScreen(kind: TemplateKind.receipt.code, embedded: true),
-          ),
-        ),
-      ]),
-    ];
-  }
-
-  // ---- backup ----
-  List<Widget> _backup(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final fmt = context.fmt;
-    final int? days = ref.watch(daysSinceBackupProvider);
-    final int remindDays =
-        ref.watch(backupReminderDaysProvider).value ?? SettingKeys.backupReminderDays.defaultValue;
-    final bool stale = days == null || days > kBackupStaleDays;
-
-    String remindText(int n) =>
-        n == 0 ? l10n.setBackupReminderOff : l10n.setBackupReminderEvery(fmt.digits(n.toString()));
-
-    return <Widget>[
-      SettingsCard(children: <Widget>[
-        SettingRow(
-          key: const Key('more-last-backup'),
-          icon: BhorIcons.clock,
-          title: l10n.setBackupLast,
-          value: backupAgeText(l10n, fmt, days),
-        ),
-        if (stale)
-          SettingInfoChip(
-            message: l10n.setBackupOverdue,
-            actionLabel: l10n.setBackupNow,
-            onAction: () => runExportBackup(context),
-          ),
-        SettingRow(
-          key: const Key('more-backup-now'),
-          icon: BhorIcons.backupUp,
-          title: l10n.setBackupNow,
-          value: l10n.setBackupNowValue,
-          onTap: () => runExportBackup(context),
-        ),
-        SettingRow(
-          key: const Key('more-restore'),
-          icon: BhorIcons.backupDown,
-          title: l10n.setRestore,
-          value: l10n.setRestoreValue,
-          onTap: () => runImportBackup(context),
-        ),
-        SettingRow(
-          key: const Key('more-csv-export'),
-          icon: BhorIcons.chart,
-          title: l10n.setCsvExport,
-          value: l10n.setCsvExportValue,
-          onTap: () => runCsvExport(context, month: ref.read(todayProvider).yearMonth),
-        ),
-      ]),
-      SettingsCard(children: <Widget>[
-        SettingRow(
-          key: const Key('more-safety-copy'),
-          icon: BhorIcons.undo,
-          title: l10n.setSafetyCopy,
-          value: l10n.setSafetyCopyValue,
-          onTap: () => context.go(Routes.moreBackup),
-        ),
-        SettingRow(
-          key: const Key('more-backup-reminder'),
-          icon: BhorIcons.clock,
-          title: l10n.setBackupReminder,
-          value: remindText(remindDays),
-          onTap: () async {
-            final int? v = await showIntChoiceSheet(
-              context,
-              title: l10n.setBackupReminderSheetTitle,
-              options: kBackupReminderOptions,
-              current: remindDays,
-              labelOf: remindText,
-            );
-            if (v != null && context.mounted) {
-              await saveSetting<int>(context, ref, SettingKeys.backupReminderDays, v);
-            }
-          },
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: SettingTextField(
-            key: const Key('more-device-name'),
-            settingKey: SettingKeys.deviceName,
-            label: l10n.setDeviceName,
-            hint: l10n.setDeviceNameHint,
-            helper: l10n.setDeviceNameHelper,
           ),
         ),
       ]),
@@ -552,25 +493,12 @@ class SettingsGroupBody extends ConsumerWidget {
           title: l10n.setVersion,
           value: version,
         ),
-        SettingRow(
+        SettingExpandRow(
           key: const Key('more-font-credit'),
           icon: BhorIcons.notes,
           title: l10n.setFontCredit,
           value: l10n.setFontCreditValue,
-          onTap: () => showBhorDialog<void>(
-            context,
-            builder: (BuildContext ctx) => BhorDialog(
-              title: l10n.setFontCredit,
-              message: l10n.setFontCreditBody,
-              actions: <Widget>[
-                BhorButton(
-                  label: l10n.commonClose,
-                  variant: BhorButtonVariant.ghost,
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-          ),
+          body: l10n.setFontCreditBody,
         ),
         SettingRow(
           key: const Key('more-help'),
@@ -581,7 +509,6 @@ class SettingsGroupBody extends ConsumerWidget {
             context,
             route: Routes.moreHelp,
             title: l10n.shellTitleHelp,
-            kind: BhorPanelKind.list,
             width: 560,
             builder: (BuildContext _) => const HelpScreen(embedded: true),
           ),
@@ -595,7 +522,6 @@ class SettingsGroupBody extends ConsumerWidget {
             context,
             route: Routes.moreDiagnostics,
             title: l10n.shellTitleDiagnostics,
-            kind: BhorPanelKind.list,
             width: 560,
             builder: (BuildContext _) => const DiagnosticsScreen(embedded: true),
           ),

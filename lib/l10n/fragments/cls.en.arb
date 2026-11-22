@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
-  "clsSheetTitle": "Only {date}",
-  "clsSheetTitleAt": "Only {date} · {time}",
+  "clsSheetTitle": "{date}",
+  "clsSheetTitleAt": "{date} · {time}",
   "clsClassLabel": "{subject} · {batch}",
   "clsActionReschedule": "Change time",
   "clsActionCancel": "Cancel this day's class",

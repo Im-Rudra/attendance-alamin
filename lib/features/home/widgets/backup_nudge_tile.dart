@@ -108,6 +108,7 @@ class BackupNudgeTile extends ConsumerWidget {
     final int? days = s.daysAgo;
     if (days == null) return l10n.todayBackupNever;
     if (days == 0) return l10n.todayBackupToday;
-    return l10n.todayBackupAge(fmt.number(days));
+    // The merge tool rejects ICU plurals, so "1 day" vs "N days" is chosen here.
+    return days == 1 ? l10n.todayBackupAgeOne(fmt.number(days)) : l10n.todayBackupAge(fmt.number(days));
   }
 }

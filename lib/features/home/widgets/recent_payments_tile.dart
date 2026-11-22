@@ -1,16 +1,22 @@
-// Recent payments (UX 3b): the last five receipts with a receipt-share button.
+// Recent payments (UX 3b): the last four receipts with a receipt-share button
+// and a "সব দেখুন" link to Fees > Collected.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
+import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
+
+/// Rows shown before "সব দেখুন".
+const int kRecentPaymentsShown = 4;
 
 class RecentPaymentsTile extends ConsumerWidget {
   const RecentPaymentsTile({super.key});
@@ -45,7 +51,9 @@ class RecentPaymentsTile extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final RecentReceipt r in receipts)
+          // At most four rows (the card hugs its content); the rest is one
+          // tap away in Fees > Collected.
+          for (final RecentReceipt r in receipts.take(kRecentPaymentsShown))
             Padding(
               key: ValueKey<String>('today-receipt-${r.receiptId}'),
               padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
@@ -80,6 +88,17 @@ class RecentPaymentsTile extends ConsumerWidget {
                 ],
               ),
             ),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: BhorButton(
+              key: const ValueKey<String>('today-recent-see-all'),
+              label: l10n.todayRecentSeeAll,
+              variant: BhorButtonVariant.ghost,
+              size: BhorButtonSize.sm,
+              trailingIcon: BhorIcons.chevronRight,
+              onPressed: () => goRoute(context, Routes.feesCollection),
+            ),
+          ),
         ],
       ),
     );

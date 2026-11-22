@@ -31,7 +31,7 @@ enum OneOffMode { reschedule, extra }
 /// [OneOffMode.extra] (optional [batchId], [date], [startMin] pre-fills). Pops
 /// `true` (reschedule) or the new occurrence id (extra) once saved.
 class OneOffForm extends ConsumerStatefulWidget {
-  const OneOffForm({super.key, required this.mode, this.occ, this.batchId, this.date, this.startMin})
+  const OneOffForm({super.key, required this.mode, this.occ, this.batchId, this.date, this.startMin, this.dirty})
       : assert(mode == OneOffMode.extra || occ != null);
 
   final OneOffMode mode;
@@ -39,6 +39,10 @@ class OneOffForm extends ConsumerStatefulWidget {
   final String? batchId;
   final LocalDate? date;
   final int? startMin;
+
+  /// Set to true once the user changed something (the panel then asks before
+  /// discarding).
+  final ValueNotifier<bool>? dirty;
 
   @override
   ConsumerState<OneOffForm> createState() => _OneOffFormState();
@@ -53,6 +57,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   int _start = 0;
   int _dur = 60;
   bool _durTouched = false;
+  bool _batchChosen = false;
 
   /// The teacher picked a time (or it came in pre-filled): never auto-moved.
   bool _timeTouched = false;
@@ -146,21 +151,56 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
             replacingOcc: _isExtra ? null : widget.occ,
           );
       if (!mounted || gen != _gen) return;
-      // A fresh form moves to the next free slot instead of opening on a clash.
-      final int? free = r.suggestion?.primaryStartMin;
-      if (!r.ok && _isExtra && !_timeTouched && free != null && free >= _dayStart && free + _dur <= _dayEnd) {
-        setState(() {
-          _start = free;
-          _initStart = free;
-          _clash = null;
-        });
-        unawaited(_recheck());
-        return;
+      // A fresh form moves to the next free slot instead of opening on a clash
+      // (review T5): the engine's suggestion first, else a scan of the day.
+      if (!r.ok && _isExtra && !_timeTouched) {
+        int? free = r.suggestion?.primaryStartMin;
+        if (free == null || free < _dayStart || free + _dur > _dayEnd) {
+          free = await _scanFree(batch);
+          if (!mounted || gen != _gen) return;
+        }
+        final int? picked = free;
+        if (picked != null) {
+          setState(() {
+            _start = picked;
+            _initStart = picked;
+            _clash = null;
+          });
+          // The new time is the default now, not a user choice.
+          unawaited(_recheck());
+          return;
+        }
       }
       setState(() => _clash = r.ok ? null : r);
     } catch (_) {
       // The save itself re-checks; a failed live check must not block the form.
     }
+  }
+
+  /// The nearest free start (15-minute steps) after the current one, then
+  /// before it, inside the default window; null when the whole day is busy.
+  Future<int?> _scanFree(String batch) async {
+    final ScheduleRepository repo = ref.read(scheduleRepositoryProvider);
+    final List<int> candidates = <int>[
+      for (int s = _start + 15; s + _dur <= _dayEnd; s += 15) s,
+      for (int s = _start - 15; s >= _dayStart; s -= 15) s,
+    ];
+    for (final int s in candidates) {
+      try {
+        final SlotCheckResult r = await repo.checkSingle(
+          batchId: batch,
+          date: _date,
+          startMin: s,
+          endMin: s + _dur,
+          replacingOcc: null,
+        );
+        if (!mounted) return null;
+        if (r.ok) return s;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   void _setStart(int start) {
@@ -215,6 +255,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   void _chooseBatch(BatchSchedule s) {
     setState(() {
       _batchId = s.batch.id;
+      _batchChosen = true;
       _error = null;
       if (!_durTouched && s.slots.isNotEmpty) _dur = s.slots.first.durationMin;
       _start = math.max(0, math.min(_start, 1440 - _dur));
@@ -343,8 +384,18 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
     final String? target = batchId;
     final bool canSave = reason == null && !_saving && target != null;
 
+    // Tell the hosting panel whether closing would lose something.
+    final ValueNotifier<bool>? dirtyNotifier = widget.dirty;
+    if (dirtyNotifier != null) {
+      final bool dirty = _durTouched || (_timeTouched && _start != _initStart) || _date != _initDate || _batchChosen;
+      if (dirtyNotifier.value != dirty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => dirtyNotifier.value = dirty);
+      }
+    }
+
     return SheetFrame(
-      title: _isExtra ? l10n.clsExtraTitle : l10n.clsRescheduleTitle,
+      // The side panel / sheet header already carries the title.
+      title: '',
       subtitle: _isExtra ? null : classLabel,
       footer: ClassSaveBar(
         label: _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule,
@@ -374,31 +425,19 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
               ),
             const SizedBox(height: BhorSpace.s12),
           ],
-          Builder(
-            builder: (BuildContext bc) => FieldRow(
-              label: l10n.clsFieldDate,
-              value: fmt.weekdayDate(_date),
-              icon: BhorIcons.calendar,
-              onTap: () => _pickDate(bc),
-            ),
+          BhorPickerField(
+            label: l10n.clsFieldDate,
+            value: fmt.weekdayDate(_date),
+            icon: BhorIcons.calendar,
+            onTap: _pickDate,
           ),
           const SizedBox(height: BhorSpace.s12),
-          Builder(
-            builder: (BuildContext bc) => FieldRow(
-              label: l10n.clsFieldTime,
-              value: fmt.timeRange(_start, _start + _dur),
-              onTap: () => _pickTime(bc),
-              leading: BhorIconButton(
-                semanticLabel: l10n.clsEarlier,
-                icon: BhorIcons.minus,
-                onPressed: _start - 15 >= 0 ? () => _setStart(_start - 15) : null,
-              ),
-              trailing: BhorIconButton(
-                semanticLabel: l10n.clsLater,
-                icon: BhorIcons.add,
-                onPressed: _start + _dur + 15 <= 1440 ? () => _setStart(_start + 15) : null,
-              ),
-            ),
+          // The standard time field (review T6): opens the shared time picker.
+          BhorPickerField(
+            label: l10n.clsFieldTime,
+            value: fmt.timeRange(_start, _start + _dur),
+            icon: BhorIcons.clock,
+            onTap: _pickTime,
           ),
           const SizedBox(height: BhorSpace.s12),
           _Label(l10n.clsFieldDuration),

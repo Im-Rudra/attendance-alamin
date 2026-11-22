@@ -7,5 +7,3 @@ lib/features/dues/widgets/reminder_walkthrough.dart showBhorDialog 1
 lib/features/payments/widgets/waive_dialog.dart showBhorDialog 1
 lib/features/schedule/widgets/sched_sheet.dart showBhorDialog 1
 lib/features/schedule/widgets/sched_sheet.dart showBhorSheet 1
-lib/features/settings/widgets/int_choice_sheet.dart showBhorSheet 1
-lib/features/settings/widgets/settings_groups.dart showBhorDialog 1
