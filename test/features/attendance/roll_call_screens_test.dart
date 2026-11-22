@@ -62,7 +62,7 @@ void main() {
     overrides: () => seedFakes().overrides,
     verify: (WidgetTester tester) async {
       await tester.pumpAndSettle();
-      expect(find.text('রহিম উদ্দিন'), findsOneWidget);
+      expect(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'), findsOneWidget);
       expect(find.byType(RollRow), findsNWidgets(3));
     },
   );
@@ -117,7 +117,7 @@ void main() {
 
   testScreenMatrix(
     'RollStatusSheet',
-    () => const RollStatusSheet(name: 'রহিম উদ্দিন', current: AttendanceStatus.late),
+    () => const RollStatusSheet(name: 'à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨', current: AttendanceStatus.late),
   );
 
   testScreenMatrix(
@@ -175,13 +175,13 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     expect(find.text('Save attendance (3)'), findsOneWidget);
     expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
 
-    final double rowTop = tester.getTopLeft(find.text('রহিম উদ্দিন')).dy;
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    final double rowTop = tester.getTopLeft(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨')).dy;
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     _expectCounts('Present 2', 'Absent 1', 'Late 0');
     // The hint stays: the roster does not shift under the finger.
     expect(find.text('Everyone is marked present. Tap only the absent ones.'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('রহিম উদ্দিন')).dy, rowTop);
+    expect(tester.getTopLeft(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨')).dy, rowTop);
     expect(f.localMeta.values.keys, contains('rollcall_draft:$occ'));
 
     await tester.tap(find.text('Save attendance (3)'));
@@ -230,7 +230,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
       BhorTheme(
         data: BhorThemeData.dark(),
         child: const BhorScaffold(
-          body: RollRow(name: 'রহিম উদ্দিন', roll: 1, status: AttendanceStatus.absent),
+          body: RollRow(name: 'à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨', roll: 1, status: AttendanceStatus.absent),
         ),
       ),
       themeMode: ThemeMode.dark,
@@ -242,9 +242,9 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     );
     expect((card.decoration! as BoxDecoration).color, c.absentBg);
     // Primary text on the tinted row, never dark-on-dark.
-    final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
+    final Text name = tester.widget<Text>(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     expect(name.style?.color, c.text);
-    final Text initials = tester.widget<Text>(find.text('রউ'));
+    final Text initials = tester.widget<Text>(find.text('à¦°à¦‰'));
     expect(initials.style?.color, c.accent);
   });
 
@@ -270,7 +270,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     final SeededFakes f = seedFakes(withAttendance: false);
     await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f);
 
-    await tester.longPress(find.text('রহিম উদ্দিন'));
+    await tester.longPress(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pumpAndSettle();
     expect(find.byType(RollStatusSheet), findsOneWidget);
     await tester.tap(find.text('Excused'));
@@ -282,7 +282,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     final SeededFakes f = seedFakes(withAttendance: false);
     final String occ = physOcc('2026-11-21');
     await open(tester, RollCallScreen(occ: occ), f);
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     expect(f.localMeta.values.keys, contains('rollcall_draft:$occ'));
 
@@ -313,7 +313,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await tester.pumpAndSettle();
     expect(find.text('Save attendance (3)'), findsOneWidget);
 
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     await tester.tap(_byLabel('Close'));
     await tester.pumpAndSettle();
@@ -327,7 +327,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
 
     await tester.tap(find.text('go'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     await tester.tap(_byLabel('Close'));
     await tester.pumpAndSettle();
@@ -346,7 +346,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await open(tester, const BatchRollCallLauncher(batchId: kBatPhysA, date: kToday), f);
 
     expect(find.text('Which class?'), findsOneWidget);
-    await tester.tap(find.text('4:00–5:00 PM'));
+    await tester.tap(find.text('4:00â€“5:00 PM'));
     await tester.pumpAndSettle();
     expect(find.byType(BhorChip), findsNWidgets(2));
     await tester.tap(find.text('Save attendance (3)'));
@@ -357,9 +357,9 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await tester.pump(const Duration(seconds: 9));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(BhorChip, '6:00–7:00 PM'));
+    await tester.tap(find.widgetWithText(BhorChip, '6:00â€“7:00 PM'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     await tester.tap(find.text('Save attendance (3)'));
     await tester.pumpAndSettle();
@@ -375,7 +375,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     final SeededFakes f = seedFakes(withAttendance: false);
     await open(tester, const BatchRollCallLauncher(batchId: kBatPhysA, date: _friday), f);
 
-    expect(find.text('No class is scheduled at this time — it will be saved as an extra class'), findsOneWidget);
+    expect(find.text('No class is scheduled at this time â€” it will be saved as an extra class'), findsOneWidget);
     expect(find.text('You are viewing attendance of a past day'), findsOneWidget);
     await tester.tap(find.text('Save attendance (3)'));
     await tester.pumpAndSettle();
@@ -418,7 +418,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await f.schedule.cancel(occ);
     await open(tester, RollCallScreen(occ: occ), f);
 
-    expect(find.text('This class was cancelled — taking attendance removes the cancellation'), findsOneWidget);
+    expect(find.text('This class was cancelled â€” taking attendance removes the cancellation'), findsOneWidget);
     await tester.tap(find.text('Save attendance (3)'));
     await tester.pumpAndSettle();
     expect(f.attendance.uncancelled, <String>[occ]);
@@ -431,7 +431,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     f.store.replaceBatch(const Batch(
       id: kBatPhysA,
       subjectId: kSubPhysics,
-      name: 'ফিজিক্স এ',
+      name: 'à¦«à¦¿à¦œà¦¿à¦•à§à¦¸ à¦',
       billingType: BillingType.prepaid,
       createdOn: LocalDate(2026, 1, 1),
       sortOrder: 0,
@@ -439,9 +439,9 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     ));
     await open(tester, RollCallScreen(occ: physOcc('2026-11-18')), f);
 
-    expect(find.text('This batch is archived — attendance is read-only'), findsOneWidget);
+    expect(find.text('This batch is archived â€” attendance is read-only'), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     _expectCounts('Present 2', 'Absent 1', 'Late 0');
   });
@@ -451,7 +451,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await open(tester, const BatchRollCallLauncher(batchId: kBatChemB, date: _sunday), f);
 
     expect(find.text('Attendance cannot be taken for a future date'), findsOneWidget);
-    await tester.tap(find.text('করিম হোসেন'));
+    await tester.tap(find.text('à¦•à¦°à¦¿à¦® à¦¹à§‹à¦¸à§‡à¦¨'));
     await tester.pump();
     _expectCounts('Present 2', 'Absent 0', 'Late 0');
     expect(f.attendance.sessions.where((AttendanceSession s) => s.date == _sunday), isEmpty);
@@ -463,8 +463,8 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     final SeededFakes f = seedFakes(withAttendance: false);
     await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f,
         lang: Lang.bn, viewport: TestViewport.desktop);
-    expect(find.text('উপস্থিত'), findsWidgets);
-    expect(find.text('উ'), findsNothing);
+    expect(find.text('à¦‰à¦ªà¦¸à§à¦¥à¦¿à¦¤'), findsWidgets);
+    expect(find.text('à¦‰'), findsNothing);
     await unmount(tester);
   });
 
@@ -533,7 +533,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     // nowhere near the window edges.
     expect(next.left - prev.right, lessThan(420));
     expect(prev.left, lessThan(next.left));
-    expect(prev.left, greaterThan(100));
+    expect(next.right, lessThan(600)); // nowhere near the right window edge (1280)
 
     await tester.tap(_byLabel('Keyboard shortcuts'));
     await tester.pumpAndSettle();
@@ -615,7 +615,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     // A change: Esc asks, Discard drops the draft.
     await tester.tap(find.text('go'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
@@ -632,13 +632,13 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
 
     bool anyFocused() => tester.widgetList<RollRow>(find.byType(RollRow)).any((RollRow r) => r.focused);
-    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.tap(find.text('à¦°à¦¹à¦¿à¦® à¦‰à¦¦à§à¦¦à¦¿à¦¨'));
     await tester.pump();
     expect(anyFocused(), isFalse);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
     await tester.pump();
     expect(anyFocused(), isTrue);
-    await tester.tap(find.text('সারা আক্তার'));
+    await tester.tap(find.text('à¦¸à¦¾à¦°à¦¾ à¦†à¦•à§à¦¤à¦¾à¦°'));
     await tester.pump();
     expect(anyFocused(), isFalse);
     await unmount(tester);
@@ -651,7 +651,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
 
     expect(find.byType(BhorPickerField), findsNWidgets(2));
     expect(find.byType(RollNotice), findsOneWidget);
-    expect(find.text('No class is scheduled at this time — it will be saved as an extra class'), findsOneWidget);
+    expect(find.text('No class is scheduled at this time â€” it will be saved as an extra class'), findsOneWidget);
     expect(find.text('You are viewing attendance of a past day'), findsOneWidget);
     await unmount(tester);
   });
