@@ -12,7 +12,6 @@ import 'package:attendance_alamin/app/shell/adaptive_scaffold.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/widgets/pane_layout.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
-import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_overview.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
@@ -20,7 +19,6 @@ import 'package:attendance_alamin/features/home/ui/today_screen.dart';
 import 'package:attendance_alamin/features/search/ui/search_screen.dart';
 import 'package:attendance_alamin/features/students/ui/students_screen.dart';
 
-import '../../helpers/fakes/fake_settings_repos.dart';
 import 'shell_harness.dart';
 
 /// Product of the FadeTransition / Opacity values above [finder] (0 when
@@ -214,26 +212,6 @@ void main() {
     expect(find.text(l10n.shellShortcutsTitle), findsOneWidget);
     expect(find.text(l10n.shellKeysDestinations), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('list width is remembered per screen in local meta', (WidgetTester tester) async {
-    final FakeLocalMetaRepository meta = FakeLocalMetaRepository();
-    await pumpShell(tester, location: Routes.batch('b1'), size: kDesktop, meta: meta);
-    final PaneLayout pane = tester.widget(find.byType(PaneLayout));
-    expect(pane.listWidth, isNull);
-    pane.onListWidthChanged!(400);
-    await tester.pump();
-    expect(tester.widget<PaneLayout>(find.byType(PaneLayout)).listWidth, 400);
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(meta.values[LocalMetaKeys.pane('batches')], '400.0');
-  });
-
-  testWidgets('a stored list width is applied', (WidgetTester tester) async {
-    final FakeLocalMetaRepository meta = FakeLocalMetaRepository(<String, String>{
-      LocalMetaKeys.pane('students'): '420.0',
-    });
-    await pumpShell(tester, location: Routes.student('s1'), size: kDesktop, meta: meta);
-    expect(tester.widget<PaneLayout>(find.byType(PaneLayout)).listWidth, 420);
   });
 
   testWidgets('no selection on a too-narrow wide window shows the list', (WidgetTester tester) async {

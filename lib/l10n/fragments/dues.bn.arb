@@ -293,5 +293,15 @@
         "example": "৳৮০০"
       }
     }
+  },
+  "duesPickerRoll": "রোল {roll}",
+  "@duesPickerRoll": {
+    "description": "Roll number shown in the collect-fee student picker row.",
+    "placeholders": {
+      "roll": {
+        "type": "String",
+        "example": "12"
+      }
+    }
   }
 }

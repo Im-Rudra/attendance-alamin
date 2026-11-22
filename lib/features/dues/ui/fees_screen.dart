@@ -16,10 +16,14 @@ import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
+import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
+import 'package:attendance_alamin/features/extras/extras_entry.dart';
 import 'package:attendance_alamin/features/dues/widgets/collection_body.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_keys.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_list_pane.dart';
@@ -92,7 +96,8 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
     final String? subtitle = !dues || report == null || report.studentsWithDues == 0
         ? null
         : l10n.duesHeadline(fmt.number(report.studentsWithDues), fmt.number(report.overdueStudents));
-    final double g = wc.gutter;
+    final YearMonth current = ref.watch(todayProvider).yearMonth;
+    final YearMonth month = ref.watch(collMonthProvider) ?? current;
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.navFees,
@@ -100,11 +105,10 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
         large: true,
         // One tab root: never a back arrow, even on `/fees/collection`.
         showBack: false,
+        // The same actions on both segments (F2): "Collect fee" and a ⋮ with
+        // "Other income" and "Export CSV". Global search lives in the sidebar.
         actions: <Widget>[
-          if (!dues) ...<Widget>[
-            const CollectionActions(),
-            const SizedBox(width: BhorSpace.s8),
-          ] else if (wc.usesRail) ...<Widget>[
+          if (wc.usesRail) ...<Widget>[
             Builder(
               builder: (BuildContext bc) => BhorButton(
                 key: const ValueKey<String>('fees-take-money'),
@@ -113,14 +117,34 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
                 onPressed: () => showTakeMoneyPicker(context, anchor: bc),
               ),
             ),
-            const SizedBox(width: BhorSpace.s12),
+            const SizedBox(width: BhorSpace.s8),
           ],
-          BhorIconButton(
-            icon: BhorIcons.search,
-            semanticLabel: l10n.commonSearch,
-            variant: BhorButtonVariant.secondary,
-            circle: true,
-            onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
+          Builder(
+            builder: (BuildContext bc) => BhorIconButton(
+              key: const ValueKey<String>('fees-more'),
+              icon: BhorIcons.overflowVertical,
+              semanticLabel: l10n.commonMore,
+              variant: BhorButtonVariant.secondary,
+              circle: true,
+              onPressed: () => showBhorMenu(
+                context,
+                anchor: bc,
+                items: <BhorMenuItem>[
+                  BhorMenuItem(
+                    key: const Key('coll-add-other-income'),
+                    icon: BhorIcons.addCircle,
+                    label: l10n.collOtherIncomeShort,
+                    onTap: () => unawaited(showOtherIncomeSheet(context)),
+                  ),
+                  BhorMenuItem(
+                    key: const Key('coll-export-csv'),
+                    icon: BhorIcons.notes,
+                    label: l10n.collExportCsv,
+                    onTap: () => unawaited(runCsvExport(context, month: month)),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: BhorSpace.s8),
         ],
@@ -142,15 +166,11 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: wc.isWide ? 360 + 2 * g : double.infinity),
-              child: FeesSegments(
-                selected: _segment,
-                onChanged: (FeesSegment s) => setState(() => _segment = s),
-              ),
-            ),
+          FeesSegments(
+            selected: _segment,
+            onChanged: (FeesSegment s) => setState(() => _segment = s),
+            // Wide: the month stepper sits right next to the segments (F3).
+            trailing: !dues && wc.isWide ? const CollectionMonthNav() : null,
           ),
           Expanded(
             child: BhorFadeThrough(

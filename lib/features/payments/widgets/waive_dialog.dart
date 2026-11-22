@@ -21,9 +21,11 @@ Future<bool> runWaiveDialog(
   final AppLocalizations l10n = context.l10n;
   final String monthText = context.fmt.monthYear(month);
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
-  final String? reason = await showBhorDialog<String>(
+  final String? reason = await showBhorPanel<String>(
     context,
-    builder: (BuildContext ctx) => _WaiveDialog(monthText: monthText),
+    kind: BhorPanelKind.confirm,
+    title: l10n.payWaiveTitle(monthText),
+    builder: (BuildContext ctx) => const _WaiveDialog(),
   );
   if (reason == null) return false;
   try {
@@ -65,9 +67,7 @@ Future<bool> runUnwaiveDialog(
 }
 
 class _WaiveDialog extends StatefulWidget {
-  const _WaiveDialog({required this.monthText});
-
-  final String monthText;
+  const _WaiveDialog();
 
   @override
   State<_WaiveDialog> createState() => _WaiveDialogState();
@@ -85,34 +85,35 @@ class _WaiveDialogState extends State<_WaiveDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BhorDialog(
-      title: l10n.payWaiveTitle(widget.monthText),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(l10n.payWaiveBody),
+        const SizedBox(height: BhorSpace.s12),
+        BhorTextField(
+          key: const ValueKey<String>('pay-waive-reason'),
+          controller: _reason,
+          textInputAction: TextInputAction.done,
+          label: l10n.payWaiveReason,
+        ),
+        const SizedBox(height: BhorSpace.s16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            Text(l10n.payWaiveBody),
-            const SizedBox(height: BhorSpace.s12),
-            BhorTextField(
-              key: const ValueKey<String>('pay-waive-reason'),
-              controller: _reason,
-              textInputAction: TextInputAction.done,
-              label: l10n.payWaiveReason,
+            BhorButton(
+              key: const ValueKey<String>('pay-waive-cancel'),
+              label: l10n.commonCancel,
+              variant: BhorButtonVariant.secondary,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: BhorSpace.s8),
+            BhorButton(
+              key: const ValueKey<String>('pay-waive-confirm'),
+              label: l10n.payWaiveConfirm,
+              onPressed: () => Navigator.of(context).pop(_reason.text.trim()),
             ),
           ],
-        ),
-      ),
-      actions: <Widget>[
-        BhorButton(
-          label: l10n.commonCancel,
-          variant: BhorButtonVariant.secondary,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        BhorButton(
-          key: const ValueKey<String>('pay-waive-confirm'),
-          label: l10n.payWaiveConfirm,
-          onPressed: () => Navigator.of(context).pop(_reason.text.trim()),
         ),
       ],
     );

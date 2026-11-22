@@ -118,11 +118,15 @@ class _Content extends ConsumerWidget {
           const SizedBox(height: 12),
           if (fill) Expanded(child: sentence) else sentence,
           const SizedBox(height: 12),
-          BhorButton(
-            onPressed: archived ? null : openEditor,
-            expand: true,
-            icon: BhorIcons.edit,
-            label: l10n.schedChangeWeekly,
+          // A quiet secondary action, not a full-width primary (review B5).
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: BhorButton(
+              variant: BhorButtonVariant.secondary,
+              onPressed: archived ? null : openEditor,
+              icon: BhorIcons.edit,
+              label: l10n.schedChangeWeekly,
+            ),
           ),
         ],
       );

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/features/dues/controllers/reminder_actions.dart';
 import 'package:attendance_alamin/features/dues/widgets/batch_fees_tab.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
 
 /// "Collect fee" in place (the flow of the Fees screen's Collect fee button):
@@ -19,6 +20,13 @@ Future<void> shareDuesReminder(BuildContext context, {required String studentId}
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
   await remindStudent(context, container, studentId);
 }
+
+/// "Collect fee" from anywhere (Today's New…): opens the payment panel of
+/// [studentId], or the student picker (name, roll, batch, due level) when no
+/// student is given. Pass the invoking control's context so the picker anchors
+/// to it.
+Future<void> openCollectFee(BuildContext context, {String? studentId}) =>
+    studentId == null ? showTakeMoneyPicker(context) : duesCollect(context, studentId);
 
 /// Batch detail › বেতন tab.
 class BatchFeesTab extends StatelessWidget {

@@ -105,5 +105,13 @@
   "batchContextStudentsOne": "{count}",
   "batchBulkAdd": "Add many at once",
   "batchOverviewByStudents": "Students per batch",
-  "batchFeeEarlierMonth": "An earlier month"
+  "batchFeeEarlierMonth": "An earlier month",
+  "batchCsvTitle": "Add students from a CSV file",
+  "batchCsvIntro": "One student per line, in three columns: name (required), guardian's phone and roll (optional). A first line with column names is fine.",
+  "batchCsvSampleLabel": "Example",
+  "batchCsvSampleHead": "Name, Phone, Roll",
+  "batchCsvSampleRow1": "Ayesha Khatun, 01712345678, 5",
+  "batchCsvSampleRow2": "Bilal Hossain, 01811223344, 6",
+  "batchCsvTip": "In Excel or Google Sheets, choose “Save as” and pick CSV.",
+  "batchCsvChoose": "Choose file"
 }

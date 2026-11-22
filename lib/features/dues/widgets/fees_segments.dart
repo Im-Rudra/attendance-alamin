@@ -12,32 +12,45 @@ enum FeesSegment { dues, collection }
 
 /// Dues | Collected switch. The Fees page swaps its body in place.
 class FeesSegments extends StatelessWidget {
-  const FeesSegments({super.key, required this.selected, required this.onChanged});
+  const FeesSegments({super.key, required this.selected, required this.onChanged, this.trailing});
 
   final FeesSegment selected;
   final ValueChanged<FeesSegment> onChanged;
 
+  /// Grouped right next to the segments on wide windows (the month stepper).
+  final Widget? trailing;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final double g = WindowClass.of(context).gutter;
+    final WindowClass wc = WindowClass.of(context);
+    final double g = wc.gutter;
+    final Widget segmented = BhorSegmented<FeesSegment>(
+      segments: <BhorSegment<FeesSegment>>[
+        BhorSegment<FeesSegment>(FeesSegment.dues, l10n.duesSegDues),
+        BhorSegment<FeesSegment>(FeesSegment.collection, l10n.duesSegCollection),
+      ],
+      value: selected,
+      onChanged: (FeesSegment s) {
+        if (s != selected) onChanged(s);
+      },
+    );
     return Padding(
       padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, BhorSpace.s8),
-      child: BhorSegmented<FeesSegment>(
-        segments: <BhorSegment<FeesSegment>>[
-          BhorSegment<FeesSegment>(FeesSegment.dues, l10n.duesSegDues),
-          BhorSegment<FeesSegment>(FeesSegment.collection, l10n.duesSegCollection),
-        ],
-        value: selected,
-        onChanged: (FeesSegment s) {
-          if (s != selected) onChanged(s);
-        },
-      ),
+      child: wc.isWide
+          ? Row(
+              children: <Widget>[
+                SizedBox(width: 360, child: segmented),
+                if (trailing != null) ...<Widget>[const SizedBox(width: BhorSpace.s16), trailing!],
+              ],
+            )
+          : segmented,
     );
   }
 }
 
-/// "‹ নভেম্বর ২০২৬ ›": steps one month at a time.
+/// "‹ নভেম্বর ২০২৬ ›": steps one month at a time. Compact: the chevrons sit
+/// right beside the month name (a grouped control, not spread to the edges).
 class MonthPickerRow extends StatelessWidget {
   const MonthPickerRow({
     super.key,
@@ -55,31 +68,44 @@ class MonthPickerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Row(
-      children: <Widget>[
-        BhorIconButton(
-          icon: BhorIcons.chevronLeft,
-          semanticLabel: l10n.collPrevMonth,
-          onPressed: canPrev ? () => onChanged(month.addMonths(-1)) : null,
-        ),
-        Expanded(
-          child: Semantics(
+    final BhorThemeData b = context.bhor;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      widthFactor: 1,
+      heightFactor: 1,
+      child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: b.colors.soft,
+        borderRadius: BorderRadius.circular(BhorRadius.control),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          BhorIconButton(
+            icon: BhorIcons.chevronLeft,
+            semanticLabel: l10n.collPrevMonth,
+            onPressed: canPrev ? () => onChanged(month.addMonths(-1)) : null,
+          ),
+          Semantics(
             header: true,
-            child: Text(
-              context.fmt.monthYear(month),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.bhor.type.heading,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 132),
+              child: Text(
+                context.fmt.monthYear(month),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: b.type.heading,
+              ),
             ),
           ),
-        ),
-        BhorIconButton(
-          icon: BhorIcons.chevronRight,
-          semanticLabel: l10n.collNextMonth,
-          onPressed: canNext ? () => onChanged(month.addMonths(1)) : null,
-        ),
-      ],
+          BhorIconButton(
+            icon: BhorIcons.chevronRight,
+            semanticLabel: l10n.collNextMonth,
+            onPressed: canNext ? () => onChanged(month.addMonths(1)) : null,
+          ),
+        ],
+      ),
+      ),
     );
   }
 }

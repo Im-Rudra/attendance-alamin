@@ -1,7 +1,8 @@
 // Add students from a CSV file (shared by onboarding and the bulk-add
-// screen): pick the file, show a preview sheet (problem rows flagged and
-// skipped), save everything in one go with a progress bar, then report the
-// count in a toast.
+// panel): first a short explainer of the expected columns with a sample (and
+// the "choose file" button), then the file picker, a preview (problem rows
+// flagged and skipped), save everything in one go with a progress bar, then
+// report the count in a toast.
 
 import 'dart:typed_data';
 
@@ -36,17 +37,95 @@ class CsvImportButton extends StatelessWidget {
   }
 }
 
+/// The expected CSV format: the three columns and a two-row sample. Shown
+/// before the file picker opens (review B10). [onChoose] opens the picker.
+class CsvFormatExplainer extends StatelessWidget {
+  const CsvFormatExplainer({super.key, required this.onChoose, this.onBack});
+
+  final VoidCallback onChoose;
+
+  /// Adds a "back" button (inline use inside a panel); null hides it.
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(l10n.batchCsvIntro, style: b.type.body),
+        const SizedBox(height: BhorSpace.s12),
+        Text(l10n.batchCsvSampleLabel, style: b.type.label.copyWith(color: b.colors.text2)),
+        const SizedBox(height: BhorSpace.s8),
+        DecoratedBox(
+          key: const ValueKey<String>('csv-sample'),
+          decoration: BoxDecoration(
+            color: b.colors.soft,
+            borderRadius: BorderRadius.circular(BhorRadius.control),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(BhorSpace.s12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(l10n.batchCsvSampleHead, style: b.type.bodyStrong),
+                const SizedBox(height: BhorSpace.s4),
+                Text(l10n.batchCsvSampleRow1, style: b.type.body),
+                Text(l10n.batchCsvSampleRow2, style: b.type.body),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: BhorSpace.s8),
+        Text(l10n.batchCsvTip, style: b.type.meta),
+        const SizedBox(height: BhorSpace.s16),
+        BhorButton(
+          key: const ValueKey<String>('csv-choose-file'),
+          icon: BhorIcons.backupUp,
+          label: l10n.batchCsvChoose,
+          expand: true,
+          onPressed: onChoose,
+        ),
+        if (onBack != null) ...<Widget>[
+          const SizedBox(height: BhorSpace.s4),
+          BhorButton(
+            key: const ValueKey<String>('csv-back'),
+            variant: BhorButtonVariant.ghost,
+            label: l10n.commonBack,
+            expand: true,
+            onPressed: onBack,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// Runs the whole flow. [onAdded] receives the students that were saved.
 /// [batchId] null means "no batch" (onboarding with the batch step skipped).
+/// [explain] false skips the explainer (the caller already showed it).
 Future<void> startCsvStudentImport(
   BuildContext context,
   WidgetRef ref, {
   required String? batchId,
   required void Function(List<BulkAdded> added) onAdded,
+  bool explain = true,
 }) async {
   final AppLocalizations l10n = context.l10n;
   void say(String text) {
     if (context.mounted) BhorToast.show(context, message: text);
+  }
+
+  if (explain) {
+    final bool? go = await showBhorPanel<bool>(
+      context,
+      kind: BhorPanelKind.confirm,
+      title: l10n.batchCsvTitle,
+      builder: (BuildContext ctx) => CsvFormatExplainer(onChoose: () => Navigator.of(ctx).pop(true)),
+    );
+    if (go != true || !context.mounted) return;
   }
 
   List<CsvStudentRow> rows;

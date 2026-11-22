@@ -396,7 +396,7 @@ void main() {
   });
 
   group('enrol in a second batch (scenario 7)', () {
-    testWidgets('Rahim joins Chem B; Physics A is shown as already joined',
+    testWidgets('Rahim joins Chem B; Physics A (his batch) is not offered',
         (WidgetTester tester) async {
       final SeededFakes f = seedFakes();
       bool? done;
@@ -410,10 +410,10 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Physics A is his current batch: marked, not selectable.
-      expect(find.text('এই ব্যাচে আছে'), findsOneWidget);
+      // Physics A is his current batch: not offered at all (S5).
+      expect(find.text('এই ব্যাচে আছে'), findsNothing);
+      expect(find.text('ফিজিক্স এ'), findsNothing);
       final Finder confirm = find.byKey(const ValueKey<String>('stu-enroll-confirm'));
-      expect(tester.widget<BhorButton>(confirm).onPressed, isNull);
 
       await tester.tap(find.text('কেমিস্ট্রি বি'));
       await tester.pumpAndSettle();

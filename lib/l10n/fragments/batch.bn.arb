@@ -573,5 +573,37 @@
   "batchFeeEarlierMonth": "আরও আগের মাস",
   "@batchFeeEarlierMonth": {
     "description": "Fee-change sheet: dropdown label for months before the quick choices."
+  },
+  "batchCsvTitle": "CSV ফাইল থেকে শিক্ষার্থী যোগ করুন",
+  "@batchCsvTitle": {
+    "description": "Title of the CSV import explainer."
+  },
+  "batchCsvIntro": "ফাইলের প্রতি লাইনে একজন শিক্ষার্থী। কলাম তিনটি: নাম (জরুরি), অভিভাবকের ফোন ও রোল (না দিলেও চলবে)। প্রথম লাইনে কলামের নাম থাকলেও সমস্যা নেই।",
+  "@batchCsvIntro": {
+    "description": "Explains the expected CSV columns."
+  },
+  "batchCsvSampleLabel": "উদাহরণ",
+  "@batchCsvSampleLabel": {
+    "description": "Label above the CSV sample."
+  },
+  "batchCsvSampleHead": "নাম, ফোন, রোল",
+  "@batchCsvSampleHead": {
+    "description": "First (header) line of the CSV sample."
+  },
+  "batchCsvSampleRow1": "আয়েশা খাতুন, ০১৭১২৩৪৫৬৭৮, ৫",
+  "@batchCsvSampleRow1": {
+    "description": "First data line of the CSV sample."
+  },
+  "batchCsvSampleRow2": "বিলাল হোসেন, ০১৮১১২২৩৩৪৪, ৬",
+  "@batchCsvSampleRow2": {
+    "description": "Second data line of the CSV sample."
+  },
+  "batchCsvTip": "Excel বা Google Sheets-এ “Save as” থেকে CSV বেছে নিন।",
+  "@batchCsvTip": {
+    "description": "Tip on how to make a CSV file."
+  },
+  "batchCsvChoose": "ফাইল বাছুন",
+  "@batchCsvChoose": {
+    "description": "Button that opens the file picker."
   }
 }

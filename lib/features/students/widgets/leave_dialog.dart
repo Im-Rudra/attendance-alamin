@@ -19,30 +19,47 @@ import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
-/// Shows the dialog; true when the student (or the one enrollment) was ended.
-/// [enrollmentId] set = remove from that batch only.
+/// Shows the form; true when the student (or the one enrollment) was ended.
+/// [enrollmentId] set = remove from that batch only. A side panel on desktop,
+/// a sheet on phones.
 Future<bool> openLeaveDialog(
   BuildContext context, {
   required String studentId,
   String? enrollmentId,
 }) async {
-  final bool? done = await showBhorDialog<bool>(
+  final PanelFooterSlot slot = PanelFooterSlot();
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  final l10n = context.l10n;
+  final bool? done = await showBhorPanel<bool>(
     context,
+    kind: BhorPanelKind.form,
+    title: enrollmentId == null ? l10n.stuLeftTitle : l10n.stuRemoveFromBatchTitle,
+    width: 460,
+    footer: slot.build,
+    dirty: dirty,
     builder: (BuildContext ctx) =>
-        LeaveDialog(studentId: studentId, enrollmentId: enrollmentId),
+        LeaveDialog(studentId: studentId, enrollmentId: enrollmentId, footerSlot: slot, dirty: dirty),
   );
   return done ?? false;
 }
 
 class LeaveDialog extends ConsumerStatefulWidget {
-  const LeaveDialog({super.key, required this.studentId, this.enrollmentId});
+  const LeaveDialog({super.key, required this.studentId, this.enrollmentId, this.footerSlot, this.dirty});
 
   final String studentId;
   final String? enrollmentId;
+
+  /// Hosted inside [showBhorPanel]: no dialog frame; the confirm button goes
+  /// to [footerSlot]. Null = standalone [BhorDialog].
+  final PanelFooterSlot? footerSlot;
+
+  /// Written true once the date or a month was changed.
+  final ValueNotifier<bool>? dirty;
 
   @override
   ConsumerState<LeaveDialog> createState() => _LeaveDialogState();
@@ -118,10 +135,7 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
         ? l10n.stuLeftBody(student?.name ?? '')
         : l10n.stuRemoveFromBatchBody(student?.name ?? '', batchName(one));
 
-    return BhorDialog(
-      title: title,
-      body: SingleChildScrollView(
-        child: Column(
+    final Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -131,7 +145,10 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
               label: l10n.stuLeftDate,
               value: date,
               lastDate: today.addDays(31),
-              onChanged: (LocalDate d) => setState(() => _date = d),
+              onChanged: (LocalDate d) => setState(() {
+                _date = d;
+                widget.dirty?.value = true;
+              }),
             ),
             const SizedBox(height: BhorSpace.s16),
             for (final Enrollment e in open) ...<Widget>[
@@ -145,7 +162,10 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
                   date.yearMonth.addMonths(1),
                   lbm[e.id]!,
                 ),
-                onChanged: (YearMonth m) => setState(() => _edited[e.id] = m),
+                onChanged: (YearMonth m) => setState(() {
+                  _edited[e.id] = m;
+                  widget.dirty?.value = true;
+                }),
               ),
               const SizedBox(height: BhorSpace.s4),
               Text(
@@ -171,19 +191,28 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
                 ),
               ),
           ],
-        ),
-      ),
+    );
+    final PanelFooterSlot? slot = widget.footerSlot;
+    final Widget confirm = BhorButton(
+      key: const ValueKey<String>('stu-leave-confirm'),
+      label: one == null ? l10n.stuLeftConfirm : l10n.stuRemoveConfirm,
+      expand: slot != null,
+      onPressed: (_busy || (one != null && open.isEmpty)) ? null : () => _confirm(date, open, lbm),
+    );
+    if (slot != null) {
+      slot.publish(confirm, alive: () => mounted);
+      return content;
+    }
+    return BhorDialog(
+      title: title,
+      body: SingleChildScrollView(child: content),
       actions: <Widget>[
         BhorButton(
           label: l10n.commonCancel,
           variant: BhorButtonVariant.ghost,
           onPressed: _busy ? null : () => Navigator.of(context).pop(false),
         ),
-        BhorButton(
-          key: const ValueKey<String>('stu-leave-confirm'),
-          label: one == null ? l10n.stuLeftConfirm : l10n.stuRemoveConfirm,
-          onPressed: (_busy || (one != null && open.isEmpty)) ? null : () => _confirm(date, open, lbm),
-        ),
+        confirm,
       ],
     );
   }

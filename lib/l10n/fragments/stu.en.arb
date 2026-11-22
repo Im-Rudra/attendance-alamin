@@ -105,5 +105,9 @@
   "stuOverviewRecent": "Recently joined",
   "stuStartThisMonth": "From this month",
   "stuStartNextMonth": "From next month",
-  "stuOtherMonth": "Pick another month"
+  "stuOtherMonth": "Pick another month",
+  "stuClearFilters": "Clear filters",
+  "stuFilterBatchAll": "All batches",
+  "stuEnrollAllJoinedTitle": "Already in every batch",
+  "stuEnrollAllJoinedHint": "Create a new batch first to enrol this student somewhere else."
 }

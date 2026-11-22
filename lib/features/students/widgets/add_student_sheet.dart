@@ -28,13 +28,15 @@ import 'package:attendance_alamin/features/students/widgets/student_dialogs.dart
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<String?> openAddStudentSheet(BuildContext context, String batchId) {
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   return showBhorPanel<String>(
     context,
     title: context.l10n.stuAddTitle,
-    kind: BhorPanelKind.list,
+    kind: BhorPanelKind.form,
     expand: true,
-    width: 720,
-    builder: (BuildContext ctx) => AddStudentSheet(batchId: batchId),
+    width: 520,
+    dirty: dirty,
+    builder: (BuildContext ctx) => AddStudentSheet(batchId: batchId, dirty: dirty),
   );
 }
 
@@ -45,7 +47,11 @@ String maskPhone(AppFormat fmt, String phone) {
 }
 
 class AddStudentSheet extends ConsumerStatefulWidget {
-  const AddStudentSheet({super.key, required this.batchId});
+  const AddStudentSheet({super.key, required this.batchId, this.dirty});
+
+  /// Written true while a new student's form holds unsaved input (the
+  /// hosting panel then asks before closing).
+  final ValueNotifier<bool>? dirty;
 
   final String batchId;
 
@@ -61,8 +67,23 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   bool _busy = false;
   String? _error;
 
+  Listenable? _changes;
+
+  void _syncDirty() {
+    final bool d = _model?.isDirty ?? false;
+    final ValueNotifier<bool>? n = widget.dirty;
+    if (n != null && n.value != d) n.value = d;
+  }
+
+  void _watch(StudentFormModel? m) {
+    _changes?.removeListener(_syncDirty);
+    _changes = m?.changes;
+    _changes?.addListener(_syncDirty);
+  }
+
   @override
   void dispose() {
+    _changes?.removeListener(_syncDirty);
     _query.dispose();
     _model?.dispose();
     _choice?.dispose();
@@ -91,6 +112,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
       _model = m;
       _choice ??= EnrollChoice(batchId: widget.batchId);
       _error = null;
+      _watch(m);
     });
   }
 
@@ -100,7 +122,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
       if (old != null) _retired.add(old);
       _model = null;
       _error = null;
+      _watch(null);
     });
+    _syncDirty();
   }
 
   Future<void> _enrollExisting(Student s) async {

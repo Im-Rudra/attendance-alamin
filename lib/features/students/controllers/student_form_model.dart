@@ -29,7 +29,9 @@ class StudentFormModel extends ChangeNotifier {
         guardianPhone = TextEditingController(text: guardianPhone),
         guardianName = TextEditingController(text: guardianName),
         roll = TextEditingController(text: roll),
-        notes = TextEditingController(text: notes);
+        notes = TextEditingController(text: notes) {
+    _initial = _snapshot();
+  }
 
   factory StudentFormModel.from(Student s) => StudentFormModel(
         admissionDate: s.admissionDate,
@@ -56,6 +58,34 @@ class StudentFormModel extends ChangeNotifier {
   /// The picked photo (null with [photoChanged] = remove it).
   Uint8List? photo;
   bool photoChanged = false;
+
+  late final String _initial;
+
+  String _snapshot() => <Object?>[
+        name.text,
+        phone.text,
+        guardianPhone.text,
+        guardianName.text,
+        roll.text,
+        notes.text,
+        admissionDate,
+        photoChanged,
+      ].join('\u0001');
+
+  /// True once any field differs from what the form opened with (the panel's
+  /// unsaved-changes guard).
+  bool get isDirty => _snapshot() != _initial;
+
+  /// Fires on any field edit as well as on [notifyListeners].
+  Listenable get changes => Listenable.merge(<Listenable>[
+        this,
+        name,
+        phone,
+        guardianPhone,
+        guardianName,
+        roll,
+        notes,
+      ]);
 
   /// Field name -> message of the last [validate].
   final Map<String, String> errors = <String, String>{};
@@ -134,9 +164,15 @@ class StudentFormModel extends ChangeNotifier {
 
 /// Which batch and billing start a new enrollment gets.
 class EnrollChoice extends ChangeNotifier {
-  EnrollChoice({this.batchId});
+  EnrollChoice({this.batchId}) : _initialBatchId = batchId;
 
   String? batchId;
+  final String? _initialBatchId;
+
+  /// A different batch, start month or fee than the form opened with.
+  bool get isDirty => batchId != _initialBatchId || _startOverride != null || fee.text.trim().isNotEmpty;
+
+  Listenable get changes => Listenable.merge(<Listenable>[this, fee]);
   YearMonth? _startOverride;
 
   /// Optional monthly fee override (blank = the batch fee).

@@ -245,10 +245,14 @@ class _SameTimeEditor extends StatelessWidget {
                   ],
                 );
               }
+              // Narrow: chips of one minimum width that wrap 4 + 3 (never
+              // 6 + 1); the selected check may widen a chip a little.
+              const double gap = 8;
+              final double minW = (box.maxWidth - gap * 3) / 4 - 8;
               return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[for (final int d in order) chip(d, 56)],
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[for (final int d in order) chip(d, minW < 56 ? 56 : minW)],
               );
             },
           ),
@@ -467,7 +471,8 @@ class _TimePair extends StatelessWidget {
   }
 }
 
-/// A field-like button showing one time; tapping opens the time picker.
+/// A standard picker field showing one time; tapping opens the time picker
+/// as a popover anchored to the field.
 class TimeButton extends StatelessWidget {
   const TimeButton({
     super.key,
@@ -484,51 +489,23 @@ class TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BhorThemeData b = context.bhor;
     final String time = context.fmt.time(minutes);
-    return BhorPressable(
-      onTap: () => _open(context),
+    return BhorPickerField(
+      label: label,
+      value: time,
+      icon: BhorIcons.clock,
       semanticLabel: '$label: $time',
-      excludeChildSemantics: true,
-      builder: (BuildContext c, BhorStates st) => ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: st.hovered || st.pressed ? b.colors.soft2 : b.colors.surface,
-            borderRadius: BorderRadius.circular(BhorRadius.control),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: 6),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.caption),
-                      Text(
-                        time,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: BhorType.tabular(b.type.heading),
-                      ),
-                    ],
-                  ),
-                ),
-                if (MediaQuery.textScalerOf(context).scale(16) < 20)
-                  Icon(BhorIcons.clock, size: 20, color: b.colors.accent),
-              ],
-            ),
-          ),
-        ),
-      ),
+      onTap: (BuildContext field) => _open(context, field),
     );
   }
 
-  Future<void> _open(BuildContext context) async {
-    final int? v =
-        await openTimePicker(context, initialMin: minutes, title: pickerTitle);
+  Future<void> _open(BuildContext context, BuildContext field) async {
+    final int? v = await openTimePicker(
+      context,
+      initialMin: minutes,
+      title: pickerTitle,
+      anchor: field,
+    );
     if (v != null) onPicked(v);
   }
 }
