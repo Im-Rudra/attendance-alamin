@@ -124,17 +124,24 @@ class BackupReviewScreen extends ConsumerWidget {
         final bool applying = s.phase == ImportPhase.applying;
         secondary = BhorButton(
           key: const Key('review-secondary'),
-          variant: BhorButtonVariant.secondary,
+          variant: BhorButtonVariant.ghost,
           label: changes == 0 ? l10n.commonOk : l10n.commonCancel,
           onPressed: applying ? null : () => _close(context),
         );
-        primary = BhorButton(
-          key: const Key('review-apply'),
-          label: applying ? l10n.backupApplying : applyLabel(l10n, fmt, changes),
-          loading: applying,
-          onPressed: changes == 0 || applying ? null : () => _apply(context, ref),
+        final bool none = changes == 0 && !applying;
+        // The apply label carries the count, so it takes the room the bar's
+        // summary text would (a narrow phone at large text must not overflow).
+        primary = Flexible(
+          flex: none ? 1 : 9,
+          child: BhorButton(
+            key: const Key('review-apply'),
+            label: applying ? l10n.backupApplying : applyLabel(l10n, fmt, changes),
+            loading: applying,
+            expand: true,
+            onPressed: changes == 0 || applying ? null : () => _apply(context, ref),
+          ),
         );
-        if (changes == 0 && !applying) {
+        if (none) {
           barSummary = Text(l10n.backupApplyDisabledNone, key: const Key('review-disabled-reason'));
         }
     }
