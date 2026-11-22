@@ -113,5 +113,9 @@
   "batchCsvSampleRow1": "Ayesha Khatun, 01712345678, 5",
   "batchCsvSampleRow2": "Bilal Hossain, 01811223344, 6",
   "batchCsvTip": "In Excel or Google Sheets, choose “Save as” and pick CSV.",
-  "batchCsvChoose": "Choose file"
+  "batchCsvChoose": "Choose file",
+  "batchGroupCountOne": "{count} batch",
+  "batchStudentCountOne": "{count} student",
+  "batchFeePartialWarnOne": "{count} month will become partial",
+  "batchGapTitleOne": "Waive the {count} month in between?"
 }

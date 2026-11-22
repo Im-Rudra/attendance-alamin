@@ -2,6 +2,7 @@
 // enrollment (month strip, attendance summary, [টাকা নিন]), payment history.
 // Wide windows lay the profile out in two columns.
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +16,7 @@ import 'package:attendance_alamin/app/services/contact_actions.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
+import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
@@ -280,11 +282,38 @@ class _HeaderCard extends StatelessWidget {
     final String? guardian = student.guardianPhone;
     final String? own = student.phone;
 
-    Widget callButton(String role, String number) => BhorButton(
-          variant: BhorButtonVariant.secondary,
-          icon: ContactActions.icon,
-          label: l10n.stuContactButton(role, ContactActions.label(l10n)),
-          onPressed: () => ContactActions.callOrCopy(context, number),
+    // The number itself, with copy (and call where there is a dialer) beside it.
+    Widget phoneRow(String role, String number) => Row(
+          key: ValueKey<String>('stu-phone-$role'),
+          children: <Widget>[
+            Icon(BhorIcons.phone, size: BhorIconSize.chip, color: th.colors.text2),
+            const SizedBox(width: BhorSpace.s8),
+            Expanded(
+              child: Semantics(
+                container: true,
+                label: '$role ${fmt.digits(number)}',
+                excludeSemantics: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(role, style: th.type.meta.copyWith(color: th.colors.text2)),
+                    Text(fmt.digits(number), style: BhorType.tabular(th.type.bodyStrong)),
+                  ],
+                ),
+              ),
+            ),
+            BhorIconButton(
+              icon: BhorIcons.copy,
+              semanticLabel: '$role · ${l10n.commonCopyNumber}',
+              onPressed: () => _copyNumber(context, number),
+            ),
+            if (ContactActions.canCall)
+              BhorIconButton(
+                icon: ContactActions.icon,
+                semanticLabel: '$role · ${l10n.commonCall}',
+                onPressed: () => ContactActions.callOrCopy(context, number),
+              ),
+          ],
         );
 
     return BhorCard(
@@ -323,14 +352,15 @@ class _HeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: BhorSpace.s12),
+          if (guardian != null) phoneRow(l10n.stuRoleGuardian, guardian),
+          if (own != null) phoneRow(l10n.stuRoleStudent, own),
+          if (guardian != null || own != null) const SizedBox(height: BhorSpace.s8),
           // Each action is one line (icon + label) at its natural width; the
           // row wraps rather than squeezing a label onto two lines.
           Wrap(
             spacing: BhorSpace.s8,
             runSpacing: BhorSpace.s8,
             children: <Widget>[
-              if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
-              if (own != null) callButton(l10n.stuRoleStudent, own),
               if (guardian == null && own == null)
                 BhorButton(
                   variant: BhorButtonVariant.secondary,
@@ -357,6 +387,16 @@ class _HeaderCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _copyNumber(BuildContext context, String phone) async {
+  final String number = AppFormat.toAsciiDigits(phone).replaceAll(RegExp(r'[^0-9+]'), '');
+  if (number.isEmpty) return;
+  final BuildContext anchor = BhorToast.anchorOf(context);
+  final double lift = BhorToastInset.of(context);
+  final String copied = context.l10n.shellNumberCopied(context.fmt.digits(number));
+  await Clipboard.setData(ClipboardData(text: number));
+  if (anchor.mounted) BhorToast.show(anchor, message: copied, bottomOffset: lift);
 }
 
 class _LeftCard extends ConsumerWidget {

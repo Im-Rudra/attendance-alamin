@@ -23,6 +23,8 @@ import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
+import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 /// Live students (active and left), roll then name.
 final stuRosterProvider = StreamProvider<List<Student>>(
@@ -63,9 +65,21 @@ class StudentRow {
     this.dues,
     this.lastPaidOn,
     this.attendancePercent,
+    this.subjectNames = const <String, String>{},
   });
 
   final Student student;
+
+  /// Subject name by subject id, so a batch can be named "subject · batch".
+  final Map<String, String> subjectNames;
+
+  /// "Physics — HSC · 10 AM batch" for [b] (the bare name without a subject).
+  String labelOf(AppLocalizations l10n, Batch b) =>
+      batchLabel(l10n, subjectNames[b.subjectId] ?? '', b.name);
+
+  /// Every batch of the row as one label, one after the other.
+  String batchesText(AppLocalizations l10n, {String separator = ' | '}) =>
+      batches.map((Batch b) => labelOf(l10n, b)).join(separator);
 
   /// Batches of the open enrollments (all of them for a student who left).
   final List<Batch> batches;
@@ -86,7 +100,11 @@ List<StudentRow> buildStudentRows({
   required DuesReport report,
   required List<Payment> payments,
   required List<AttendanceRecord> records,
+  List<Subject> subjects = const <Subject>[],
 }) {
+  final Map<String, String> subjectNames = <String, String>{
+    for (final Subject s in subjects) s.id: s.name,
+  };
   final Map<String, Batch> batchById = <String, Batch>{
     for (final Batch b in batches) b.id: b,
   };
@@ -150,6 +168,7 @@ List<StudentRow> buildStudentRows({
       dues: duesBy[s.id],
       lastPaidOn: lastPaid[s.id],
       attendancePercent: tally.percent,
+      subjectNames: subjectNames,
     ));
   }
   return rows;
@@ -163,6 +182,8 @@ final stuRowsProvider = Provider<AsyncValue<List<StudentRow>>>((ref) {
     ref.watch(stuBatchesProvider),
     (s, e, b) => (s: s, e: e, b: b),
   );
+  // Subjects only decorate the batch label: never block the list on them.
+  final List<Subject> subjects = ref.watch(stuSubjectsProvider).value ?? const <Subject>[];
   final money = combine3(
     ref.watch(duesReportProvider),
     ref.watch(stuPaymentsProvider),
@@ -179,6 +200,7 @@ final stuRowsProvider = Provider<AsyncValue<List<StudentRow>>>((ref) {
       report: y.r,
       payments: y.p,
       records: y.a,
+      subjects: subjects,
     ),
   );
 });

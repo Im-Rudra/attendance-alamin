@@ -45,7 +45,7 @@ class StudentsOverview extends ConsumerWidget {
         if (r.dues != null && r.dues!.totalOutstanding > 0) owing.add(r);
         for (final Batch b in r.batches) {
           perBatch[b.id] = (perBatch[b.id] ?? 0) + 1;
-          batchNames[b.id] = b.name;
+          batchNames[b.id] = r.labelOf(l10n, b);
         }
       }
     }

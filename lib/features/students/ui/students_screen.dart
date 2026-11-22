@@ -1,7 +1,7 @@
 // Students tab (UX 3, 3b) on BhorMasterDetailPage. Phones and narrow panes:
 // search + filter chips + rows, the profile alone once one is open. A pane
 // that holds the list and a profile side by side (>= 801) shows them
-// together; when it also leaves the table >= 600 beside a 440 profile, the
+// together; when it also leaves the table >= 600 beside the profile (>= 480), the
 // list becomes the data table and takes every pixel the profile does not need.
 // `/students/:studentId` passes [selectedId]. With nothing selected the
 // detail column is the roster overview.
@@ -30,6 +30,11 @@ class StudentsScreen extends StatelessWidget {
   /// The profile column is never narrower than this (nothing clips in Bangla).
   static const double profileMinWidth = 440;
 
+  /// With room for the table the profile gets a share of the pane, between
+  /// [profileMinWidth] + 40 and 560, so a wide Name column never starves it.
+  static double profileWidthFor(double paneWidth) =>
+      (paneWidth * 0.34).clamp(profileMinWidth + 40, 560.0).toDouble();
+
   /// The list pane shows the table from this width.
   static const double tableMinPaneWidth = 600;
 
@@ -49,8 +54,8 @@ class StudentsScreen extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints box) {
         final double w = box.maxWidth;
         final bool two = BhorMasterDetailPage.twoPane(w, minDetailWidth: profileMinWidth);
-        // The table takes everything the 440 profile leaves.
-        final double tableWidth = (w - 1 - profileMinWidth).floorToDouble();
+        // The table takes everything the profile leaves.
+        final double tableWidth = (w - 1 - profileWidthFor(w)).floorToDouble();
         final bool table = two && tableWidth >= tableMinPaneWidth;
         Widget embed(Widget child) => two ? PaneScope(child: child) : child;
         return BhorMasterDetailPage(

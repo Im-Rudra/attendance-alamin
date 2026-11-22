@@ -20,7 +20,9 @@ import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
@@ -53,6 +55,14 @@ class EnrollmentCard extends ConsumerWidget {
     for (final Batch b in batches) {
       if (b.id == enrollment.batchId) batch = b;
     }
+    String batchTitle = '';
+    if (batch != null) {
+      String subjectName = '';
+      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) {
+        if (sub.id == batch.subjectId) subjectName = sub.name;
+      }
+      batchTitle = batchLabel(l10n, subjectName, batch.name);
+    }
     final EnrollmentDues? dues = ref.watch(enrollmentDuesProvider(enrollment.id)).value;
     final bool ended = enrollment.endDate != null;
     final bool active = student.status == StudentStatus.active;
@@ -76,12 +86,7 @@ class EnrollmentCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      batch?.name ?? '',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: b.type.heading,
-                    ),
+                    Text(batchTitle, style: b.type.heading),
                     if (feeText != null)
                       Text(feeText, style: b.type.label.copyWith(color: b.colors.text2)),
                     Text(

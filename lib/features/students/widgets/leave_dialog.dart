@@ -19,6 +19,8 @@ import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+import 'package:attendance_alamin/domain/models/subject.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
@@ -114,6 +116,9 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
         ref.watch(studentEnrollmentsProvider(widget.studentId)).value ??
             const <Enrollment>[];
     final List<Batch> batches = ref.watch(stuBatchesProvider).value ?? const <Batch>[];
+    final Map<String, String> subjectNames = <String, String>{
+      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
+    };
     final String? one = widget.enrollmentId;
     final List<Enrollment> open = <Enrollment>[
       for (final Enrollment e in all)
@@ -125,7 +130,7 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
     };
     String batchName(String id) {
       for (final Batch b in batches) {
-        if (b.id == id) return b.name;
+        if (b.id == id) return batchLabel(l10n, subjectNames[b.subjectId] ?? '', b.name);
       }
       return '';
     }

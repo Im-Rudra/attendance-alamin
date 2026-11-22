@@ -147,7 +147,7 @@ class _ArchivedCard extends StatelessWidget {
             spacing: BhorSpace.s12,
             runSpacing: BhorSpace.s4,
             children: <Widget>[
-              Text(l10n.batchStudentCount(fmt.number(row.students)), style: th.type.label),
+              Text(l10n.studentCountText(row.students, fmt.number(row.students)), style: th.type.label),
               if (b.archivedOn != null)
                 Text(
                   l10n.batchArchivedOn(fmt.date(b.archivedOn!)),

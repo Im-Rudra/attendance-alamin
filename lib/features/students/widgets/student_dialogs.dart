@@ -58,7 +58,7 @@ Future<bool?> showRejoinGapDialog(BuildContext context, {required int months}) {
     kind: BhorPanelKind.confirm,
     title: l10n.stuRejoinTitle,
     scroll: false,
-    builder: (BuildContext ctx) => _message(ctx, l10n.stuRejoinGapBody(ctx.fmt.number(months))),
+    builder: (BuildContext ctx) => _message(ctx, months == 1 ? l10n.stuRejoinGapBodyOne(ctx.fmt.number(months)) : l10n.stuRejoinGapBody(ctx.fmt.number(months))),
     footer: (BuildContext ctx) => _actions(<Widget>[
       BhorButton(
         label: l10n.commonCancel,

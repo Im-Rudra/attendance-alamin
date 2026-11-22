@@ -235,3 +235,19 @@ class BatchNotice extends StatelessWidget {
     );
   }
 }
+
+/// English singular / plural pairs (the ARB tooling has no ICU plurals, so each
+/// has a "...One" twin). Bangla uses the same text for both.
+extension BatchPlurals on AppLocalizations {
+  String groupCountText(int n, String formatted) =>
+      n == 1 ? batchGroupCountOne(formatted) : batchGroupCount(formatted);
+
+  String studentCountText(int n, String formatted) =>
+      n == 1 ? batchStudentCountOne(formatted) : batchStudentCount(formatted);
+
+  String feePartialWarnText(int n, String formatted) =>
+      n == 1 ? batchFeePartialWarnOne(formatted) : batchFeePartialWarn(formatted);
+
+  String gapTitleText(int n, String formatted) =>
+      n == 1 ? batchGapTitleOne(formatted) : batchGapTitle(formatted);
+}

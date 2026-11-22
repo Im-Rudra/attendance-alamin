@@ -172,13 +172,13 @@ class UnarchiveBatchBody extends StatelessWidget {
           ValueListenableBuilder<bool>(
             valueListenable: waive,
             builder: (BuildContext context, bool on, Widget? _) => BhorListRow(
-              title: l10n.batchGapTitle(fmt.number(gapMonths)),
+              title: l10n.gapTitleText(gapMonths, fmt.number(gapMonths)),
               subtitle: l10n.batchGapHint,
               divider: false,
               onTap: () => waive.value = !on,
               trailing: BhorSwitch(
                 value: on,
-                semanticLabel: l10n.batchGapTitle(fmt.number(gapMonths)),
+                semanticLabel: l10n.gapTitleText(gapMonths, fmt.number(gapMonths)),
                 onChanged: (bool v) => waive.value = v,
               ),
             ),

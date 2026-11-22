@@ -31,6 +31,8 @@ import 'package:attendance_alamin/features/batches/ui/batch_detail_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/ui/batches_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_students_tab.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
 import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -550,6 +552,42 @@ void main() {
       await tester.pump();
       expect(save().onPressed, isNotNull);
       await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('re-walk fixes (X12, X13)', () {
+    testWidgets('X13: the students table card hugs its rows', (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(
+        tester,
+        const Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(width: 1000, height: 700, child: BatchStudentsTab(batchId: kBatPhysA)),
+        ),
+        viewport: TestViewport.desktop,
+        overrides: fakes.overrides,
+      );
+      await settleSome(tester);
+      final Finder card = find.descendant(
+        of: find.byType(BatchTable<BatchStudentRow>),
+        matching: find.byType(BhorCard),
+      );
+      expect(card, findsOneWidget);
+      // Header + a few 48 px rows, nowhere near the 700 px of the tab.
+      expect(tester.getSize(card).height, lessThan(400));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    test('X12: English counts are singular for one', () {
+      final AppLocalizations en = lookupAppLocalizations(const Locale('en'));
+      expect(en.groupCountText(1, '1'), '1 batch');
+      expect(en.groupCountText(2, '2'), '2 batches');
+      expect(en.studentCountText(1, '1'), '1 student');
+      expect(en.studentCountText(3, '3'), '3 students');
+      expect(en.feePartialWarnText(1, '1'), '1 month will become partial');
+      expect(en.gapTitleText(1, '1'), 'Waive the 1 month in between?');
+      expect(en.gapTitleText(2, '2'), 'Waive the 2 months in between?');
+      expect(bn.groupCountText(1, '১'), bn.groupCountText(2, '১'));
     });
   });
 

@@ -9,7 +9,6 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
-import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
@@ -50,24 +49,30 @@ class StudentDuesBadge extends StatelessWidget {
   }
 }
 
-String batchNames(List<Batch> batches) =>
-    batches.map((Batch b) => b.name).join(' · ');
-
+/// One student in the list. The subtitle (roll, "subject · batch" labels) wraps
+/// onto further lines rather than being clipped, so it is drawn here instead of
+/// by [BhorListRow], whose subtitle is a single ellipsized line.
 class StudentRowTile extends StatelessWidget {
   const StudentRowTile({
     super.key,
     required this.row,
     required this.selected,
     required this.onTap,
+    this.last = false,
   });
 
   final StudentRow row;
   final bool selected;
   final VoidCallback onTap;
 
+  /// The last row of a list draws no divider.
+  final bool last;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
     final Student s = row.student;
     final String? roll = s.roll;
     final bool left = s.status == StudentStatus.left;
@@ -78,27 +83,67 @@ class StudentRowTile extends StatelessWidget {
           ? (s.leftDate == null
               ? l10n.stuStatusLeft
               : l10n.stuLeftOn(context.fmt.date(s.leftDate!)))
-          : batchNames(row.batches),
+          : row.batchesText(l10n),
     ].where((String t) => t.isNotEmpty).join(' · ');
+    final double minH = context.bhorIsWide ? BhorSize.minTap : BhorSize.phoneRow;
+    final Widget? trailing = row.dues == null
+        ? null
+        : ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 170),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerEnd,
+              child: StudentDuesBadge(dues: row.dues),
+            ),
+          );
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onSecondaryTapUp: (TapUpDetails d) => showStudentContextMenu(context, d.globalPosition, row),
-      child: BhorListRow(
-        selected: selected,
-        leading: StudentAvatar(student: s, size: 40),
-        title: s.name,
-        subtitle: subtitle.isEmpty ? null : subtitle,
+      child: BhorPressable(
         onTap: onTap,
-        trailing: row.dues == null
-            ? null
-            : ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 170),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: StudentDuesBadge(dues: row.dues),
+        selected: selected,
+        semanticLabel: subtitle.isEmpty ? s.name : '${s.name}, $subtitle',
+        scaleOnPress: false,
+        radius: 0,
+        builder: (BuildContext context, BhorStates st) => AnimatedContainer(
+          duration: BhorMotion.of(context, BhorMotion.instant),
+          constraints: BoxConstraints(minHeight: minH),
+          color: selected ? c.accentTint : (st.hovered || st.pressed ? c.soft : c.soft.withValues(alpha: 0)),
+          child: Stack(
+            alignment: AlignmentDirectional.centerStart,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 8),
+                child: Row(
+                  children: <Widget>[
+                    StudentAvatar(student: s, size: 40),
+                    const SizedBox(width: BhorSpace.s12),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(s.name, style: b.type.bodyStrong),
+                          if (subtitle.isNotEmpty) Text(subtitle, style: b.type.meta),
+                        ],
+                      ),
+                    ),
+                    if (trailing != null) ...<Widget>[const SizedBox(width: BhorSpace.s12), trailing],
+                  ],
                 ),
               ),
+              if (!last)
+                PositionedDirectional(
+                  start: BhorSpace.s16 + 36 + BhorSpace.s12,
+                  end: 0,
+                  bottom: 0,
+                  height: 1,
+                  child: ColoredBox(color: c.line),
+                ),
+              Positioned.fill(child: BhorSelectionBar(selected: selected, inset: BhorSpace.s8)),
+            ],
+          ),
+        ),
       ),
     );
   }

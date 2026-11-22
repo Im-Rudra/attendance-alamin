@@ -109,5 +109,6 @@
   "stuClearFilters": "Clear filters",
   "stuFilterBatchAll": "All batches",
   "stuEnrollAllJoinedTitle": "Already in every batch",
-  "stuEnrollAllJoinedHint": "Create a new batch first to enrol this student somewhere else."
+  "stuEnrollAllJoinedHint": "Create a new batch first to enrol this student somewhere else.",
+  "stuRejoinGapBodyOne": "Waive the {count} month in between?"
 }

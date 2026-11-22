@@ -124,7 +124,7 @@ class _FeeChangeSheetState extends State<FeeChangeSheet> {
               final bool warn = n > 0;
               return BatchNotice(
                 warn: warn,
-                text: warn ? l10n.batchFeePartialWarn(fmt.number(n)) : l10n.batchFeeNoPartial,
+                text: warn ? l10n.feePartialWarnText(n, fmt.number(n)) : l10n.batchFeeNoPartial,
               );
             },
           ),

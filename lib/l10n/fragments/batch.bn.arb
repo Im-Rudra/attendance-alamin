@@ -605,5 +605,45 @@
   "batchCsvChoose": "ফাইল বাছুন",
   "@batchCsvChoose": {
     "description": "Button that opens the file picker."
+  },
+  "batchGroupCountOne": "{count}টি ব্যাচ",
+  "@batchGroupCountOne": {
+    "description": "Singular form of batchGroupCount (count = 1).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "batchStudentCountOne": "{count} জন শিক্ষার্থী",
+  "@batchStudentCountOne": {
+    "description": "Singular form of batchStudentCount (count = 1).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "batchFeePartialWarnOne": "{count}টি মাস আংশিক হয়ে যাবে",
+  "@batchFeePartialWarnOne": {
+    "description": "Singular form of batchFeePartialWarn (count = 1).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "batchGapTitleOne": "মাঝের {count} মাস মাফ করবেন?",
+  "@batchGapTitleOne": {
+    "description": "Singular form of batchGapTitle (count = 1).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
   }
 }
