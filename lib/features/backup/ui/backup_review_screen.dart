@@ -1,4 +1,4 @@
-// Backup review (UX 2f, Product 4): the full-screen change summary shown after
+// Backup review (UX 2f, Product 4): the focus-page change summary shown after
 // a backup file was picked, then the result with the way back. Phone: one
 // column. Desktop: the numbers (info, headline, table) on one side, the named
 // details (deletions, clashes, samples, explanations) on the other.
@@ -11,6 +11,7 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/data/infra_providers.dart';
@@ -66,7 +67,9 @@ class BackupReviewScreen extends ConsumerWidget {
     final bool busy = s.phase == ImportPhase.applying || s.phase == ImportPhase.loading;
 
     final Widget body;
-    Widget? bottom;
+    Widget? barSummary;
+    Widget? primary;
+    Widget? secondary;
     switch (s.phase) {
       case ImportPhase.idle:
         body = ReviewNotice(
@@ -119,26 +122,43 @@ class BackupReviewScreen extends ConsumerWidget {
         final int changes = summary.totalChanges;
         body = _ReadyBody(state: s, summary: summary);
         final bool applying = s.phase == ImportPhase.applying;
-        bottom = ReviewActionBar(
-          secondaryLabel: changes == 0 ? l10n.commonOk : l10n.commonCancel,
-          onSecondary: applying ? null : () => _close(context),
-          primaryLabel: applying ? l10n.backupApplying : applyLabel(l10n, fmt, changes),
-          onPrimary: changes == 0 || applying ? null : () => _apply(context, ref),
-          disabledReason: changes == 0 ? l10n.backupApplyDisabledNone : null,
-          busy: applying,
+        secondary = BhorButton(
+          key: const Key('review-secondary'),
+          variant: BhorButtonVariant.ghost,
+          label: changes == 0 ? l10n.commonOk : l10n.commonCancel,
+          onPressed: applying ? null : () => _close(context),
         );
+        final bool none = changes == 0 && !applying;
+        // The apply label carries the count, so it takes the room the bar's
+        // summary text would (a narrow phone at large text must not overflow).
+        primary = Flexible(
+          flex: none ? 1 : 9,
+          child: BhorButton(
+            key: const Key('review-apply'),
+            label: applying ? l10n.backupApplying : applyLabel(l10n, fmt, changes),
+            loading: applying,
+            expand: true,
+            onPressed: changes == 0 || applying ? null : () => _apply(context, ref),
+          ),
+        );
+        if (none) {
+          barSummary = Text(l10n.backupApplyDisabledNone, key: const Key('review-disabled-reason'));
+        }
     }
 
     return PopScope(
       canPop: !busy,
-      child: BhorScaffold(
-        header: BhorHeader(
-          title: l10n.shellTitleBackupReview,
-          showBack: true,
-          onBack: busy ? null : () => _close(context),
-        ),
+      // A focus page (one task, M3): Esc and the back button
+      // go through the PopScope above, so a running apply is never cut off.
+      child: BhorFocusPage(
+        title: l10n.shellTitleBackupReview,
+        onBack: busy ? () {} : () => _close(context),
+        maxWidth: 1100,
+        scrollable: false,
+        summary: barSummary,
+        secondary: secondary,
+        primary: primary,
         body: body,
-        bottomNav: bottom,
       ),
     );
   }
@@ -189,7 +209,7 @@ class _ReadyBody extends ConsumerWidget {
             const ExplainCard(),
           ];
           return ListView(
-            padding: EdgeInsets.fromLTRB(g, 8, g, g),
+            padding: EdgeInsets.only(top: BhorSpace.s8, bottom: g),
             children: <Widget>[
               for (int i = 0; i < items.length; i++) ...<Widget>[
                 if (i > 0) const SizedBox(height: 12),
@@ -199,7 +219,7 @@ class _ReadyBody extends ConsumerWidget {
           );
         }
         return Padding(
-          padding: EdgeInsets.fromLTRB(g, 8, g, g),
+          padding: EdgeInsets.only(top: BhorSpace.s8, bottom: g),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[

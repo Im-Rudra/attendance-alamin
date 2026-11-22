@@ -129,10 +129,32 @@ List<String> unknownPlaceholders(TemplateKind kind, String text) {
   return out;
 }
 
-/// [value] with `{name}` inserted at the cursor (replacing a selection); at the
-/// end when there is no valid cursor. The cursor lands after the inserted text.
-TextEditingValue insertPlaceholder(TextEditingValue value, String name) {
-  final String token = '{$name}';
+final RegExp _pillRe = RegExp(r'\[([^\[\]\n]+)\]');
+
+/// The text the editor shows for the stored [stored]: every known `{name}`
+/// becomes a readable pill `[label]` (the teacher never sees raw braces).
+/// [labelOf] maps a placeholder name to its label; unknown names stay as
+/// typed (the editor flags them).
+String toDisplayText(String stored, Map<String, String> labelOf) =>
+    stored.replaceAllMapped(_tokenRe, (Match m) {
+      final String? label = labelOf[m.group(1)];
+      return label == null ? m.group(0)! : '[$label]';
+    });
+
+/// The inverse of [toDisplayText]: `[label]` back to the stored `{name}`.
+/// [nameOf] maps a label (in any app language) to the placeholder name;
+/// brackets around anything else are left alone.
+String fromDisplayText(String shown, Map<String, String> nameOf) =>
+    shown.replaceAllMapped(_pillRe, (Match m) {
+      final String? name = nameOf[m.group(1)];
+      return name == null ? m.group(0)! : '{$name}';
+    });
+
+/// [value] with `{name}` (or [token] when given) inserted at the cursor
+/// (replacing a selection); at the end when there is no valid cursor. The
+/// cursor lands after the inserted text.
+TextEditingValue insertPlaceholder(TextEditingValue value, String name, {String? token}) {
+  token ??= '{$name}';
   final String text = value.text;
   final TextSelection sel = value.selection;
   int start = text.length;
