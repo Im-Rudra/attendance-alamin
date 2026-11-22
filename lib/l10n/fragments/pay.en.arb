@@ -69,5 +69,21 @@
   "payA11yReceipt": "Receipt, {months}, {amount}",
   "payMonthAdvance": "{months} in advance",
   "payChipAdvance": "{month} · advance",
-  "payChipPartial": "{month} · partial"
+  "payChipPartial": "{month} · partial",
+  "payReceiptPaidStamp": "Paid",
+  "@payReceiptPaidStamp": {
+    "description": "Stamp on the receipt card: the fee is paid."
+  },
+  "payReceiptStudent": "Student",
+  "@payReceiptStudent": {
+    "description": "Receipt card row label: the student."
+  },
+  "payBatchLabelShort": "Batch",
+  "@payBatchLabelShort": {
+    "description": "Receipt card row label: the batch."
+  },
+  "payMonthsLabelShort": "Months",
+  "@payMonthsLabelShort": {
+    "description": "Receipt card row label: the months paid."
+  }
 }

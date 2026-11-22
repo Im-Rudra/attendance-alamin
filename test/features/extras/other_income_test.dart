@@ -41,12 +41,19 @@ Widget _host({String? studentId}) => BhorScaffold(
 
 Future<void> _open(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey<String>('open-income')));
-  await tester.pump();
+  await _frames(tester);
   await tester.pump(const Duration(milliseconds: 400));
 }
 
-Future<void> _settle(WidgetTester tester) async {
+/// Two frames: the footer's save buttons follow the form by one frame (the
+/// form publishes its state to the panel footer after it has built).
+Future<void> _frames(WidgetTester tester) async {
   await tester.pump();
+  await tester.pump();
+}
+
+Future<void> _settle(WidgetTester tester) async {
+  await _frames(tester);
   await tester.pump(const Duration(milliseconds: 400));
 }
 
@@ -80,15 +87,15 @@ void main() {
     expect(find.text(bn.extraIncomeDisabledLabel), findsOneWidget);
 
     await tester.enterText(find.byKey(_label), 'পরীক্ষার ফি');
-    await tester.pump();
+    await _frames(tester);
     expect(find.text(bn.payDisabledAmount), findsOneWidget);
 
     await tester.enterText(find.byKey(_amount), '০');
-    await tester.pump();
+    await _frames(tester);
     expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNull, reason: 'zero is not income');
 
     await tester.enterText(find.byKey(_amount), '৫০০');
-    await tester.pump();
+    await _frames(tester);
     expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNotNull);
   });
 
@@ -96,7 +103,7 @@ void main() {
     await pumpApp(tester, _host(), overrides: seedFakes().overrides);
     await _open(tester);
     await tester.enterText(find.byKey(_amount), '1500');
-    await tester.pump();
+    await _frames(tester);
     expect(tester.widget<BhorTextField>(find.byKey(_amount)).controller!.text, '১৫০০');
     expect(find.text(AppFormat(Lang.bn).money(1500)), findsOneWidget);
   });
@@ -106,17 +113,17 @@ void main() {
     await _open(tester);
     await tester.enterText(find.byKey(_label), 'পরীক্ষার ফি');
     await tester.enterText(find.byKey(_amount), '9999999999');
-    await tester.pump();
+    await _frames(tester);
     expect(find.text(bn.errAmountTooLarge), findsOneWidget);
     await tester.ensureVisible(find.byKey(_save));
     expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNull);
 
     await tester.enterText(find.byKey(_amount), '2000000');
-    await tester.pump();
+    await _frames(tester);
     expect(find.text(bn.errAmountTooLarge), findsOneWidget);
 
     await tester.enterText(find.byKey(_amount), '500');
-    await tester.pump();
+    await _frames(tester);
     expect(find.text(bn.errAmountTooLarge), findsNothing);
     expect(tester.widget<BhorButton>(find.byKey(_save)).onPressed, isNotNull);
   });
@@ -129,9 +136,9 @@ void main() {
 
     await tester.enterText(find.byKey(_label), 'ভর্তি ফি');
     await tester.enterText(find.byKey(_amount), '৫০০');
-    await tester.pump();
+    await _frames(tester);
     await tester.tap(find.byKey(const ValueKey<String>('income-method-bkash')));
-    await tester.pump();
+    await _frames(tester);
     await tester.ensureVisible(find.byKey(_save));
     await tester.tap(find.byKey(_save));
     await _settle(tester);
@@ -160,7 +167,11 @@ void main() {
     await _open(tester);
     await tester.enterText(find.byKey(_label), 'নোট');
     await tester.tap(find.byIcon(BhorIcons.close));
-    await _settle(tester);
+    await tester.pumpAndSettle();
+    // Something was typed: closing asks first, and discarding saves nothing.
+    expect(find.text(bn.commonDiscardTitle), findsOneWidget);
+    await tester.tap(find.text(bn.commonDiscardConfirm));
+    await tester.pumpAndSettle();
     expect(_result, isFalse);
     expect(f.otherIncome.items, isEmpty);
   });

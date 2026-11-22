@@ -411,6 +411,25 @@ void main() {
       expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
     });
 
+    testWidgets('F5: the picker rows show roll, batch, the due amount and a level tag, due first',
+        (WidgetTester tester) async {
+      await _pumpFeesPhone(tester, seedFakes());
+      await tester.tap(find.byKey(const ValueKey<String>('fees-take-money')));
+      await tester.pumpAndSettle();
+      final Finder row = find.byKey(ValueKey<String>('picker-$kStuRahim'));
+      expect(row, findsOneWidget);
+      expect(find.descendant(of: row, matching: find.textContaining('রোল')), findsOneWidget);
+      expect(find.descendant(of: row, matching: find.byType(BhorTag)), findsOneWidget);
+      // Students who owe come before those who do not.
+      final List<PickerStudent> rows = buildPickerRows(
+        students: kStudents,
+        terms: seedFakes().enrollments.terms,
+        report: null,
+      );
+      expect(rows, isNotEmpty);
+      expect(rows.every((PickerStudent r) => r.batch.isNotEmpty), isTrue);
+    });
+
     test('picker search matches name, roll and phone in either digit style', () {
       final Student rahim = kStudents.first;
       expect(pickerMatches(rahim, '০১৭১১'), isTrue);
@@ -419,22 +438,30 @@ void main() {
       expect(pickerMatches(rahim, '9'), isFalse);
     });
 
-    testWidgets('the other-income action is a header button, not a one-item menu', (WidgetTester tester) async {
+    testWidgets('the ⋮ menu holds Other income and Export CSV, and there is no page search button',
+        (WidgetTester tester) async {
       await pumpApp(tester, const CollectionScreen(), overrides: seedFakes().overrides);
-      final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byIcon(BhorIcons.takeMoney), findsNothing);
-      expect(find.byKey(const Key('coll-menu')), findsNothing);
-      expect(find.text(l10n.collOtherIncomeShort), findsOneWidget);
+      expect(find.byIcon(BhorIcons.search), findsNothing, reason: 'global search lives in the sidebar');
+      expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
+      expect(find.byKey(const Key('coll-export-csv')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey<String>('fees-more')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('coll-add-other-income')), findsOneWidget);
+      expect(find.byKey(const Key('coll-export-csv')), findsOneWidget);
+      // The export entry is a file / table icon, never a cloud.
+      expect(find.byIcon(BhorIcons.backupDown), findsNothing);
     });
 
     testWidgets('Fees and Collection are one page: the segment swaps the body in place',
         (WidgetTester tester) async {
       await pumpApp(tester, const FeesScreen(), overrides: seedFakes().overrides);
       await tester.pump();
-      expect(find.byKey(const Key('coll-export-csv')), findsNothing);
+      // The same ⋮ on both segments.
+      expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
       await tester.tap(find.text(_l10n(Lang.bn).duesSegCollection));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('coll-export-csv')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('fees-take-money')), findsNothing);
     });
   });
@@ -453,6 +480,36 @@ void main() {
       expect(find.byType(DuesListPane), findsOneWidget);
       expect(find.byType(CollectPaymentPanel), findsNothing);
       expect(find.byKey(ValueKey<String>('dues-row-$kStuRahim')), findsOneWidget);
+    });
+
+    testWidgets('F1: nothing due still shows the three summary tiles and a friendly empty state',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const FeesScreen(),
+        viewport: TestViewport.desktop,
+        overrides: _nobodyOwes().overrides,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(FeesSummaryTiles), findsOneWidget);
+      expect(find.byType(DuesEmptyState), findsOneWidget);
+    });
+
+    testWidgets('F2: Collect fee is in the header with the ⋮ menu on both segments, no search button',
+        (WidgetTester tester) async {
+      await pumpApp(tester, const FeesScreen(), viewport: TestViewport.desktop, overrides: seedFakes().overrides);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('fees-take-money')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
+      expect(find.byIcon(BhorIcons.search), findsNothing);
+      await tester.tap(find.text(_l10n(Lang.bn).duesSegCollection));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('fees-take-money')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
+      // F3: the month stepper is grouped (the chevrons sit close together).
+      final double left = tester.getCenter(find.widgetWithIcon(BhorIconButton, BhorIcons.chevronLeft)).dx;
+      final double right = tester.getCenter(find.widgetWithIcon(BhorIconButton, BhorIcons.chevronRight)).dx;
+      expect(right - left, lessThan(320));
     });
 
     testWidgets('the take-money button of a row opens the payment side panel', (WidgetTester tester) async {
@@ -507,7 +564,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byKey(const ValueKey<String>('pay-receipt-text')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('pay-receipt-edit')), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('pay-receipt-delete')), findsOneWidget);
+      // Delete is quiet: it sits in the ⋮ menu, not next to Edit.
+      expect(find.byKey(const ValueKey<String>('pay-receipt-delete')), findsNothing);
+      expect(find.byKey(const ValueKey<String>('pay-receipt-more')), findsOneWidget);
     });
 
     testWidgets('the other-income line appears only when there is some', (WidgetTester tester) async {

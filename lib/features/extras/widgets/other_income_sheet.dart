@@ -45,14 +45,23 @@ class SavedOtherIncome {
 /// snackbar (with undo) on the caller's screen.
 Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) async {
   final ProviderContainer container = ProviderScope.containerOf(context);
-  // Sheet on phones, centred dialog on desktop (root navigator: above the
-  // bottom navigation, never behind it). A save plays the success moment.
+  // A side panel on desktop, a sheet on phones (F7). The footer holds the
+  // save buttons (the form publishes their state); closing asks first once
+  // something was typed. A save plays the success moment. The notifiers are
+  // not disposed: the exit animation still listens to them.
+  final ValueNotifier<OtherIncomeBarSpec?> bar = ValueNotifier<OtherIncomeBarSpec?>(null);
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   final SavedOtherIncome? saved = await showBhorPanel<SavedOtherIncome>(
     context,
     title: context.l10n.extraIncomeTitle,
-    kind: BhorPanelKind.confirm,
+    kind: BhorPanelKind.form,
+    scroll: false,
+    dirty: dirty,
+    footer: (BuildContext ctx) => OtherIncomeBar(sink: bar),
     builder: (BuildContext ctx) => OtherIncomeForm(
       studentId: studentId,
+      barSink: bar,
+      dirtySink: dirty,
       onClose: () => Navigator.of(ctx).pop(),
       onSaved: (SavedOtherIncome s) => unawaited(showBhorSuccess<SavedOtherIncome>(ctx, result: s)),
     ),
@@ -94,9 +103,23 @@ Future<String> _receiptText(BuildContext context, ProviderContainer container, O
 }
 
 class OtherIncomeForm extends ConsumerStatefulWidget {
-  const OtherIncomeForm({super.key, this.studentId, required this.onClose, required this.onSaved});
+  const OtherIncomeForm({
+    super.key,
+    this.studentId,
+    required this.onClose,
+    required this.onSaved,
+    this.barSink,
+    this.dirtySink,
+  });
 
   final String? studentId;
+
+  /// When set, the save buttons are drawn by the container's footer
+  /// ([OtherIncomeBar]); the form publishes their state here.
+  final ValueNotifier<OtherIncomeBarSpec?>? barSink;
+
+  /// Set to true once the teacher typed or changed something.
+  final ValueNotifier<bool>? dirtySink;
   final VoidCallback onClose;
   final ValueChanged<SavedOtherIncome> onSaved;
 
@@ -111,6 +134,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
   PaymentMethod? _method;
   LocalDate? _date;
   bool _busy = false;
+  bool _touched = false;
   String? _error;
 
   @override
@@ -161,7 +185,24 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
       today: last,
     );
     if (picked == null || !mounted) return;
-    setState(() => _date = LocalDate(picked.year, picked.month, picked.day));
+    setState(() {
+      _touched = true;
+      _date = LocalDate(picked.year, picked.month, picked.day);
+    });
+  }
+
+  bool get _dirty => _label.text.isNotEmpty || _amount.text.isNotEmpty || _note.text.isNotEmpty || _touched;
+
+  void _publish(OtherIncomeBarSpec spec) {
+    final ValueNotifier<OtherIncomeBarSpec?>? bar = widget.barSink;
+    final ValueNotifier<bool>? d = widget.dirtySink;
+    if (bar == null && d == null) return;
+    final bool dirty = _dirty;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (bar != null && bar.value != spec) bar.value = spec;
+      if (d != null && d.value != dirty) d.value = dirty;
+    });
   }
 
   Future<void> _save({required bool share}) async {
@@ -227,6 +268,13 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
     } else if (_amountValue == null) {
       reason = l10n.payDisabledAmount;
     }
+    final OtherIncomeBarSpec spec = (
+      canSave: _canSave,
+      busy: _busy,
+      reason: reason,
+      save: _save,
+    );
+    _publish(spec);
     final List<String> quickLabels = <String>[
       l10n.extraIncomeAdmission,
       l10n.extraIncomeExam,
@@ -271,6 +319,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
             key: const ValueKey<String>('income-amount'),
             controller: _amount,
             keyboardType: TextInputType.number,
+            localDigits: true,
             inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
             tabular: true,
             label: l10n.payAmountLabel,
@@ -291,50 +340,107 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
                   key: ValueKey<String>('income-method-${m.code}'),
                   label: paymentMethodLabel(l10n, m),
                   selected: m == method,
-                  onSelected: (bool _) => setState(() => _method = m),
+                  onSelected: (bool _) => setState(() {
+                    _touched = true;
+                    _method = m;
+                  }),
                 ),
             ],
           ),
           const SizedBox(height: BhorSpace.s16),
-          Builder(
-            builder: (BuildContext bc) => BhorButton(
-              key: const ValueKey<String>('income-date'),
-              variant: BhorButtonVariant.secondary,
-              icon: BhorIcons.calendar,
-              label: '${l10n.payDateLabel}: ${fmt.date(date)}',
-              expand: true,
-              onPressed: () => _pickDate(today, date, bc),
-            ),
+          BhorPickerField(
+            key: const ValueKey<String>('income-date'),
+            label: l10n.payDateLabel,
+            value: date == today ? l10n.payDateToday(fmt.date(date)) : fmt.date(date),
+            icon: BhorIcons.calendar,
+            semanticLabel: l10n.payDateEdit,
+            onTap: (BuildContext fieldContext) => _pickDate(today, date, fieldContext),
           ),
           const SizedBox(height: BhorSpace.s16),
           BhorTextField(
             key: const ValueKey<String>('income-note'),
             controller: _note,
             label: l10n.payNoteLabel,
+            onChanged: (_) => setState(() {}),
           ),
           if (_error != null) ...<Widget>[
             const SizedBox(height: BhorSpace.s12),
             Text(_error!, style: b.type.body.copyWith(color: b.colors.danger)),
           ],
-          const SizedBox(height: BhorSpace.s20),
-          BhorButton(
-            key: const ValueKey<String>('income-save'),
-            label: l10n.commonSave,
-            expand: true,
-            loading: _busy,
-            onPressed: _canSave ? () => _save(share: false) : null,
-          ),
-          const SizedBox(height: BhorSpace.s8),
-          BhorButton(
-            key: const ValueKey<String>('income-save-send'),
-            variant: BhorButtonVariant.secondary,
-            label: l10n.extraIncomeSaveSend,
-            expand: true,
-            onPressed: _canSave ? () => _save(share: true) : null,
-          ),
-          if (reason != null) ...<Widget>[
+          if (widget.barSink == null) ...<Widget>[
+            const SizedBox(height: BhorSpace.s20),
+            OtherIncomeButtons(spec: spec),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// What the footer of the other-income panel shows (published by the form).
+typedef OtherIncomeBarSpec = ({bool canSave, bool busy, String? reason, void Function({required bool share}) save});
+
+/// The footer of the panel: a single primary Save, and "Save & send receipt"
+/// as the secondary button.
+class OtherIncomeBar extends StatelessWidget {
+  const OtherIncomeBar({super.key, required this.sink});
+
+  final ValueListenable<OtherIncomeBarSpec?> sink;
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<OtherIncomeBarSpec?>(
+        valueListenable: sink,
+        builder: (BuildContext context, OtherIncomeBarSpec? spec, Widget? _) => OtherIncomeButtons(spec: spec),
+      );
+}
+
+/// Save + "Save & send receipt" for [spec] (null: both disabled).
+class OtherIncomeButtons extends StatelessWidget {
+  const OtherIncomeButtons({super.key, required this.spec});
+
+  final OtherIncomeBarSpec? spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final OtherIncomeBarSpec? sp = spec;
+    final bool can = sp != null && sp.canSave;
+    final Widget save = BhorButton(
+      key: const ValueKey<String>('income-save'),
+      label: l10n.commonSave,
+      expand: true,
+      loading: sp?.busy ?? false,
+      onPressed: can ? () => sp!.save(share: false) : null,
+    );
+    final Widget send = BhorButton(
+      key: const ValueKey<String>('income-save-send'),
+      variant: BhorButtonVariant.secondary,
+      label: l10n.extraIncomeSaveSend,
+      expand: true,
+      onPressed: can ? () => sp!.save(share: true) : null,
+    );
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints c) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (c.maxWidth >= 400)
+            Row(
+              children: <Widget>[
+                Expanded(child: send),
+                const SizedBox(width: BhorSpace.s8),
+                Expanded(child: save),
+              ],
+            )
+          else ...<Widget>[
+            save,
             const SizedBox(height: BhorSpace.s8),
-            Text(reason, textAlign: TextAlign.center, style: b.type.meta),
+            send,
+          ],
+          if (!can && sp?.reason != null) ...<Widget>[
+            const SizedBox(height: BhorSpace.s8),
+            Text(sp!.reason!, textAlign: TextAlign.center, style: b.type.meta),
           ],
         ],
       ),

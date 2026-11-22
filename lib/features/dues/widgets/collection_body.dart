@@ -16,7 +16,6 @@ import 'package:attendance_alamin/features/dues/controllers/collection_model.dar
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/widgets/collection_blocks.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
-import 'package:attendance_alamin/features/extras/extras_entry.dart';
 
 class CollectionBody extends ConsumerWidget {
   const CollectionBody({super.key, required this.onSeeDues});
@@ -33,7 +32,6 @@ class CollectionBody extends ConsumerWidget {
     final double g = WindowClass.of(context).gutter;
     final YearMonth current = ref.watch(todayProvider).yearMonth;
     final YearMonth month = ref.watch(collMonthProvider) ?? current;
-    final YearMonth? earliest = ref.watch(collEarliestMonthProvider);
     final AsyncValue<CollectionSummary> async = ref.watch(collectionSummaryProvider(month));
 
     void seeDues() {
@@ -44,16 +42,13 @@ class CollectionBody extends ConsumerWidget {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: g),
-            child: MonthPickerRow(
-              month: month,
-              canPrev: canStepBack(month, earliest),
-              canNext: canStepForward(month, current),
-              onChanged: (YearMonth m) =>
-                  ref.read(collMonthProvider.notifier).select(m == current ? null : m),
+          // Wide windows put the stepper next to the segments (the page
+          // header row); phones keep it here, compact and left-aligned.
+          if (!WindowClass.of(context).isWide)
+            Padding(
+              padding: EdgeInsets.fromLTRB(g, 0, g, BhorSpace.s8),
+              child: const CollectionMonthNav(),
             ),
-          ),
           Expanded(
             child: async.when(
               loading: () => const Center(child: BhorSpinner()),
@@ -113,36 +108,21 @@ class _Column extends StatelessWidget {
   }
 }
 
-/// Header actions of the collection segment: "+ অন্য আয়" and the CSV export.
-class CollectionActions extends ConsumerWidget {
-  const CollectionActions({super.key});
+/// The month stepper of the Collected segment ("‹ November 2026 ›"), compact
+/// and grouped. Shared by the page header row (wide) and the body (phones).
+class CollectionMonthNav extends ConsumerWidget {
+  const CollectionMonthNav({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
     final YearMonth current = ref.watch(todayProvider).yearMonth;
     final YearMonth month = ref.watch(collMonthProvider) ?? current;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        BhorButton(
-          key: const Key('coll-add-other-income'),
-          icon: BhorIcons.add,
-          label: l10n.collOtherIncomeShort,
-          variant: BhorButtonVariant.secondary,
-          size: BhorButtonSize.sm,
-          onPressed: () => showOtherIncomeSheet(context),
-        ),
-        const SizedBox(width: BhorSpace.s8),
-        BhorIconButton(
-          key: const Key('coll-export-csv'),
-          icon: BhorIcons.backupDown,
-          semanticLabel: l10n.collExportCsv,
-          variant: BhorButtonVariant.secondary,
-          circle: true,
-          onPressed: () => runCsvExport(context, month: month),
-        ),
-      ],
+    final YearMonth? earliest = ref.watch(collEarliestMonthProvider);
+    return MonthPickerRow(
+      month: month,
+      canPrev: canStepBack(month, earliest),
+      canNext: canStepForward(month, current),
+      onChanged: (YearMonth m) => ref.read(collMonthProvider.notifier).select(m == current ? null : m),
     );
   }
 }

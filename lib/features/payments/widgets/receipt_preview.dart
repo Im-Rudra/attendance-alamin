@@ -84,39 +84,133 @@ Future<void> shareReceiptNow(BuildContext context, {required String receiptId}) 
   await ShareService.shareText(context, text);
 }
 
-/// The message text on a card; every check mark becomes an icon.
+/// The receipt as a designed card (F4): a header with the coaching name and a
+/// paid stamp, then student / batch / months / method / date rows, the amount
+/// and the remaining-balance line. The shared message text is separate
+/// ([receiptTextFor]); this is what the teacher sees in the app.
 class ReceiptCard extends StatelessWidget {
-  const ReceiptCard({super.key, required this.text});
+  const ReceiptCard({super.key, required this.model, required this.center, required this.today});
 
-  final String text;
+  final ReceiptModel model;
+  final String center;
+  final LocalDate today;
 
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    final List<String> parts = text.split(_kCheckMark);
-    final List<InlineSpan> spans = <InlineSpan>[];
-    for (var i = 0; i < parts.length; i++) {
-      spans.add(TextSpan(text: parts[i]));
-      if (i < parts.length - 1) {
-        spans.add(WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Icon(BhorIcons.check, size: 20, color: b.colors.accent),
-        ));
-      }
-    }
+    final AppLocalizations l10n = context.l10n;
+    final AppFormat fmt = context.fmt;
+    final ReceiptFacts f = model.facts;
+    final String coaching = center.trim().isEmpty ? l10n.duesCenterFallback : center.trim();
+    final String roll = (f.roll ?? '').trim();
+    final String months = fmt.monthList(f.months, currentYear: today.year, partial: f.partialMonths);
+    final bool allPaid = f.remaining <= 0;
+    Widget rule() => Container(
+          height: 1,
+          margin: const EdgeInsets.symmetric(vertical: BhorSpace.s12),
+          color: b.colors.line,
+        );
     return SizedBox(
       width: double.infinity,
       child: BhorCard(
-        child: Text.rich(
-          TextSpan(style: b.type.body, children: spans),
-          key: const ValueKey<String>('pay-receipt-text'),
+        key: const ValueKey<String>('pay-receipt-text'),
+        padding: const EdgeInsets.all(BhorSpace.s20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(color: b.colors.accentTint, shape: BoxShape.circle),
+                  child: Icon(BhorIcons.receipt, size: 20, color: b.colors.accent),
+                ),
+                const SizedBox(width: BhorSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(coaching, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.heading),
+                      Text(l10n.payReceiptTitle, style: b.type.meta),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: BhorSpace.s8),
+                BhorTag(
+                  key: const ValueKey<String>('pay-receipt-stamp'),
+                  label: l10n.payReceiptPaidStamp,
+                  tone: BhorTone.ok,
+                  icon: BhorIcons.checkCircleFill,
+                ),
+              ],
+            ),
+            rule(),
+            _ReceiptLine(
+              label: l10n.payReceiptStudent,
+              value: roll.isEmpty ? f.studentName : '${f.studentName} · ${l10n.duesPickerRoll(fmt.digits(roll))}',
+            ),
+            _ReceiptLine(label: l10n.payBatchLabelShort, value: f.batchName),
+            _ReceiptLine(label: l10n.payMonthsLabelShort, value: months),
+            _ReceiptLine(label: l10n.payMethodLabel, value: paymentMethodLabel(l10n, model.method)),
+            _ReceiptLine(label: l10n.payDateLabel, value: fmt.date(model.paidOn)),
+            rule(),
+            Row(
+              children: <Widget>[
+                Expanded(child: Text(l10n.payAmountLabel, style: b.type.bodyStrong)),
+                BhorMoney(f.total, style: b.type.title),
+              ],
+            ),
+            const SizedBox(height: BhorSpace.s12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (allPaid) ...<Widget>[
+                  Icon(BhorIcons.check, size: 18, color: b.colors.accent),
+                  const SizedBox(width: BhorSpace.s8),
+                ],
+                Expanded(
+                  child: Text(
+                    allPaid
+                        ? l10n.payReceiptAllPaid.replaceAll(_kCheckMark, '').trim()
+                        : l10n.payReceiptRemaining(fmt.money(f.remaining)),
+                    key: const ValueKey<String>('pay-receipt-remaining'),
+                    style: b.type.body.copyWith(color: b.colors.text2),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Live preview of one receipt, rendered from the current template.
+class _ReceiptLine extends StatelessWidget {
+  const _ReceiptLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(width: 88, child: Text(label, style: b.type.meta)),
+          Expanded(child: Text(value, textAlign: TextAlign.end, style: b.type.bodyStrong)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Live preview of one receipt: the designed card for the current settings.
 class ReceiptPreview extends ConsumerWidget {
   const ReceiptPreview({super.key, required this.receiptId});
 
@@ -137,16 +231,7 @@ class ReceiptPreview extends ConsumerWidget {
     }
     final ReceiptModel? m = model.value;
     if (m == null) return Text(l10n.payReceiptMissing);
-    return ReceiptCard(
-      text: receiptTextFor(
-        model: m,
-        template: settings.requireValue.template,
-        center: settings.requireValue.center,
-        l10n: l10n,
-        fmt: context.fmt,
-        today: ref.watch(todayProvider),
-      ),
-    );
+    return ReceiptCard(model: m, center: settings.requireValue.center, today: ref.watch(todayProvider));
   }
 }
 
@@ -155,7 +240,8 @@ Future<void> showReceiptSheet(BuildContext context, {required String receiptId})
   final String? action = await showBhorPanel<String>(
     context,
     title: context.l10n.payReceiptTitle,
-    kind: BhorPanelKind.confirm,
+    // A side panel on desktop like every other record view / form (G1).
+    kind: BhorPanelKind.form,
     scroll: false,
     builder: (BuildContext ctx) => _ReceiptSheet(receiptId: receiptId),
   );
@@ -223,17 +309,33 @@ class _ReceiptSheet extends ConsumerWidget {
                   variant: BhorButtonVariant.secondary,
                   icon: BhorIcons.edit,
                   label: l10n.commonEdit,
+                  expand: true,
                   onPressed: m == null ? null : () => Navigator.of(context).pop('edit:${m.studentId}'),
                 ),
               ),
               const SizedBox(width: BhorSpace.s8),
-              Expanded(
-                child: BhorButton(
-                  key: const ValueKey<String>('pay-receipt-delete'),
-                  variant: BhorButtonVariant.danger,
-                  icon: BhorIcons.delete,
-                  label: l10n.commonDelete,
-                  onPressed: m == null ? null : () => _delete(context, ref, m),
+              // Delete is quiet: it lives in the ⋮ menu (red, with a confirm).
+              Builder(
+                builder: (BuildContext bc) => BhorIconButton(
+                  key: const ValueKey<String>('pay-receipt-more'),
+                  icon: BhorIcons.overflowVertical,
+                  semanticLabel: l10n.payMenuTooltip,
+                  variant: BhorButtonVariant.secondary,
+                  onPressed: m == null
+                      ? null
+                      : () => showBhorMenu(
+                            context,
+                            anchor: bc,
+                            items: <BhorMenuItem>[
+                              BhorMenuItem(
+                                key: const ValueKey<String>('pay-receipt-delete'),
+                                icon: BhorIcons.delete,
+                                label: l10n.commonDelete,
+                                destructive: true,
+                                onTap: () => _delete(context, ref, m),
+                              ),
+                            ],
+                          ),
                 ),
               ),
             ],

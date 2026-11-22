@@ -73,10 +73,25 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
       data: (DuesView view) {
         if (report == null) return const _DuesSkeleton();
         if (report.active.isEmpty && report.inactive.isEmpty) {
-          return const DuesEmptyState();
+          return _buildEmpty(g);
         }
         return _buildList(view, report, g);
       },
+    );
+  }
+
+  /// Nothing due (F1): wide windows keep the three summary tiles (expected,
+  /// collected, remaining of this month) and show the friendly empty state
+  /// right under them, never a full-screen void.
+  Widget _buildEmpty(double g) {
+    if (!WindowClass.of(context).isWide) return const DuesEmptyState();
+    return ListView(
+      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
+      children: <Widget>[
+        const FeesSummaryTiles(),
+        const SizedBox(height: BhorSpace.s24),
+        const SizedBox(height: 280, child: DuesEmptyState()),
+      ],
     );
   }
 
