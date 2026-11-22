@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -95,6 +96,28 @@ void main() {
       expect(find.byType(BhorButton), findsOneWidget);
     },
   );
+
+  testWidgets('Esc with text clears the query (W1-A, G2)',
+      (WidgetTester tester) async {
+    final SeededFakes f = seedFakes();
+    await pumpApp(tester, const SearchScreen(), overrides: f.overrides);
+    await _type(tester, 'করিম');
+    final Finder editable = find.descendant(
+        of: find.byKey(const ValueKey<String>('search-field')),
+        matching: find.byType(EditableText));
+    expect(tester.widget<EditableText>(editable).controller.text, 'করিম');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(tester.widget<EditableText>(editable).controller.text, isEmpty);
+    // Esc away from the field (focus elsewhere) still reaches search.
+    await _type(tester, 'রহিম');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(tester.widget<EditableText>(editable).controller.text, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('a submitted search is saved in the recent list',
       (WidgetTester tester) async {

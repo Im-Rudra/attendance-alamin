@@ -93,7 +93,7 @@ class _BhorPressableState extends State<BhorPressable> {
   bool get _touch => _lastKind != null && _lastKind != PointerDeviceKind.mouse;
 
   void _onPointer(PointerEvent e) {
-    if (e is PointerDownEvent) BhorTapTracker.record(e);
+    if (e is PointerDownEvent) BhorTapTracker.record(e, context.findRenderObject());
     _lastKind = e.kind;
     if (_touch && _hovered && mounted) setState(() => _hovered = false);
   }
@@ -155,6 +155,8 @@ class _BhorPressableState extends State<BhorPressable> {
       },
       actions: <Type, Action<Intent>>{
         ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (ActivateIntent _) {
+          // Keyboard activation: a popover it opens anchors to this control.
+          BhorTapTracker.recordControl(context.findRenderObject(), View.maybeOf(context)?.viewId);
           widget.onTap?.call();
           return null;
         }),
@@ -177,17 +179,60 @@ class _BhorPressableState extends State<BhorPressable> {
   }
 }
 
-/// Remembers the last pointer-down on a [BhorPressable], so a popover
-/// opened from a whole-screen context can still anchor to the control that
-/// was tapped (showBhorPopover).
+/// Remembers the control the user last pressed (pointer-down on a
+/// [BhorPressable], or Enter / Space on a focused one), so a popover opened
+/// from a whole-screen or whole-card context can still anchor to the exact
+/// control that was used (showBhorPopover, showBhorMenu).
 abstract final class BhorTapTracker {
-  /// Global position and view of the last pointer-down (null before one).
+  /// Global position and view of the last press (null before one).
   static Offset? position;
   static int? viewId;
 
-  static void record(PointerDownEvent e) {
+  /// The innermost [BhorPressable] that was pressed (null when unknown).
+  static RenderBox? control;
+
+  static PointerDownEvent? _event;
+
+  /// Records a pointer-down. Every [BhorPressable] on the hit path sees the
+  /// same event, innermost first: only the innermost one is kept.
+  static void record(PointerDownEvent e, [RenderObject? box]) {
+    final PointerDownEvent original = (e.original as PointerDownEvent?) ?? e;
+    if (identical(original, _event)) return;
+    _event = original;
     position = e.position;
     viewId = e.viewId;
+    control = box is RenderBox ? box : null;
+  }
+
+  /// Records a keyboard activation of [box] in view [view] (its centre
+  /// stands in for the pointer position).
+  static void recordControl(RenderObject? box, int? view) {
+    if (box is! RenderBox || !box.attached || !box.hasSize) return;
+    _event = null;
+    control = box;
+    position = box.localToGlobal(box.size.center(Offset.zero));
+    viewId = view ?? viewId ?? 0;
+  }
+
+  /// The last pressed control's rect in [ancestor]'s coordinates, or null
+  /// when there is none (or it is gone, or not inside [ancestor]).
+  static Rect? controlRectIn(RenderBox ancestor) {
+    final RenderBox? box = control;
+    if (position == null || box == null || !box.attached || !box.hasSize) return null;
+    RenderObject? p = box;
+    while (p != null && p != ancestor) {
+      p = p.parent;
+    }
+    if (p == null) return null;
+    return box.localToGlobal(Offset.zero, ancestor: ancestor) & box.size;
+  }
+
+  /// Forgets the last press (tests).
+  static void reset() {
+    position = null;
+    viewId = null;
+    control = null;
+    _event = null;
   }
 }
 

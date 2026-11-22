@@ -6,6 +6,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/ds.dart';
+
 class DuesKeys extends StatefulWidget {
   const DuesKeys({
     super.key,
@@ -48,8 +50,9 @@ class _DuesKeysState extends State<DuesKeys> {
 
   bool _onKey(KeyEvent event) {
     if (event is! KeyDownEvent || !mounted) return false;
-    final ModalRoute<Object?>? route = ModalRoute.of(context);
-    if (route != null && !route.isCurrent) return false;
+    // Only while this page is the top-most layer: Esc on a menu, popover,
+    // panel or dialog above it belongs to that layer (G2).
+    if (bhorOverlayAbove(context)) return false;
     final HardwareKeyboard kb = HardwareKeyboard.instance;
     final LogicalKeyboardKey key = event.logicalKey;
     if (kb.isControlPressed && !kb.isAltPressed) {
