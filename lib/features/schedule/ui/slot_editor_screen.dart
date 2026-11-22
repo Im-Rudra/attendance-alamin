@@ -31,6 +31,7 @@ import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
 /// 560 px side panel on desktop). True when saved, null when dismissed.
 Future<bool?> showSlotEditorPanel(BuildContext context, {required String batchId}) {
   final PanelFooterSlot slot = PanelFooterSlot();
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   return showBhorPanel<bool>(
     context,
     title: context.l10n.shellTitleSlotEditor,
@@ -38,18 +39,30 @@ Future<bool?> showSlotEditorPanel(BuildContext context, {required String batchId
     expand: true,
     width: 560,
     footer: slot.build,
-    builder: (BuildContext c) => SlotEditorScreen(batchId: batchId, embedded: true, footerSlot: slot),
+    dirty: dirty,
+    builder: (BuildContext c) =>
+        SlotEditorScreen(batchId: batchId, embedded: true, footerSlot: slot, dirty: dirty),
   );
 }
 
 class SlotEditorScreen extends ConsumerStatefulWidget {
-  const SlotEditorScreen({super.key, required this.batchId, this.embedded = false, this.footerSlot});
+  const SlotEditorScreen({
+    super.key,
+    required this.batchId,
+    this.embedded = false,
+    this.footerSlot,
+    this.dirty,
+  });
 
   final String batchId;
 
   /// Hosted inside [showBhorPanel]: no scaffold; the save bar goes to [footerSlot].
   final bool embedded;
   final PanelFooterSlot? footerSlot;
+
+  /// Set while the slots differ from the saved ones, so closing the panel
+  /// asks before discarding (showBhorPanel's `dirty:`).
+  final ValueNotifier<bool>? dirty;
 
   @override
   ConsumerState<SlotEditorScreen> createState() => _SlotEditorScreenState();
@@ -262,18 +275,19 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
         final Widget body;
         if (widget.embedded) {
           widget.footerSlot?.publish(bar, alive: () => mounted);
-          return PopScope(
-            canPop: _leaving || !c.changed,
-            onPopInvokedWithResult: (bool didPop, Object? _) {
-              if (!didPop) _confirmLeave();
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[title, editor, saveClashCard],
-              ),
+          final ValueNotifier<bool>? dirty = widget.dirty;
+          final bool changed = c.changed && !_leaving;
+          if (dirty != null && dirty.value != changed) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && dirty.value != changed) dirty.value = changed;
+            });
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[title, editor, saveClashCard],
             ),
           );
         }

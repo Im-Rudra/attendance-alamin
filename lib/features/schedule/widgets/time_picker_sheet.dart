@@ -1,7 +1,8 @@
 // Period-first time picker (UX 2g): Bangla shows the day-period words, English
 // AM / PM, so 7 am and 7 pm can never be confused. Hours of the chosen period,
 // :00 :15 :30 :45 and "other minute" (every 5 minutes). Desktop also accepts a
-// typed time. A bottom sheet on phones, a dialog on wide windows.
+// typed time. A picker popover anchored to its field on wide windows (one
+// layer, never a dialog stacked on a panel), a bottom sheet on phones.
 
 import 'package:flutter/widgets.dart';
 
@@ -12,7 +13,6 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/format/lexicon.dart';
 import 'package:attendance_alamin/features/schedule/controllers/time_input_parser.dart';
 import 'package:attendance_alamin/features/schedule/widgets/sched_chip.dart';
-import 'package:attendance_alamin/features/schedule/widgets/sched_sheet.dart';
 
 /// Hours (0..23) offered for each Bangla period, in display order.
 const List<List<int>> kBanglaPeriodHours = <List<int>>[
@@ -30,18 +30,24 @@ const List<List<int>> kEnglishHalfHours = <List<int>>[
   <int>[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
 ];
 
+/// [anchor] is the field that opened the picker (the popover hangs from it);
+/// without one the container anchors to the control just pressed.
 Future<int?> openTimePicker(
   BuildContext context, {
   required int initialMin,
   String? title,
+  BuildContext? anchor,
 }) {
   final bool wide = WindowClass.of(context).isWide;
   final int start = initialMin % 1440;
-  return showSchedSheet<int>(
+  return showBhorPanel<int>(
     context,
+    kind: BhorPanelKind.picker,
+    anchor: anchor,
+    width: 400,
+    title: title ?? context.l10n.schedPickTime,
     builder: (BuildContext ctx) => TimePickerPanel(
       initialMin: start,
-      title: title,
       allowTyping: wide,
       onDone: (int v) => Navigator.of(ctx).pop(v),
       onCancel: () => Navigator.of(ctx).pop(),
@@ -55,12 +61,10 @@ class TimePickerPanel extends StatefulWidget {
     required this.initialMin,
     required this.onDone,
     required this.onCancel,
-    this.title,
     this.allowTyping = false,
   });
 
   final int initialMin;
-  final String? title;
   final bool allowTyping;
   final ValueChanged<int> onDone;
   final VoidCallback onCancel;
@@ -223,32 +227,16 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
       ],
     );
 
-    // Title, readout and buttons stay pinned; only the pickers scroll, so the
-    // title never slides out of a short desktop dialog (QA-07).
+    // The container shows the title; the readout and buttons stay pinned,
+    // only the pickers scroll (QA-07).
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.only(top: BhorSpace.s4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(widget.title ?? l10n.schedPickTime, style: b.type.title),
-                  ),
-                ),
-                BhorIconButton(
-                  icon: BhorIcons.close,
-                  semanticLabel: l10n.commonClose,
-                  onPressed: widget.onCancel,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             readout,
             const SizedBox(height: 12),
             Flexible(
@@ -277,9 +265,11 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
                         label: l10n.schedTypeTime,
                         hint: l10n.schedTypeHint,
                         error: _typedBad ? l10n.schedTypeError : null,
+                        // Always one helper line, so the popover keeps its
+                        // height while the echo or the error appears.
                         helper: !_typedBad && _typed.text.trim().isNotEmpty
                             ? l10n.schedTypeEcho(fmt.time(_min))
-                            : null,
+                            : '\u00A0',
                       ),
                     ],
                   ],

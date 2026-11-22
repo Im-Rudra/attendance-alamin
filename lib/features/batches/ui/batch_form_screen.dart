@@ -1,4 +1,5 @@
-// Batch create / edit form (full screen, root navigator). Subject is picked or
+// Batch create / edit form (a side panel on desktop, a sheet on phones; the
+// full-screen route stays for deep links). Subject is picked or
 // created inline (never a destination of its own); billing is two radio cards
 // in plain words, default = last used; a fee change asks "কোন মাস থেকে?".
 
@@ -29,7 +30,6 @@ import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
-import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
@@ -42,6 +42,7 @@ import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
 /// true after an edit, null when dismissed.
 Future<Object?> showBatchFormPanel(BuildContext context, {String? batchId}) {
   final PanelFooterSlot slot = PanelFooterSlot();
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   final l10n = context.l10n;
   return showBhorPanel<Object>(
     context,
@@ -49,12 +50,14 @@ Future<Object?> showBatchFormPanel(BuildContext context, {String? batchId}) {
     kind: BhorPanelKind.form,
     expand: true,
     footer: slot.build,
-    builder: (BuildContext c) => BatchFormScreen(batchId: batchId, embedded: true, footerSlot: slot),
+    dirty: dirty,
+    builder: (BuildContext c) =>
+        BatchFormScreen(batchId: batchId, embedded: true, footerSlot: slot, dirty: dirty),
   );
 }
 
 class BatchFormScreen extends ConsumerStatefulWidget {
-  const BatchFormScreen({super.key, this.batchId, this.embedded = false, this.footerSlot});
+  const BatchFormScreen({super.key, this.batchId, this.embedded = false, this.footerSlot, this.dirty});
 
   /// null = create a new batch.
   final String? batchId;
@@ -62,6 +65,10 @@ class BatchFormScreen extends ConsumerStatefulWidget {
   /// Hosted inside [showBhorPanel]: no scaffold; the save bar goes to [footerSlot].
   final bool embedded;
   final PanelFooterSlot? footerSlot;
+
+  /// Set true once the user changed something, so closing the panel asks
+  /// before discarding (showBhorPanel's `dirty:`).
+  final ValueNotifier<bool>? dirty;
 
   @override
   ConsumerState<BatchFormScreen> createState() => _BatchFormScreenState();
@@ -85,12 +92,36 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   bool _saving = false;
   String? _error;
 
+  /// Values the form started from (create: the defaults), to tell a change.
+  String _seedName = '';
+  String _seedNotes = '';
+  String _seedFee = '';
+  BillingType _seedBilling = BillingType.prepaid;
+  late final ValueNotifier<bool> _dirty = widget.dirty ?? ValueNotifier<bool>(false);
+
   bool get _editing => widget.batchId != null;
+
+  /// True once anything differs from where the form started.
+  bool get _isDirty {
+    if (!_loaded) return false;
+    if (_name.text != _seedName || _notes.text != _seedNotes || _fee.text != _seedFee) return true;
+    if (_billing != _seedBilling) return true;
+    if (!_editing && (_subject.text.trim().isNotEmpty || _slots.isNotEmpty)) return true;
+    return false;
+  }
+
+  void _syncDirty() {
+    final bool d = _isDirty;
+    if (_dirty.value == d) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _dirty.value != d) _dirty.value = d;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    for (final TextEditingController c in <TextEditingController>[_subject, _name, _fee]) {
+    for (final TextEditingController c in <TextEditingController>[_subject, _name, _fee, _notes]) {
       c.addListener(_changed);
     }
   }
@@ -101,6 +132,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     _name.dispose();
     _fee.dispose();
     _notes.dispose();
+    if (widget.dirty == null) _dirty.dispose();
     super.dispose();
   }
 
@@ -140,6 +172,10 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
       _notFound = seed.notFound;
       _billing = seed.billing;
       _oldFee = seed.fee;
+      _seedName = _name.text;
+      _seedNotes = _notes.text;
+      _seedFee = _fee.text;
+      _seedBilling = seed.billing;
       _loaded = true;
     });
   }
@@ -165,6 +201,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   /// Why save is disabled, or null when it is allowed.
   String? _reason() {
     final l10n = context.l10n;
+    // Editing: Save stays off until something changed (review B9).
+    if (_editing && !_isDirty) return l10n.schedReasonNoChange;
     if (!_editing && _subject.text.trim().isEmpty) return l10n.batchReasonSubject;
     if (_name.text.trim().isEmpty) return l10n.batchReasonName;
     if (_parsedFee() == null) return l10n.batchReasonFee;
@@ -294,12 +332,16 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     if (widget.embedded) return _body(context);
-    return BhorScaffold(
-      header: BhorHeader(
-        title: _editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew,
-        onBack: _close,
+    return BhorDirtyScope(
+      dirty: _dirty,
+      closeOnEscape: true,
+      child: BhorScaffold(
+        header: BhorHeader(
+          title: _editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew,
+          onBack: _close,
+        ),
+        body: _body(context),
       ),
-      body: _body(context),
     );
   }
 
@@ -341,6 +383,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
         typed.isNotEmpty &&
         !subjects.any((Subject s) => s.name.trim().toLowerCase() == typed.toLowerCase());
     final SlotEditorBuilder buildSlots = ref.watch(batchSlotEditorBuilderProvider);
+    _syncDirty();
 
     final List<String> suggestions = <String>[
       l10n.batchSuggestMath,
@@ -368,7 +411,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                   BhorTextField(
                     key: const Key('batch-form-subject'),
                     controller: _subject,
-                    enabled: !_editing,
+                    readOnly: _editing,
                     textInputAction: TextInputAction.next,
                     label: l10n.batchSubjectLabel,
                     hint: l10n.batchSubjectHint,
@@ -463,19 +506,6 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     maxLines: 3,
                     label: l10n.commonNotes,
                   ),
-                  if (_editing && _batch != null && !_batch!.archived) ...<Widget>[
-                    const SizedBox(height: 16),
-                    BhorButton(
-                      variant: BhorButtonVariant.ghost,
-                      expand: true,
-                      onPressed: () async {
-                        final bool done = await showArchiveBatchDialog(context, batchId: _batch!.id);
-                        if (done && mounted) _close();
-                      },
-                      icon: BhorIcons.archive,
-                      label: l10n.batchMenuArchive,
-                    ),
-                  ],
                   if (_error != null) ...<Widget>[
                     const SizedBox(height: BhorSpace.s16),
                     BatchNotice(text: _error!),

@@ -1,5 +1,7 @@
 // BulkAddScreen (F20): a repeating mini form (name, guardian phone) with
-// "Save & next". Built for the setup evening: type a name, Tab, type the
+// "Save & next". On desktop it opens as a wide side panel from the batch ⋮
+// menu (showBulkAddPanel; Finish and Save & next sit in the panel footer);
+// the routed full-page form stays only as a fallback. Built for the setup evening: type a name, Tab, type the
 // phone, Enter - it saves, enrols the student in the batch and the cursor is
 // back in the name field. A phone that already belongs to someone only asks
 // once (siblings share a guardian number).
@@ -21,12 +23,36 @@ import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/bulk_add_service.dart';
 import 'package:attendance_alamin/features/extras/controllers/extra_providers.dart';
+import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/extras/widgets/csv_import_flow.dart';
 
+/// Opens the bulk add form as a wide side panel (a sheet on phones).
+Future<void> showBulkAddPanel(BuildContext context, {required String batchId}) {
+  final PanelFooterSlot slot = PanelFooterSlot();
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  return showBhorPanel<void>(
+    context,
+    title: context.l10n.extraBulkTitle,
+    kind: BhorPanelKind.form,
+    expand: true,
+    width: 640,
+    footer: slot.build,
+    dirty: dirty,
+    builder: (BuildContext c) => BulkAddScreen(batchId: batchId, embedded: true, footerSlot: slot, dirty: dirty),
+  );
+}
+
 class BulkAddScreen extends ConsumerStatefulWidget {
-  const BulkAddScreen({super.key, required this.batchId});
+  const BulkAddScreen({super.key, required this.batchId, this.embedded = false, this.footerSlot, this.dirty});
 
   final String batchId;
+
+  /// Hosted inside [showBhorPanel]: no scaffold; Finish / Save go to [footerSlot].
+  final bool embedded;
+  final PanelFooterSlot? footerSlot;
+
+  /// True while a half-typed row would be lost on close.
+  final ValueNotifier<bool>? dirty;
 
   @override
   ConsumerState<BulkAddScreen> createState() => _BulkAddScreenState();
@@ -47,6 +73,19 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
   Student? _phoneOwner;
   String? _confirmedPhone;
   String? _removedNote;
+
+  /// Embedded: the CSV explainer replaces the form until a file is chosen.
+  bool _csvStep = false;
+
+  void _syncDirty() {
+    final ValueNotifier<bool>? d = widget.dirty;
+    if (d == null) return;
+    final bool now = _name.text.trim().isNotEmpty || _phone.text.trim().isNotEmpty;
+    if (d.value == now) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && d.value != now) d.value = now;
+    });
+  }
 
   @override
   void dispose() {
@@ -147,12 +186,16 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
 
   Future<void> _importCsv() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _csvStep = false;
+    });
     try {
       await startCsvStudentImport(
         context,
         ref,
         batchId: widget.batchId,
+        explain: !widget.embedded,
         onAdded: (List<BulkAdded> added) {
           if (!mounted) return;
           setState(() {
@@ -168,6 +211,10 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
   }
 
   void _close() {
+    if (widget.embedded) {
+      Navigator.of(context).maybePop();
+      return;
+    }
     if (context.canPop()) {
       context.pop();
     } else {
@@ -203,6 +250,8 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             )
           : ListView(children: <Widget>[form, const SizedBox(height: BhorSpace.s12), list]);
     }
+
+    if (widget.embedded) return _embedded(context, batch);
 
     final bool ready = batch.value != null;
     final Widget? bar = ready
@@ -271,11 +320,105 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
     );
   }
 
-  Widget _form(BuildContext context, Batch batch) {
+  /// Panel content: the row editor fills the width, the list of added
+  /// students follows, Finish and Save & next are the panel footer.
+  Widget _embedded(BuildContext context, AsyncValue<Batch?> batch) {
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
-    return BhorCard(
-      child: Column(
+    if (batch.hasError) return BhorEmptyState(icon: BhorIcons.warning, title: l10n.commonLoadingFailed);
+    if (!batch.hasValue) return const Padding(padding: EdgeInsets.all(BhorSpace.s32), child: Center(child: BhorSpinner()));
+    if (batch.value == null) return BhorEmptyState(icon: BhorIcons.delete, title: l10n.extraBulkBatchMissing);
+    _syncDirty();
+    final String? reason = _name.text.trim().isEmpty ? l10n.extraBulkDisabledName : null;
+    widget.footerSlot?.publish(
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+            child: Text(
+              l10n.extraBulkAddedCount(context.fmt.digits(_added.length.toString())),
+              textAlign: TextAlign.center,
+              style: b.type.meta,
+            ),
+          ),
+          Row(
+            children: <Widget>[
+              BhorButton(
+                key: const ValueKey<String>('bulk-finish'),
+                variant: BhorButtonVariant.secondary,
+                label: l10n.extraBulkFinish,
+                onPressed: _close,
+              ),
+              const SizedBox(width: BhorSpace.s12),
+              Expanded(
+                child: BhorButton(
+                  key: const ValueKey<String>('bulk-save'),
+                  label: _phoneOwner != null ? l10n.extraBulkSaveAnyway : l10n.extraBulkSaveNext,
+                  expand: true,
+                  loading: _busy && !_csvStep,
+                  onPressed: _canSave && !_csvStep ? _save : null,
+                  disabledReason: reason,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      alive: () => mounted,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s16, BhorSpace.s4, BhorSpace.s16, BhorSpace.s16),
+      child: _csvStep
+          ? CsvFormatExplainer(onChoose: _importCsv, onBack: () => setState(() => _csvStep = false))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _form(context, batch.value!, card: false),
+                if (_added.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: BhorSpace.s16),
+                  _addedList(context, scrollable: false),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _form(BuildContext context, Batch batch, {bool card = true}) {
+    final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final Widget nameField = BhorTextField(
+    key: const ValueKey<String>('bulk-name'),
+    textCapitalization: TextCapitalization.words,
+    controller: _name,
+    focusNode: _nameFocus,
+    autofocus: true,
+    textInputAction: TextInputAction.next,
+    label: l10n.extraBulkNameLabel,
+    onChanged: (_) => setState(() => _removedNote = null),
+    onSubmitted: (_) => _phoneFocus.requestFocus(),
+  );
+    final Widget phoneField = BhorTextField(
+    key: const ValueKey<String>('bulk-phone'),
+    controller: _phone,
+    focusNode: _phoneFocus,
+    keyboardType: TextInputType.phone,
+    textInputAction: TextInputAction.done,
+    tabular: true,
+    inputFormatters: <TextInputFormatter>[
+      DigitsFormatter(context.fmt, maxLength: 20, phone: true),
+    ],
+    label: l10n.extraBulkPhoneLabel,
+    onChanged: (_) => setState(() {
+      _phoneOwner = null;
+      _confirmedPhone = null;
+      _error = null;
+    }),
+    onSubmitted: (_) => _save(),
+  );
+    final Widget content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
@@ -289,36 +432,30 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
             style: b.type.body.copyWith(color: b.colors.text2),
           ),
           const SizedBox(height: BhorSpace.s12),
-          BhorTextField(
-            key: const ValueKey<String>('bulk-name'),
-            textCapitalization: TextCapitalization.words,
-            controller: _name,
-            focusNode: _nameFocus,
-            autofocus: true,
-            textInputAction: TextInputAction.next,
-            label: l10n.extraBulkNameLabel,
-            onChanged: (_) => setState(() => _removedNote = null),
-            onSubmitted: (_) => _phoneFocus.requestFocus(),
-          ),
-          const SizedBox(height: BhorSpace.s12),
-          BhorTextField(
-            key: const ValueKey<String>('bulk-phone'),
-            controller: _phone,
-            focusNode: _phoneFocus,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            tabular: true,
-            inputFormatters: <TextInputFormatter>[
-              DigitsFormatter(context.fmt, maxLength: 20, phone: true),
-            ],
-            label: l10n.extraBulkPhoneLabel,
-            onChanged: (_) => setState(() {
-              _phoneOwner = null;
-              _confirmedPhone = null;
-              _error = null;
-            }),
-            onSubmitted: (_) => _save(),
-          ),
+          if (widget.embedded)
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints c) {
+                if (c.maxWidth < 460) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[nameField, const SizedBox(height: BhorSpace.s12), phoneField],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 5, child: nameField),
+                    const SizedBox(width: BhorSpace.s12),
+                    Expanded(flex: 4, child: phoneField),
+                  ],
+                );
+              },
+            )
+          else ...<Widget>[
+            nameField,
+            const SizedBox(height: BhorSpace.s12),
+            phoneField,
+          ],
           if (_phoneOwner != null) ...<Widget>[
             const SizedBox(height: BhorSpace.s12),
             _Note(
@@ -346,10 +483,12 @@ class _BulkAddScreenState extends ConsumerState<BulkAddScreen> {
           const SizedBox(height: BhorSpace.s12),
           Text(l10n.extraBulkHint, style: b.type.meta),
           const SizedBox(height: BhorSpace.s12),
-          CsvImportButton(onPressed: _busy ? null : _importCsv),
+          CsvImportButton(
+            onPressed: _busy ? null : (widget.embedded ? () => setState(() => _csvStep = true) : _importCsv),
+          ),
         ],
-      ),
     );
+    return card ? BhorCard(child: content) : content;
   }
 
   Widget _addedList(BuildContext context, {required bool scrollable}) {

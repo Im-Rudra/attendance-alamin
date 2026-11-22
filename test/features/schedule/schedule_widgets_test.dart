@@ -300,7 +300,10 @@ void main() {
 
       await tester.enterText(find.byType(BhorTextField), '19:30');
       await tester.pump();
-      await _tapText(tester, 'ঠিক আছে');
+      // Enter in the typed field confirms (the popover hugs the anchor, so
+      // the OK button may sit past the bottom edge of a short test window).
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
       expect(result, 19 * 60 + 30);
     });
 
@@ -321,6 +324,21 @@ void main() {
       expect(find.text('বুঝেছি: সকাল ১০:০০'), findsOneWidget);
       await _tapText(tester, 'ঠিক আছে');
       expect(result, 10 * 60);
+    });
+
+    testWidgets('B7: on desktop the picker is a popover, not a stacked dialog',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        _Launcher(
+          (BuildContext c) => showTimePickerSheet(c, initialMin: 600),
+          (Object? _) {},
+        ),
+        viewport: TestViewport.desktop,
+      );
+      await _tapText(tester, 'open');
+      expect(find.byType(TimePickerPanel), findsOneWidget);
+      expect(find.byType(BhorDialog), findsNothing);
     });
 
     testScreenMatrix(
@@ -362,8 +380,8 @@ void main() {
       if (typed != null) {
         await tester.enterText(find.byType(BhorTextField), typed);
         await tester.pump();
+        await _tapText(tester, 'ঠিক আছে');
       }
-      await _tapText(tester, 'ঠিক আছে');
       return result;
     }
 
@@ -409,6 +427,23 @@ void main() {
       expect(ok.onPressed, isNull);
     });
 
+    testWidgets('B8: a list of choices with one check; a tap picks (no OK)',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        _Launcher(
+          (BuildContext c) => showReminderLeadSheet(c, current: 20, defaultLead: 15),
+          (Object? _) {},
+        ),
+        viewport: TestViewport.desktop,
+      );
+      await _tapText(tester, 'open');
+      expect(find.byType(ReminderLeadPanel), findsOneWidget);
+      expect(find.byType(BhorDialog), findsNothing);
+      expect(find.byIcon(BhorIcons.check), findsOneWidget);
+      expect(find.widgetWithText(BhorButton, 'ঠিক আছে'), findsNothing);
+    });
+
     testScreenMatrix(
       'reminder lead sheet open',
       () => _Launcher(
@@ -442,7 +477,6 @@ void main() {
 
       await _tapText(tester, 'ক্লাস রিমাইন্ডার: ডিফল্ট (১৫ মিনিট আগে)');
       await _tapText(tester, '১০ মিনিট আগে');
-      await _tapText(tester, 'ঠিক আছে');
       expect(
         f.store.batches.firstWhere((b) => b.id == kBatPhysA).reminderLeadMin,
         10,

@@ -1,6 +1,7 @@
 // Desktop panes of the Batches tab: the "nothing selected" overview (never a
-// blank area) and the context pane of the selected batch (UX 3b: week slots,
-// dues by level, 8-week attendance trend).
+// blank area, compact) and the context of the selected batch (dues by level,
+// 8-week attendance trend). The weekly routine is shown once, in the
+// Schedule tab; it is not repeated here (review B1).
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,13 +17,12 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
-import 'package:attendance_alamin/domain/models/schedule.dart';
-import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
-import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
 
-/// What the detail pane shows while no batch is selected.
+/// What the detail pane shows while no batch is selected: four stat tiles, one
+/// compact per-batch list (students + dues) and a quiet prompt. Compact and
+/// top aligned, never a big void (review B11).
 class BatchesOverview extends ConsumerWidget {
   const BatchesOverview({super.key});
 
@@ -30,7 +30,6 @@ class BatchesOverview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final fmt = context.fmt;
-    final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
     final LocalDate today = ref.watch(todayProvider);
     final List<SubjectGroup> groups = ref.watch(batchGroupsProvider).value ?? const <SubjectGroup>[];
@@ -48,56 +47,8 @@ class BatchesOverview extends ConsumerWidget {
       header: BhorHeader(title: l10n.shellTitleOverview, showBack: false),
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints c) {
-          final int cols = c.maxWidth >= 560 ? 4 : 2;
+          final int cols = c.maxWidth - 2 * g >= 520 ? 4 : 2;
           final double w = (c.maxWidth - 2 * g - BhorSpace.s12 * (cols - 1)) / cols;
-          final Widget pickHint = BhorCard(
-            child: Row(
-              children: <Widget>[
-                Icon(BhorIcons.sparkle, color: th.colors.accent),
-                const SizedBox(width: BhorSpace.s12),
-                Expanded(child: Text(l10n.batchOverviewPick, style: th.type.body)),
-              ],
-            ),
-          );
-          final Widget duesByBatch = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              BhorSectionHeader(title: l10n.batchOverviewDuesByBatch),
-              BhorCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: <Widget>[
-                    for (int i = 0; i < all.length; i++)
-                      BhorListRow(
-                        title: batchLabel(l10n, all[i].subjectName, all[i].batch.name),
-                        divider: i != all.length - 1,
-                        onTap: () => openPath(context, Routes.batch(all[i].batch.id)),
-                        trailing: _DuesOrClear(batchId: all[i].batch.id),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          );
-          final List<BatchCardData> bySize = <BatchCardData>[...all]
-            ..sort((BatchCardData a, BatchCardData b) => b.studentCount.compareTo(a.studentCount));
-          final Widget studentsByBatch = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              BhorSectionHeader(title: l10n.batchOverviewByStudents),
-              BatchBarList(
-                entries: <BatchBarEntry>[
-                  for (final BatchCardData b in bySize.take(8))
-                    BatchBarEntry(
-                      label: batchLabel(l10n, b.subjectName, b.batch.name),
-                      value: b.studentCount,
-                      valueText: fmt.number(b.studentCount),
-                      onTap: () => openPath(context, Routes.batch(b.batch.id)),
-                    ),
-                ],
-              ),
-            ],
-          );
           return ListView(
             padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
             children: <Widget>[
@@ -114,23 +65,33 @@ class BatchesOverview extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: BhorSpace.s16),
-              if (all.isNotEmpty && c.maxWidth >= 640)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(child: duesByBatch),
-                    const SizedBox(width: BhorSpace.s12),
-                    Expanded(child: studentsByBatch),
-                  ],
-                )
-              else if (all.isNotEmpty) ...<Widget>[
-                duesByBatch,
-                const SizedBox(height: BhorSpace.s8),
-                studentsByBatch,
+              if (all.isNotEmpty) ...<Widget>[
+                const SizedBox(height: BhorSpace.s16),
+                BhorSectionHeader(title: l10n.batchOverviewDuesByBatch),
+                BhorCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: <Widget>[
+                      for (int i = 0; i < all.length; i++)
+                        BhorListRow(
+                          title: batchLabel(l10n, all[i].subjectName, all[i].batch.name),
+                          subtitle: l10n.batchStudentCount(fmt.number(all[i].studentCount)),
+                          divider: i != all.length - 1,
+                          onTap: () => openPath(context, Routes.batch(all[i].batch.id)),
+                          trailing: _DuesOrClear(batchId: all[i].batch.id),
+                        ),
+                    ],
+                  ),
+                ),
               ],
-              const SizedBox(height: BhorSpace.s12),
-              pickHint,
+              const SizedBox(height: BhorSpace.s16),
+              BhorCard(
+                child: BhorEmptyState(
+                  size: BhorEmptySize.compact,
+                  icon: BhorIcons.sparkle,
+                  title: l10n.batchOverviewPick,
+                ),
+              ),
             ],
           );
         },
@@ -162,7 +123,92 @@ class _DuesOrClear extends ConsumerWidget {
   }
 }
 
-/// Third pane (≥ 1200): this batch's week, dues by level, attendance trend.
+/// This batch's dues by level (worst level per open enrollment) and the
+/// weekly attendance of the last 8 weeks.
+typedef BatchInsights = ({
+  Map<DueLevel, int> byLevel,
+  List<DueLevel> levels,
+  List<AttendanceTally> weeks,
+  bool anyAttendance,
+});
+
+BatchInsights batchInsightsOf(WidgetRef ref, String batchId) {
+  final LocalDate today = ref.watch(todayProvider);
+  final Map<DueLevel, int> byLevel = <DueLevel, int>{};
+  final DuesReport? report = ref.watch(duesReportProvider).value;
+  if (report != null) {
+    for (final StudentDues s in report.active) {
+      for (final EnrollmentDues e in s.enrollments) {
+        final DueLevel? w = e.worst;
+        if (e.terms.batchId != batchId || e.openDue.isEmpty || w == null) continue;
+        byLevel[w] = (byLevel[w] ?? 0) + 1;
+      }
+    }
+  }
+  final List<DueLevel> levels = DueLevel.values.reversed.where(byLevel.containsKey).toList();
+
+  final DateSpan span = (from: today.addDays(-55), to: today);
+  final List<SessionSummary> sessions = ref.watch(sessionSummariesProvider(span)).value ?? const <SessionSummary>[];
+  final List<AttendanceTally> weeks = List<AttendanceTally>.filled(8, const AttendanceTally());
+  var any = false;
+  for (final SessionSummary s in sessions) {
+    if (s.session.batchId != batchId) continue;
+    final int back = s.session.date.daysUntil(today) ~/ 7;
+    if (back < 0 || back > 7) continue;
+    final AttendanceTally t = weeks[7 - back];
+    weeks[7 - back] = AttendanceTally(
+      present: t.present + s.tally.present,
+      absent: t.absent + s.tally.absent,
+      late: t.late + s.tally.late,
+      leave: t.leave + s.tally.leave,
+    );
+    any = true;
+  }
+  return (byLevel: byLevel, levels: levels, weeks: weeks, anyAttendance: any);
+}
+
+Widget _duesBody(BuildContext context, BatchInsights d) {
+  final l10n = context.l10n;
+  final fmt = context.fmt;
+  final BhorThemeData th = context.bhor;
+  if (d.levels.isEmpty) {
+    return Row(
+      children: <Widget>[
+        Icon(BhorIcons.checkCircle, color: th.colors.text2),
+        const SizedBox(width: BhorSpace.s8),
+        Expanded(
+          child: Text(l10n.batchContextNoDues, style: th.type.body.copyWith(color: th.colors.text2)),
+        ),
+      ],
+    );
+  }
+  return Column(
+    children: <Widget>[
+      for (final DueLevel lv in d.levels)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Align(alignment: AlignmentDirectional.centerStart, child: DueTag(level: lv)),
+              ),
+              Text(l10n.batchContextStudentsOne(fmt.number(d.byLevel[lv] ?? 0)), style: th.type.body),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+Widget _trendBody(BuildContext context, BatchInsights d, {double height = 96}) {
+  final BhorThemeData th = context.bhor;
+  if (!d.anyAttendance) {
+    return Text(context.l10n.batchContextNoAttendance, style: th.type.body.copyWith(color: th.colors.text2));
+  }
+  return _Trend(weeks: d.weeks, height: height);
+}
+
+/// Fourth column (>= 1600): this batch's dues by level and attendance trend.
 class BatchContextPane extends ConsumerWidget {
   const BatchContextPane({super.key, required this.batchId});
 
@@ -171,134 +217,72 @@ class BatchContextPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final fmt = context.fmt;
-    final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
-    final LocalDate today = ref.watch(todayProvider);
-
-    final List<BatchSchedule> schedules = ref.watch(schedulesProvider).value ?? const <BatchSchedule>[];
-    List<Slot> slots = const <Slot>[];
-    for (final BatchSchedule s in schedules) {
-      if (s.batch.id == batchId) slots = activeSlots(s.slots, today);
-    }
-    slots = <Slot>[...slots]..sort((Slot a, Slot b) {
-        final int c = kWeekOrder.indexOf(a.weekday).compareTo(kWeekOrder.indexOf(b.weekday));
-        return c != 0 ? c : a.startMin.compareTo(b.startMin);
-      });
-
-    // Dues by level for this batch.
-    final Map<DueLevel, int> byLevel = <DueLevel, int>{};
-    final DuesReport? report = ref.watch(duesReportProvider).value;
-    if (report != null) {
-      for (final StudentDues s in report.active) {
-        for (final EnrollmentDues e in s.enrollments) {
-          final DueLevel? w = e.worst;
-          if (e.terms.batchId != batchId || e.openDue.isEmpty || w == null) continue;
-          byLevel[w] = (byLevel[w] ?? 0) + 1;
-        }
-      }
-    }
-    final List<DueLevel> levels = DueLevel.values.reversed.where(byLevel.containsKey).toList();
-
-    final DateSpan span = (from: today.addDays(-55), to: today);
-    final List<SessionSummary> sessions = ref.watch(sessionSummariesProvider(span)).value ?? const <SessionSummary>[];
-    final List<AttendanceTally> weeks = List<AttendanceTally>.filled(8, const AttendanceTally());
-    var any = false;
-    for (final SessionSummary s in sessions) {
-      if (s.session.batchId != batchId) continue;
-      final int back = s.session.date.daysUntil(today) ~/ 7;
-      if (back < 0 || back > 7) continue;
-      final AttendanceTally t = weeks[7 - back];
-      weeks[7 - back] = AttendanceTally(
-        present: t.present + s.tally.present,
-        absent: t.absent + s.tally.absent,
-        late: t.late + s.tally.late,
-        leave: t.leave + s.tally.leave,
-      );
-      any = true;
-    }
-
+    final BatchInsights d = batchInsightsOf(ref, batchId);
     return ListView(
       padding: EdgeInsets.fromLTRB(g, BhorSpace.s12, g, g),
       children: <Widget>[
-        BhorSectionHeader(title: l10n.batchContextWeek),
-        BhorCard(
-          child: slots.isEmpty
-              ? Text(l10n.batchNoSlots, style: th.type.body.copyWith(color: th.colors.text2))
-              : Column(
-                  children: <Widget>[
-                    for (final Slot s in slots)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(child: Text(fmt.weekdayName(s.weekday), style: th.type.body)),
-                            Text(
-                              fmt.timeRange(s.startMin, s.endMin),
-                              style: th.type.body.copyWith(color: th.colors.text2),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-        ),
-        const SizedBox(height: BhorSpace.s12),
         BhorSectionHeader(title: l10n.batchContextDues),
-        BhorCard(
-          child: levels.isEmpty
-              ? Row(
-                  children: <Widget>[
-                    Icon(BhorIcons.checkCircle, color: th.colors.text2),
-                    const SizedBox(width: BhorSpace.s8),
-                    Expanded(
-                      child: Text(
-                        l10n.batchContextNoDues,
-                        style: th.type.body.copyWith(color: th.colors.text2),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: <Widget>[
-                    for (final DueLevel lv in levels)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: DueTag(level: lv),
-                              ),
-                            ),
-                            Text(l10n.batchContextStudentsOne(fmt.number(byLevel[lv] ?? 0)), style: th.type.body),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-        ),
+        BhorCard(child: _duesBody(context, d)),
         const SizedBox(height: BhorSpace.s12),
         BhorSectionHeader(title: l10n.batchContextTrend),
-        BhorCard(
-          child: any
-              ? _Trend(weeks: weeks)
-              : Text(
-                  l10n.batchContextNoAttendance,
-                  style: th.type.body.copyWith(color: th.colors.text2),
-                ),
-        ),
+        BhorCard(child: _trendBody(context, d)),
       ],
+    );
+  }
+}
+
+/// The same content folded into the detail's overview when the rail has no
+/// column of its own (BhorMasterDetailPage.foldedRailOf): two compact columns
+/// (stacked when narrow), no card of their own.
+class BatchInsightsPanel extends ConsumerWidget {
+  const BatchInsightsPanel({super.key, required this.batchId});
+
+  final String batchId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final BhorThemeData th = context.bhor;
+    final BatchInsights d = batchInsightsOf(ref, batchId);
+    Widget titled(String title, Widget body) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(title, style: th.type.label.copyWith(color: th.colors.text2)),
+            const SizedBox(height: BhorSpace.s8),
+            body,
+          ],
+        );
+    final Widget dues = titled(l10n.batchContextDues, _duesBody(context, d));
+    final Widget trend = titled(l10n.batchContextTrend, _trendBody(context, d, height: 72));
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints c) {
+        if (c.maxWidth < 480) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[dues, const SizedBox(height: BhorSpace.s12), trend],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: dues),
+            const SizedBox(width: BhorSpace.s24),
+            Expanded(child: trend),
+          ],
+        );
+      },
     );
   }
 }
 
 /// Eight weekly bars, oldest to newest; a missing week is a thin track.
 class _Trend extends StatelessWidget {
-  const _Trend({required this.weeks});
+  const _Trend({required this.weeks, this.height = 96});
 
   final List<AttendanceTally> weeks;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +296,7 @@ class _Trend extends StatelessWidget {
       label: '${context.l10n.batchContextTrend}: $summary',
       excludeSemantics: true,
       child: SizedBox(
-        height: 96,
+        height: height,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
@@ -331,7 +315,7 @@ class _Trend extends StatelessWidget {
                         ),
                       const SizedBox(height: 2),
                       Container(
-                        height: t.percent == null ? 4 : (4 + 60 * t.percent! / 100).toDouble(),
+                        height: t.percent == null ? 4 : (4 + (height - 36) * t.percent! / 100).toDouble(),
                         decoration: BoxDecoration(
                           color: t.percent == null ? th.colors.line : th.colors.accent,
                           borderRadius: BorderRadius.circular(4),

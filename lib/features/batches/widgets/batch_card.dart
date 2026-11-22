@@ -55,98 +55,57 @@ class BatchCard extends ConsumerWidget {
       onSecondaryTapUp: onSecondaryTap == null
           ? null
           : (TapUpDetails d) => onSecondaryTap!(d.globalPosition),
-      child: Semantics(
+      // The one selection style (review B2): accent-tint fill + leading bar,
+      // text keeps its normal colours in both themes.
+      child: BhorCard(
         selected: selected,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(end: selected ? 1 : 0),
-          duration: BhorMotion.of(context, BhorMotion.fast),
-          curve: BhorMotion.curveOf(context, BhorMotion.ease),
-          builder: (BuildContext context, double t, Widget? child) => Stack(
-            children: <Widget>[
-              child!,
-              // Selected = soft accent wash + a 3 px leading bar, no outline.
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: th.colors.accentTint.withValues(alpha: 0.55 * t),
-                      borderRadius: BorderRadius.circular(BhorRadius.card),
-                    ),
+        onTap: onTap,
+        semanticLabel: data.batch.name,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            BatchAvatar(name: data.batch.name, size: 40),
+            const SizedBox(width: BhorSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Full-width title (2-line clamp); the pill moved down so it
+                  // never squeezes the title into awkward wraps (B1).
+                  Text(
+                    batchLabel(l10n, data.subjectName, data.batch.name),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: th.type.heading,
                   ),
-                ),
+                  const SizedBox(height: BhorSpace.s4),
+                  Text(
+                    schedule.isEmpty ? l10n.batchNoSlots : schedule,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: th.type.body.copyWith(color: th.colors.text2),
+                  ),
+                  const SizedBox(height: BhorSpace.s8),
+                  Wrap(
+                    spacing: BhorSpace.s12,
+                    runSpacing: BhorSpace.s4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      BillingPill(type: data.batch.billingType),
+                      Text(l10n.batchStudentCount(fmt.number(data.studentCount)), style: th.type.label),
+                      if (pct != null)
+                        Text(
+                          l10n.batchTodayPercent(fmt.percent(pct)),
+                          style: th.type.label.copyWith(color: th.colors.text2),
+                        ),
+                      BatchDuesBadge(batchId: data.batch.id),
+                    ],
+                  ),
+                ],
               ),
-              Positioned(
-                left: 0,
-                top: BhorSpace.s12,
-                bottom: BhorSpace.s12,
-                width: 3,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: th.colors.accent.withValues(alpha: t),
-                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          child: BhorCard(
-            onTap: onTap,
-            semanticLabel: data.batch.name,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                BatchAvatar(name: data.batch.name, size: 40),
-                const SizedBox(width: BhorSpace.s12),
-                Expanded(
-                  child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        batchLabel(l10n, data.subjectName, data.batch.name),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: th.type.heading,
-                      ),
-                    ),
-                    const SizedBox(width: BhorSpace.s8),
-                    BillingPill(type: data.batch.billingType),
-                  ],
-                ),
-                const SizedBox(height: BhorSpace.s4),
-                Text(
-                  schedule.isEmpty ? l10n.batchNoSlots : schedule,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: th.type.body.copyWith(color: th.colors.text2),
-                ),
-                const SizedBox(height: BhorSpace.s8),
-                Wrap(
-                  spacing: BhorSpace.s12,
-                  runSpacing: BhorSpace.s4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Text(l10n.batchStudentCount(fmt.number(data.studentCount)), style: th.type.label),
-                    if (pct != null)
-                      Text(
-                        l10n.batchTodayPercent(fmt.percent(pct)),
-                        style: th.type.label.copyWith(color: th.colors.text2),
-                      ),
-                    BatchDuesBadge(batchId: data.batch.id),
-                  ],
-                ),
-              ],
-                  ),
-                ),
-              ],
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -1,16 +1,18 @@
 // Batches tab: batch cards grouped by subject (collapsible headers). Wide
-// windows show list ‖ detail (‖ context at ≥ 1200) through PaneSplit; with no
-// selection the detail pane is a useful overview, never a blank area.
+// windows use BhorMasterDetailPage (list 360 | detail, the context rail only
+// as a 4th column >= 1600); with no selection the detail pane is a compact
+// overview, never a blank area. The global search lives in the shell (no
+// search button of its own here).
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
@@ -31,17 +33,29 @@ class BatchesScreen extends StatelessWidget {
     final Widget list = _BatchesList(selectedId: selectedId);
     if (!WindowClass.of(context).isWide) return list;
     final String? id = selectedId;
-    return PaneSplit(
-      screen: 'batches',
-      list: list,
-      preferList: id == null,
-      detail: id == null
-          ? const BatchesOverview()
-          : BhorPaneSwitcher(
-              paneKey: id,
-              child: BatchDetailScreen(key: ValueKey<String>(id), batchId: id),
-            ),
-      contextPane: id == null ? null : BatchContextPane(batchId: id),
+    // Master-detail template: the rail (dues by level + attendance trend) is a
+    // 4th column only >= 1600; below that the detail folds it into its
+    // overview (review B1).
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        final bool twoPane = BhorMasterDetailPage.twoPane(box.maxWidth);
+        Widget? detail;
+        if (id != null) {
+          final Widget d = BhorPaneSwitcher(
+            paneKey: id,
+            child: BatchDetailScreen(key: ValueKey<String>(id), batchId: id),
+          );
+          // Beside the list the window owns navigation (no back arrow); alone
+          // the detail keeps its own back arrow.
+          detail = twoPane ? PaneScope(child: d) : d;
+        }
+        return BhorMasterDetailPage(
+          master: PaneScope(child: list),
+          detail: detail,
+          emptyDetail: const PaneScope(child: BatchesOverview()),
+          rail: id == null ? null : BatchContextPane(batchId: id),
+        );
+      },
     );
   }
 }
@@ -66,42 +80,27 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
 
   Future<void> _menu(BatchCardData d, Offset at, BuildContext anchor) async {
     final l10n = context.l10n;
-    final String? choice = await showBhorPanel<String>(
+    await showBhorMenu(
       context,
-      kind: BhorPanelKind.list,
       anchor: anchor,
-      width: 320,
-      title: d.batch.name,
-      builder: (BuildContext ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          BatchMenuRow(
-            icon: BhorIcons.batches,
-            label: l10n.batchMenuOpen,
-            onTap: () => Navigator.of(ctx).pop('open'),
-          ),
-          BatchMenuRow(
-            icon: BhorIcons.edit,
-            label: l10n.commonEdit,
-            onTap: () => Navigator.of(ctx).pop('edit'),
-          ),
-          BatchMenuRow(
-            icon: BhorIcons.archive,
-            label: l10n.batchMenuArchive,
-            onTap: () => Navigator.of(ctx).pop('archive'),
-          ),
-        ],
-      ),
+      items: <BhorMenuItem>[
+        BhorMenuItem(
+          icon: BhorIcons.batches,
+          label: l10n.batchMenuOpen,
+          onTap: () => openPath(context, Routes.batch(d.batch.id)),
+        ),
+        BhorMenuItem(
+          icon: BhorIcons.edit,
+          label: l10n.commonEdit,
+          onTap: () => showBatchFormPanel(context, batchId: d.batch.id),
+        ),
+        BhorMenuItem(
+          icon: BhorIcons.archive,
+          label: l10n.batchMenuArchive,
+          onTap: () => showArchiveBatchDialog(context, batchId: d.batch.id),
+        ),
+      ],
     );
-    if (!mounted || choice == null) return;
-    switch (choice) {
-      case 'open':
-        openPath(context, Routes.batch(d.batch.id));
-      case 'edit':
-        await showBatchFormPanel(context, batchId: d.batch.id);
-      case 'archive':
-        await showArchiveBatchDialog(context, batchId: d.batch.id);
-    }
   }
 
   @override
@@ -207,11 +206,6 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                   size: BhorButtonSize.sm,
                   onPressed: _new,
                 ),
-              BhorIconButton(
-                icon: BhorIcons.search,
-                semanticLabel: l10n.commonSearch,
-                onPressed: () => context.push(Routes.search),
-              ),
             ],
           ),
           floating: (empty || wc.usesRail)

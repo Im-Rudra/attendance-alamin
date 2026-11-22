@@ -8,13 +8,15 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
-import 'package:attendance_alamin/features/schedule/widgets/sched_sheet.dart';
 
 Future<LocalDate?> askEffectiveFrom(BuildContext context, {required LocalDate today}) {
   final int weekStart =
       ProviderScope.containerOf(context, listen: false).read(weekStartProvider).value ?? DateTime.saturday;
-  return showSchedSheet<LocalDate>(
+  return showBhorPanel<LocalDate>(
     context,
+    kind: BhorPanelKind.confirm,
+    title: context.l10n.schedFromTitle,
+    width: 440,
     builder: (BuildContext ctx) => EffectiveFromPanel(
       today: today,
       weekStart: weekStart,
@@ -76,13 +78,11 @@ class _EffectiveFromPanelState extends State<EffectiveFromPanel> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(BhorSpace.s20, BhorSpace.s8, BhorSpace.s20, BhorSpace.s16),
+        padding: const EdgeInsets.only(top: BhorSpace.s4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Semantics(header: true, child: Text(l10n.schedFromTitle, style: b.type.title)),
-            const SizedBox(height: BhorSpace.s16),
             BhorSegmented<bool>(
               segments: <BhorSegment<bool>>[
                 BhorSegment<bool>(true, l10n.schedFromToday),

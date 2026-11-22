@@ -34,13 +34,11 @@ Future<bool> showArchiveBatchDialog(BuildContext context, {required String batch
   final Batch? batch = await repo.getById(batchId);
   if (batch == null || batch.archived || !context.mounted) return false;
   final LocalDate today = container.read(todayProvider);
-  final YearMonth? lbm = await showBhorDialog<YearMonth>(
+  final YearMonth? lbm = await showArchiveBatchPanel(
     context,
-    builder: (BuildContext ctx) => ArchiveBatchDialog(
-      batchName: batch.name,
-      initial: DuesEngine.defaultLastBillableMonth(today),
-      thisMonth: today.yearMonth,
-    ),
+    batchName: batch.name,
+    initial: DuesEngine.defaultLastBillableMonth(today),
+    thisMonth: today.yearMonth,
   );
   if (lbm == null || !context.mounted) return false;
   final l10n = context.l10n;
@@ -105,13 +103,11 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
   }
   if (!context.mounted) return false;
 
-  final UnarchiveChoice? choice = await showBhorDialog<UnarchiveChoice>(
+  final UnarchiveChoice? choice = await showUnarchiveBatchPanel(
     context,
-    builder: (BuildContext ctx) => UnarchiveBatchDialog(
-      batchName: batch.name,
-      clashLines: clashLines,
-      gapMonths: gapMonthsOnUnarchive(enrollments, today.yearMonth),
-    ),
+    batchName: batch.name,
+    clashLines: clashLines,
+    gapMonths: gapMonthsOnUnarchive(enrollments, today.yearMonth),
   );
   if (choice == null || !context.mounted) return false;
 
