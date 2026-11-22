@@ -23,6 +23,7 @@ import 'package:attendance_alamin/features/dues/dues_entry.dart';
 import 'package:attendance_alamin/features/dues/ui/collection_screen.dart';
 import 'package:attendance_alamin/features/dues/ui/fees_screen.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_empty.dart';
+import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
 import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
@@ -502,7 +503,7 @@ void main() {
       expect(find.byKey(const ValueKey<String>('fees-take-money')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
       expect(find.byIcon(BhorIcons.search), findsNothing);
-      await tester.tap(find.text(_l10n(Lang.bn).duesSegCollection));
+      await tester.tap(find.descendant(of: find.byType(FeesSegments), matching: find.text(_l10n(Lang.bn).duesSegCollection)));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey<String>('fees-take-money')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);

@@ -102,6 +102,7 @@ class _WaiveDialogState extends State<_WaiveDialog> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
             BhorButton(
+              key: const ValueKey<String>('pay-waive-cancel'),
               label: l10n.commonCancel,
               variant: BhorButtonVariant.secondary,
               onPressed: () => Navigator.of(context).pop(),

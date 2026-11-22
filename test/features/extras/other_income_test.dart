@@ -166,6 +166,7 @@ void main() {
     await pumpApp(tester, _host(), overrides: f.overrides);
     await _open(tester);
     await tester.enterText(find.byKey(_label), 'নোট');
+    await _frames(tester);
     await tester.tap(find.byIcon(BhorIcons.close));
     await tester.pumpAndSettle();
     // Something was typed: closing asks first, and discarding saves nothing.

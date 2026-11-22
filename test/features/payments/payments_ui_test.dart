@@ -678,7 +678,7 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      await tester.tap(_dialogCancel);
+      await tester.tap(_key('pay-waive-cancel'));
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
     });
