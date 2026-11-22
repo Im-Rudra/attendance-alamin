@@ -81,7 +81,9 @@ class BhorAttendanceToggle extends StatelessWidget {
         };
     (Color, Color) look(AttendanceKind k) => switch (k) {
           AttendanceKind.present => (c.okBg, c.ok),
-          AttendanceKind.absent => (c.absentBg, c.absentText),
+          // A calm danger thumb, like present's success one (never the pale
+          // slate that read as "disabled", review b277 X4).
+          AttendanceKind.absent => (c.dangerBg, c.danger),
           AttendanceKind.late => (c.lateBg, c.late),
           AttendanceKind.leave => (c.soft2, c.text2),
         };

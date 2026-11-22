@@ -184,8 +184,9 @@ class RollBanner extends StatelessWidget {
 }
 
 /// All the quiet info notes of the screen (past day, extra class, restored
-/// draft, class note, "everyone present" hint) as ONE compact tinted line:
-/// icon + the notes side by side, wrapping on narrow widths (review R2).
+/// draft, class note, "everyone present" hint) in ONE tinted banner: the
+/// icon once, then each note on its own line, so two notes never run into
+/// one paragraph (review R2, b277 X2).
 class RollNotice extends StatelessWidget {
   const RollNotice({super.key, required this.lines, this.icon = BhorIcons.info});
 
@@ -214,17 +215,45 @@ class RollNotice extends StatelessWidget {
               ),
               const SizedBox(width: BhorSpace.s8),
               Expanded(
-                child: Wrap(
-                  spacing: BhorSpace.s12,
-                  runSpacing: BhorSpace.s4,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    for (final String line in lines) Text(line, style: b.type.body.copyWith(color: b.colors.text)),
+                    for (int i = 0; i < lines.length; i++)
+                      Padding(
+                        key: ValueKey<String>('roll-notice-line-$i'),
+                        padding: EdgeInsets.only(top: i == 0 ? 0 : BhorSpace.s4),
+                        child: Text(lines[i], style: b.type.body.copyWith(color: b.colors.text)),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The class-note field of the note popover: multi-line, focused on open.
+class RollNoteField extends StatelessWidget {
+  const RollNoteField({super.key, required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: BhorSpace.s4),
+      child: BhorTextField(
+        key: const ValueKey<String>('roll-note-field'),
+        controller: controller,
+        autofocus: true,
+        maxLength: 200,
+        minLines: 3,
+        maxLines: 6,
+        hint: context.l10n.rollNoteHint,
       ),
     );
   }

@@ -224,7 +224,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     expect(find.byType(BhorSpinner), findsNothing);
   });
 
-  testWidgets('dark mode: an absent row is a tinted surface', (WidgetTester tester) async {
+  testWidgets('dark mode: an absent row keeps the normal surface (at most a faint danger wash)', (WidgetTester tester) async {
     await pumpApp(
       tester,
       BhorTheme(
@@ -240,7 +240,13 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     final AnimatedContainer card = tester.widget<AnimatedContainer>(
       find.descendant(of: find.byType(RollRow), matching: find.byType(AnimatedContainer)).first,
     );
-    expect((card.decoration! as BoxDecoration).color, c.absentBg);
+    final Color fill = (card.decoration! as BoxDecoration).color!;
+    expect(fill, RollRow.fillOf(c, AttendanceStatus.absent));
+    expect(fill, isNot(c.absentBg), reason: 'the grey absent tint read as disabled (b277 X4)');
+    // Barely different from the plain surface.
+    expect((fill.r - c.surface.r).abs(), lessThan(0.03));
+    expect((fill.g - c.surface.g).abs(), lessThan(0.03));
+    expect((fill.b - c.surface.b).abs(), lessThan(0.03));
     // Primary text on the tinted row, never dark-on-dark.
     final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
     expect(name.style?.color, c.text);
@@ -567,7 +573,8 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await unmount(tester);
   });
 
-  testWidgets('desktop: the row dots open an anchored menu', (WidgetTester tester) async {
+  testWidgets('desktop: the row dots open an anchored menu without the statuses already on the row',
+      (WidgetTester tester) async {
     final SeededFakes f = seedFakes(withAttendance: false);
     await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
 
@@ -575,14 +582,61 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     expect(dots, findsOneWidget);
     await tester.tap(dots);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('roll-menu-absent')), findsOneWidget);
+    // The wide row shows Present / Absent / Late / Excused as buttons: the
+    // menu only holds the note (b277 X5).
+    for (final AttendanceStatus st in AttendanceStatus.values) {
+      expect(find.byKey(Key('roll-menu-${st.name}')), findsNothing, reason: st.name);
+    }
+    expect(find.byKey(const Key('roll-menu-note')), findsOneWidget);
     // Anchored: the menu hangs near the button, not centred in the window.
-    final Rect menu = tester.getRect(find.byKey(const Key('roll-menu-absent')));
+    final Rect menu = tester.getRect(find.byKey(const Key('roll-menu-note')));
     final Rect btn = tester.getRect(dots);
     expect((menu.center.dy - btn.center.dy).abs(), lessThan(300));
-    await tester.tap(find.byKey(const Key('roll-menu-absent')));
+    await tester.tap(find.byKey(const Key('roll-menu-note')));
     await tester.pumpAndSettle();
-    _expectCounts('Present 2', 'Absent 1', 'Late 0');
+    // The note opens as an anchored popover, not a full-height side panel (X3).
+    expect(find.byKey(const ValueKey<String>('bhor-popover')), findsOneWidget);
+    expect(find.byType(BhorSidePanelFrame), findsNothing);
+    expect(find.byKey(const ValueKey<String>('roll-note-field')), findsOneWidget);
+    await unmount(tester);
+  });
+
+  test('wide rows list the statuses they show; collapsed rows none', () {
+    expect(RollRow.statusesOnRow(dense: false, width: 900), isEmpty);
+    expect(RollRow.statusesOnRow(dense: true, width: 400), isEmpty);
+    expect(RollRow.statusesOnRow(dense: true, width: 500),
+        <AttendanceStatus>{AttendanceStatus.present, AttendanceStatus.absent, AttendanceStatus.late});
+    expect(RollRow.statusesOnRow(dense: true, width: 700), AttendanceStatus.values.toSet());
+  });
+
+  testWidgets('desktop: the class note is a small anchored form; Save waits for a change', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    final Rect button = tester.getRect(_byLabel('Class note'));
+    await tester.tap(_byLabel('Class note'));
+    await tester.pumpAndSettle();
+    final Finder popover = find.byKey(const ValueKey<String>('bhor-popover'));
+    expect(popover, findsOneWidget);
+    expect(find.byType(BhorSidePanelFrame), findsNothing);
+    final Rect card = tester.getRect(popover);
+    // Popover-sized and hanging from the button.
+    expect(card.width, lessThanOrEqualTo(400));
+    expect(card.height, lessThan(400));
+    expect((card.top - button.bottom).abs(), lessThan(24));
+    // Focused on open; Save disabled until the text changes.
+    final EditableText field = tester.widget<EditableText>(
+      find.descendant(of: find.byKey(const ValueKey<String>('roll-note-field')), matching: find.byType(EditableText)),
+    );
+    expect(field.focusNode.hasFocus, isTrue);
+    final Finder save = find.byKey(const ValueKey<String>('roll-note-save'));
+    expect(tester.widget<BhorButton>(save).onPressed, isNull);
+    await tester.enterText(find.byType(EditableText).last, 'Test today');
+    await tester.pump();
+    expect(tester.widget<BhorButton>(save).onPressed, isNotNull);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('Note: Test today'), findsOneWidget);
     await unmount(tester);
   });
 
@@ -651,6 +705,13 @@ void _expectCounts(String a, String b, String c, [String? d]) {
 
     expect(find.byType(BhorPickerField), findsNWidgets(2));
     expect(find.byType(RollNotice), findsOneWidget);
+    // Each note on its own line, never run together (b277 X2).
+    final Finder l0 = find.byKey(const ValueKey<String>('roll-notice-line-0'));
+    final Finder l1 = find.byKey(const ValueKey<String>('roll-notice-line-1'));
+    if (l1.evaluate().isNotEmpty) {
+      expect(tester.getRect(l1).top, greaterThanOrEqualTo(tester.getRect(l0).bottom));
+      expect(tester.getRect(l1).left, tester.getRect(l0).left);
+    }
     expect(find.text('No class is scheduled at this time — it will be saved as an extra class'), findsOneWidget);
     expect(find.text('You are viewing attendance of a past day'), findsOneWidget);
     await unmount(tester);

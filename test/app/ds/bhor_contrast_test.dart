@@ -94,7 +94,7 @@ void main() {
     test('$theme attendance toggle: the filled thumb stands out from the track (>= 3:1), its label is AA', () {
       for (final (String n, Color tone) in <(String, Color)>[
         ('present', c.ok),
-        ('absent', c.absentText),
+        ('absent', c.danger),
         ('late', c.late),
       ]) {
         final double fill = contrast(tone, c.soft, c.soft);

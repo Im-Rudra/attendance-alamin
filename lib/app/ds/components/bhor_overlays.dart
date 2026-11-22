@@ -1043,6 +1043,45 @@ Future<bool> showBhorConfirm(
   return ok ?? false;
 }
 
+/// A confirmation with two answers besides closing it, e.g. "Attendance not
+/// saved. Save now?" → Discard / Save. Returns [primaryValue] or
+/// [secondaryValue]; null when it was closed (Esc, ✕, a click outside).
+/// Without [message] the buttons sit right under the title (no empty band).
+/// Usage: `final v = await showBhorConfirmChoice<Leave>(context, title: t, primaryLabel: 'সেভ করুন', primaryValue: Leave.save, secondaryLabel: 'বাদ দিন', secondaryValue: Leave.discard);`
+Future<T?> showBhorConfirmChoice<T>(
+  BuildContext context, {
+  required String title,
+  String? message,
+  required String primaryLabel,
+  required T primaryValue,
+  required String secondaryLabel,
+  required T secondaryValue,
+  bool destructive = false,
+}) {
+  final String close = context.l10n.commonClose;
+  return showBhorDialog<T>(
+    context,
+    builder: (BuildContext ctx) => BhorDialog(
+      title: title,
+      message: message,
+      onClose: () => Navigator.of(ctx).pop(),
+      closeLabel: close,
+      actions: <Widget>[
+        BhorButton(
+          label: secondaryLabel,
+          variant: BhorButtonVariant.secondary,
+          onPressed: () => Navigator.of(ctx).pop(secondaryValue),
+        ),
+        BhorButton(
+          label: primaryLabel,
+          variant: destructive ? BhorButtonVariant.danger : BhorButtonVariant.primary,
+          onPressed: () => Navigator.of(ctx).pop(primaryValue),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Dialog card: title, optional message/body and end-aligned actions
 /// (stacked full width on narrow windows). [onClose] adds a ✕.
 class BhorDialog extends StatelessWidget {
