@@ -21,6 +21,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/stub_screen.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
@@ -1202,7 +1203,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final List<String> lines = <String>[
       for (final ClashGroup g in r.groups.take(3))
         l10n.rollClashLine(
-          '${byBatch[g.batchId]?.subjectName ?? ''} · ${byBatch[g.batchId]?.batch.name ?? ''}',
+          '${byBatch[g.batchId]?.subjectName ?? ''} Â· ${byBatch[g.batchId]?.batch.name ?? ''}',
           fmt.timeRange(g.startMin, g.endMin),
         ),
     ];
@@ -1227,7 +1228,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   }
 }
 
-/// "সংরক্ষিত" with a check icon, "সংরক্ষণ হচ্ছে…" or "এখনো সেভ হয়নি".
+/// "à¦¸à¦‚à¦°à¦•à§à¦·à¦¿à¦¤" with a check icon, "à¦¸à¦‚à¦°à¦•à§à¦·à¦£ à¦¹à¦šà§à¦›à§‡â€¦" or "à¦à¦–à¦¨à§‹ à¦¸à§‡à¦­ à¦¹à¦¯à¦¼à¦¨à¦¿".
 class _StateLine extends StatelessWidget {
   const _StateLine({required this.saved, required this.saving});
 
