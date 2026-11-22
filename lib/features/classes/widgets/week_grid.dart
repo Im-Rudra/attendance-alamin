@@ -32,7 +32,11 @@ const int _kMinHours = 8;
 
 /// Smallest height of one hour: roomy enough for a padded block with a
 /// two-line title and the time.
-const double _kMinHourHeight = 72;
+const double _kMinHourHeight = 80;
+
+/// Vertical padding inside a class block (the selection ring is an overlay and
+/// never changes it).
+const double _kBlockPadV = 6;
 
 /// Desktop week grid (7 columns x hours).
 class WeekGrid extends StatefulWidget {
@@ -436,8 +440,8 @@ class _WeekGridState extends State<WeekGrid> {
                 hourH: hourH,
                 labelW: _kLabelWidth,
                 colW: colW,
-                hour: colors.line,
-                quarter: colors.line.withValues(alpha: colors.line.a * 0.5),
+                hour: gridHourLine(colors),
+                quarter: gridHalfLine(colors),
               ),
             ),
           ),
@@ -531,6 +535,14 @@ class _WeekGridState extends State<WeekGrid> {
   }
 }
 
+/// Hour-line colour of the week grid. The DS has no hairline token strong
+/// enough for a dense grid, so it derives one from the text colour at low
+/// alpha, which reads in both themes (X17).
+Color gridHourLine(BhorColors c) => c.text.withValues(alpha: c.text.computeLuminance() > 0.5 ? 0.22 : 0.16);
+
+/// Half-hour lines: lighter than [gridHourLine].
+Color gridHalfLine(BhorColors c) => c.text.withValues(alpha: c.text.computeLuminance() > 0.5 ? 0.10 : 0.07);
+
 class _GridPainter extends CustomPainter {
   _GridPainter({
     required this.fromMin,
@@ -552,16 +564,16 @@ class _GridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Light grid (review T4): hour lines at 60% of the line colour, faint
-    // half-hour lines, quiet day separators; no quarter-hour lines.
+    // Visible-but-quiet hairlines (X17): hour lines, lighter half-hour lines
+    // and day separators between them; no quarter-hour lines.
     final Paint hourPaint = Paint()
-      ..color = hour.withValues(alpha: hour.a * 0.6)
+      ..color = hour
       ..strokeWidth = 1;
     final Paint halfPaint = Paint()
-      ..color = quarter.withValues(alpha: quarter.a * 0.5)
+      ..color = quarter
       ..strokeWidth = 1;
     final Paint dayPaint = Paint()
-      ..color = hour.withValues(alpha: hour.a * 0.45)
+      ..color = hour.withValues(alpha: hour.a * 0.7)
       ..strokeWidth = 1;
     for (int m = fromMin; m <= toMin; m += 30) {
       final double y = (m - fromMin) / 60 * hourH;
@@ -636,15 +648,14 @@ class _ClassBlock extends StatelessWidget {
       builder: (BuildContext context, BhorStates s) => AnimatedContainer(
         duration: BhorMotion.of(context, BhorMotion.fast),
         curve: BhorMotion.ease,
-        padding: const EdgeInsets.fromLTRB(BhorSpace.s12, BhorSpace.s8, BhorSpace.s8, BhorSpace.s8),
+        padding: const EdgeInsets.fromLTRB(BhorSpace.s12, _kBlockPadV, BhorSpace.s8, _kBlockPadV),
         decoration: BoxDecoration(
           color: cancelled
               ? null
               : (s.hovered ? Color.alphaBlend(c.accent.withValues(alpha: 0.08), c.accentTint) : c.accentTint),
           borderRadius: BorderRadius.circular(BhorRadius.chip),
-          // Soft fill and a 3 px leading bar instead of an outline; only the
-          // selected block gets a ring.
-          border: selected ? Border.all(color: c.accent, width: 2) : null,
+          // Soft fill and a 3 px leading bar; the selected block's ring is an
+          // overlay below, so it never changes the inner size (X15).
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -653,10 +664,26 @@ class _ClassBlock extends StatelessWidget {
             if (!cancelled)
               Positioned(
                 left: -BhorSpace.s12,
-                top: -BhorSpace.s8,
-                bottom: -BhorSpace.s8,
+                top: -_kBlockPadV,
+                bottom: -_kBlockPadV,
                 width: 3,
                 child: ColoredBox(color: c.accent),
+              ),
+            if (selected)
+              Positioned(
+                left: -BhorSpace.s12,
+                top: -_kBlockPadV,
+                right: -BhorSpace.s8,
+                bottom: -_kBlockPadV,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    key: const Key('week-block-ring'),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(BhorRadius.chip),
+                      border: Border.all(color: c.accent, width: 2),
+                    ),
+                  ),
+                ),
               ),
             ClipRect(
             child: OverflowBox(

@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable, immutable;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,11 +28,55 @@ import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 enum OneOffMode { reschedule, extra }
 
+/// What the save button of a [OneOffForm] shows. A form hosted in a panel
+/// publishes it so the panel's pinned footer renders the button (X18).
+@immutable
+class OneOffFooterState {
+  const OneOffFooterState({
+    required this.label,
+    required this.loading,
+    required this.enabled,
+    required this.reason,
+    required this.onSave,
+  });
+
+  final String label;
+  final bool loading;
+  final bool enabled;
+  final String? reason;
+  final VoidCallback onSave;
+
+  @override
+  bool operator ==(Object other) =>
+      other is OneOffFooterState &&
+      other.label == label &&
+      other.loading == loading &&
+      other.enabled == enabled &&
+      other.reason == reason;
+
+  @override
+  int get hashCode => Object.hash(label, loading, enabled, reason);
+}
+
+/// The panel footer (a pinned save button) driven by [state].
+Widget oneOffFooter(ValueListenable<OneOffFooterState?> state) =>
+    ValueListenableBuilder<OneOffFooterState?>(
+      valueListenable: state,
+      builder: (BuildContext context, OneOffFooterState? s, Widget? _) => s == null
+          ? const SizedBox.shrink()
+          : ClassSaveBar(
+              label: s.label,
+              loading: s.loading,
+              onPressed: s.enabled ? s.onSave : null,
+              disabledReason: s.reason,
+            ),
+    );
+
 /// Sheet content for [OneOffMode.reschedule] (needs [occ]) and
 /// [OneOffMode.extra] (optional [batchId], [date], [startMin] pre-fills). Pops
 /// `true` (reschedule) or the new occurrence id (extra) once saved.
 class OneOffForm extends ConsumerStatefulWidget {
-  const OneOffForm({super.key, required this.mode, this.occ, this.batchId, this.date, this.startMin, this.dirty})
+  const OneOffForm({super.key, required this.mode, this.occ, this.batchId, this.date, this.startMin, this.dirty, this.footerState})
       : assert(mode == OneOffMode.extra || occ != null);
 
   final OneOffMode mode;
@@ -43,6 +88,10 @@ class OneOffForm extends ConsumerStatefulWidget {
   /// Set to true once the user changed something (the panel then asks before
   /// discarding).
   final ValueNotifier<bool>? dirty;
+
+  /// When set, the save button is published here for the hosting panel's
+  /// pinned footer instead of being drawn under the fields.
+  final ValueNotifier<OneOffFooterState?>? footerState;
 
   @override
   ConsumerState<OneOffForm> createState() => _OneOffFormState();
@@ -79,6 +128,9 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
   bool _held = false;
 
   bool get _isExtra => widget.mode == OneOffMode.extra;
+
+  /// The batch the pinned footer's save acts on (kept current by build).
+  String? _footerTarget;
 
   @override
   void initState() {
@@ -393,16 +445,37 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
       }
     }
 
+    final String saveLabel = _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule;
+    final ValueNotifier<OneOffFooterState?>? host = widget.footerState;
+    if (host != null) {
+      final OneOffFooterState next = OneOffFooterState(
+        label: saveLabel,
+        loading: _saving,
+        enabled: canSave,
+        reason: reason,
+        onSave: () {
+          final String? t = _footerTarget;
+          if (t != null) _save(t);
+        },
+      );
+      _footerTarget = target;
+      if (host.value != next) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => host.value = next);
+      }
+    }
+
     return SheetFrame(
       // The side panel / sheet header already carries the title.
       title: '',
       subtitle: _isExtra ? null : classLabel,
-      footer: ClassSaveBar(
-        label: _isExtra ? l10n.clsAddExtra : l10n.clsSaveReschedule,
-        loading: _saving,
-        onPressed: canSave ? () => _save(target) : null,
-        disabledReason: reason,
-      ),
+      footer: host != null
+          ? null
+          : ClassSaveBar(
+              label: saveLabel,
+              loading: _saving,
+              onPressed: canSave ? () => _save(target) : null,
+              disabledReason: reason,
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

@@ -12,12 +12,14 @@ import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
 Future<bool> showRescheduleSheet(BuildContext context, {required String occ}) async {
   // A form: the desktop side panel (a sheet on phones); closing after edits asks first.
   final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  final ValueNotifier<OneOffFooterState?> footer = ValueNotifier<OneOffFooterState?>(null);
   final bool? saved = await showClassSheet<bool>(
     context,
-    (BuildContext ctx) => RescheduleSheet(occ: occ, dirty: dirty),
+    (BuildContext ctx) => RescheduleSheet(occ: occ, dirty: dirty, footerState: footer),
     kind: BhorPanelKind.form,
     title: context.l10n.clsRescheduleTitle,
     dirty: dirty,
+    footer: (BuildContext ctx) => oneOffFooter(footer),
     expand: true,
     width: 480,
   );
@@ -26,11 +28,13 @@ Future<bool> showRescheduleSheet(BuildContext context, {required String occ}) as
 
 /// The reschedule sheet body (public so the screen matrix can render it).
 class RescheduleSheet extends StatelessWidget {
-  const RescheduleSheet({super.key, required this.occ, this.dirty});
+  const RescheduleSheet({super.key, required this.occ, this.dirty, this.footerState});
 
   final String occ;
   final ValueNotifier<bool>? dirty;
+  final ValueNotifier<OneOffFooterState?>? footerState;
 
   @override
-  Widget build(BuildContext context) => OneOffForm(mode: OneOffMode.reschedule, occ: occ, dirty: dirty);
+  Widget build(BuildContext context) =>
+      OneOffForm(mode: OneOffMode.reschedule, occ: occ, dirty: dirty, footerState: footerState);
 }

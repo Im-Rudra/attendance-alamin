@@ -744,6 +744,17 @@ void main() {
       expectNoException(tester, 'toggle');
     });
 
+    testWidgets('the week card fills the window height instead of stopping short (X16)', (WidgetTester tester) async {
+      await _pumpDesktop(tester, size: const Size(1280, 1000));
+      await tester.tap(find.text(_l10n(Lang.bn).todayViewWeek));
+      await _settle(tester);
+      final Finder card = find.ancestor(of: find.byType(WeekGrid), matching: find.byType(BhorCard));
+      expect(card, findsOneWidget);
+      final double bottom = tester.getRect(card).bottom;
+      expect(bottom, lessThanOrEqualTo(1000));
+      expect(bottom, greaterThan(1000 - 120));
+    });
+
     testWidgets('extra-large: tapping the week tile opens the week grid', (WidgetTester tester) async {
       await _pumpDesktop(tester, size: const Size(1700, 900));
       await tester.tap(find.byType(WeekGlanceTile));
