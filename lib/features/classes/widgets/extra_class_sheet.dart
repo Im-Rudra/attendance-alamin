@@ -19,12 +19,15 @@ Future<String?> showExtraClassSheet(
 }) {
   // A form: the desktop side panel (a sheet on phones); closing after edits asks first.
   final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  final ValueNotifier<OneOffFooterState?> footer = ValueNotifier<OneOffFooterState?>(null);
   return showClassSheet<String>(
     context,
-    (BuildContext ctx) => ExtraClassSheet(batchId: batchId, date: date, startMin: startMin, dirty: dirty),
+    (BuildContext ctx) =>
+        ExtraClassSheet(batchId: batchId, date: date, startMin: startMin, dirty: dirty, footerState: footer),
     kind: BhorPanelKind.form,
     title: context.l10n.clsExtraTitle,
     dirty: dirty,
+    footer: (BuildContext ctx) => oneOffFooter(footer),
     expand: true,
     width: 480,
   );
@@ -32,14 +35,21 @@ Future<String?> showExtraClassSheet(
 
 /// The extra-class sheet body (public so the screen matrix can render it).
 class ExtraClassSheet extends StatelessWidget {
-  const ExtraClassSheet({super.key, this.batchId, this.date, this.startMin, this.dirty});
+  const ExtraClassSheet({super.key, this.batchId, this.date, this.startMin, this.dirty, this.footerState});
 
   final String? batchId;
   final LocalDate? date;
   final int? startMin;
   final ValueNotifier<bool>? dirty;
+  final ValueNotifier<OneOffFooterState?>? footerState;
 
   @override
-  Widget build(BuildContext context) =>
-      OneOffForm(mode: OneOffMode.extra, batchId: batchId, date: date, startMin: startMin, dirty: dirty);
+  Widget build(BuildContext context) => OneOffForm(
+        mode: OneOffMode.extra,
+        batchId: batchId,
+        date: date,
+        startMin: startMin,
+        dirty: dirty,
+        footerState: footerState,
+      );
 }

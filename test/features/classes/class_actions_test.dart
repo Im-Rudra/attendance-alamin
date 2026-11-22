@@ -31,6 +31,7 @@ import 'package:attendance_alamin/features/classes/controllers/class_controller.
 import 'package:attendance_alamin/features/classes/widgets/clash_panel.dart';
 import 'package:attendance_alamin/features/classes/widgets/class_actions_sheet.dart';
 import 'package:attendance_alamin/features/classes/widgets/extra_class_sheet.dart';
+import 'package:attendance_alamin/features/classes/widgets/one_off_form.dart';
 import 'package:attendance_alamin/features/classes/widgets/reschedule_sheet.dart';
 
 import '../../helpers/fakes/fake_structure_repos.dart';
@@ -668,7 +669,50 @@ void main() {
     });
   });
 
+  group('pinned save (X18)', () {
+    testWidgets('the change-time panel keeps Save in its footer, not under the fields', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) async {
+          await showRescheduleSheet(c, occ: physOcc('2026-11-23'));
+        }),
+        lang: Lang.en,
+        viewport: TestViewport.desktop,
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+      final Finder save = find.widgetWithText(BhorButton, 'Save');
+      expect(save, findsOneWidget);
+      expect(find.descendant(of: find.byType(OneOffForm), matching: save), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
   group('week grid', () {
+    testWidgets('a selected block keeps its time line inside the ring (X15)', (WidgetTester tester) async {
+      const AppFormat fmt = AppFormat(Lang.bn);
+      final List<String> opened = <String>[];
+      await pumpApp(
+        tester,
+        WeekGrid(weekStart: kToday, onSelectOcc: opened.add),
+        viewport: TestViewport.desktop,
+        overrides: weekOverrides(),
+      );
+      await tester.pump();
+      final Finder time = find.text(fmt.timeRange(480, 540));
+      final Rect before = tester.getRect(time);
+      expect(find.byKey(const Key('week-block-ring')), findsNothing);
+      await tester.tap(time);
+      await tester.pump();
+      final Finder ring = find.byKey(const Key('week-block-ring'));
+      expect(ring, findsOneWidget);
+      // Selecting changes nothing inside the block, and the ring encloses the time.
+      expect(tester.getRect(time), before);
+      expect(tester.getRect(ring).bottom, greaterThan(before.bottom));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('two classes of one batch are two blocks, each with its time; cancelled and ghost shown', (WidgetTester tester) async {
       const AppFormat fmt = AppFormat(Lang.bn);
       await pumpApp(

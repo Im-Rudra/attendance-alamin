@@ -170,16 +170,15 @@ class _WideBody extends ConsumerWidget {
     final List<Widget> cards;
     if (week) {
       final int weekStart = ref.watch(weekStartProvider).value ?? 6;
-      // The week grid needs a bounded height; the page scrolls if the window
-      // is shorter than the grid's minimum.
-      final double h = (MediaQuery.sizeOf(context).height - 220).clamp(560.0, 1400.0);
+      // The week card fills the rest of the window (X16); the grid scrolls
+      // inside it, and the page scrolls only if the window is shorter than the
+      // card's minimum.
       hero = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           banners,
-          SizedBox(
-            height: h,
+          _FillRestOfPage(
             child: BhorCard(
               padding: const EdgeInsets.all(BhorSpace.s12),
               child: WeekGrid(weekStart: weekStartFor(today, weekStart)),
@@ -213,6 +212,59 @@ class _WideBody extends ConsumerWidget {
       hero: hero,
       children: cards,
     );
+  }
+}
+
+/// Room the template keeps below the hero: its section gap and bottom padding
+/// (kept in step with [BhorDashboardPage]).
+const double _kPageBottomPad = BhorSpace.s20 + BhorSpace.s32;
+
+/// Smallest and largest height of the week card.
+const double _kWeekCardMin = 560;
+const double _kWeekCardMax = 1600;
+
+/// Gives [child] the height from its own top edge to the bottom of the
+/// enclosing scroll view's viewport (less the page's bottom padding), so a
+/// card inside a scrolling page ends at the window's bottom edge instead of
+/// short of it. Measured after layout; the first frame uses a window-based
+/// estimate.
+class _FillRestOfPage extends StatefulWidget {
+  const _FillRestOfPage({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_FillRestOfPage> createState() => _FillRestOfPageState();
+}
+
+class _FillRestOfPageState extends State<_FillRestOfPage> {
+  double? _h;
+
+  void _measure() {
+    if (!mounted) return;
+    final ScrollableState? scrollable = Scrollable.maybeOf(context);
+    final RenderObject? self = context.findRenderObject();
+    final RenderObject? viewport = scrollable?.context.findRenderObject();
+    if (scrollable == null ||
+        self is! RenderBox ||
+        viewport is! RenderBox ||
+        !self.hasSize ||
+        !viewport.hasSize ||
+        !scrollable.position.hasPixels) {
+      return;
+    }
+    // Top of this card inside the scrolled content, then what is left below it.
+    final double top = self.localToGlobal(Offset.zero, ancestor: viewport).dy + scrollable.position.pixels;
+    final double h = (viewport.size.height - top - _kPageBottomPad).clamp(_kWeekCardMin, _kWeekCardMax);
+    if (_h == null || (_h! - h).abs() > 1) setState(() => _h = h);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+    final double h =
+        _h ?? (MediaQuery.sizeOf(context).height - 200).clamp(_kWeekCardMin, _kWeekCardMax);
+    return SizedBox(height: h, child: widget.child);
   }
 }
 

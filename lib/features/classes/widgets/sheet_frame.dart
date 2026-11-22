@@ -149,6 +149,7 @@ Future<T?> showClassSheet<T>(
   BuildContext? anchor,
   String? title,
   ValueListenable<bool>? dirty,
+  WidgetBuilder? footer,
 }) {
   return showBhorPanel<T>(
     context,
@@ -156,6 +157,7 @@ Future<T?> showClassSheet<T>(
     anchor: anchor,
     title: title,
     dirty: dirty,
+    footer: footer,
     expand: expand,
     width: width,
     scroll: false,
