@@ -441,7 +441,7 @@ class OtherIncomeButtons extends StatelessWidget {
           ],
           if (!can && sp?.reason != null) ...<Widget>[
             const SizedBox(height: BhorSpace.s8),
-            Text(sp.reason!, textAlign: TextAlign.center, style: b.type.meta),
+            Text(sp!.reason!, textAlign: TextAlign.center, style: b.type.meta),
           ],
         ],
       ),
