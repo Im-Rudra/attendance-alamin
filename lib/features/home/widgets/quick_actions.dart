@@ -9,8 +9,10 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
+import 'package:attendance_alamin/features/dues/dues_entry.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
+import 'package:attendance_alamin/features/students/students_entry.dart';
 
 class QuickAction {
   const QuickAction({required this.icon, required this.label, required this.onTap});
@@ -27,12 +29,12 @@ List<QuickAction> quickActionsOf(BuildContext context, LocalDate date) {
     QuickAction(
       icon: BhorIcons.takeMoney,
       label: l10n.todayQuickCollect,
-      onTap: () => goRoute(context, Routes.fees),
+      onTap: () => showCollectFeeFlow(context),
     ),
     QuickAction(
       icon: BhorIcons.students,
       label: l10n.todayQuickAddStudent,
-      onTap: () => pushRoute(context, Routes.studentNew),
+      onTap: () => showAddStudentPanel(context),
     ),
     QuickAction(
       icon: BhorIcons.addCircle,

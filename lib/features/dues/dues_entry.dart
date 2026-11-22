@@ -6,6 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/features/dues/controllers/reminder_actions.dart';
 import 'package:attendance_alamin/features/dues/widgets/batch_fees_tab.dart';
+import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
+
+/// "Collect fee" in place (the flow of the Fees screen's Collect fee button):
+/// the student picker, then the payment side panel. Used by Today's New… menu.
+Future<void> showCollectFeeFlow(BuildContext context, {BuildContext? anchor}) =>
+    showTakeMoneyPicker(context, anchor: anchor);
 
 /// Builds the dues reminder from the template and shares it (and remembers the
 /// reminder for today). Says so when the student has nothing due.

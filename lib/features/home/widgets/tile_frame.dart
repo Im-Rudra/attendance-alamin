@@ -132,20 +132,14 @@ class TileMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BhorThemeData b = context.bhor;
+    // The shared compact empty state: it hugs its content, so an empty card
+    // stays small (review T1).
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          ExcludeSemantics(child: Icon(icon, size: 40, color: b.colors.accent)),
-          const SizedBox(height: BhorSpace.s8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: b.type.heading,
-          ),
-          if (action != null) ...<Widget>[const SizedBox(height: BhorSpace.s12), action!],
-        ],
+      child: BhorEmptyState(
+        size: BhorEmptySize.compact,
+        icon: icon,
+        title: message,
+        action: action,
       ),
     );
   }

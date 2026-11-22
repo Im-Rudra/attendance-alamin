@@ -1,7 +1,7 @@
 // Today screen: the 8-case matrix (light/dark x bn/en x phone/desktop, fails on
-// any exception incl. overflow) for every state, the desktop bento at the
-// expanded / large / extra-large widths (every row sums to 12 columns, equal
-// heights, aligned edges), and the behaviour that matters: hero, dues card,
+// any exception incl. overflow) for every state, the desktop dashboard (hero +
+// masonry) at the expanded / large / extra-large widths, and the behaviour that
+// matters: hero, dues card,
 // timeline states, day strip, absence alerts, backup nudge, banners.
 
 import 'package:flutter/foundation.dart';
@@ -11,8 +11,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
-import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/bento_grid.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
@@ -27,7 +26,6 @@ import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
-import 'package:attendance_alamin/features/home/controllers/bento_layout.dart';
 import 'package:attendance_alamin/features/home/ui/today_screen.dart';
 import 'package:attendance_alamin/features/home/widgets/absence_alerts_tile.dart';
 import 'package:attendance_alamin/features/home/widgets/attendance_today_tile.dart';
@@ -644,91 +642,104 @@ void main() {
     });
   });
 
-  // ---- desktop: bento at the three wide classes + week toggle -------------------------
-  group('desktop bento', () {
-    final Map<TodayTile, Type> types = <TodayTile, Type>{
-      TodayTile.hero: HeroClassCard,
-      TodayTile.dues: DuesCard,
-      TodayTile.timeline: TodayTimeline,
-      TodayTile.collection: CollectionTile,
-      TodayTile.attendance: AttendanceTodayTile,
-      TodayTile.alerts: AbsenceAlertsTile,
-      TodayTile.quick: QuickActionsTile,
-      TodayTile.backup: BackupNudgeTile,
-      TodayTile.recent: RecentPaymentsTile,
-      TodayTile.week: WeekGlanceTile,
-    };
-
-    for (final (String, Size, WindowClass, double) c in <(String, Size, WindowClass, double)>[
-      ('expanded', const Size(900, 700), WindowClass.expanded, 16),
-      ('large', const Size(1280, 800), WindowClass.large, 20),
-      ('extra-large', const Size(1700, 900), WindowClass.extraLarge, 24),
+  // ---- desktop: the dashboard (hero + masonry), week toggle, New… menu -----------------
+  group('desktop dashboard', () {
+    for (final (String, Size) c in <(String, Size)>[
+      ('expanded', const Size(910, 700)),
+      ('large', const Size(1214, 800)),
+      ('extra-large', const Size(1700, 900)),
     ]) {
-      final String name = c.$1;
-      final Size size = c.$2;
-      final WindowClass wc = c.$3;
-      final double gutter = c.$4;
-
-      testWidgets('$name: every row sums to 12, equal heights, aligned edges', (WidgetTester tester) async {
-        await _pumpDesktop(tester, size: size);
-        expect(WindowClass.fromWidth(size.width), wc);
-        expect(find.byType(BentoGrid), findsOneWidget);
-        final Rect grid = tester.getRect(find.byType(BentoGrid));
-        final List<TileSlot> slots = bentoSlots(wc);
-
-        // Exactly the tiles of this class are on screen.
-        for (final MapEntry<TodayTile, Type> e in types.entries) {
-          final bool expected = slots.any((TileSlot s) => s.tile == e.key);
-          expect(find.byType(e.value), expected ? findsOneWidget : findsNothing,
-              reason: '${e.key} at $name');
+      testWidgets('${c.$1}: hero, then cards that hug their content', (WidgetTester tester) async {
+        await _pumpDesktop(tester, size: c.$2);
+        expect(find.byType(BhorDashboardPage), findsOneWidget);
+        expect(find.byType(HeroClassCard), findsOneWidget);
+        for (final Type t in <Type>[
+          DuesCard,
+          TodayTimeline,
+          CollectionTile,
+          AttendanceTodayTile,
+          RecentPaymentsTile,
+          AbsenceAlertsTile,
+          BackupNudgeTile,
+        ]) {
+          expect(find.byType(t), findsOneWidget, reason: '$t at ${c.$1}');
         }
-
-        final Map<TodayTile, Rect> rect = <TodayTile, Rect>{
-          for (final TileSlot s in slots) s.tile: tester.getRect(find.byType(types[s.tile]!)),
-        };
-
-        // Rows: widths of the tiles crossing a row plus the gutters fill the grid.
-        for (int r = 0; r < bentoRowCount(wc); r++) {
-          final List<TileSlot> crossing =
-              slots.where((TileSlot s) => s.row <= r && r < s.row + s.rowSpan).toList();
-          double sum = gutter * (crossing.length - 1);
-          for (final TileSlot s in crossing) {
-            sum += rect[s.tile]!.width;
-          }
-          expect(sum, closeTo(grid.width, 0.6), reason: 'row $r at $name');
-          expect(crossing.fold<int>(0, (int a, TileSlot s) => a + s.colSpan), 12);
-        }
-
-        // Equal heights and a common top for tiles that start on the same row.
-        final double unit = rect[TodayTile.hero]!.height;
-        for (final TileSlot s in slots) {
-          final Rect r = rect[s.tile]!;
-          expect(r.height, closeTo(s.rowSpan * unit + (s.rowSpan - 1) * gutter, 0.6),
-              reason: '${s.tile} height at $name');
-          expect(r.top, closeTo(grid.top + s.row * (unit + gutter), 0.6),
-              reason: '${s.tile} top at $name');
-          expect(r.left, greaterThanOrEqualTo(grid.left - 0.1));
-          expect(r.right, lessThanOrEqualTo(grid.right + 0.1));
-        }
-        expectNoException(tester, name);
+        // The hero spans the page; cards sit under it.
+        final Rect hero = tester.getRect(find.byType(HeroClassCard));
+        expect(tester.getRect(find.byType(DuesCard)).top, greaterThanOrEqualTo(hero.bottom));
+        expect(find.byType(QuickActionsTile), findsNothing);
+        expectNoException(tester, c.$1);
       });
     }
 
-    testWidgets('the day / week toggle swaps the bento for the real week grid', (WidgetTester tester) async {
+    testWidgets('the empty "today\'s classes" card is compact, not a tall hollow tile', (WidgetTester tester) async {
+      await _pumpDesktop(tester, date: '2026-11-20'); // Friday: no class
+      final Rect timeline = tester.getRect(find.byType(TodayTimeline));
+      expect(timeline.height, lessThan(320));
+      expect(find.byType(BhorEmptyState), findsWidgets);
+      expectNoException(tester, 'empty day');
+    });
+
+    testWidgets('recent payments: at most four rows and a "see all" link', (WidgetTester tester) async {
       await _pumpDesktop(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
-      expect(find.byType(BentoGrid), findsOneWidget);
+      final Finder rows = find.byWidgetPredicate(
+        (Widget w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('today-receipt-'),
+      );
+      expect(rows.evaluate().length, lessThanOrEqualTo(4));
+      expect(rows, findsWidgets);
+      expect(find.widgetWithText(BhorButton, l10n.todayRecentSeeAll), findsOneWidget);
+    });
+
+    testWidgets('1214 wide: the hero title never ellipsizes and its button stays on one line',
+        (WidgetTester tester) async {
+      await _pumpDesktop(tester, size: const Size(1214, 800), lang: Lang.en);
+      final AppLocalizations l10n = _l10n(Lang.en);
+      final Finder button = find.widgetWithText(BhorButton, l10n.todayTakeAttendance);
+      expect(button, findsOneWidget);
+      // One line: the label is as tall as one line of text.
+      expect(tester.getSize(find.descendant(of: button, matching: find.text(l10n.todayTakeAttendance))).height,
+          lessThan(30));
+      for (final Element e in find
+          .descendant(of: find.byType(HeroClassCard), matching: find.byType(Text))
+          .evaluate()) {
+        final RenderObject? ro = e.renderObject;
+        if (ro is RenderParagraph) {
+          expect(ro.didExceedMaxLines, isFalse, reason: (e.widget as Text).data ?? '');
+        }
+      }
+    });
+
+    testWidgets('no class today: the other-batch link sits under the button, aligned to it',
+        (WidgetTester tester) async {
+      await _pumpDesktop(tester, size: const Size(1214, 800), date: '2026-11-20');
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      final Rect pill = tester.getRect(find.widgetWithText(BhorButton, l10n.todayAddExtraLong));
+      final Rect link = tester.getRect(find.text(l10n.todayOtherBatchAttendance));
+      expect(link.top, greaterThanOrEqualTo(pill.bottom));
+      expect(link.center.dx, closeTo(pill.center.dx, 2));
+    });
+
+    testWidgets('Today has no search button of its own (global search lives in the sidebar)',
+        (WidgetTester tester) async {
+      await _pumpDesktop(tester);
+      expect(_byLabel(_l10n(Lang.bn).commonSearch), findsNothing);
+    });
+
+    testWidgets('the day / week toggle swaps the cards for the real week grid', (WidgetTester tester) async {
+      await _pumpDesktop(tester);
+      final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byType(WeekGrid), findsNothing);
 
       await tester.tap(find.text(l10n.todayViewWeek));
       await _settle(tester);
       expect(find.byType(WeekGrid), findsOneWidget);
-      expect(find.byType(BentoGrid), findsNothing);
+      expect(find.byType(DuesCard), findsNothing);
 
       await tester.tap(find.text(l10n.todayViewDay));
       await _settle(tester);
-      expect(find.byType(BentoGrid), findsOneWidget);
       expect(find.byType(WeekGrid), findsNothing);
+      expect(find.byType(DuesCard), findsOneWidget);
       expectNoException(tester, 'toggle');
     });
 
@@ -739,11 +750,10 @@ void main() {
       expect(find.byType(WeekGrid), findsOneWidget);
     });
 
-    testWidgets('large: quick actions sit behind one "New…" menu, not in a tile', (WidgetTester tester) async {
+    testWidgets('large: quick actions sit behind one "New…" menu', (WidgetTester tester) async {
       await _pumpDesktop(tester);
       final AppLocalizations l10n = _l10n(Lang.bn);
       expect(find.byType(QuickActionsTile), findsNothing);
-      expect(find.byKey(const Key('language-chip')), findsNothing);
       await tester.tap(find.widgetWithText(BhorButton, l10n.todayNewMenu));
       await _settle(tester);
       expect(find.text(l10n.todayQuickCollect), findsOneWidget);
@@ -751,26 +761,72 @@ void main() {
       expect(find.text(l10n.todayQuickExtra), findsOneWidget);
     });
 
+    testWidgets('910 wide: New… stays reachable as an icon button with a name', (WidgetTester tester) async {
+      await _pumpDesktop(tester, size: const Size(910, 700));
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.widgetWithText(BhorButton, l10n.todayNewMenu), findsNothing);
+      expect(_byLabel(l10n.todayNewMenu), findsOneWidget);
+      await tester.tap(_byLabel(l10n.todayNewMenu));
+      await _settle(tester);
+      expect(find.text(l10n.todayQuickCollect), findsOneWidget);
+    });
+
+    testWidgets('New… > Collect fee opens the student picker in place', (WidgetTester tester) async {
+      await _pumpDesktop(tester);
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      await tester.tap(find.widgetWithText(BhorButton, l10n.todayNewMenu));
+      await _settle(tester);
+      await tester.tap(find.text(l10n.todayQuickCollect));
+      await _settle(tester);
+      expect(find.text(l10n.duesPickerTitle), findsOneWidget);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('New… > Add student opens the add-student panel, not a page', (WidgetTester tester) async {
+      await _pumpDesktop(tester);
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      await tester.tap(find.widgetWithText(BhorButton, l10n.todayNewMenu));
+      await _settle(tester);
+      await tester.tap(find.text(l10n.todayQuickAddStudent));
+      await _settle(tester);
+      expect(find.text(l10n.shellTitleStudentNew), findsWidgets);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
     testWidgets('medium window: stacked cards, paired tiles of equal height', (WidgetTester tester) async {
       await _pumpDesktop(tester, size: const Size(720, 1000));
-      expect(find.byType(BentoGrid), findsNothing);
+      expect(find.byType(BhorDashboardPage), findsNothing);
       expect(find.byType(DayStrip), findsOneWidget);
       final Rect hero = tester.getRect(find.byType(HeroClassCard));
       final Rect dues = tester.getRect(find.byType(DuesCard));
       expect(hero.top, closeTo(dues.top, 0.6));
       expect(hero.height, closeTo(dues.height, 0.6));
-      final Rect collection = tester.getRect(find.byType(CollectionTile));
-      final Rect attendance = tester.getRect(find.byType(AttendanceTodayTile));
-      expect(collection.top, closeTo(attendance.top, 0.6));
-      expect(collection.height, closeTo(attendance.height, 0.6));
       expectNoException(tester, 'medium');
     });
+  });
 
-    testWidgets('a short window keeps the minimum tile height and scrolls', (WidgetTester tester) async {
-      await _pumpDesktop(tester, size: const Size(1280, 560));
-      final Rect hero = tester.getRect(find.byType(HeroClassCard));
-      expect(hero.height, greaterThanOrEqualTo(184));
-      expectNoException(tester, 'short window');
+  // ---- backup age wording (T7) ---------------------------------------------------------
+  group('backup age', () {
+    for (final (int, String) c in <(int, String)>[
+      (1, 'Last backup 1 day ago'),
+      (2, 'Last backup 2 days ago'),
+    ]) {
+      testWidgets('English: ${c.$2}', (WidgetTester tester) async {
+        final SeededFakes f = seedFakes(encodedSettings: <String, Object?>{
+          SettingKeys.lastExportAt.id: SettingKeys.lastExportAt.encode(_nowMs - c.$1 * 86400000 - 1000),
+        });
+        await _pumpDesktop(tester, fakes: f, lang: Lang.en);
+        expect(find.text(c.$2), findsOneWidget);
+      });
+    }
+
+    testWidgets('Bangla: the same wording for one and two days', (WidgetTester tester) async {
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      final SeededFakes f = seedFakes(encodedSettings: <String, Object?>{
+        SettingKeys.lastExportAt.id: SettingKeys.lastExportAt.encode(_nowMs - 86400000 - 1000),
+      });
+      await _pumpDesktop(tester, fakes: f);
+      expect(find.text(l10n.todayBackupAgeOne(AppFormat(Lang.bn).number(1))), findsOneWidget);
     });
   });
 

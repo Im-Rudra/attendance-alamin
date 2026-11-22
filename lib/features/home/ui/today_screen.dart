@@ -1,22 +1,20 @@
-// Today (UX 1, 2g, 3, 3b): the daily cockpit. Phone: stacked cards (hero, dues,
-// day strip + timeline, collection, attendance, quick actions). Medium: the
-// same on a 12-column grid (6 + 6). Expanded and wider: a 12-column bento whose
-// rows all sum to 12 with equal-height tiles, plus a দিন/সপ্তাহ toggle that
-// swaps the bento for the real week grid.
+// Today (UX 1, 2g, 3, 3b): the daily cockpit. Desktop (>= 840): the dashboard
+// template (BhorDashboardPage): a full-width hero, then content-sized cards in
+// a masonry, so no card is hollow or clipped; a দিন/সপ্তাহ toggle swaps the
+// cards for the real week grid, and one "নতুন…" menu holds the quick actions.
+// Phone and medium: stacked cards (hero, dues, day strip + timeline,
+// collection, attendance, quick actions) as before.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
-import 'package:attendance_alamin/app/widgets/bento_grid.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
-import 'package:attendance_alamin/features/home/controllers/bento_layout.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/absence_alerts_tile.dart';
@@ -38,6 +36,10 @@ const double _kMediumTopRow = 280;
 /// Height of the collection + attendance row on medium windows.
 const double _kMediumStatRow = 232;
 
+/// Below this window width "New…" becomes an icon button with a tooltip so
+/// the header never loses it (review T8).
+const double _kNewIconBelow = 1100;
+
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
@@ -47,13 +49,21 @@ class TodayScreen extends ConsumerWidget {
     final WindowClass wc = WindowClass.of(context);
     final LocalDate today = ref.watch(todayProvider);
     final TodayView view = ref.watch(todayViewProvider);
-    final bool wide = wc.isWide;
 
-    final List<Widget> actions = <Widget>[
-      if (wide)
-        Padding(
-          padding: const EdgeInsets.only(left: BhorSpace.s8),
-          child: SizedBox(
+    // "শুভ সকাল / বিকাল / সন্ধ্যা" over the weekday-date line.
+    final int nowMin = ref.watch(nowMinutesProvider);
+    final String greeting = nowMin < 12 * 60
+        ? l10n.todayGreetMorning
+        : (nowMin < 17 * 60 ? l10n.todayGreetAfternoon : l10n.todayGreetEvening);
+
+    if (wc.isWide) {
+      return _WideBody(
+        today: today,
+        week: view == TodayView.week,
+        overline: context.fmt.weekdayDate(today),
+        title: greeting,
+        actions: <Widget>[
+          SizedBox(
             width: 190,
             child: Semantics(
               container: true,
@@ -69,23 +79,10 @@ class TodayScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ),
-      if (quickActionsInTopBar(wc)) _NewMenuButton(date: today),
-      BhorIconButton(
-        semanticLabel: l10n.commonSearch,
-        icon: BhorIcons.search,
-        variant: BhorButtonVariant.secondary,
-        circle: true,
-        onPressed: () => GoRouter.maybeOf(context)?.push(Routes.search),
-      ),
-      const SizedBox(width: BhorSpace.s8),
-    ];
-
-    // "শুভ সকাল / বিকাল / সন্ধ্যা" over the weekday-date line.
-    final int nowMin = ref.watch(nowMinutesProvider);
-    final String greeting = nowMin < 12 * 60
-        ? l10n.todayGreetMorning
-        : (nowMin < 17 * 60 ? l10n.todayGreetAfternoon : l10n.todayGreetEvening);
+          _NewMenuButton(date: today),
+        ],
+      );
+    }
 
     return BhorScaffold(
       header: BhorHeader(
@@ -93,17 +90,15 @@ class TodayScreen extends ConsumerWidget {
         title: greeting,
         large: true,
         showBack: false,
-        actions: actions,
       ),
-      body: wide
-          ? _WideBody(wc: wc, today: today, week: view == TodayView.week)
-          : _StackedBody(wc: wc, today: today),
+      body: _StackedBody(wc: wc, today: today),
     );
   }
 }
 
-/// Large windows: one labelled "নতুন…" button that lists the quick actions
-/// (collect, add student, extra class) instead of a row of bare icons.
+/// Desktop: one "নতুন…" button that lists the quick actions (collect fee, add
+/// student, extra class), each opening in place. At narrow desktop widths it
+/// is an icon button with a tooltip, so it never disappears.
 class _NewMenuButton extends StatelessWidget {
   const _NewMenuButton({required this.date});
 
@@ -112,38 +107,35 @@ class _NewMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(left: BhorSpace.s8),
-      child: BhorButton(
-        label: l10n.todayNewMenu,
-        icon: BhorIcons.add,
-        variant: BhorButtonVariant.secondary,
-        onPressed: () async {
+    final bool iconOnly = MediaQuery.sizeOf(context).width < _kNewIconBelow;
+    return Builder(
+      builder: (BuildContext bc) {
+        void open() {
           final List<QuickAction> actions = quickActionsOf(context, date).take(3).toList();
-          final QuickAction? picked = await showBhorPanel<QuickAction>(
-            context,
-            kind: BhorPanelKind.list,
-            anchor: context,
-            scroll: false,
-            title: l10n.todayNewMenu,
-            builder: (BuildContext ctx) => SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  for (int i = 0; i < actions.length; i++)
-                    BhorListRow(
-                      title: actions[i].label,
-                      leading: Icon(actions[i].icon),
-                      divider: i < actions.length - 1,
-                      onTap: () => Navigator.of(ctx).pop(actions[i]),
-                    ),
-                ],
-              ),
-            ),
+          showBhorMenu(
+            bc,
+            items: <BhorMenuItem>[
+              for (final QuickAction a in actions) BhorMenuItem(icon: a.icon, label: a.label, onTap: a.onTap),
+            ],
           );
-          picked?.onTap();
-        },
-      ),
+        }
+
+        if (iconOnly) {
+          return BhorIconButton(
+            semanticLabel: l10n.todayNewMenu,
+            icon: BhorIcons.add,
+            variant: BhorButtonVariant.secondary,
+            circle: true,
+            onPressed: open,
+          );
+        }
+        return BhorButton(
+          label: l10n.todayNewMenu,
+          icon: BhorIcons.add,
+          variant: BhorButtonVariant.secondary,
+          onPressed: open,
+        );
+      },
     );
   }
 }
@@ -151,83 +143,76 @@ class _NewMenuButton extends StatelessWidget {
 // ---- expanded and wider ------------------------------------------------------
 
 class _WideBody extends ConsumerWidget {
-  const _WideBody({required this.wc, required this.today, required this.week});
+  const _WideBody({
+    required this.today,
+    required this.week,
+    required this.overline,
+    required this.title,
+    required this.actions,
+  });
 
-  final WindowClass wc;
   final LocalDate today;
   final bool week;
+  final String overline;
+  final String title;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final double g = wc.gutter;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
-      child: Column(
+    final WindowClass wc = WindowClass.of(context);
+    const Widget banners = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[ConflictBanner(), ReminderHint()],
+    );
+
+    final Widget hero;
+    final List<Widget> cards;
+    if (week) {
+      final int weekStart = ref.watch(weekStartProvider).value ?? 6;
+      // The week grid needs a bounded height; the page scrolls if the window
+      // is shorter than the grid's minimum.
+      final double h = (MediaQuery.sizeOf(context).height - 220).clamp(560.0, 1400.0);
+      hero = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const ConflictBanner(),
-          const ReminderHint(),
-          Expanded(
-            child: BhorFadeThrough(
-              child: KeyedSubtree(
-                key: ValueKey<bool>(week),
-                child: week ? _weekBody(ref) : _bento(),
-              ),
+          banners,
+          SizedBox(
+            height: h,
+            child: BhorCard(
+              padding: const EdgeInsets.all(BhorSpace.s12),
+              child: WeekGrid(weekStart: weekStartFor(today, weekStart)),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _weekBody(WidgetRef ref) {
-    final int weekStart = ref.watch(weekStartProvider).value ?? 6;
-    return BhorCard(
-      padding: const EdgeInsets.all(BhorSpace.s12),
-      child: WeekGrid(weekStart: weekStartFor(today, weekStart)),
-    );
-  }
-
-  Widget _bento() {
-    return BentoGrid(
-      gutter: wc.gutter,
-      rowCount: bentoRowCount(wc),
-      placements: <BentoPlacement>[
-        for (final TileSlot s in bentoSlots(wc))
-          BentoPlacement(
-            col: s.col,
-            row: s.row,
-            colSpan: s.colSpan,
-            rowSpan: s.rowSpan,
-            child: _tile(s.tile),
-          ),
-      ],
-    );
-  }
-
-  Widget _tile(TodayTile tile) {
-    switch (tile) {
-      case TodayTile.hero:
-        return HeroClassCard(date: today, fill: true);
-      case TodayTile.dues:
-        return const DuesCard();
-      case TodayTile.timeline:
-        return TodayTimeline(date: today, bounded: true);
-      case TodayTile.collection:
-        return const CollectionTile();
-      case TodayTile.attendance:
-        return const AttendanceTodayTile();
-      case TodayTile.alerts:
-        return const AbsenceAlertsTile();
-      case TodayTile.quick:
-        return QuickActionsTile(date: today);
-      case TodayTile.backup:
-        return const BackupNudgeTile();
-      case TodayTile.recent:
-        return const RecentPaymentsTile();
-      case TodayTile.week:
-        return const WeekGlanceTile();
+      );
+      cards = const <Widget>[];
+    } else {
+      hero = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[banners, HeroClassCard(date: today, wide: true)],
+      );
+      cards = <Widget>[
+        const DuesCard(),
+        TodayTimeline(date: today),
+        const CollectionTile(),
+        const AttendanceTodayTile(),
+        const RecentPaymentsTile(),
+        const AbsenceAlertsTile(),
+        if (wc == WindowClass.extraLarge) const WeekGlanceTile(),
+        const BackupNudgeTile(),
+      ];
     }
+
+    return BhorDashboardPage(
+      overline: overline,
+      title: title,
+      actions: actions,
+      hero: hero,
+      children: cards,
+    );
   }
 }
 
@@ -299,8 +284,8 @@ class _StackedBody extends ConsumerWidget {
 
     return BhorStaggerScope(
       child: ListView(
-      padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g + bottom),
-      children: children,
+        padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g + bottom),
+        children: children,
       ),
     );
   }

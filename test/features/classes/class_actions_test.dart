@@ -418,7 +418,7 @@ void main() {
         overrides: engineOverrides(f),
       );
       await openHost(tester);
-      expect(find.text('শুধু ${fmt.weekdayDate(kToday)} · ${fmt.time(kPhysStart)}'), findsOneWidget);
+      expect(find.text('${fmt.weekdayDate(kToday)} · ${fmt.time(kPhysStart)}'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -466,10 +466,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('24'));
       await tester.pumpAndSettle();
-      for (var i = 0; i < 22; i++) {
-        await tester.tap(_byLabel('15 min earlier'));
-        await tester.pump();
-      }
+      // The standard time field (T6): morning > 10 > :30, then Done.
+      await tester.tap(find.text('Time'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('bhor-period-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('bhor-hour-10')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('bhor-minute-30')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
       expect(find.text('Time clash'), findsOneWidget);
@@ -608,6 +614,58 @@ void main() {
       expect(f.store.exceptions.single.newStartMin, 660);
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets('the suggestion is an accent button, not a red one (T5)', (WidgetTester tester) async {
+      const AppFormat fmt = AppFormat(Lang.en);
+      final SeededFakes f = seedFakes();
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showExtraClassSheet(c, batchId: kBatPhysA, date: const LocalDate(2026, 11, 22), startMin: 630)),
+        lang: Lang.en,
+        viewport: TestViewport.desktop,
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+      final BhorButton use =
+          tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Use ${fmt.timeRange(660, 720)}'));
+      expect(use.variant, BhorButtonVariant.primary);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a fresh extra-class form opens on a free slot, not on a clash (T5)', (WidgetTester tester) async {
+      const AppFormat fmt = AppFormat(Lang.en);
+      final SeededFakes f = seedFakes();
+      // The clock is 10:00; Chem B has a weekly class 10:00-11:00 on Tuesday.
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showExtraClassSheet(c, batchId: kBatChemB, date: const LocalDate(2026, 11, 24))),
+        lang: Lang.en,
+        viewport: TestViewport.desktop,
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Time clash'), findsNothing);
+      expect(find.text(fmt.timeRange(600, 660)), findsNothing);
+      expect(tester.widget<BhorButton>(find.widgetWithText(BhorButton, 'Add class')).onPressed, isNotNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the time is the standard picker field, not a - / + field (T6)', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await pumpApp(
+        tester,
+        _Host((BuildContext c) => showRescheduleSheet(c, occ: physOcc('2026-11-23'))),
+        lang: Lang.en,
+        viewport: TestViewport.desktop,
+        overrides: engineOverrides(f),
+      );
+      await openHost(tester);
+      expect(find.byType(BhorPickerField), findsNWidgets(2));
+      expect(_byLabel('15 min earlier'), findsNothing);
+      expect(_byLabel('15 min later'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 
   group('week grid', () {
@@ -637,6 +695,26 @@ void main() {
         final String plain = t.data ?? t.textSpan?.toPlainText() ?? '';
         expect(plain.contains(RegExp('[→↻✓＋]')), isFalse, reason: plain);
       }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('one click on a block opens the class popover with the date and the batch (G10, T4)',
+        (WidgetTester tester) async {
+      const AppFormat fmt = AppFormat(Lang.bn);
+      await pumpApp(
+        tester,
+        const WeekGrid(weekStart: kToday),
+        viewport: TestViewport.desktop,
+        overrides: weekOverrides(),
+      );
+      await tester.pump();
+      await tester.tap(find.text(fmt.timeRange(480, 540)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(ClassActionsSheet), findsOneWidget);
+      // The title is the weekday and date; no "only …" wording.
+      expect(find.textContaining('শুধু'), findsNothing);
+      expect(find.textContaining(fmt.weekdayDate(kToday)), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
