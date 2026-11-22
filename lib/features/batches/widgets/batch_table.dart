@@ -200,12 +200,7 @@ class BatchBarList extends StatelessWidget {
                         Row(
                           children: <Widget>[
                             Expanded(
-                              child: Text(
-                                entries[i].label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: b.type.body,
-                              ),
+                              child: Text(entries[i].label, style: b.type.body),
                             ),
                             const SizedBox(width: BhorSpace.s8),
                             Text(entries[i].valueText, style: BhorType.tabular(b.type.label)),

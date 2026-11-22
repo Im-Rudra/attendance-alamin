@@ -93,7 +93,7 @@ class BatchCard extends ConsumerWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
                       BillingPill(type: data.batch.billingType),
-                      Text(l10n.batchStudentCount(fmt.number(data.studentCount)), style: th.type.label),
+                      Text(l10n.studentCountText(data.studentCount, fmt.number(data.studentCount)), style: th.type.label),
                       if (pct != null)
                         Text(
                           l10n.batchTodayPercent(fmt.percent(pct)),

@@ -263,7 +263,7 @@ class _GroupHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                context.l10n.batchGroupCount(context.fmt.number(count)),
+                context.l10n.groupCountText(count, context.fmt.number(count)),
                 style: b.type.label.copyWith(color: b.colors.text3),
               ),
             ],

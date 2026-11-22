@@ -14,6 +14,20 @@ import 'package:attendance_alamin/features/students/controllers/student_actions.
 import 'package:attendance_alamin/features/students/controllers/student_form_model.dart';
 import 'package:attendance_alamin/features/students/widgets/photo_picker.dart';
 
+/// Puts the caret in [node] on the first frame after the surrounding panel has
+/// laid out, and tries again on the next two frames while the panel is still
+/// sliding in. `autofocus` alone loses to the page behind the panel (the list's
+/// own search box holds focus there), so the request is explicit. Only the
+/// first few frames are used, so it can never pull focus from a user who has
+/// already started typing elsewhere.
+void focusAfterOpen(State<StatefulWidget> state, FocusNode node, {int tries = 3}) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!state.mounted || node.hasFocus) return;
+    if (node.canRequestFocus) node.requestFocus();
+    if (tries > 1 && !node.hasFocus) focusAfterOpen(state, node, tries: tries - 1);
+  });
+}
+
 /// Name and guardian phone, then "আরও তথ্য" (roll, student phone, guardian
 /// name, admission date, photo, notes).
 class StudentFieldsView extends StatefulWidget {
@@ -38,6 +52,19 @@ class StudentFieldsView extends StatefulWidget {
 
 class _StudentFieldsViewState extends State<StudentFieldsView> {
   late bool _open = widget.moreExpanded;
+  final FocusNode _nameFocus = FocusNode(debugLabel: 'student name');
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autofocusName) focusAfterOpen(this, _nameFocus);
+  }
+
+  @override
+  void dispose() {
+    _nameFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +81,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
               key: const ValueKey<String>('stu-field-name'),
               textCapitalization: TextCapitalization.words,
               controller: model.name,
+              focusNode: _nameFocus,
               autofocus: widget.autofocusName,
               textInputAction: TextInputAction.next,
               onChanged: (_) => model.clearError('name'),

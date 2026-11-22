@@ -220,7 +220,7 @@ class _BatchHeader extends ConsumerWidget {
 
     final List<String> facts = <String>[
       if (fee != null) l10n.batchFeePerMonth(fmt.money(fee)),
-      l10n.batchStudentCount(fmt.number(students)),
+      l10n.studentCountText(students, fmt.number(students)),
       if (pct != null) l10n.batchTodayPercent(fmt.percent(pct)),
     ];
 

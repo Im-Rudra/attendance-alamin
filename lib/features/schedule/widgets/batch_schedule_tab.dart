@@ -1,6 +1,5 @@
-// Batch detail › সময়সূচি tab: the weekly times at a glance, the class-reminder
-// row (UX 2h) and the button into the slot editor. Two columns when the pane
-// is wide, so a desktop detail pane is filled, not stretched.
+// Batch detail › সময়সূচি tab: the class-reminder row (UX 2h), the weekly times
+// (shown once) and the button into the slot editor.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,6 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/schedule/controllers/schedule_tab_providers.dart';
 import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
 import 'package:attendance_alamin/features/schedule/widgets/reminder_lead_sheet.dart';
-import 'package:attendance_alamin/features/schedule/widgets/slot_editor_body.dart';
 import 'package:attendance_alamin/features/schedule/widgets/week_overview.dart';
 
 class BatchScheduleTab extends StatelessWidget {
@@ -101,60 +99,37 @@ class _Content extends ConsumerWidget {
       );
     }
 
-    final Widget week = WeekOverview(slots: slots, weekStart: weekStart);
-    // [fill]: wide windows put the two columns in one row of equal height; the
-    // sentence card then takes the height the week card has over the rest, so
-    // neither column leaves a blank area below it.
-    Widget buildSide({required bool fill}) {
-      final Widget sentence = SlotSentenceCard(slots: slots, weekStart: weekStart, fill: fill);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (archived) ...<Widget>[
-            _Note(text: l10n.schedArchivedReadOnly),
-            const SizedBox(height: 12),
-          ],
-          _ReminderRow(batch: batch, enabled: !archived),
+    // The weekly routine appears once: the seven-day card says it all, so
+    // there is no extra summary sentence above or beside it.
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (archived) ...<Widget>[
+          _Note(text: l10n.schedArchivedReadOnly),
           const SizedBox(height: 12),
-          if (fill) Expanded(child: sentence) else sentence,
-          const SizedBox(height: 12),
-          // A quiet secondary action, not a full-width primary (review B5).
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: BhorButton(
-              variant: BhorButtonVariant.secondary,
-              onPressed: archived ? null : openEditor,
-              icon: BhorIcons.edit,
-              label: l10n.schedChangeWeekly,
-            ),
-          ),
         ],
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (BuildContext _, BoxConstraints box) {
-        if (box.maxWidth >= 720) {
-          return SingleChildScrollView(
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Expanded(flex: 3, child: week),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 2, child: buildSide(fill: true)),
-                ],
-              ),
-            ),
-          );
-        }
-        return SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[buildSide(fill: false), const SizedBox(height: 12), week],
+        _ReminderRow(batch: batch, enabled: !archived),
+        const SizedBox(height: 12),
+        WeekOverview(slots: slots, weekStart: weekStart),
+        const SizedBox(height: 12),
+        // A quiet secondary action, not a full-width primary (review B5).
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: BhorButton(
+            variant: BhorButtonVariant.secondary,
+            onPressed: archived ? null : openEditor,
+            icon: BhorIcons.edit,
+            label: l10n.schedChangeWeekly,
           ),
-        );
-      },
+        ),
+      ],
+    );
+
+    return SingleChildScrollView(
+      child: Align(
+        alignment: AlignmentDirectional.topStart,
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content),
+      ),
     );
   }
 }

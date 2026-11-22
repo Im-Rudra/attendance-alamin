@@ -69,7 +69,7 @@ void main() {
       expect(find.byType(BatchTable<StudentRow>), findsOneWidget);
       final double master = tester.getSize(find.byKey(BhorMasterDetailPage.masterKey)).width;
       final double detail = tester.getSize(find.byKey(BhorMasterDetailPage.detailKey)).width;
-      expect(detail, StudentsScreen.profileMinWidth);
+      expect(detail, greaterThanOrEqualTo(StudentsScreen.profileMinWidth + 40));
       expect(master, greaterThan(detail));
     });
 
@@ -294,6 +294,67 @@ void main() {
         final BhorTextField f = tester.widget<BhorTextField>(find.byKey(ValueKey<String>(key)));
         expect(f.localDigits, isTrue, reason: key);
       }
+    });
+  });
+
+  group('re-walk fixes (X8, X9, X11)', () {
+    testWidgets('X8: a student row names its batch with the subject', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const StudentsScreen(),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('পদার্থবিজ্ঞান · ফিজিক্স এ'), findsWidgets);
+    });
+
+    testWidgets('X8: the enrollment card title carries the subject too', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const StudentProfileScreen(studentId: kStuSara),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('পদার্থবিজ্ঞান · ফিজিক্স এ'), findsWidgets);
+      expect(find.text('রসায়ন · কেমিস্ট্রি বি'), findsWidgets);
+    });
+
+    testWidgets('X9: the profile shows the guardian and student numbers as text with a copy action',
+        (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        const StudentProfileScreen(studentId: kStuSara),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('০১৭৩৩৪৪৫৫৬৬'), findsOneWidget);
+      expect(find.text('০১৬৩৩৪৪৫৫৬৬'), findsOneWidget);
+      final Finder copy = find.byWidgetPredicate(
+        (Widget w) => w is BhorIconButton && w.icon == BhorIcons.copy,
+      );
+      expect(copy, findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('X11: the add-student panel puts the caret in the name field', (WidgetTester tester) async {
+      await pumpApp(
+        tester,
+        _Launcher((BuildContext c) async {
+          await openAddStudent(c);
+        }),
+        viewport: TestViewport.desktop,
+        overrides: seedFakes().overrides,
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      final Finder editable = find.descendant(
+        of: find.byKey(const ValueKey<String>('stu-field-name')),
+        matching: find.byType(EditableText),
+      );
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isTrue);
     });
   });
 }

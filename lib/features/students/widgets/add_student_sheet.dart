@@ -20,6 +20,8 @@ import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+import 'package:attendance_alamin/domain/models/subject.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_form_model.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
@@ -61,6 +63,7 @@ class AddStudentSheet extends ConsumerStatefulWidget {
 
 class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   final TextEditingController _query = TextEditingController();
+  final FocusNode _queryFocus = FocusNode(debugLabel: 'student search');
   StudentFormModel? _model;
   EnrollChoice? _choice;
   final List<StudentFormModel> _retired = <StudentFormModel>[];
@@ -82,9 +85,16 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    focusAfterOpen(this, _queryFocus);
+  }
+
+  @override
   void dispose() {
     _changes?.removeListener(_syncDirty);
     _query.dispose();
+    _queryFocus.dispose();
     _model?.dispose();
     _choice?.dispose();
     for (final StudentFormModel m in _retired) {
@@ -95,6 +105,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
 
   Future<void> _startCreating() async {
     final LocalDate today = ref.read(todayProvider);
+    final Map<String, String> subjectNames = <String, String>{
+      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
+    };
     final String q = _query.text.trim();
     final String ascii = AppFormat.toAsciiDigits(q).replaceAll(RegExp(r'[\s\-+]'), '');
     final bool looksLikePhone = RegExp(r'^\d{6,}$').hasMatch(ascii);
@@ -226,7 +239,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
       for (final Enrollment e in enrollments) {
         if (e.studentId != studentId || e.endDate != null) continue;
         for (final Batch b in batches) {
-          if (b.id == e.batchId) names.add(b.name);
+          if (b.id == e.batchId) names.add(batchLabel(l10n, subjectNames[b.subjectId] ?? '', b.name));
         }
       }
       return names.join(' · ');
@@ -247,6 +260,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
             BhorTextField(
               key: const ValueKey<String>('stu-add-search'),
               controller: _query,
+              focusNode: _queryFocus,
               autofocus: true,
               onChanged: (_) => setState(() => _error = null),
               prefix: const Icon(BhorIcons.search),

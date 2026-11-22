@@ -204,6 +204,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
                       key: ValueKey<String>('stu-row-${rows[i].id}'),
                       row: rows[i],
                       selected: rows[i].id == widget.selectedId,
+                      last: i == rows.length - 1,
                       onTap: () => _open(rows[i].id),
                     ),
                   ),
@@ -288,7 +289,7 @@ class _Table extends StatelessWidget {
                 BatchColumn<StudentRow>(
                   label: l10n.stuColBatch,
                   flex: 4,
-                  cell: (StudentRow r) => menu(r, text(batchNames(r.batches))),
+                  cell: (StudentRow r) => menu(r, Text(r.batchesText(l10n, separator: '\n'), style: style)),
                 ),
               if (showPhone)
                 BatchColumn<StudentRow>(

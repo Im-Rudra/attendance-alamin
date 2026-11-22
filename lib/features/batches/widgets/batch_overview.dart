@@ -75,7 +75,7 @@ class BatchesOverview extends ConsumerWidget {
                       for (int i = 0; i < all.length; i++)
                         BhorListRow(
                           title: batchLabel(l10n, all[i].subjectName, all[i].batch.name),
-                          subtitle: l10n.batchStudentCount(fmt.number(all[i].studentCount)),
+                          subtitle: l10n.studentCountText(all[i].studentCount, fmt.number(all[i].studentCount)),
                           divider: i != all.length - 1,
                           onTap: () => openPath(context, Routes.batch(all[i].batch.id)),
                           trailing: _DuesOrClear(batchId: all[i].batch.id),

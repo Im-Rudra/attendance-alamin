@@ -237,8 +237,10 @@ class _Table extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final BhorThemeData th = context.bhor;
-    return Padding(
-      padding: const EdgeInsets.only(top: BhorSpace.s8),
+    // Scrolls as a whole so the card hugs its rows instead of stretching to
+    // the height of the tab.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: BhorSpace.s8, bottom: BhorSpace.s16),
       child: BatchTable<BatchStudentRow>(
         rows: rows,
         semanticLabel: (BatchStudentRow r) => r.student.name,

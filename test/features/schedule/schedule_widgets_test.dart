@@ -507,7 +507,7 @@ void main() {
       expect(find.text('Reset to default'), findsOneWidget);
     });
 
-    testWidgets('wide window: both columns end on the same line (no blank area)',
+    testWidgets('X14: the weekly routine is shown once (no summary card beside the week)',
         (WidgetTester tester) async {
       await pumpApp(
         tester,
@@ -519,15 +519,9 @@ void main() {
         viewport: TestViewport.desktop,
       );
       await tester.pumpAndSettle();
-      final double weekBottom = tester.getBottomLeft(find.byType(WeekOverview)).dy;
-      final double buttonBottom =
-          tester
-              .getBottomLeft(find.ancestor(
-                of: find.text('প্রতি সপ্তাহের সময় বদলান'),
-                matching: find.byWidgetPredicate((Widget w) => w is BhorButton),
-              ))
-              .dy;
-      expect(buttonBottom, closeTo(weekBottom, 1.0));
+      expect(find.byType(WeekOverview), findsOneWidget);
+      expect(find.text('সাপ্তাহিক রুটিন'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testScreenMatrix(
