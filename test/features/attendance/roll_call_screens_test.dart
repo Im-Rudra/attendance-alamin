@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
@@ -484,6 +485,174 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     };
     expect(marks[kStuRahim], AttendanceStatus.absent);
     expect(marks[kStuSara], AttendanceStatus.present);
+    await unmount(tester);
+  });
+
+  // ---- W2-RollCall: the desktop roll call (docs/council/15 R1-R5) ----------
+
+  testWidgets('desktop: one focus page, sticky bar with counts and Save, no right rail', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    expect(find.byType(BhorFocusPage), findsOneWidget);
+    // Content is capped at 880 and the three rows are stacked in ONE column.
+    final Size body = tester.getSize(find.byKey(BhorFocusPage.bodyKey));
+    expect(body.width, greaterThan(880));
+    final List<double> lefts = <double>[
+      for (final Element e in find.byType(RollRow).evaluate()) tester.getTopLeft(find.byWidget(e.widget)).dx,
+    ];
+    expect(lefts.toSet(), hasLength(1));
+    final List<double> tops = <double>[
+      for (final Element e in find.byType(RollRow).evaluate()) tester.getTopLeft(find.byWidget(e.widget)).dy,
+    ];
+    expect(tops[0] < tops[1] && tops[1] < tops[2], isTrue);
+    expect(tester.getSize(find.byType(RollRow).first).width, lessThanOrEqualTo(880));
+
+    // Live counts and Save live in the bar under the rows, not in a rail.
+    final Finder bar = find.byKey(BhorFocusPage.barKey);
+    expect(bar, findsOneWidget);
+    expect(find.descendant(of: bar, matching: find.text('Save attendance (3)')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: bar,
+        matching: find.byWidgetPredicate((Widget w) => w is Semantics && w.properties.label == 'Present 3'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(RollSessionChips), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('desktop: date chevrons hug the date, class note and shortcuts are top-bar actions', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    final Rect prev = tester.getRect(_byLabel('Previous day'));
+    final Rect next = tester.getRect(_byLabel('Next day'));
+    // Both arrows sit within a short distance of each other (around the date),
+    // nowhere near the window edges.
+    expect(next.left - prev.right, lessThan(420));
+    expect(prev.left, lessThan(next.left));
+    expect(prev.left, greaterThan(100));
+
+    await tester.tap(_byLabel('Keyboard shortcuts'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RollShortcutList), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(RollShortcutList), findsNothing);
+    expect(find.byType(RollRow), findsNWidgets(3));
+
+    await tester.tap(_byLabel('Class note'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save'), findsOneWidget);
+    await tester.enterText(find.byType(EditableText).last, 'Chapter 3');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Note: Chapter 3'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('desktop: Leave is one click away on the row', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    await tester.tap(find.descendant(of: find.byType(RollRow).first, matching: find.text('Excused')));
+    await tester.pumpAndSettle();
+    _expectCounts('Present 2', 'Absent 0', 'Late 0', 'Excused 1');
+    // Tapping the chip again takes it back.
+    await tester.tap(find.descendant(of: find.byType(RollRow).first, matching: find.text('Excused')));
+    await tester.pumpAndSettle();
+    _expectCounts('Present 3', 'Absent 0', 'Late 0');
+    await unmount(tester);
+  });
+
+  testWidgets('desktop: the row dots open an anchored menu', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    final Finder dots = find.descendant(of: find.byType(RollRow).first, matching: _byLabel('More options'));
+    expect(dots, findsOneWidget);
+    await tester.tap(dots);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('roll-menu-absent')), findsOneWidget);
+    // Anchored: the menu hangs near the button, not centred in the window.
+    final Rect menu = tester.getRect(find.byKey(const Key('roll-menu-absent')));
+    final Rect btn = tester.getRect(dots);
+    expect((menu.center.dy - btn.center.dy).abs(), lessThan(300));
+    await tester.tap(find.byKey(const Key('roll-menu-absent')));
+    await tester.pumpAndSettle();
+    _expectCounts('Present 2', 'Absent 1', 'Late 0');
+    await unmount(tester);
+  });
+
+  testWidgets('desktop: Esc goes back; with changes it asks first', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    final String occ = physOcc('2026-11-21');
+    await pumpApp(
+      tester,
+      Builder(
+        builder: (BuildContext context) => Center(
+          child: BhorButton(
+            label: 'go',
+            onPressed: () => openRollCallForBatchDate(context, batchId: kBatPhysA, date: kToday),
+          ),
+        ),
+      ),
+      lang: Lang.en,
+      viewport: TestViewport.desktop,
+      overrides: f.overrides,
+    );
+    // Nothing changed: Esc simply goes back.
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BhorFocusPage), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('go'), findsOneWidget);
+    expect(find.byType(BhorFocusPage), findsNothing);
+
+    // A change: Esc asks, Discard drops the draft.
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Attendance not saved. Save now?'), findsOneWidget);
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.text('go'), findsOneWidget);
+    expect(f.attendance.sessions, isEmpty);
+    expect(f.localMeta.values.keys, isNot(contains('rollcall_draft:$occ')));
+  });
+
+  testWidgets('desktop: the keyboard outline shows only for the keyboard cursor', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, RollCallScreen(occ: physOcc('2026-11-21')), f, viewport: TestViewport.desktop);
+
+    bool anyFocused() => tester.widgetList<RollRow>(find.byType(RollRow)).any((RollRow r) => r.focused);
+    await tester.tap(find.text('রহিম উদ্দিন'));
+    await tester.pump();
+    expect(anyFocused(), isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await tester.pump();
+    expect(anyFocused(), isTrue);
+    await tester.tap(find.text('সারা আক্তার'));
+    await tester.pump();
+    expect(anyFocused(), isFalse);
+    await unmount(tester);
+  });
+
+  testWidgets('an extra class has two identical time pickers and ONE info line', (WidgetTester tester) async {
+    final SeededFakes f = seedFakes(withAttendance: false);
+    await open(tester, const BatchRollCallLauncher(batchId: kBatPhysA, date: _friday), f,
+        viewport: TestViewport.desktop);
+
+    expect(find.byType(BhorPickerField), findsNWidgets(2));
+    expect(find.byType(RollNotice), findsOneWidget);
+    expect(find.text('No class is scheduled at this time — it will be saved as an extra class'), findsOneWidget);
+    expect(find.text('You are viewing attendance of a past day'), findsOneWidget);
     await unmount(tester);
   });
 

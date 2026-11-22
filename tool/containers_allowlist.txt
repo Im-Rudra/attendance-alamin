@@ -1,7 +1,6 @@
 # Direct showBhorSheet / showBhorDialog calls in lib/features (tool/check_containers.sh).
 # <file> <function> <count>. Wave 2 removes lines as features move to
 # showBhorPanel / showBhorConfirm / showBhorMenu. Target: empty.
-lib/features/attendance/widgets/roll_editor.dart showBhorDialog 2
 lib/features/batches/batches_entry.dart showBhorDialog 2
 lib/features/dues/widgets/reminder_walkthrough.dart showBhorDialog 1
 lib/features/payments/widgets/waive_dialog.dart showBhorDialog 1

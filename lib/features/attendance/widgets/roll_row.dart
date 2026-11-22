@@ -40,7 +40,8 @@ class RollRow extends StatelessWidget {
   /// False for a future date or an archived batch: nothing reacts.
   final bool enabled;
 
-  /// The keyboard cursor is on this row.
+  /// The keyboard cursor is on this row (the caller passes true only while the
+  /// user is driving with the keyboard, review R3).
   final bool focused;
 
   /// Tap on the name: present <-> absent.
@@ -48,7 +49,7 @@ class RollRow extends StatelessWidget {
 
   /// A segment of the attendance toggle was chosen.
   final ValueChanged<AttendanceStatus>? onSet;
-  /// Called with the row's context (the status popover anchors to it).
+  /// Called with the context to anchor the menu to (the dots button, else the row).
   final ValueChanged<BuildContext>? onMenu;
 
   @override
@@ -76,6 +77,8 @@ class RollRow extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints box) {
         final bool menuButton = dense && box.maxWidth >= 360 && menu != null;
         final bool labelled = dense && box.maxWidth >= 460;
+        // Wide rows: "Leave" is one click away, next to the toggle (R5).
+        final bool leaveChip = labelled && enabled && onSet != null && box.maxWidth >= 580;
 
         final Widget info = Row(
           children: <Widget>[
@@ -103,7 +106,7 @@ class RollRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (status == AttendanceStatus.leave) ...<Widget>[
+            if (status == AttendanceStatus.leave && !leaveChip) ...<Widget>[
               const SizedBox(width: BhorSpace.s8),
               attendanceTag(context, status),
             ],
@@ -151,15 +154,29 @@ class RollRow extends StatelessWidget {
 
         final Widget toggle = Padding(
           padding: const EdgeInsets.only(right: BhorSpace.s12),
-          child: SizedBox(
-            width: labelled ? 280 : null,
-            child: BhorAttendanceToggle(
-              value: status == AttendanceStatus.leave ? null : status.kind,
-              iconOnly: !labelled,
-              onChanged: enabled && onSet != null
-                  ? (AttendanceKind k) => onSet!(AttendanceStatus.values[k.index])
-                  : null,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (leaveChip) ...<Widget>[
+                BhorChip(
+                  label: AttendanceStatus.leave.label(l10n),
+                  icon: statusIcon(AttendanceStatus.leave),
+                  selected: status == AttendanceStatus.leave,
+                  onSelected: (bool on) => onSet!(on ? AttendanceStatus.leave : AttendanceStatus.present),
+                ),
+                const SizedBox(width: BhorSpace.s8),
+              ],
+              SizedBox(
+                width: labelled ? 280 : null,
+                child: BhorAttendanceToggle(
+                  value: status == AttendanceStatus.leave ? null : status.kind,
+                  iconOnly: !labelled,
+                  onChanged: enabled && onSet != null
+                      ? (AttendanceKind k) => onSet!(AttendanceStatus.values[k.index])
+                      : null,
+                ),
+              ),
+            ],
           ),
         );
 
@@ -175,12 +192,15 @@ class RollRow extends StatelessWidget {
             children: <Widget>[
               Expanded(child: main),
               if (menuButton)
-                BhorIconButton(
-                  semanticLabel: l10n.rollRowMenu,
-                  icon: BhorIcons.overflow,
-                  size: BhorButtonSize.sm,
-                  color: c.text2,
-                  onPressed: menu,
+                Builder(
+                  // The menu hangs from the dots button itself (G7).
+                  builder: (BuildContext dots) => BhorIconButton(
+                    semanticLabel: l10n.rollRowMenu,
+                    icon: BhorIcons.overflow,
+                    size: BhorButtonSize.sm,
+                    color: c.text2,
+                    onPressed: () => onMenu!(dots),
+                  ),
                 ),
               toggle,
             ],
