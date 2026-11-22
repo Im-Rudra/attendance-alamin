@@ -1,7 +1,9 @@
 // The roll call itself (UX 2b): loads one class (or the ad-hoc class of a day
 // without one), its roster and any saved marks / unsaved draft, and lets the
-// teacher mark everyone in a few taps. One column on phones; 2-4 column-major
-// columns plus a summary pane on wide windows, with the desktop keys.
+// teacher mark everyone in a few taps. Phones: one column with the pinned
+// save bar. Wide windows: a BhorFocusPage inside the shell (slim top bar with
+// the date switcher and actions, one centred column of rows, a sticky bottom
+// bar with the live counts and Save) and the desktop keys.
 
 import 'dart:async';
 
@@ -17,7 +19,9 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/stub_screen.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
@@ -87,6 +91,10 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   final ScrollController _scroll = ScrollController();
   final Map<String, GlobalKey> _rowKeys = <String, GlobalKey>{};
   int _cursor = -1;
+
+  /// The cursor was last moved with the keyboard: only then is its outline
+  /// drawn (a mouse click never leaves a focus ring behind, review R3).
+  bool _kbCursor = false;
   String _digits = '';
   bool _leaving = false;
 
@@ -433,19 +441,30 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final RollCallController? c = _c;
     if (c == null) return;
     final l10n = context.l10n;
-    final _LeaveChoice? choice = await showBhorDialog<_LeaveChoice>(
+    final _LeaveChoice? choice = await showBhorPanel<_LeaveChoice>(
       context,
-      builder: (BuildContext ctx) => BhorDialog(
-        title: l10n.rollLeaveTitle,
-        actions: <Widget>[
-          BhorButton(
-            label: l10n.rollLeaveDiscard,
-            variant: BhorButtonVariant.ghost,
-            onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.discard),
+      kind: BhorPanelKind.confirm,
+      title: l10n.rollLeaveTitle,
+      scroll: false,
+      width: 440,
+      builder: (BuildContext ctx) => const SizedBox.shrink(),
+      footer: (BuildContext ctx) => Row(
+        children: <Widget>[
+          Expanded(
+            child: BhorButton(
+              label: l10n.rollLeaveDiscard,
+              variant: BhorButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.discard),
+            ),
           ),
-          BhorButton(
-            label: l10n.rollLeaveSave,
-            onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.save),
+          const SizedBox(width: BhorSpace.s12),
+          Expanded(
+            child: BhorButton(
+              label: l10n.rollLeaveSave,
+              expand: true,
+              onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.save),
+            ),
           ),
         ],
       ),
@@ -490,9 +509,14 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   Future<void> _editNote() async {
     final RollCallController? c = _c;
     if (c == null || c.readOnly) return;
-    final String? value = await showBhorDialog<String>(
+    final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+    final String? value = await showBhorPanel<String>(
       context,
-      builder: (BuildContext ctx) => _NoteDialog(initial: c.note ?? ''),
+      kind: BhorPanelKind.form,
+      title: context.l10n.rollNoteTitle,
+      width: 420,
+      dirty: dirty,
+      builder: (BuildContext ctx) => _NoteForm(initial: c.note ?? '', dirty: dirty),
     );
     if (value == null || !mounted) return;
     c.setNote(value);
@@ -500,6 +524,31 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
 
   Future<void> _rowMenu(RollCallController c, Student s, BuildContext anchor) async {
     if (c.readOnly) return;
+    if (context.bhorIsWide) {
+      // Desktop: an anchored menu at the dots button (one click per status).
+      final l10n = context.l10n;
+      await showBhorMenu(
+        context,
+        anchor: anchor,
+        items: <BhorMenuItem>[
+          for (final AttendanceStatus st in AttendanceStatus.values)
+            BhorMenuItem(
+              key: Key('roll-menu-${st.name}'),
+              icon: statusIcon(st),
+              label: st.label(l10n),
+              onTap: () {
+                if (mounted) c.setStatus(s.id, st);
+              },
+            ),
+          BhorMenuItem(
+            icon: BhorIcons.notes,
+            label: l10n.rollMenuNote,
+            onTap: () => unawaited(_editNote()),
+          ),
+        ],
+      );
+      return;
+    }
     final RollMenuChoice? choice = await showRollStatusSheet(
       context,
       name: s.name,
@@ -610,7 +659,10 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   }
 
   void _moveCursor(List<Student> rows, int index) {
-    setState(() => _cursor = index);
+    setState(() {
+      _cursor = index;
+      _kbCursor = true;
+    });
     final BuildContext? ctx = _rowKeys[rows[index].id]?.currentContext;
     if (ctx != null) {
       unawaited(Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 120)));
@@ -656,19 +708,13 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     );
   }
 
-  int _columns(WindowClass wc) => switch (wc) {
-        WindowClass.compact => 1,
-        WindowClass.medium || WindowClass.expanded || WindowClass.large => 2,
-        WindowClass.extraLarge => 3,
-      };
-
   Widget _loaded(BuildContext context, RollCallController c, RollTarget initialTarget, LocalDate today, WindowClass wc) {
     final l10n = context.l10n;
     final fmt = context.fmt;
     final BhorThemeData b = context.bhor;
     final RollTarget t = _target ?? initialTarget;
     final bool wide = wc.isWide;
-    final bool dense = wc.usesRail;
+    final bool dense = wide || wc.usesRail;
     final double gutter = wc.gutter;
     final bool future = widget.date.isAfter(today);
     final bool past = widget.date.isBefore(today);
@@ -689,9 +735,10 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       }
     }
     final String saveLabel = (c.saved || c.readOnly) ? l10n.rollDone : l10n.rollSaveButton(fmt.number(c.students.length));
+    final VoidCallback? onSave = canSave ? () => unawaited(_save()) : null;
     final Widget bar = BhorActionBar(
       label: saveLabel,
-      onPressed: canSave ? () => unawaited(_save()) : null,
+      onPressed: onSave,
       loading: c.saving && !c.saved,
       done: _celebrate,
       disabledReason: reason,
@@ -700,26 +747,37 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final Widget stateLine = _StateLine(saved: c.saved, saving: c.saving);
 
     final List<Student> rows = _visible(c);
+
+    // Every quiet note of the screen is ONE compact line (review R2); only
+    // the warnings stand apart.
+    final List<String> info = <String>[
+      if (archived) l10n.rollBannerArchived,
+      if (!future && past) l10n.rollBannerPast,
+      if (t.cancelled) l10n.rollBannerCancelled,
+      if (t.adHoc && !c.readOnly) l10n.rollBannerAdHoc,
+      if (c.restoredFromDraft && !c.saved) l10n.rollBannerDraft,
+      if (c.note != null) l10n.rollNoteLabel(c.note!),
+      if (_showHint && !c.readOnly && c.students.isNotEmpty) l10n.rollHintAllPresent,
+    ];
     final List<Widget> header = <Widget>[
-      RollDateHeader(
-        date: widget.date,
-        startMin: t.startMin,
-        endMin: t.endMin,
-        canGoNext: past,
-        onPrev: () => widget.onDate(widget.date.addDays(-1)),
-        onNext: () => widget.onDate(widget.date.addDays(1)),
-        choices: widget.choices,
-        selectedOcc: widget.occ,
-        onPick: widget.onPick,
-      ),
-      if (archived) _gap(RollBanner(icon: BhorIcons.archive, text: l10n.rollBannerArchived)),
+      if (!wide)
+        RollDateHeader(
+          date: widget.date,
+          startMin: t.startMin,
+          endMin: t.endMin,
+          canGoNext: past,
+          onPrev: () => widget.onDate(widget.date.addDays(-1)),
+          onNext: () => widget.onDate(widget.date.addDays(1)),
+          choices: widget.choices,
+          selectedOcc: widget.occ,
+          onPick: widget.onPick,
+        )
+      else if (widget.choices.length > 1)
+        RollSessionChips(choices: widget.choices, selectedOcc: widget.occ, onPick: widget.onPick, start: true),
       if (future)
-        _gap(RollBanner(icon: BhorIcons.holiday, text: l10n.rollBannerFuture, tone: RollBannerTone.warning))
-      else if (past)
-        _gap(RollBanner(icon: BhorIcons.clock, text: l10n.rollBannerPast)),
-      if (t.cancelled) _gap(RollBanner(icon: BhorIcons.absent, text: l10n.rollBannerCancelled)),
+        _gap(RollBanner(icon: BhorIcons.holiday, text: l10n.rollBannerFuture, tone: RollBannerTone.warning)),
+      if (info.isNotEmpty) _gap(RollNotice(lines: info)),
       if (t.adHoc && !c.readOnly) ...<Widget>[
-        _gap(RollBanner(icon: BhorIcons.addCircle, text: l10n.rollBannerAdHoc)),
         _gap(AdHocTimeCard(
           startMin: t.startMin,
           endMin: t.endMin,
@@ -729,12 +787,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         )),
         if (_clash != null && !_clash!.ok) _gap(_clashCard(t, _clash!)),
       ],
-      if (c.restoredFromDraft && !c.saved) _gap(RollBanner(icon: BhorIcons.undo, text: l10n.rollBannerDraft)),
       if (c.error != null) _gap(_errorCard(c)),
-      if (c.note != null)
-        _gap(RollBanner(icon: BhorIcons.notes, text: l10n.rollNoteLabel(c.note!))),
-      if (_showHint && !c.readOnly && c.students.isNotEmpty)
-        _gap(RollBanner(icon: BhorIcons.info, text: l10n.rollHintAllPresent)),
       if (!wide && c.students.isNotEmpty) _gap(RollCountTags(counts: k)),
       if (c.students.isNotEmpty && !c.readOnly) _gap(_actionsRow(c)),
     ];
@@ -764,13 +817,18 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         child: Center(child: Text(l10n.rollNoMatch, style: b.type.body.copyWith(color: b.colors.text2))),
       );
     } else {
+      // Pointer taps never draw the keyboard outline (review R3).
+      final bool keyboard = _kbCursor;
+      // One comfortable column on wide windows: the rows stay readable and the
+      // toggle sits near the name (a second column only fits at very wide
+      // content, and the page is capped at 880 anyway).
       roster = _Roster(
         rows: rows,
-        columns: wide || wc == WindowClass.medium ? _columns(wc) : 1,
+        columns: 1,
         gap: BhorSpace.s8,
         builder: (int i) {
           final bool keyed = wide || wc == WindowClass.medium;
-          final Widget row = _row(context, c, rows[i], i, dense: dense, keyed: keyed);
+          final Widget row = _row(context, c, rows[i], i, dense: dense, keyed: keyed, keyboard: keyboard);
           return keyed ? row : BhorStagger(index: i, child: row);
         },
       );
@@ -784,98 +842,170 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       );
     }
 
-    final Widget title = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          l10n.rollTitle(t.subjectName, t.batch.name),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: b.type.title,
-        ),
-        stateLine,
-      ],
-    );
-
-    // The menu only earns its place when it has more than the note: a saved
-    // roll call can also be deleted. Otherwise "note" is a direct button.
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
-    final Widget menu = canDelete
-        ? Builder(
-            builder: (BuildContext bc) => BhorIconButton(
-              semanticLabel: l10n.commonMore,
-              icon: BhorIcons.overflowVertical,
-              onPressed: () => unawaited(_openMenu(c, t, bc)),
-            ),
-          )
-        : BhorIconButton(
-            semanticLabel: l10n.rollMenuNote,
-            icon: BhorIcons.notes,
-            onPressed: () => unawaited(_editNote()),
-          );
-    final bool hasMenu = !c.readOnly;
-
-    final Widget body;
+    final Widget content;
     if (wide) {
-      body = Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scroll,
-              padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, gutter),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[...header, const SizedBox(height: BhorSpace.s12), roster],
+      final Widget actions = Builder(
+        builder: (BuildContext bc) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (!c.readOnly)
+              BhorIconButton(
+                semanticLabel: l10n.commonUndo,
+                icon: BhorIcons.undo,
+                onPressed: c.canUndo ? c.undo : null,
+              ),
+            if (!c.readOnly)
+              BhorIconButton(
+                semanticLabel: l10n.rollMenuNote,
+                icon: BhorIcons.notes,
+                onPressed: () => unawaited(_editNote()),
+              ),
+            Builder(
+              builder: (BuildContext hc) => BhorIconButton(
+                semanticLabel: l10n.rollShortcutsTitle,
+                icon: BhorIcons.info,
+                onPressed: () => unawaited(_showShortcuts(hc)),
               ),
             ),
-          ),
-          SizedBox(
-            width: 300,
-            child: DecoratedBox(
-              decoration: BoxDecoration(border: Border(left: BorderSide(color: b.colors.line))),
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: RollSummaryPane(
-                      counts: k,
-                      state: stateLine,
-                      note: c.note,
-                      onNote: c.readOnly ? null : () => unawaited(_editNote()),
-                    ),
-                  ),
-                  bar,
-                ],
+            if (canDelete)
+              Builder(
+                builder: (BuildContext mc) => BhorIconButton(
+                  semanticLabel: l10n.commonMore,
+                  icon: BhorIcons.overflowVertical,
+                  onPressed: () => unawaited(_openMenu(c, t, mc)),
+                ),
+              ),
+          ],
+        ),
+      );
+      content = BhorFocusPage(
+        title: l10n.rollTitle(t.subjectName, t.batch.name),
+        titleWidget: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Semantics(
+              header: true,
+              child: Text(
+                l10n.rollTitle(t.subjectName, t.batch.name),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: b.type.title,
               ),
             ),
-          ),
-        ],
+            RollDateHeader(
+              date: widget.date,
+              startMin: t.startMin,
+              endMin: t.endMin,
+              canGoNext: past,
+              onPrev: () => widget.onDate(widget.date.addDays(-1)),
+              onNext: () => widget.onDate(widget.date.addDays(1)),
+              choices: widget.choices,
+              selectedOcc: widget.occ,
+              onPick: widget.onPick,
+              start: true,
+              showChips: false,
+            ),
+          ],
+        ),
+        actions: <Widget>[actions],
+        onBack: _goBack,
+        summary: c.students.isEmpty
+            ? stateLine
+            : Wrap(
+                spacing: BhorSpace.s12,
+                runSpacing: BhorSpace.s4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[RollCountTags(counts: k), stateLine],
+              ),
+        primary: BhorButton(
+          label: saveLabel,
+          onPressed: onSave,
+          loading: c.saving && !c.saved,
+          done: _celebrate,
+          disabledReason: reason,
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[...header, const SizedBox(height: BhorSpace.s12), roster],
+        ),
       );
     } else {
-      body = BhorStaggerScope(
-        child: Column(
+      final Widget title = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            child: CustomScrollView(
-              controller: _scroll,
-              slivers: <Widget>[
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, BhorSpace.s12),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: header),
-                  ),
-                ),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
-                  sliver: SliverToBoxAdapter(child: roster),
-                ),
-              ],
-            ),
+          Text(
+            l10n.rollTitle(t.subjectName, t.batch.name),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: b.type.title,
           ),
-          bar,
+          stateLine,
         ],
-      ),
+      );
+      // The menu only earns its place when it has more than the note: a saved
+      // roll call can also be deleted. Otherwise "note" is a direct button.
+      final Widget menu = canDelete
+          ? Builder(
+              builder: (BuildContext bc) => BhorIconButton(
+                semanticLabel: l10n.commonMore,
+                icon: BhorIcons.overflowVertical,
+                onPressed: () => unawaited(_openMenu(c, t, bc)),
+              ),
+            )
+          : BhorIconButton(
+              semanticLabel: l10n.rollMenuNote,
+              icon: BhorIcons.notes,
+              onPressed: () => unawaited(_editNote()),
+            );
+      content = BhorScaffold(
+        header: BhorHeader(
+          divider: true,
+          leading: BhorIconButton(
+            semanticLabel: l10n.commonClose,
+            icon: BhorIcons.back,
+            variant: BhorButtonVariant.secondary,
+            size: BhorButtonSize.sm,
+            color: context.bhor.colors.text,
+            onPressed: _close,
+          ),
+          titleWidget: Semantics(header: true, child: title),
+          actions: <Widget>[
+            if (!c.readOnly)
+              BhorIconButton(
+                semanticLabel: l10n.commonUndo,
+                icon: BhorIcons.undo,
+                onPressed: c.canUndo ? c.undo : null,
+              ),
+            if (!c.readOnly) menu,
+          ],
+        ),
+        body: BhorStaggerScope(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: CustomScrollView(
+                  controller: _scroll,
+                  slivers: <Widget>[
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(gutter, BhorSpace.s4, gutter, BhorSpace.s12),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: header),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(gutter, 0, gutter, gutter),
+                      sliver: SliverToBoxAdapter(child: roster),
+                    ),
+                  ],
+                ),
+              ),
+              bar,
+            ],
+          ),
+        ),
       );
     }
 
@@ -890,70 +1020,55 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         onKeyEvent: _onKey,
         child: IgnorePointer(
           ignoring: _leaving && GoRouter.maybeOf(context) != null,
-          child: BhorScaffold(
-            header: BhorHeader(
-              divider: true,
-              leading: BhorIconButton(
-                semanticLabel: l10n.commonClose,
-                icon: wide ? BhorIcons.backDesktop : BhorIcons.back,
-                variant: BhorButtonVariant.secondary,
-                size: BhorButtonSize.sm,
-                color: context.bhor.colors.text,
-                onPressed: _close,
-              ),
-              titleWidget: Semantics(header: true, child: title),
-              actions: <Widget>[
-                if (!c.readOnly)
-                  BhorIconButton(
-                    semanticLabel: l10n.commonUndo,
-                    icon: BhorIcons.undo,
-                    onPressed: c.canUndo ? c.undo : null,
-                  ),
-                if (hasMenu) menu,
-              ],
-            ),
-            body: body,
-          ),
+          child: content,
         ),
       ),
     );
   }
 
-  /// The "more" sheet: edit the class note, delete a saved roll call.
+  /// Back / Esc: leaving with unsaved marks asks first, otherwise it goes
+  /// straight back to where the teacher came from.
+  void _goBack() {
+    final RollCallController? c = _c;
+    if (c != null && c.dirty && !_leaving) {
+      unawaited(_confirmLeave());
+    } else {
+      _close();
+    }
+  }
+
+  /// The keyboard help: a small popover hanging from its button.
+  Future<void> _showShortcuts(BuildContext anchor) => showBhorPanel<void>(
+        context,
+        kind: BhorPanelKind.list,
+        anchor: anchor,
+        title: context.l10n.rollShortcutsTitle,
+        width: 360,
+        builder: (BuildContext ctx) => const RollShortcutList(),
+      );
+
+  /// The "more" menu: edit the class note, delete a saved roll call.
   Future<void> _openMenu(RollCallController c, RollTarget t, BuildContext anchor) async {
     final l10n = context.l10n;
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
-    final String? v = await showBhorPanel<String>(
+    await showBhorMenu(
       context,
-      kind: BhorPanelKind.list,
       anchor: anchor,
-      title: l10n.commonMore,
-      scroll: false,
-      width: 400,
-      builder: (BuildContext ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          BhorListRow(
-            leading: const Icon(BhorIcons.notes),
-            title: l10n.rollMenuNote,
-            divider: canDelete,
-            onTap: () => Navigator.of(ctx).pop('note'),
+      items: <BhorMenuItem>[
+        BhorMenuItem(
+          icon: BhorIcons.notes,
+          label: l10n.rollMenuNote,
+          onTap: () => unawaited(_editNote()),
+        ),
+        if (canDelete)
+          BhorMenuItem(
+            icon: BhorIcons.delete,
+            label: l10n.rollMenuDelete,
+            destructive: true,
+            onTap: () => unawaited(_deleteSession()),
           ),
-          if (canDelete)
-            BhorListRow(
-              leading: const Icon(BhorIcons.delete),
-              title: l10n.rollMenuDelete,
-              divider: false,
-              onTap: () => Navigator.of(ctx).pop('delete'),
-            ),
-          const SizedBox(height: BhorSpace.s8),
-        ],
-      ),
+      ],
     );
-    if (!mounted || v == null) return;
-    if (v == 'note') unawaited(_editNote());
-    if (v == 'delete') unawaited(_deleteSession());
   }
 
   Widget _gap(Widget child) => Padding(padding: const EdgeInsets.only(top: BhorSpace.s8), child: child);
@@ -968,7 +1083,8 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     unawaited(_load());
   }
 
-  Widget _row(BuildContext context, RollCallController c, Student s, int index, {required bool dense, required bool keyed}) {
+  Widget _row(BuildContext context, RollCallController c, Student s, int index,
+      {required bool dense, required bool keyed, required bool keyboard}) {
     final int roll = _rollOf[s.id] ?? (index + 1);
     final Widget row = RollRow(
       name: s.name,
@@ -976,14 +1092,20 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       status: c.statusOf(s.id),
       dense: dense,
       enabled: !c.readOnly,
-      focused: dense && _cursor == index,
+      focused: dense && keyboard && _cursor == index,
       onToggle: () {
-        setState(() => _cursor = index);
+        setState(() {
+          _cursor = index;
+          _kbCursor = false;
+        });
         HapticFeedback.selectionClick();
         c.toggle(s.id);
       },
       onSet: (AttendanceStatus next) {
-        setState(() => _cursor = index);
+        setState(() {
+          _cursor = index;
+          _kbCursor = false;
+        });
         c.setStatus(s.id, next);
       },
       onMenu: (BuildContext rowContext) => unawaited(_rowMenu(c, s, rowContext)),
@@ -1203,17 +1325,25 @@ class _Roster extends StatelessWidget {
   }
 }
 
-class _NoteDialog extends StatefulWidget {
-  const _NoteDialog({required this.initial});
+/// The class-note form shown in the side panel.
+class _NoteForm extends StatefulWidget {
+  const _NoteForm({required this.initial, required this.dirty});
 
   final String initial;
+  final ValueNotifier<bool> dirty;
 
   @override
-  State<_NoteDialog> createState() => _NoteDialogState();
+  State<_NoteForm> createState() => _NoteFormState();
 }
 
-class _NoteDialogState extends State<_NoteDialog> {
+class _NoteFormState extends State<_NoteForm> {
   late final TextEditingController _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() => widget.dirty.value = _controller.text != widget.initial);
+  }
 
   @override
   void dispose() {
@@ -1224,28 +1354,25 @@ class _NoteDialogState extends State<_NoteDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BhorDialog(
-      title: l10n.rollNoteTitle,
-      body: BhorTextField(
-        controller: _controller,
-        autofocus: true,
-        maxLength: 200,
-        minLines: 1,
-        maxLines: 4,
-        hint: l10n.rollNoteHint,
-      ),
-      actions: <Widget>[
-        BhorButton(
-          label: l10n.commonCancel,
-          variant: BhorButtonVariant.ghost,
-          onPressed: () => Navigator.of(context).pop(),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorTextField(
+          controller: _controller,
+          autofocus: true,
+          maxLength: 200,
+          minLines: 3,
+          maxLines: 6,
+          hint: l10n.rollNoteHint,
         ),
+        const SizedBox(height: BhorSpace.s16),
         BhorButton(
           label: l10n.commonSave,
+          expand: true,
           onPressed: () => Navigator.of(context).pop(_controller.text),
         ),
       ],
     );
   }
 }
-
