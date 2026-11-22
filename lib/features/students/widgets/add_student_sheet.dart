@@ -105,9 +105,6 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
 
   Future<void> _startCreating() async {
     final LocalDate today = ref.read(todayProvider);
-    final Map<String, String> subjectNames = <String, String>{
-      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
-    };
     final String q = _query.text.trim();
     final String ascii = AppFormat.toAsciiDigits(q).replaceAll(RegExp(r'[\s\-+]'), '');
     final bool looksLikePhone = RegExp(r'^\d{6,}$').hasMatch(ascii);
@@ -224,6 +221,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     final List<Enrollment> enrollments =
         ref.watch(allEnrollmentsProvider).value ?? const <Enrollment>[];
     final List<Batch> batches = ref.watch(stuBatchesProvider).value ?? const <Batch>[];
+    final Map<String, String> subjectNames = <String, String>{
+      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
+    };
     final String q = _query.text.trim();
     final StudentFormModel? model = _model;
     final EnrollChoice? choice = _choice;

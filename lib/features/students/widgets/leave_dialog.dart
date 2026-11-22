@@ -81,10 +81,7 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
       _error = null;
     });
     try {
-      final Map<String, String> subjectNames = <String, String>{
-      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
-    };
-    final String? one = widget.enrollmentId;
+      final String? one = widget.enrollmentId;
       if (one == null) {
         await ref.read(studentsRepositoryProvider).markLeft(widget.studentId,
             on: date, lastBillableByEnrollment: lbm);
@@ -119,6 +116,9 @@ class _LeaveDialogState extends ConsumerState<LeaveDialog> {
         ref.watch(studentEnrollmentsProvider(widget.studentId)).value ??
             const <Enrollment>[];
     final List<Batch> batches = ref.watch(stuBatchesProvider).value ?? const <Batch>[];
+    final Map<String, String> subjectNames = <String, String>{
+      for (final Subject sub in ref.watch(stuSubjectsProvider).value ?? const <Subject>[]) sub.id: sub.name,
+    };
     final String? one = widget.enrollmentId;
     final List<Enrollment> open = <Enrollment>[
       for (final Enrollment e in all)
