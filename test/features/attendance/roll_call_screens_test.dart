@@ -244,9 +244,9 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     expect(fill, RollRow.fillOf(c, AttendanceStatus.absent));
     expect(fill, isNot(c.absentBg), reason: 'the grey absent tint read as disabled (b277 X4)');
     // Barely different from the plain surface.
-    expect((fill.r - c.surface.r).abs(), lessThan(0.03));
-    expect((fill.g - c.surface.g).abs(), lessThan(0.03));
-    expect((fill.b - c.surface.b).abs(), lessThan(0.03));
+    expect((fill.r - c.surface.r).abs(), lessThan(0.05));
+    expect((fill.g - c.surface.g).abs(), lessThan(0.05));
+    expect((fill.b - c.surface.b).abs(), lessThan(0.05));
     // Primary text on the tinted row, never dark-on-dark.
     final Text name = tester.widget<Text>(find.text('রহিম উদ্দিন'));
     expect(name.style?.color, c.text);

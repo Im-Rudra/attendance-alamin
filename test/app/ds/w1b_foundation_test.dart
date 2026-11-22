@@ -196,7 +196,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         final BhorColors c = BhorThemeData.of(br).colors;
-        final BoxDecoration? thumb = _decoWithColor(tester, find.byType(BhorAttendanceToggle), c.absentText);
+        final BoxDecoration? thumb = _decoWithColor(tester, find.byType(BhorAttendanceToggle), c.danger);
         expect(thumb, isNotNull);
         expect(thumb!.border, isNull);
         expectClean(tester);
