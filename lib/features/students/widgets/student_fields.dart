@@ -64,6 +64,7 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
             BhorTextField(
               key: const ValueKey<String>('stu-field-guardian-phone'),
               controller: model.guardianPhone,
+              localDigits: true,
               keyboardType: TextInputType.phone,
               inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)],
               textInputAction: TextInputAction.next,
@@ -93,13 +94,17 @@ class _StudentFieldsViewState extends State<StudentFieldsView> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     BhorTextField(
+                      key: const ValueKey<String>('stu-field-roll'),
                       controller: model.roll,
+                      localDigits: true,
                       textInputAction: TextInputAction.next,
                       label: l10n.stuFieldRoll,
                     ),
                     const SizedBox(height: BhorSpace.s12),
                     BhorTextField(
+                      key: const ValueKey<String>('stu-field-phone'),
                       controller: model.phone,
+                      localDigits: true,
                       keyboardType: TextInputType.phone,
                       inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt, maxLength: 20, phone: true)],
                       textInputAction: TextInputAction.next,
@@ -372,6 +377,7 @@ class _StartMonthFeeFieldsState extends State<StartMonthFeeFields> {
             BhorTextField(
               key: const ValueKey<String>('stu-field-fee-override'),
               controller: choice.fee,
+              localDigits: true,
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[DigitsFormatter(context.fmt)],
               label: l10n.stuFeeOverride,

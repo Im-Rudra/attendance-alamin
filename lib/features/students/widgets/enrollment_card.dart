@@ -27,8 +27,6 @@ import 'package:attendance_alamin/features/students/controllers/student_provider
 import 'package:attendance_alamin/features/students/widgets/leave_dialog.dart';
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
-enum _CardAction { startMonth, remove }
-
 class EnrollmentCard extends ConsumerWidget {
   const EnrollmentCard({
     super.key,
@@ -93,39 +91,31 @@ class EnrollmentCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              BhorIconButton(
-                icon: BhorIcons.overflowVertical,
-                semanticLabel: l10n.commonMore,
-                onPressed: () async {
-                  final _CardAction? a = await showBhorPanel<_CardAction>(
+              // Its own context anchors the menu at this button (G7).
+              Builder(
+                builder: (BuildContext btn) => BhorIconButton(
+                  icon: BhorIcons.overflowVertical,
+                  semanticLabel: l10n.commonMore,
+                  onPressed: () => showBhorMenu(
                     context,
-                    kind: BhorPanelKind.list,
-                    width: 380,
-                    builder: (BuildContext ctx) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        BhorListRow(
-                          title: l10n.stuChangeBillingStart,
-                          divider: !ended && active,
-                          onTap: () => Navigator.of(ctx).pop(_CardAction.startMonth),
+                    anchor: btn,
+                    items: <BhorMenuItem>[
+                      BhorMenuItem(
+                        icon: BhorIcons.calendar,
+                        label: l10n.stuChangeBillingStart,
+                        onTap: () => _editStartMonth(context, ref, today),
+                      ),
+                      if (!ended && active)
+                        BhorMenuItem(
+                          icon: BhorIcons.leftStudents,
+                          label: l10n.stuRemoveFromBatchTitle,
+                          destructive: true,
+                          onTap: () =>
+                              openLeaveDialog(context, studentId: student.id, enrollmentId: enrollment.id),
                         ),
-                        if (!ended && active)
-                          BhorListRow(
-                            title: l10n.stuRemoveFromBatchTitle,
-                            divider: false,
-                            onTap: () => Navigator.of(ctx).pop(_CardAction.remove),
-                          ),
-                      ],
-                    ),
-                  );
-                  if (a == null || !context.mounted) return;
-                  switch (a) {
-                    case _CardAction.startMonth:
-                      await _editStartMonth(context, ref, today);
-                    case _CardAction.remove:
-                      await openLeaveDialog(context, studentId: student.id, enrollmentId: enrollment.id);
-                  }
-                },
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -191,16 +181,29 @@ class EnrollmentCard extends ConsumerWidget {
 
   Future<void> _editStartMonth(
       BuildContext context, WidgetRef ref, LocalDate today) async {
-    final YearMonth? picked = await showBhorDialog<YearMonth>(
+    final l10n = context.l10n;
+    final ValueNotifier<YearMonth> value = ValueNotifier<YearMonth>(enrollment.startMonth);
+    final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+    final YearMonth? picked = await showBhorPanel<YearMonth>(
       context,
-      builder: (BuildContext ctx) => _StartMonthDialog(
+      kind: BhorPanelKind.form,
+      title: l10n.stuChangeBillingStart,
+      width: 420,
+      dirty: dirty,
+      builder: (BuildContext ctx) => _StartMonthBody(
+        value: value,
+        dirty: dirty,
         current: enrollment.startMonth,
         around: today.yearMonth,
+      ),
+      footer: (BuildContext ctx) => BhorButton(
+        label: l10n.commonSave,
+        expand: true,
+        onPressed: () => Navigator.of(ctx).pop(value.value),
       ),
     );
     if (picked == null || picked == enrollment.startMonth) return;
     if (!context.mounted) return;
-    final l10n = context.l10n;
     try {
       await ref
           .read(enrollmentsRepositoryProvider)
@@ -211,38 +214,33 @@ class EnrollmentCard extends ConsumerWidget {
   }
 }
 
-class _StartMonthDialog extends StatefulWidget {
-  const _StartMonthDialog({required this.current, required this.around});
+class _StartMonthBody extends StatelessWidget {
+  const _StartMonthBody({
+    required this.value,
+    required this.dirty,
+    required this.current,
+    required this.around,
+  });
 
+  final ValueNotifier<YearMonth> value;
+  final ValueNotifier<bool> dirty;
   final YearMonth current;
   final YearMonth around;
 
   @override
-  State<_StartMonthDialog> createState() => _StartMonthDialogState();
-}
-
-class _StartMonthDialogState extends State<_StartMonthDialog> {
-  late YearMonth _value = widget.current;
-
-  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BhorDialog(
-      title: l10n.stuChangeBillingStart,
-      body: MonthDropdown(
+    return ValueListenableBuilder<YearMonth>(
+      valueListenable: value,
+      builder: (BuildContext context, YearMonth v, Widget? _) => MonthDropdown(
         label: l10n.stuBillingStart,
-        value: _value,
-        months: monthChoices(widget.around.addMonths(-24), widget.around.addMonths(12), _value),
-        onChanged: (YearMonth m) => setState(() => _value = m),
+        value: v,
+        months: monthChoices(around.addMonths(-24), around.addMonths(12), v),
+        onChanged: (YearMonth m) {
+          value.value = m;
+          dirty.value = m != current;
+        },
       ),
-      actions: <Widget>[
-        BhorButton(
-          label: l10n.commonCancel,
-          variant: BhorButtonVariant.ghost,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        BhorButton(label: l10n.commonSave, onPressed: () => Navigator.of(context).pop(_value)),
-      ],
     );
   }
 }
@@ -265,8 +263,8 @@ class _LevelTag extends StatelessWidget {
   }
 }
 
-/// Horizontally scrollable strip of the enrollment's months: month name over
-/// a state tag (icon + word).
+/// The enrollment's months: month name over a state tag (icon + word). The
+/// tiles wrap onto further lines, so no tag is ever cut off at the edge.
 class _MonthStrip extends StatelessWidget {
   const _MonthStrip({required this.months});
 
@@ -274,26 +272,14 @@ class _MonthStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color solid = context.bhor.colors.surface;
-    // Scrolls sideways; the trailing edge fades so a clipped month never
-    // looks cut by accident.
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (Rect r) => LinearGradient(
-        colors: <Color>[solid, solid, solid.withValues(alpha: 0)],
-        stops: const <double>[0, 0.93, 1],
-      ).createShader(r),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(top: BhorSpace.s4, bottom: BhorSpace.s4, right: BhorSpace.s16),
-        child: Row(
-          children: <Widget>[
-            for (int i = 0; i < months.length; i++) ...<Widget>[
-              if (i > 0) const SizedBox(width: BhorSpace.s8),
-              _MonthTile(key: ValueKey<int>(months[i].month.toInt()), due: months[i]),
-            ],
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(top: BhorSpace.s4, bottom: BhorSpace.s4),
+      child: Wrap(
+        spacing: BhorSpace.s12,
+        runSpacing: BhorSpace.s8,
+        children: <Widget>[
+          for (final MonthDue m in months) _MonthTile(key: ValueKey<int>(m.month.toInt()), due: m),
+        ],
       ),
     );
   }

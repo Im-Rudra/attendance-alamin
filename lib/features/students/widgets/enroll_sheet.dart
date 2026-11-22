@@ -4,11 +4,13 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
+import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
@@ -22,17 +24,22 @@ import 'package:attendance_alamin/features/students/controllers/student_provider
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
 Future<bool> openEnrollSheet(BuildContext context, String studentId) async {
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   final bool? done = await showBhorPanel<bool>(
     context,
     title: context.l10n.stuEnrollTitle,
     kind: BhorPanelKind.form,
-    builder: (BuildContext ctx) => EnrollSheet(studentId: studentId),
+    dirty: dirty,
+    builder: (BuildContext ctx) => EnrollSheet(studentId: studentId, dirty: dirty),
   );
   return done ?? false;
 }
 
 class EnrollSheet extends ConsumerStatefulWidget {
-  const EnrollSheet({super.key, required this.studentId});
+  const EnrollSheet({super.key, required this.studentId, this.dirty});
+
+  /// Written true once a batch is picked (the panel then asks before closing).
+  final ValueNotifier<bool>? dirty;
 
   final String studentId;
 
@@ -44,6 +51,17 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
   final EnrollChoice _choice = EnrollChoice();
   bool _busy = false;
   String? _error;
+
+  void _syncDirty() {
+    final ValueNotifier<bool>? n = widget.dirty;
+    if (n != null && n.value != _choice.isDirty) n.value = _choice.isDirty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _choice.changes.addListener(_syncDirty);
+  }
 
   @override
   void dispose() {
@@ -96,10 +114,16 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
       for (final Enrollment e in mine)
         if (e.endDate == null) e.batchId,
     };
-    final List<Batch> open = <Batch>[
+    final List<Batch> live = <Batch>[
       for (final Batch b in batches)
         if (!b.archived) b,
+    ];
+    // Only batches the student is NOT in.
+    final List<Batch> open = <Batch>[
+      for (final Batch b in live)
+        if (!enrolled.contains(b.id)) b,
     ]..sort((Batch x, Batch y) => x.sortOrder.compareTo(y.sortOrder));
+    final bool inEveryBatch = live.isNotEmpty && open.isEmpty;
 
     List<Widget> buildGroups() {
       final List<Widget> groups = <Widget>[];
@@ -115,15 +139,13 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
         ));
         for (final Batch bt in list) {
           placed.add(bt.id);
-          final bool already = enrolled.contains(bt.id);
           groups.add(Padding(
             padding: const EdgeInsets.only(bottom: BhorSpace.s8),
             child: BhorRadioCard<String>(
               value: bt.id,
               groupValue: _choice.batchId,
-              onChanged: already ? null : _choice.setBatch,
+              onChanged: _choice.setBatch,
               title: bt.name,
-              subtitle: already ? l10n.stuAlreadyInBatch : null,
             ),
           ));
         }
@@ -154,21 +176,36 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
                 if (student != null)
                   Text(student.name, style: th.type.body.copyWith(color: th.colors.text2)),
                 if (groups.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: BhorSpace.s24),
-                    child: Text(l10n.stuNoBatchesToJoin, textAlign: TextAlign.center, style: th.type.body),
+                  BhorEmptyState(
+                    key: const ValueKey<String>('stu-enroll-empty'),
+                    icon: BhorIcons.batches,
+                    size: BhorEmptySize.compact,
+                    title: inEveryBatch ? l10n.stuEnrollAllJoinedTitle : l10n.stuNoBatchesToJoin,
+                    message: inEveryBatch ? l10n.stuEnrollAllJoinedHint : null,
+                    action: BhorButton(
+                      key: const ValueKey<String>('stu-enroll-new-batch'),
+                      icon: BhorIcons.add,
+                      label: l10n.batchNew,
+                      onPressed: () {
+                        final GoRouter? router = GoRouter.maybeOf(context);
+                        Navigator.of(context).pop(false);
+                        router?.go(Routes.batchNew);
+                      },
+                    ),
                   ),
                 ...groups,
-                const SizedBox(height: BhorSpace.s16),
-                if (_choice.batchId != null) StartMonthFeeFields(choice: _choice, join: today, cutoff: cutoff),
-                const SizedBox(height: BhorSpace.s16),
-                BhorButton(
-                  key: const ValueKey<String>('stu-enroll-confirm'),
-                  label: l10n.stuEnrollConfirm,
-                  expand: true,
-                  onPressed: (_busy || _choice.batchId == null) ? null : () => _enroll(today, cutoff),
-                ),
-                if (_choice.batchId == null)
+                if (groups.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: BhorSpace.s16),
+                  if (_choice.batchId != null) StartMonthFeeFields(choice: _choice, join: today, cutoff: cutoff),
+                  const SizedBox(height: BhorSpace.s16),
+                  BhorButton(
+                    key: const ValueKey<String>('stu-enroll-confirm'),
+                    label: l10n.stuEnrollConfirm,
+                    expand: true,
+                    onPressed: (_busy || _choice.batchId == null) ? null : () => _enroll(today, cutoff),
+                  ),
+                ],
+                if (groups.isNotEmpty && _choice.batchId == null)
                   Padding(
                     padding: const EdgeInsets.only(top: BhorSpace.s8),
                     child: Text(

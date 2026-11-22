@@ -104,58 +104,54 @@ class StudentRowTile extends StatelessWidget {
   }
 }
 
-enum _MenuAction { open, collect, copy, enroll, left }
-
 /// Desktop right-click menu on a student (UX 3b): open · collect · copy
-/// number · enrol in another batch · mark left.
+/// number · enrol in another batch · mark left. One menu component with icons
+/// (G8); "mark left" is the destructive item.
 Future<void> showStudentContextMenu(
   BuildContext context,
   Offset position,
   StudentRow row,
-) async {
+) {
   final l10n = context.l10n;
   final Student s = row.student;
   final String? number = s.callNumber;
   final bool active = s.status == StudentStatus.active;
-  final _MenuAction? choice = await showBhorPanel<_MenuAction>(
+  return showBhorMenu(
     context,
-    kind: BhorPanelKind.list,
-    width: 380,
-    title: s.name,
-    builder: (BuildContext ctx) {
-      final List<(_MenuAction, String)> items = <(_MenuAction, String)>[
-        (_MenuAction.open, l10n.stuMenuOpen),
-        (_MenuAction.collect, l10n.stuCollect),
-        if (number != null) (_MenuAction.copy, l10n.commonCopyNumber),
-        if (active) (_MenuAction.enroll, l10n.stuEnrollOther),
-        if (active) (_MenuAction.left, l10n.stuMenuLeft),
-      ];
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          for (int i = 0; i < items.length; i++)
-            BhorListRow(
-              title: items[i].$2,
-              divider: i != items.length - 1,
-              onTap: () => Navigator.of(ctx).pop(items[i].$1),
-            ),
-        ],
-      );
-    },
+    items: <BhorMenuItem>[
+      BhorMenuItem(
+        icon: BhorIcons.students,
+        label: l10n.stuMenuOpen,
+        onTap: () => stuGo(context, Routes.student(s.id)),
+      ),
+      BhorMenuItem(
+        icon: BhorIcons.takeMoney,
+        label: l10n.stuCollect,
+        onTap: () => showCollectPaymentSheet(context, studentId: s.id),
+      ),
+      if (number != null)
+        BhorMenuItem(
+          icon: BhorIcons.copy,
+          label: l10n.commonCopyNumber,
+          onTap: () async {
+            final String copied = l10n.commonCopied;
+            await Clipboard.setData(ClipboardData(text: number));
+            if (context.mounted) BhorToast.show(context, message: copied);
+          },
+        ),
+      if (active)
+        BhorMenuItem(
+          icon: BhorIcons.add,
+          label: l10n.stuEnrollOther,
+          onTap: () => showEnrollSheet(context, studentId: s.id),
+        ),
+      if (active)
+        BhorMenuItem(
+          icon: BhorIcons.leftStudents,
+          label: l10n.stuMenuLeft,
+          destructive: true,
+          onTap: () => showMarkLeftDialog(context, studentId: s.id),
+        ),
+    ],
   );
-  if (choice == null || !context.mounted) return;
-  switch (choice) {
-    case _MenuAction.open:
-      stuGo(context, Routes.student(s.id));
-    case _MenuAction.collect:
-      await showCollectPaymentSheet(context, studentId: s.id);
-    case _MenuAction.copy:
-      final String copied = l10n.commonCopied;
-      await Clipboard.setData(ClipboardData(text: number ?? ''));
-      if (context.mounted) BhorToast.show(context, message: copied);
-    case _MenuAction.enroll:
-      await showEnrollSheet(context, studentId: s.id);
-    case _MenuAction.left:
-      await showMarkLeftDialog(context, studentId: s.id);
-  }
 }

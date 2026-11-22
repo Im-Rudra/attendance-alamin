@@ -4,6 +4,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/error_text.dart';
@@ -28,8 +29,10 @@ import 'package:attendance_alamin/features/students/widgets/student_fields.dart'
 
 /// Opens the student form in the adaptive panel (expanding sheet on phones,
 /// floating side panel on desktop). True when saved, null when dismissed.
+/// Closing with unsaved input asks first (`dirty:`).
 Future<bool?> showStudentFormPanel(BuildContext context, {String? studentId, String? initialBatchId}) {
   final PanelFooterSlot slot = PanelFooterSlot();
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   final l10n = context.l10n;
   return showBhorPanel<bool>(
     context,
@@ -37,11 +40,13 @@ Future<bool?> showStudentFormPanel(BuildContext context, {String? studentId, Str
     kind: BhorPanelKind.form,
     expand: true,
     footer: slot.build,
+    dirty: dirty,
     builder: (BuildContext c) => StudentFormScreen(
       studentId: studentId,
       initialBatchId: initialBatchId,
       embedded: true,
       footerSlot: slot,
+      dirty: dirty,
     ),
   );
 }
@@ -53,7 +58,12 @@ class StudentFormScreen extends ConsumerStatefulWidget {
     this.initialBatchId,
     this.embedded = false,
     this.footerSlot,
+    this.dirty,
   });
+
+  /// Set by the hosting panel: written true while the form has unsaved input
+  /// (the panel then asks before closing). Standalone pages guard themselves.
+  final ValueNotifier<bool>? dirty;
 
   /// Hosted inside [showBhorPanel]: no scaffold; the save button goes to [footerSlot].
   final bool embedded;
@@ -76,6 +86,11 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   bool _busy = false;
   String? _error;
 
+  late final ValueNotifier<bool> _dirty = widget.dirty ?? ValueNotifier<bool>(false);
+  Listenable? _modelChanges;
+  Listenable? _choiceChanges;
+  bool _redirected = false;
+
   bool get _isNew => widget.studentId == null;
 
   @override
@@ -85,9 +100,54 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Desktop route entry (`/students/new`, `/students/:id/edit`): the form is
+    // a side panel over the Students page, never a page of its own.
+    if (!widget.embedded && !_redirected && GoRouter.maybeOf(context) != null && context.bhorIsWide) {
+      _redirected = true;
+      _redirectToPanel();
+    }
+  }
+
+  void _redirectToPanel() {
+    final String? id = widget.studentId;
+    final String? batchId = widget.initialBatchId;
+    final NavigatorState root = Navigator.of(context, rootNavigator: true);
+    final GoRouter router = GoRouter.of(context);
+    // Never navigate during a build: leave this page for the Students page
+    // (or the student's profile), then open the panel over it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go(id == null ? Routes.students : Routes.student(id));
+      WidgetsBinding.instance.endOfFrame.then((_) => WidgetsBinding.instance.endOfFrame).then((_) {
+        final BuildContext? host = root.overlay?.context;
+        if (host == null || !host.mounted) return;
+        showStudentFormPanel(host, studentId: id, initialBatchId: batchId);
+      });
+    });
+  }
+
+  void _attach(StudentFormModel m, EnrollChoice? c) {
+    final Listenable mc = m.changes;
+    mc.addListener(_syncDirty);
+    _modelChanges = mc;
+    final Listenable? cc = c?.changes;
+    cc?.addListener(_syncDirty);
+    _choiceChanges = cc;
+  }
+
+  void _syncDirty() {
+    final bool d = (_model?.isDirty ?? false) || (_isNew && (_choice?.isDirty ?? false));
+    if (_dirty.value != d) _dirty.value = d;
+  }
+
+  @override
   void dispose() {
+    _modelChanges?.removeListener(_syncDirty);
+    _choiceChanges?.removeListener(_syncDirty);
     _model?.dispose();
     _choice?.dispose();
+    if (widget.dirty == null) _dirty.dispose();
     super.dispose();
   }
 
@@ -101,6 +161,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       setState(() {
         _model = StudentFormModel(admissionDate: today, roll: roll);
         _choice = EnrollChoice(batchId: widget.initialBatchId);
+        _attach(_model!, _choice);
       });
       return;
     }
@@ -117,10 +178,12 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       return;
     }
     setState(() => _model = m);
+    _attach(m, null);
   }
 
   /// Success: the panel's circle-check moment when embedded, else toast + close.
   Future<void> _done(String message, {String fallback = Routes.students}) async {
+    _dirty.value = false;
     if (widget.embedded) {
       await showBhorSuccess<bool>(context, result: true, toast: message);
       return;
@@ -210,6 +273,8 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The panel opens over the Students page (see didChangeDependencies).
+    if (_redirected) return const SizedBox.shrink();
     final l10n = context.l10n;
     final BhorThemeData th = context.bhor;
     final double gutter = WindowClass.of(context).gutter;
@@ -314,7 +379,9 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       );
     }
 
-    return BhorScaffold(
+    return BhorDirtyScope(
+      dirty: _dirty,
+      child: BhorScaffold(
       header: BhorHeader(
         title: _isNew ? l10n.shellTitleStudentNew : l10n.shellTitleStudentEdit,
         onBack: () => stuClose(context),
@@ -351,6 +418,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                     ),
                   ),
                 ),
+      ),
     );
   }
 }

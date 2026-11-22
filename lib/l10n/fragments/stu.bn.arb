@@ -571,5 +571,13 @@
   "stuStartNextMonth": "পরের মাস থেকে",
   "@stuStartNextMonth": {"description": "Toggle: bill from the month after joining."},
   "stuOtherMonth": "অন্য মাস বেছে নিন",
-  "@stuOtherMonth": {"description": "Ghost button that reveals the month select for a billing start other than this / next month."}
+  "@stuOtherMonth": {"description": "Ghost button that reveals the month select for a billing start other than this / next month."},
+  "stuClearFilters": "ফিল্টার মুছুন",
+  "@stuClearFilters": {"description": "Action of the empty result of the student filters: reset the search and every filter."},
+  "stuFilterBatchAll": "সব ব্যাচ",
+  "@stuFilterBatchAll": {"description": "Batch filter chip when no batch is picked, and its first choice."},
+  "stuEnrollAllJoinedTitle": "সব ব্যাচেই ভর্তি আছে",
+  "@stuEnrollAllJoinedTitle": {"description": "Empty state of Enrol in another batch when the student is in every batch."},
+  "stuEnrollAllJoinedHint": "অন্য ব্যাচে ভর্তি করতে আগে একটি নতুন ব্যাচ তৈরি করুন।",
+  "@stuEnrollAllJoinedHint": {"description": "Hint under the empty state of Enrol in another batch."}
 }

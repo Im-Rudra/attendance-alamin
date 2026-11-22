@@ -57,6 +57,9 @@ class StudentProfileScreen extends ConsumerWidget {
         header: BhorHeader(
           title: l10n.shellTitleStudentProfile,
           showBack: embedded ? false : null,
+          // A wide window too narrow for list + profile shows the profile
+          // alone: back goes to the list.
+          onBack: (!embedded && wide) ? () => stuGo(context, Routes.students) : null,
           actions: <Widget>[
             if (student != null) ...<Widget>[
               BhorIconButton(
@@ -64,10 +67,12 @@ class StudentProfileScreen extends ConsumerWidget {
                 icon: BhorIcons.edit,
                 onPressed: edit,
               ),
-              BhorIconButton(
-                semanticLabel: l10n.commonMore,
-                icon: BhorIcons.overflowVertical,
-                onPressed: () => _openMenu(context, ref, student),
+              Builder(
+                builder: (BuildContext btn) => BhorIconButton(
+                  semanticLabel: l10n.commonMore,
+                  icon: BhorIcons.overflowVertical,
+                  onPressed: () => _openMenu(btn, context, ref, student),
+                ),
               ),
             ],
           ],
@@ -101,41 +106,38 @@ class StudentProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _openMenu(BuildContext context, WidgetRef ref, Student student) async {
+  void _openMenu(BuildContext anchor, BuildContext context, WidgetRef ref, Student student) {
     final l10n = context.l10n;
     final bool active = student.status == StudentStatus.active;
-    final _ProfileMenu? m = await showBhorPanel<_ProfileMenu>(
+    showBhorMenu(
       context,
-      kind: BhorPanelKind.list,
-      width: 380,
-      title: student.name,
-      builder: (BuildContext ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (active) ...<Widget>[
-            BhorListRow(
-              title: l10n.stuEnrollOther,
-              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.enroll),
-            ),
-            BhorListRow(
-              title: l10n.stuMenuLeft,
-              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.left),
-            ),
-          ] else
-            BhorListRow(
-              title: l10n.stuRejoin,
-              onTap: () => Navigator.of(ctx).pop(_ProfileMenu.rejoin),
-            ),
-          BhorListRow(
-            title: l10n.commonDelete,
-            divider: false,
-            onTap: () => Navigator.of(ctx).pop(_ProfileMenu.delete),
+      anchor: anchor,
+      items: <BhorMenuItem>[
+        if (active) ...<BhorMenuItem>[
+          BhorMenuItem(
+            icon: BhorIcons.add,
+            label: l10n.stuEnrollOther,
+            onTap: () => _onMenu(context, ref, student, _ProfileMenu.enroll),
           ),
-        ],
-      ),
+          BhorMenuItem(
+            icon: BhorIcons.leftStudents,
+            label: l10n.stuMenuLeft,
+            onTap: () => _onMenu(context, ref, student, _ProfileMenu.left),
+          ),
+        ] else
+          BhorMenuItem(
+            icon: BhorIcons.undo,
+            label: l10n.stuRejoin,
+            onTap: () => _onMenu(context, ref, student, _ProfileMenu.rejoin),
+          ),
+        BhorMenuItem(
+          icon: BhorIcons.delete,
+          label: l10n.commonDelete,
+          destructive: true,
+          onTap: () => _onMenu(context, ref, student, _ProfileMenu.delete),
+        ),
+      ],
     );
-    if (m == null || !context.mounted) return;
-    await _onMenu(context, ref, student, m);
   }
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, Student s,
@@ -280,7 +282,6 @@ class _HeaderCard extends StatelessWidget {
 
     Widget callButton(String role, String number) => BhorButton(
           variant: BhorButtonVariant.secondary,
-          expand: true,
           icon: ContactActions.icon,
           label: l10n.stuContactButton(role, ContactActions.label(l10n)),
           onPressed: () => ContactActions.callOrCopy(context, number),
@@ -322,45 +323,35 @@ class _HeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: BhorSpace.s12),
-          // Equal-width buttons in an even grid (no ragged stack).
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints box) {
-              final List<Widget> actions = <Widget>[
-                if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
-                if (own != null) callButton(l10n.stuRoleStudent, own),
-                if (guardian == null && own == null)
-                  BhorButton(
-                    variant: BhorButtonVariant.secondary,
-                    icon: BhorIcons.phone,
-                    label: l10n.stuAddPhone,
-                    expand: true,
-                    onPressed: () => showStudentFormPanel(context, studentId: student.id),
-                  ),
-                if (dues != null)
-                  BhorButton(
-                    variant: BhorButtonVariant.secondary,
-                    icon: BhorIcons.share,
-                    label: l10n.stuRemind,
-                    expand: true,
-                    onPressed: () => shareDuesReminder(context, studentId: student.id),
-                  ),
-                if (showCollect)
-                  BhorButton(
-                    icon: BhorIcons.takeMoney,
-                    label: l10n.stuCollect,
-                    expand: true,
-                    onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
-                  ),
-              ];
-              const double gap = BhorSpace.s8;
-              final int cols = box.maxWidth >= 560 ? (actions.length < 4 ? actions.length : 4) : 2;
-              final double w = (box.maxWidth - gap * (cols - 1)) / cols;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: <Widget>[for (final Widget a in actions) SizedBox(width: w, child: a)],
-              );
-            },
+          // Each action is one line (icon + label) at its natural width; the
+          // row wraps rather than squeezing a label onto two lines.
+          Wrap(
+            spacing: BhorSpace.s8,
+            runSpacing: BhorSpace.s8,
+            children: <Widget>[
+              if (guardian != null) callButton(l10n.stuRoleGuardian, guardian),
+              if (own != null) callButton(l10n.stuRoleStudent, own),
+              if (guardian == null && own == null)
+                BhorButton(
+                  variant: BhorButtonVariant.secondary,
+                  icon: BhorIcons.phone,
+                  label: l10n.stuAddPhone,
+                  onPressed: () => showStudentFormPanel(context, studentId: student.id),
+                ),
+              if (dues != null)
+                BhorButton(
+                  variant: BhorButtonVariant.secondary,
+                  icon: BhorIcons.share,
+                  label: l10n.stuRemind,
+                  onPressed: () => shareDuesReminder(context, studentId: student.id),
+                ),
+              if (showCollect)
+                BhorButton(
+                  icon: BhorIcons.takeMoney,
+                  label: l10n.stuCollect,
+                  onPressed: () => showCollectPaymentSheet(context, studentId: student.id),
+                ),
+            ],
           ),
         ],
       ),
