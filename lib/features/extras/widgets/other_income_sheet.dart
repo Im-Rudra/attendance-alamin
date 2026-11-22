@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -411,14 +412,14 @@ class OtherIncomeButtons extends StatelessWidget {
       label: l10n.commonSave,
       expand: true,
       loading: sp?.busy ?? false,
-      onPressed: can ? () => sp!.save(share: false) : null,
+      onPressed: can ? () => sp.save(share: false) : null,
     );
     final Widget send = BhorButton(
       key: const ValueKey<String>('income-save-send'),
       variant: BhorButtonVariant.secondary,
       label: l10n.extraIncomeSaveSend,
       expand: true,
-      onPressed: can ? () => sp!.save(share: true) : null,
+      onPressed: can ? () => sp.save(share: true) : null,
     );
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) => Column(
@@ -440,7 +441,7 @@ class OtherIncomeButtons extends StatelessWidget {
           ],
           if (!can && sp?.reason != null) ...<Widget>[
             const SizedBox(height: BhorSpace.s8),
-            Text(sp!.reason!, textAlign: TextAlign.center, style: b.type.meta),
+            Text(sp.reason!, textAlign: TextAlign.center, style: b.type.meta),
           ],
         ],
       ),

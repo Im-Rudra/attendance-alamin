@@ -54,12 +54,11 @@ bool _enabled(WidgetTester t) => t.widget<BhorButton>(_bar()).onPressed != null;
 String _amountText(WidgetTester t) => t.widget<BhorTextField>(_key('pay-amount')).controller!.text;
 String _monthsText(WidgetTester t) => t.widget<Text>(_key('pay-months')).data!;
 
-/// Every text of the designed receipt card, one per line.
+/// Every text of the designed receipt card, joined.
 String _receiptPlain(WidgetTester t) => t
     .widgetList<Text>(find.descendant(of: _key('pay-receipt-text'), matching: find.byType(Text)))
     .map((Text w) => w.data ?? w.textSpan?.toPlainText() ?? '')
-    .join('
-');
+    .join(' | ');
 
 /// Opens the receipt's ⋮ menu and taps its Delete.
 Future<void> _tapDelete(WidgetTester tester) async {
