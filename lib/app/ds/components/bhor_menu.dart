@@ -252,7 +252,7 @@ class _MenuRow extends StatelessWidget {
             ? c.soft2
             : (st.hovered || st.focused)
                 ? (item.destructive ? c.dangerBg : c.soft)
-                : const Color(0x00000000);
+                : c.surface.withValues(alpha: 0);
         return AnimatedContainer(
           duration: BhorMotion.of(context, BhorMotion.fast),
           height: height,
