@@ -553,6 +553,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     await tester.pumpAndSettle();
     expect(find.text('Save'), findsOneWidget);
     await tester.enterText(find.byType(EditableText).last, 'Chapter 3');
+    await tester.pump(); // Save turns on once the text changed (b277 X3).
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.text('Note: Chapter 3'), findsOneWidget);
