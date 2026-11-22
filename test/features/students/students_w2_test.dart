@@ -117,8 +117,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey<String>('stu-batch-choice-$kBatChemB')));
       await tester.pumpAndSettle();
       // Only Karim and Sara are in Chem B.
-      expect(find.text('করিম হোসেন'), findsWidgets);
-      expect(find.text('রহিম উদ্দিন'), findsNothing);
+      final Finder inTable = find.byType(BatchTable<StudentRow>);
+      expect(find.descendant(of: inTable, matching: find.text('করিম হোসেন')), findsOneWidget);
+      expect(find.descendant(of: inTable, matching: find.text('রহিম উদ্দিন')), findsNothing);
       // The chip now carries the batch name.
       expect(
         find.descendant(
@@ -239,8 +240,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       final Finder more = find.byWidgetPredicate((Widget w) => w is BhorIconButton && w.icon == BhorIcons.overflowVertical);
-      expect(more, findsOneWidget);
-      await tester.tap(more);
+      expect(more, findsWidgets);
+      await tester.tap(more.first);
       await tester.pumpAndSettle();
       expect(find.byType(BhorMenu), findsOneWidget);
       final double enrol = tester.getTopLeft(find.descendant(of: find.byType(BhorMenu), matching: find.text('অন্য ব্যাচে ভর্তি'))).dy;

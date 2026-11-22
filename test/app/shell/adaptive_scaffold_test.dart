@@ -230,9 +230,9 @@ void main() {
 
   testWidgets('a stored list width is applied', (WidgetTester tester) async {
     final FakeLocalMetaRepository meta = FakeLocalMetaRepository(<String, String>{
-      LocalMetaKeys.pane('students'): '420.0',
+      LocalMetaKeys.pane('batches'): '420.0',
     });
-    await pumpShell(tester, location: Routes.student('s1'), size: kDesktop, meta: meta);
+    await pumpShell(tester, location: Routes.batch('b1'), size: kDesktop, meta: meta);
     expect(tester.widget<PaneLayout>(find.byType(PaneLayout)).listWidth, 420);
   });
 
