@@ -265,9 +265,11 @@ class _TimePickerPanelState extends State<TimePickerPanel> {
                         label: l10n.schedTypeTime,
                         hint: l10n.schedTypeHint,
                         error: _typedBad ? l10n.schedTypeError : null,
+                        // Always one helper line, so the popover keeps its
+                        // height while the echo or the error appears.
                         helper: !_typedBad && _typed.text.trim().isNotEmpty
                             ? l10n.schedTypeEcho(fmt.time(_min))
-                            : null,
+                            : '\u00A0',
                       ),
                     ],
                   ],

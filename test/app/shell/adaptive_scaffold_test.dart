@@ -218,14 +218,14 @@ void main() {
 
   testWidgets('list width is remembered per screen in local meta', (WidgetTester tester) async {
     final FakeLocalMetaRepository meta = FakeLocalMetaRepository();
-    await pumpShell(tester, location: Routes.batch('b1'), size: kDesktop, meta: meta);
+    await pumpShell(tester, location: Routes.student('s1'), size: kDesktop, meta: meta);
     final PaneLayout pane = tester.widget(find.byType(PaneLayout));
     expect(pane.listWidth, isNull);
     pane.onListWidthChanged!(400);
     await tester.pump();
     expect(tester.widget<PaneLayout>(find.byType(PaneLayout)).listWidth, 400);
     await tester.pump(const Duration(milliseconds: 500));
-    expect(meta.values[LocalMetaKeys.pane('batches')], '400.0');
+    expect(meta.values[LocalMetaKeys.pane('students')], '400.0');
   });
 
   testWidgets('a stored list width is applied', (WidgetTester tester) async {

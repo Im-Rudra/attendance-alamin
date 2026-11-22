@@ -436,7 +436,8 @@ void main() {
       await settleSome(tester, 8);
       expect(find.text(bn.batchUnarchiveTitle(kBatches[0].name)), findsOneWidget);
       expect(find.text(bn.batchUnarchiveClash), findsNothing);
-      await tester.tap(find.text(bn.batchUnarchiveConfirm));
+      // The banner's own button has the same label; the confirm is the last.
+      await tester.tap(find.text(bn.batchUnarchiveConfirm).last);
       await settleSome(tester, 8);
 
       expect(spy.acceptedClashes, isFalse);
@@ -476,7 +477,8 @@ void main() {
       expect(find.text(bn.batchUnarchiveClash), findsOneWidget);
       expect(find.text(line), findsOneWidget);
       // The plain confirm is replaced by the fix-the-schedule one.
-      expect(find.text(bn.batchUnarchiveConfirm), findsNothing);
+      // Only the banner's button is left: the panel offers "fix" instead.
+      expect(find.text(bn.batchUnarchiveConfirm), findsOneWidget);
       await tester.tap(find.text(bn.batchUnarchiveFix));
       await settleSome(tester, 8);
 
@@ -524,10 +526,10 @@ void main() {
           viewport: TestViewport.desktop, overrides: fakes.overrides);
       await settleSome(tester);
       expect(find.text(bn.batchAddStudent), findsWidgets);
-      await tester.tap(find.text(bn.batchTabFees));
+      await tester.tap(find.text(bn.batchTabFees).first);
       await settleSome(tester);
       expect(find.text(bn.batchAddStudent), findsWidgets);
-      await tester.tap(find.text(bn.batchTabSchedule));
+      await tester.tap(find.text(bn.batchTabSchedule).first);
       await settleSome(tester);
       expect(find.text(bn.batchAddStudent), findsWidgets);
     });

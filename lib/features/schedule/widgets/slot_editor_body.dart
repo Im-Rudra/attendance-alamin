@@ -245,16 +245,14 @@ class _SameTimeEditor extends StatelessWidget {
                   ],
                 );
               }
-              // Narrow: 4 equal chips per line (4 + 3), never 6 + 1.
-              const int perLine = 4;
+              // Narrow: chips of one minimum width that wrap 4 + 3 (never
+              // 6 + 1); the selected check may widen a chip a little.
               const double gap = 8;
-              final double w = (box.maxWidth - gap * (perLine - 1)) / perLine;
+              final double minW = (box.maxWidth - gap * 3) / 4 - 8;
               return Wrap(
                 spacing: gap,
                 runSpacing: gap,
-                children: <Widget>[
-                  for (final int d in order) SizedBox(width: w, child: chip(d, 0)),
-                ],
+                children: <Widget>[for (final int d in order) chip(d, minW < 56 ? 56 : minW)],
               );
             },
           ),
