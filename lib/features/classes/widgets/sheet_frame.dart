@@ -2,6 +2,7 @@
 // a pinned footer, a tappable labelled row (date, time, batch) and the sheet
 // launcher. The drag handle and close button come from the Bhor sheet itself.
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -23,11 +24,11 @@ class SheetFrame extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(top: BhorSpace.s8),
+          padding: EdgeInsets.only(top: title.isEmpty && subtitle == null ? 0 : BhorSpace.s8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Semantics(header: true, child: Text(title, style: b.type.title)),
+              if (title.isNotEmpty) Semantics(header: true, child: Text(title, style: b.type.title)),
               if (subtitle != null) Text(subtitle!, style: b.type.meta),
             ],
           ),
@@ -146,11 +147,15 @@ Future<T?> showClassSheet<T>(
   bool expand = false,
   double? width,
   BuildContext? anchor,
+  String? title,
+  ValueListenable<bool>? dirty,
 }) {
   return showBhorPanel<T>(
     context,
     kind: kind,
     anchor: anchor,
+    title: title,
+    dirty: dirty,
     expand: expand,
     width: width,
     scroll: false,

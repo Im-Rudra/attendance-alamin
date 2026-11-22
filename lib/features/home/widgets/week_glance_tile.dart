@@ -43,8 +43,8 @@ class WeekGlanceTile extends ConsumerWidget {
       header: header,
       scroll: false,
       onTap: () => ref.read(todayViewProvider.notifier).set(TodayView.week),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 120),
+      child: SizedBox(
+        height: 120,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[

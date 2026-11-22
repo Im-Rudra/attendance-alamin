@@ -390,7 +390,17 @@
   },
   "todayBackupAge": "শেষ ব্যাকআপ {days} দিন আগে",
   "@todayBackupAge": {
-    "description": "Backup tile text with age in days.",
+    "description": "Backup tile text with age in days (2 or more; one day uses todayBackupAgeOne).",
+    "placeholders": {
+      "days": {
+        "type": "String",
+        "example": "x"
+      }
+    }
+  },
+  "todayBackupAgeOne": "শেষ ব্যাকআপ {days} দিন আগে",
+  "@todayBackupAgeOne": {
+    "description": "Backup tile text for exactly one day (English says 'day', not 'days').",
     "placeholders": {
       "days": {
         "type": "String",
@@ -495,6 +505,10 @@
         "example": "x"
       }
     }
+  },
+  "todayRecentSeeAll": "সব দেখুন",
+  "@todayRecentSeeAll": {
+    "description": "Link under the Recent payments card to the collected-fees list."
   },
   "todayRecentShare": "রসিদ পাঠান",
   "@todayRecentShare": {

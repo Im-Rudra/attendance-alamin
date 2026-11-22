@@ -33,6 +33,9 @@ Future<void> showClassActionsSheet(BuildContext context,
     {required String occ, String? returnTo, BuildContext? anchor}) async {
   final ProviderContainer container = ProviderScope.containerOf(context);
   final AppLocalizations l10n = context.l10n;
+  // Start resolving the class now so the popover opens with its content (G10).
+  final ProviderSubscription<AsyncValue<OccurrenceInfo?>> warm =
+      container.listen<AsyncValue<OccurrenceInfo?>>(occInfoProvider(occ), (_, _) {});
   final ClassSheetResult? result = await showClassSheet<ClassSheetResult>(
     context,
     (BuildContext ctx) => ClassActionsSheet(occ: occ),
@@ -40,6 +43,7 @@ Future<void> showClassActionsSheet(BuildContext context,
     anchor: anchor,
     width: 440,
   );
+  warm.close();
   if (result == null || !context.mounted) return;
   switch (result) {
     case RescheduleRequested():
