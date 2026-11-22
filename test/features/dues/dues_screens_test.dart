@@ -431,6 +431,25 @@ void main() {
       expect(rows.every((PickerStudent r) => r.batch.isNotEmpty), isTrue);
     });
 
+    testWidgets('b277 X7: the picker hugs its rows (no blank space under them); one tap picks',
+        (WidgetTester tester) async {
+      await _pumpFeesPhone(tester, seedFakes());
+      await tester.tap(find.byKey(const ValueKey<String>('fees-take-money')));
+      await tester.pumpAndSettle();
+      final Finder list = find.byKey(const ValueKey<String>('picker-list'));
+      expect(list, findsOneWidget);
+      double rowsHeight = 0;
+      for (final Element e in find
+          .descendant(of: list, matching: find.byWidgetPredicate((Widget w) => w is BhorListRow))
+          .evaluate()) {
+        rowsHeight += e.size!.height;
+      }
+      expect(tester.getSize(list).height, closeTo(rowsHeight, 1.0));
+      await tester.tap(find.byKey(ValueKey<String>('picker-$kStuRahim')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey<String>('pay-amount')), findsOneWidget);
+    });
+
     test('picker search matches name, roll and phone in either digit style', () {
       final Student rahim = kStudents.first;
       expect(pickerMatches(rahim, '০১৭১১'), isTrue);

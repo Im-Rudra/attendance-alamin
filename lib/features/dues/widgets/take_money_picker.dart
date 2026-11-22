@@ -2,6 +2,8 @@
 // phone in Bangla or ASCII digits; most-owing first) that hands the chosen
 // student to the existing collect-payment sheet.
 
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,7 +91,8 @@ bool pickerMatches(Student s, String query) {
 }
 
 
-/// Opens the picker (sheet on phones, centred dialog on desktop), then the
+/// Opens the picker (sheet on phones, a popover at its button on desktop,
+/// hugging its rows), then the
 /// collect-payment sheet / side panel of the chosen student.
 Future<void> showTakeMoneyPicker(BuildContext context, {BuildContext? anchor}) async {
   final String? id = await showBhorPanel<String>(
@@ -114,12 +117,65 @@ class TakeMoneyPicker extends ConsumerStatefulWidget {
 
 class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
   String _query = '';
+  final ScrollController _scroll = ScrollController();
+  final Map<String, GlobalKey> _rowKeys = <String, GlobalKey>{};
+
+  /// A press that landed while the list was still gliding (a touchpad fling):
+  /// the scroll view swallows it to stop the glide, so the row never sees
+  /// it. Remembered here and picked on release (review b277 X7: one click
+  /// always selects).
+  Offset? _downWhileMoving;
+
+  /// Last time the list moved (a fling keeps updating it every frame).
+  final Stopwatch _sinceScroll = Stopwatch();
+  bool _picked = false;
+
+  /// Closes the picker with [id] once (the row's own tap and the
+  /// glide fallback can both fire for one click).
+  void _pick(String id) {
+    if (_picked || !mounted) return;
+    _picked = true;
+    Navigator.of(context).pop(id);
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    if (n is ScrollUpdateNotification) {
+      _sinceScroll
+        ..reset()
+        ..start();
+    }
+    return false;
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onDown(PointerDownEvent e) {
+    final bool moving = (_scroll.hasClients && _scroll.position.isScrollingNotifier.value) ||
+        (_sinceScroll.isRunning && _sinceScroll.elapsedMilliseconds < 120);
+    _downWhileMoving = moving ? e.position : null;
+  }
+
+  void _onUp(PointerUpEvent e) {
+    final Offset? from = _downWhileMoving;
+    _downWhileMoving = null;
+    if (from == null || (e.position - from).distance > 8) return;
+    for (final MapEntry<String, GlobalKey> k in _rowKeys.entries) {
+      final RenderObject? ro = k.value.currentContext?.findRenderObject();
+      if (ro is! RenderBox || !ro.attached || !ro.hasSize) continue;
+      final Offset local = ro.globalToLocal(e.position);
+      if ((Offset.zero & ro.size).contains(local)) {
+        _pick(k.key);
+        return;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final fmt = context.fmt;
-    final BhorThemeData b = context.bhor;
     final List<Student> students = ref.watch(duesStudentsProvider).value ?? const <Student>[];
     final List<EnrollmentTerms> terms = ref.watch(enrollmentTermsProvider).value ?? const <EnrollmentTerms>[];
     final DuesReport? report = ref.watch(duesReportProvider).value;
@@ -127,35 +183,60 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
       for (final PickerStudent r in buildPickerRows(students: students, terms: terms, report: report))
         if (pickerMatches(r.student, _query)) r,
     ];
-    final double height = MediaQuery.sizeOf(context).height;
-    return SizedBox(
-      height: height * 0.6,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          BhorTextField(
-            key: const ValueKey<String>('picker-search'),
-            semanticLabel: l10n.duesPickerSearch,
-            textInputAction: TextInputAction.search,
-            prefix: const Icon(BhorIcons.search),
-            hint: l10n.duesPickerSearch,
-            onChanged: (String v) => setState(() => _query = v),
-          ),
-          const SizedBox(height: BhorSpace.s8),
-          Expanded(
-            child: rows.isEmpty
-                ? BhorEmptyState(icon: BhorIcons.search, title: l10n.duesPickerNone)
-                : ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: rows.length,
-                    itemBuilder: (BuildContext ctx, int i) {
-                      final PickerStudent r = rows[i];
-                      final List<String> sub = <String>[
-                        if (r.student.roll != null && r.student.roll!.isNotEmpty)
-                          l10n.duesPickerRoll(fmt.digits(r.student.roll!)),
-                        if (r.batch.isNotEmpty) r.batch,
-                      ];
-                      return BhorListRow(
+    // Hugs its rows: as tall as the list, at most ~60% of the window or the
+    // room the popover has (then the list scrolls), never a fixed box with
+    // blank space under it.
+    final double window = MediaQuery.sizeOf(context).height * 0.6;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) => _body(context, rows, box, window),
+    );
+  }
+
+  Widget _body(BuildContext context, List<PickerStudent> rows, BoxConstraints box, double window) {
+    final l10n = context.l10n;
+    final fmt = context.fmt;
+    final BhorThemeData b = context.bhor;
+    final double room = box.maxHeight.isFinite ? box.maxHeight - 64 : double.infinity;
+    final double maxList = math.max(120.0, math.min(window, room));
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorTextField(
+          key: const ValueKey<String>('picker-search'),
+          semanticLabel: l10n.duesPickerSearch,
+          textInputAction: TextInputAction.search,
+          prefix: const Icon(BhorIcons.search),
+          hint: l10n.duesPickerSearch,
+          onChanged: (String v) => setState(() => _query = v),
+        ),
+        const SizedBox(height: BhorSpace.s8),
+        if (rows.isEmpty)
+          BhorEmptyState(icon: BhorIcons.search, title: l10n.duesPickerNone)
+        else
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxList),
+            child: Listener(
+              onPointerDown: _onDown,
+              onPointerUp: _onUp,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: ListView.builder(
+                  key: const ValueKey<String>('picker-list'),
+                  controller: _scroll,
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: rows.length,
+                  itemBuilder: (BuildContext ctx, int i) {
+                    final PickerStudent r = rows[i];
+                    final List<String> sub = <String>[
+                      if (r.student.roll != null && r.student.roll!.isNotEmpty)
+                        l10n.duesPickerRoll(fmt.digits(r.student.roll!)),
+                      if (r.batch.isNotEmpty) r.batch,
+                    ];
+                    return KeyedSubtree(
+                      key: _rowKeys.putIfAbsent(r.student.id, () => GlobalKey()),
+                      child: BhorListRow(
                         key: ValueKey<String>('picker-${r.student.id}'),
                         leading: BhorAvatar(name: r.student.name, size: 40),
                         title: r.student.name,
@@ -174,13 +255,15 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
                                 ],
                               )
                             : BhorTag(label: l10n.uiStatePaid, tone: BhorTone.ok, icon: BhorIcons.checkCircleFill),
-                        onTap: () => Navigator.of(ctx).pop(r.student.id),
-                      );
-                    },
-                  ),
+                        onTap: () => _pick(r.student.id),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

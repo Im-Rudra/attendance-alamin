@@ -5,6 +5,8 @@
 // divider. Keyboard: ↑ / ↓ (also Home / End) move, Enter / Space pick,
 // Esc closes.
 
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -51,13 +53,17 @@ List<BhorMenuItem> bhorMenuOrder(List<BhorMenuItem> items) => <BhorMenuItem>[
 /// there is no anchor). Phone: a bottom sheet.
 /// Usage:
 /// `showBhorMenu(context, items: <BhorMenuItem>[BhorMenuItem(icon: BhorIcons.edit, label: l10n.commonEdit, onTap: _edit), BhorMenuItem(icon: BhorIcons.delete, label: l10n.commonDelete, onTap: _delete, destructive: true)])`.
+/// [width] is the smallest menu width; the menu grows to fit its longest
+/// label (up to [bhorMenuMaxWidth]) and wraps a label that is still too
+/// long onto a second line: a label is never cut.
 Future<void> showBhorMenu(
   BuildContext context, {
   required List<BhorMenuItem> items,
   BuildContext? anchor,
-  double width = 260,
+  double? width,
 }) async {
   final List<BhorMenuItem> ordered = bhorMenuOrder(items);
+  final double fit = bhorMenuWidth(context, ordered, min: width ?? bhorMenuMinWidth);
   Widget menu(BuildContext ctx) => BhorMenu(items: ordered, onPick: (int i) => Navigator.of(ctx).pop(i));
   int? picked;
   if (context.bhorIsWide) {
@@ -65,14 +71,14 @@ Future<void> showBhorMenu(
       picked = await showBhorPopover<int>(
         context,
         anchor: anchor,
-        width: width,
+        width: fit,
         padding: const EdgeInsets.fromLTRB(BhorSpace.s4, 0, BhorSpace.s4, BhorSpace.s4),
         builder: menu,
       );
     } else {
       picked = await showBhorDialog<int>(
         context,
-        builder: (BuildContext ctx) => _MenuCard(width: width + 40, child: menu(ctx)),
+        builder: (BuildContext ctx) => _MenuCard(width: fit + 2 * BhorSpace.s4 + 2, child: menu(ctx)),
       );
     }
   } else {
@@ -83,6 +89,39 @@ Future<void> showBhorMenu(
   }
   if (picked != null && picked >= 0 && picked < ordered.length) ordered[picked].onTap?.call();
 }
+
+/// Narrowest desktop menu.
+const double bhorMenuMinWidth = 220;
+
+/// Widest desktop menu; a longer label wraps onto a second line.
+const double bhorMenuMaxWidth = 360;
+
+/// The popover width that shows every label of [items] on one line: the
+/// longest label plus the icon and paddings, within [min] and
+/// [bhorMenuMaxWidth] (and never wider than the window allows).
+double bhorMenuWidth(BuildContext context, List<BhorMenuItem> items, {double min = bhorMenuMinWidth}) {
+  final BhorThemeData b = context.bhor;
+  final TextScaler scaler = MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
+  final TextDirection dir = Directionality.maybeOf(context) ?? TextDirection.ltr;
+  double longest = 0;
+  for (final BhorMenuItem i in items) {
+    final TextPainter tp = TextPainter(
+      text: TextSpan(text: i.label, style: b.type.body),
+      textDirection: dir,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    if (tp.width > longest) longest = tp.width;
+    tp.dispose();
+  }
+  // Popover side padding + row padding + icon + gap + a little slack for
+  // glyph overhang.
+  const double chrome = 2 * BhorSpace.s4 + 2 * BhorSpace.s12 + _menuIcon + BhorSpace.s12 + 6;
+  final double hi = math.max(min, bhorMenuMaxWidth);
+  return (longest.ceilToDouble() + chrome).clamp(min, hi).toDouble();
+}
+
+const double _menuIcon = 18;
 
 /// The menu rows (usable inline, e.g. in the gallery and tests). [items]
 /// are shown in the given order with a divider before the first
@@ -253,20 +292,21 @@ class _MenuRow extends StatelessWidget {
             : (st.hovered || st.focused)
                 ? (item.destructive ? c.dangerBg : c.soft)
                 : c.surface.withValues(alpha: 0);
+        // At least [height] tall; a label too long for the widest menu wraps
+        // onto a second line instead of being cut (review b277 X1).
         return AnimatedContainer(
           duration: BhorMotion.of(context, BhorMotion.fast),
-          height: height,
-          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12),
+          constraints: BoxConstraints(minHeight: height),
+          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s12, vertical: BhorSpace.s4),
           decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(BhorRadius.chip)),
           child: Row(
             children: <Widget>[
-              Icon(item.icon, size: 18, color: fg),
+              Icon(item.icon, size: _menuIcon, color: fg),
               const SizedBox(width: BhorSpace.s12),
               Expanded(
                 child: Text(
                   item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                   style: b.type.body.copyWith(color: fg),
                 ),
               ),

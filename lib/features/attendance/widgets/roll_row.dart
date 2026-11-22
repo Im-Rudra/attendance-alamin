@@ -1,8 +1,9 @@
 // One roll-call row (UX 2b): a surface card with the student and the gliding
 // attendance toggle (present / absent / late). Tapping the name still flips
 // present/absent for speed; long-press / right-click / the options button open
-// the status panel (excused, note). Absent and late tint the row (the toggle
-// and tag carry the state too, so it never relies on colour alone). Rows sit
+// the status panel (excused, note). The row background stays the normal
+// surface: the toggle thumb (and the tag) carry the state; absent adds at most
+// a barely-there danger wash, late its soft tint (review b277 X4). Rows sit
 // inside one grouped list, so a row has no border or stripe of its own.
 
 import 'package:flutter/gestures.dart' show kSecondaryButton;
@@ -49,8 +50,32 @@ class RollRow extends StatelessWidget {
 
   /// A segment of the attendance toggle was chosen.
   final ValueChanged<AttendanceStatus>? onSet;
-  /// Called with the context to anchor the menu to (the dots button, else the row).
-  final ValueChanged<BuildContext>? onMenu;
+  /// Called with the context to anchor the menu to (the dots button, else the
+  /// row) and the statuses the row already shows as buttons (empty when the
+  /// toggle is collapsed), so the menu does not repeat them (review b277 X5).
+  final void Function(BuildContext anchor, Set<AttendanceStatus> onRow)? onMenu;
+
+  /// The statuses a [dense] row of [width] shows as one-click buttons: the
+  /// labelled toggle (present / absent / late) from 460, plus the Excused
+  /// chip from 580. Narrower (icon-only or phone) rows: none.
+  static Set<AttendanceStatus> statusesOnRow({required bool dense, required double width}) {
+    if (!dense || width < 460) return const <AttendanceStatus>{};
+    return <AttendanceStatus>{
+      AttendanceStatus.present,
+      AttendanceStatus.absent,
+      AttendanceStatus.late,
+      if (width >= 580) AttendanceStatus.leave,
+    };
+  }
+
+  /// The row background for [status]: the normal surface; absent gets only
+  /// a very faint danger wash and late its soft tint.
+  static Color fillOf(BhorColors c, AttendanceStatus status) => switch (status) {
+        AttendanceStatus.present => c.surface,
+        AttendanceStatus.absent => Color.alphaBlend(c.danger.withValues(alpha: 0.04), c.surface),
+        AttendanceStatus.late => c.lateBg,
+        AttendanceStatus.leave => c.surface,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -61,24 +86,22 @@ class RollRow extends StatelessWidget {
     final String statusText = status.label(l10n);
     final String rollText = fmt.number(roll);
     final VoidCallback? tap = enabled ? onToggle : null;
-    final VoidCallback? menu = (enabled && onMenu != null) ? () => onMenu!(context) : null;
     final String hint = status == AttendanceStatus.absent ? l10n.a11yHintMarkPresent : l10n.a11yHintMarkAbsent;
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
-    // Row tint per status.
-    final Color fill = switch (status) {
-      AttendanceStatus.present => c.surface,
-      AttendanceStatus.absent => c.absentBg,
-      AttendanceStatus.late => c.lateBg,
-      AttendanceStatus.leave => c.soft,
-    };
+    final Color fill = fillOf(c, status);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
-        final bool menuButton = dense && box.maxWidth >= 360 && menu != null;
         final bool labelled = dense && box.maxWidth >= 460;
         // Wide rows: "Leave" is one click away, next to the toggle (R5).
         final bool leaveChip = labelled && enabled && onSet != null && box.maxWidth >= 580;
+        final Set<AttendanceStatus> onRow = <AttendanceStatus>{
+          for (final AttendanceStatus st in statusesOnRow(dense: dense, width: box.maxWidth))
+            if (st != AttendanceStatus.leave || leaveChip) st,
+        };
+        final VoidCallback? menu = (enabled && onMenu != null) ? () => onMenu!(context, onRow) : null;
+        final bool menuButton = dense && box.maxWidth >= 360 && menu != null;
 
         final Widget info = Row(
           children: <Widget>[
@@ -199,7 +222,7 @@ class RollRow extends StatelessWidget {
                     icon: BhorIcons.overflow,
                     size: BhorButtonSize.sm,
                     color: c.text2,
-                    onPressed: () => onMenu!(dots),
+                    onPressed: () => onMenu!(dots, onRow),
                   ),
                 ),
               toggle,

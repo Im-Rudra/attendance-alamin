@@ -441,33 +441,14 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final RollCallController? c = _c;
     if (c == null) return;
     final l10n = context.l10n;
-    final _LeaveChoice? choice = await showBhorPanel<_LeaveChoice>(
+    // Title then the two answers: no empty body band (review b277 X6).
+    final _LeaveChoice? choice = await showBhorConfirmChoice<_LeaveChoice>(
       context,
-      kind: BhorPanelKind.confirm,
       title: l10n.rollLeaveTitle,
-      scroll: false,
-      width: 440,
-      builder: (BuildContext ctx) => const SizedBox.shrink(),
-      footer: (BuildContext ctx) => Row(
-        children: <Widget>[
-          Expanded(
-            child: BhorButton(
-              label: l10n.rollLeaveDiscard,
-              variant: BhorButtonVariant.secondary,
-              expand: true,
-              onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.discard),
-            ),
-          ),
-          const SizedBox(width: BhorSpace.s12),
-          Expanded(
-            child: BhorButton(
-              label: l10n.rollLeaveSave,
-              expand: true,
-              onPressed: () => Navigator.of(ctx).pop(_LeaveChoice.save),
-            ),
-          ),
-        ],
-      ),
+      primaryLabel: l10n.rollLeaveSave,
+      primaryValue: _LeaveChoice.save,
+      secondaryLabel: l10n.rollLeaveDiscard,
+      secondaryValue: _LeaveChoice.discard,
     );
     if (!mounted || choice == null) return;
     switch (choice) {
@@ -506,44 +487,69 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     _finish();
   }
 
-  Future<void> _editNote() async {
+  /// The class note: a small form anchored to the control that opened it
+  /// ([anchor]: the note button, the more button or a row's dots), a small
+  /// dialog when there is none, a sheet on phones (review b277 X3). Save
+  /// stays disabled until the text changed; closing with changes asks first.
+  Future<void> _editNote([BuildContext? anchor]) async {
     final RollCallController? c = _c;
     if (c == null || c.readOnly) return;
+    final String initial = c.note ?? '';
+    final TextEditingController text = TextEditingController(text: initial);
     final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+    void sync() => dirty.value = text.text.trim() != initial.trim();
+    text.addListener(sync);
+    final BuildContext? at = (anchor != null && anchor.mounted) ? anchor : null;
     final String? value = await showBhorPanel<String>(
       context,
-      kind: BhorPanelKind.form,
+      kind: BhorPanelKind.picker,
+      anchor: at,
       title: context.l10n.rollNoteTitle,
-      width: 420,
+      width: 380,
       dirty: dirty,
-      builder: (BuildContext ctx) => _NoteForm(initial: c.note ?? '', dirty: dirty),
+      builder: (BuildContext ctx) => RollNoteField(controller: text),
+      footer: (BuildContext ctx) => ValueListenableBuilder<bool>(
+        valueListenable: dirty,
+        builder: (BuildContext bc, bool changed, Widget? _) => BhorButton(
+          key: const ValueKey<String>('roll-note-save'),
+          label: ctx.l10n.commonSave,
+          expand: true,
+          onPressed: changed ? () => Navigator.of(ctx).pop(text.text) : null,
+        ),
+      ),
     );
+    // Not disposed here: the popover may still be fading out with the field.
+    text.removeListener(sync);
     if (value == null || !mounted) return;
     c.setNote(value);
   }
 
-  Future<void> _rowMenu(RollCallController c, Student s, BuildContext anchor) async {
+  Future<void> _rowMenu(RollCallController c, Student s, BuildContext anchor, Set<AttendanceStatus> onRow) async {
     if (c.readOnly) return;
     if (context.bhorIsWide) {
       // Desktop: an anchored menu at the dots button (one click per status).
+      // Wide rows show every status as a button already: the menu then only
+      // holds what the row does not (review b277 X5).
       final l10n = context.l10n;
       await showBhorMenu(
         context,
         anchor: anchor,
         items: <BhorMenuItem>[
           for (final AttendanceStatus st in AttendanceStatus.values)
-            BhorMenuItem(
-              key: Key('roll-menu-${st.name}'),
-              icon: statusIcon(st),
-              label: st.label(l10n),
-              onTap: () {
-                if (mounted) c.setStatus(s.id, st);
-              },
-            ),
+            if (!onRow.contains(st))
+              BhorMenuItem(
+                key: Key('roll-menu-${st.name}'),
+                icon: statusIcon(st),
+                label: st.label(l10n),
+                onTap: () {
+                  if (mounted) c.setStatus(s.id, st);
+                },
+              ),
           BhorMenuItem(
+            key: const Key('roll-menu-note'),
             icon: BhorIcons.notes,
             label: l10n.rollMenuNote,
-            onTap: () => unawaited(_editNote()),
+            onTap: () => unawaited(_editNote(anchor)),
           ),
         ],
       );
@@ -557,7 +563,11 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     );
     if (choice == null || !mounted) return;
     if (choice.note) {
-      await _editNote();
+      if (anchor.mounted) {
+        await _editNote(anchor);
+      } else {
+        await _editNote();
+      }
     } else {
       final AttendanceStatus? status = choice.status;
       if (status != null) c.setStatus(s.id, status);
@@ -856,10 +866,12 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
                 onPressed: c.canUndo ? c.undo : null,
               ),
             if (!c.readOnly)
-              BhorIconButton(
-                semanticLabel: l10n.rollMenuNote,
-                icon: BhorIcons.notes,
-                onPressed: () => unawaited(_editNote()),
+              Builder(
+                builder: (BuildContext nc) => BhorIconButton(
+                  semanticLabel: l10n.rollMenuNote,
+                  icon: BhorIcons.notes,
+                  onPressed: () => unawaited(_editNote(nc)),
+                ),
               ),
             Builder(
               builder: (BuildContext hc) => BhorIconButton(
@@ -955,10 +967,12 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
                 onPressed: () => unawaited(_openMenu(c, t, bc)),
               ),
             )
-          : BhorIconButton(
-              semanticLabel: l10n.rollMenuNote,
-              icon: BhorIcons.notes,
-              onPressed: () => unawaited(_editNote()),
+          : Builder(
+              builder: (BuildContext nc) => BhorIconButton(
+                semanticLabel: l10n.rollMenuNote,
+                icon: BhorIcons.notes,
+                onPressed: () => unawaited(_editNote(nc)),
+              ),
             );
       content = BhorScaffold(
         header: BhorHeader(
@@ -1058,7 +1072,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         BhorMenuItem(
           icon: BhorIcons.notes,
           label: l10n.rollMenuNote,
-          onTap: () => unawaited(_editNote()),
+          onTap: () => unawaited(_editNote(anchor)),
         ),
         if (canDelete)
           BhorMenuItem(
@@ -1108,7 +1122,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         });
         c.setStatus(s.id, next);
       },
-      onMenu: (BuildContext rowContext) => unawaited(_rowMenu(c, s, rowContext)),
+      onMenu: (BuildContext rowContext, Set<AttendanceStatus> onRow) => unawaited(_rowMenu(c, s, rowContext, onRow)),
     );
     if (!keyed) return row;
     return KeyedSubtree(key: _rowKeys.putIfAbsent(s.id, () => GlobalKey()), child: row);
@@ -1320,58 +1334,6 @@ class _Roster extends StatelessWidget {
             child: col * perCol < n ? group(col * perCol, n < (col + 1) * perCol ? n : (col + 1) * perCol) : const SizedBox.shrink(),
           ),
         ],
-      ],
-    );
-  }
-}
-
-/// The class-note form shown in the side panel.
-class _NoteForm extends StatefulWidget {
-  const _NoteForm({required this.initial, required this.dirty});
-
-  final String initial;
-  final ValueNotifier<bool> dirty;
-
-  @override
-  State<_NoteForm> createState() => _NoteFormState();
-}
-
-class _NoteFormState extends State<_NoteForm> {
-  late final TextEditingController _controller = TextEditingController(text: widget.initial);
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(() => widget.dirty.value = _controller.text != widget.initial);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        BhorTextField(
-          controller: _controller,
-          autofocus: true,
-          maxLength: 200,
-          minLines: 3,
-          maxLines: 6,
-          hint: l10n.rollNoteHint,
-        ),
-        const SizedBox(height: BhorSpace.s16),
-        BhorButton(
-          label: l10n.commonSave,
-          expand: true,
-          onPressed: () => Navigator.of(context).pop(_controller.text),
-        ),
       ],
     );
   }
