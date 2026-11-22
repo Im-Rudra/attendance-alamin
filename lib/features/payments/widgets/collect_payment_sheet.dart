@@ -28,16 +28,23 @@ Future<String?> openCollectPaymentSheet(
   String? enrollmentId,
 }) async {
   final AppLocalizations l10n = context.l10n;
+  final ValueNotifier<PayBarSpec?> bar = ValueNotifier<PayBarSpec?>(null);
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  // The notifiers are not disposed: the panel's exit animation still listens.
   final SavedPayment? saved = await showBhorPanel<SavedPayment>(
     context,
     title: l10n.payTitle,
     kind: BhorPanelKind.form,
     expand: true,
     scroll: false,
+    dirty: dirty,
+    footer: (BuildContext ctx) => PayBar(sink: bar, fallbackLabel: l10n.payTitle),
     builder: (BuildContext ctx) => CollectPaymentForm(
       studentId: studentId,
       enrollmentId: enrollmentId,
       fill: true,
+      barSink: bar,
+      dirtySink: dirty,
       onDone: (SavedPayment s) => unawaited(showBhorSuccess<SavedPayment>(
         ctx,
         result: s,
@@ -56,15 +63,23 @@ Future<bool> showEditPaymentSheet(
   required String studentId,
 }) async {
   final String done = context.l10n.payEditedToast;
+  final AppLocalizations l10n = context.l10n;
+  final ValueNotifier<PayBarSpec?> bar = ValueNotifier<PayBarSpec?>(null);
+  final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
+  // The notifiers are not disposed: the panel's exit animation still listens.
   final SavedPayment? saved = await showBhorPanel<SavedPayment>(
     context,
-    title: context.l10n.payTitleEdit,
+    title: l10n.payTitleEdit,
     kind: BhorPanelKind.form,
     expand: true,
     scroll: false,
+    dirty: dirty,
+    footer: (BuildContext ctx) => PayBar(sink: bar, fallbackLabel: l10n.payButtonSaveEdit),
     builder: (BuildContext ctx) => _EditSheet(
       receiptId: receiptId,
       studentId: studentId,
+      bar: bar,
+      dirty: dirty,
       onDone: (SavedPayment s) => unawaited(showBhorSuccess<SavedPayment>(ctx, result: s, toast: done)),
     ),
   );
@@ -75,11 +90,15 @@ class _EditSheet extends ConsumerWidget {
   const _EditSheet({
     required this.receiptId,
     required this.studentId,
+    required this.bar,
+    required this.dirty,
     required this.onDone,
   });
 
   final String receiptId;
   final String studentId;
+  final ValueNotifier<PayBarSpec?> bar;
+  final ValueNotifier<bool> dirty;
   final ValueChanged<SavedPayment> onDone;
 
   @override
@@ -101,6 +120,8 @@ class _EditSheet extends ConsumerWidget {
       enrollmentId: list.first.enrollmentId,
       receiptId: receiptId,
       fill: true,
+      barSink: bar,
+      dirtySink: dirty,
       onDone: onDone,
     );
   }

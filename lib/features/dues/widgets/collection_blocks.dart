@@ -20,16 +20,19 @@ import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 // ---- small pieces -------------------------------------------------------------
 
-/// A stat card: the amount big over its label, with an optional caption and
-/// footer line. Tappable when [onTap] is set.
-class _StatCard extends StatelessWidget {
-  const _StatCard({
+/// A stat: the label over the amount in the big stat style, with an optional
+/// caption and footer line. Tappable when [onTap] is set. [scale] enlarges the
+/// number (the hero figure of the tile).
+class _Stat extends StatelessWidget {
+  const _Stat({
     super.key,
     required this.label,
     required this.amount,
     this.caption,
     this.footer,
     this.onTap,
+    this.color,
+    this.scale = 1,
   });
 
   final String label;
@@ -37,29 +40,34 @@ class _StatCard extends StatelessWidget {
   final String? caption;
   final Widget? footer;
   final VoidCallback? onTap;
+  final Color? color;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
-    return BhorCard(
+    final TextStyle stat = b.type.stat.copyWith(fontSize: (b.type.stat.fontSize ?? 30) * scale);
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: BhorCountUp.money(amount: amount, style: stat, color: color, muteSign: true),
+        ),
+        if (caption != null) Text(caption!, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
+        if (footer != null) ...<Widget>[const SizedBox(height: BhorSpace.s4), footer!],
+      ],
+    );
+    if (onTap == null) return content;
+    return BhorPressable(
       onTap: onTap,
       semanticLabel: label,
-      padding: const EdgeInsets.all(BhorSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
-          const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: AlignmentDirectional.centerStart,
-            child: BhorCountUp.money(amount: amount, style: b.type.stat, muteSign: true),
-          ),
-          if (caption != null) Text(caption!, maxLines: 2, overflow: TextOverflow.ellipsis, style: b.type.meta),
-          if (footer != null) ...<Widget>[const SizedBox(height: BhorSpace.s4), footer!],
-        ],
-      ),
+      radius: BhorRadius.control,
+      builder: (BuildContext context, BhorStates s) => content,
     );
   }
 }
@@ -125,67 +133,86 @@ class BillingBlock extends ConsumerWidget {
     }
 
     final double ratio = t.expected <= 0 ? 0 : t.received / t.expected;
-    children.addAll(<Widget>[
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(child: _StatCard(label: l10n.collExpected, amount: t.expected)),
-          const SizedBox(width: BhorSpace.s12),
-          Expanded(
-            child: _StatCard(
-              label: l10n.collReceived,
-              amount: t.received,
-              caption: l10n.collPaidStudents(
-                fmt.number(t.paidStudents),
-                fmt.number(t.totalStudents),
-              ),
+    // One collection tile: received (hero) beside expected, the progress bar
+    // inside it, then waived and outstanding (F3).
+    children.add(
+      BhorCard(
+        padding: const EdgeInsets.all(BhorSpace.s20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  flex: 3,
+                  child: _Stat(
+                    label: l10n.collReceived,
+                    amount: t.received,
+                    color: b.colors.ok,
+                    scale: 1.25,
+                    caption: l10n.collPaidStudents(
+                      fmt.number(t.paidStudents),
+                      fmt.number(t.totalStudents),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: BhorSpace.s16),
+                Expanded(
+                  flex: 2,
+                  child: _Stat(label: l10n.collExpected, amount: t.expected),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-      const SizedBox(height: BhorSpace.s12),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: _StatCard(
-              label: l10n.collWaived,
-              amount: t.waivedAmount,
-              caption: l10n.collWaivedCaption(fmt.number(t.waivedCount)),
+            const SizedBox(height: BhorSpace.s16),
+            BhorProgress(
+              value: ratio.clamp(0.0, 1.0).toDouble(),
+              height: 10,
+              color: b.colors.ok,
+              semanticLabel: l10n.collProgressLabel(fmt.money(t.received), fmt.money(t.expected)),
             ),
-          ),
-          const SizedBox(width: BhorSpace.s12),
-          Expanded(
-            child: _StatCard(
-              key: const ValueKey<String>('coll-outstanding'),
-              label: l10n.collOutstanding,
-              amount: t.outstanding,
-              onTap: t.outstanding > 0 ? onSeeDues : null,
-              footer: t.outstanding > 0
-                  ? Row(
-                      children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            l10n.collSeeDues,
-                            style: b.type.label.copyWith(color: b.colors.accent),
-                          ),
-                        ),
-                        const SizedBox(width: BhorSpace.s4),
-                        Icon(BhorIcons.arrowRight, size: 16, color: b.colors.accent),
-                      ],
-                    )
-                  : null,
+            const _Rule(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  flex: 3,
+                  child: _Stat(
+                    label: l10n.collWaived,
+                    amount: t.waivedAmount,
+                    caption: l10n.collWaivedCaption(fmt.number(t.waivedCount)),
+                  ),
+                ),
+                const SizedBox(width: BhorSpace.s16),
+                Expanded(
+                  flex: 2,
+                  child: _Stat(
+                    key: const ValueKey<String>('coll-outstanding'),
+                    label: l10n.collOutstanding,
+                    amount: t.outstanding,
+                    onTap: t.outstanding > 0 ? onSeeDues : null,
+                    footer: t.outstanding > 0
+                        ? Row(
+                            children: <Widget>[
+                              Flexible(
+                                child: Text(
+                                  l10n.collSeeDues,
+                                  style: b.type.label.copyWith(color: b.colors.accent),
+                                ),
+                              ),
+                              const SizedBox(width: BhorSpace.s4),
+                              Icon(BhorIcons.arrowRight, size: 16, color: b.colors.accent),
+                            ],
+                          )
+                        : null,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      const SizedBox(height: BhorSpace.s12),
-      BhorProgress(
-        value: ratio.clamp(0.0, 1.0).toDouble(),
-        height: 10,
-        semanticLabel: l10n.collProgressLabel(fmt.money(t.received), fmt.money(t.expected)),
-      ),
-    ]);
+    );
 
     if (summary.batches.isNotEmpty) {
       children.addAll(<Widget>[

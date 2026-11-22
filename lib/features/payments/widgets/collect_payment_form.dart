@@ -3,6 +3,7 @@
 // button that repeats the months and the amount.
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,6 +36,8 @@ class CollectPaymentForm extends ConsumerStatefulWidget {
     this.receiptId,
     this.onClose,
     this.fill = false,
+    this.barSink,
+    this.dirtySink,
   });
 
   final String studentId;
@@ -53,6 +56,13 @@ class CollectPaymentForm extends ConsumerStatefulWidget {
   /// to the bottom and the form scrolls above it.
   final bool fill;
 
+  /// When set, the save bar is not drawn inside the form: its state is
+  /// published here and the container's pinned footer draws it ([PayBar]).
+  final ValueNotifier<PayBarSpec?>? barSink;
+
+  /// Set to true once the teacher changed something (closing then asks first).
+  final ValueNotifier<bool>? dirtySink;
+
   @override
   ConsumerState<CollectPaymentForm> createState() => _CollectPaymentFormState();
 }
@@ -64,6 +74,8 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
   bool _splitOpen = false;
   bool _showNote = false;
   bool _amountSeeded = false;
+  late final CollectInput _base;
+  bool _touched = false;
 
   PayArgs get _args =>
       (studentId: widget.studentId, enrollmentId: widget.enrollmentId, receiptId: widget.receiptId);
@@ -76,7 +88,8 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         _amount.selection = TextSelection(baseOffset: 0, extentOffset: _amount.text.length);
       }
     });
-    final String initial = ref.read(collectPaymentControllerProvider(_args)).note;
+    _base = ref.read(collectPaymentControllerProvider(_args));
+    final String initial = _base.note;
     if (initial.isNotEmpty) {
       _note.text = initial;
       _showNote = true;
@@ -124,9 +137,42 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       today: last,
     );
     if (picked == null || !mounted) return;
+    _touched = true;
     ref
         .read(collectPaymentControllerProvider(_args).notifier)
         .setDate(LocalDate(picked.year, picked.month, picked.day));
+  }
+
+  bool _sameSplit(Map<YearMonth, int>? a, Map<YearMonth, int>? b) {
+    if (a == null || b == null) return a == b;
+    if (a.length != b.length) return false;
+    for (final MapEntry<YearMonth, int> e in a.entries) {
+      if (b[e.key] != e.value) return false;
+    }
+    return true;
+  }
+
+  /// True once the teacher changed something (a typed amount, another month
+  /// or split, a note, the method or date): closing then asks first.
+  bool _isDirty(CollectInput i) {
+    final CollectInput b = _base;
+    if (i.amountText != b.amountText || i.startMonth != b.startMonth || i.note != b.note) return true;
+    if (!_sameSplit(i.split, b.split)) return true;
+    if (widget.receiptId != null) return i.method != b.method || i.paidOn != b.paidOn;
+    return _touched || (i.enrollmentId != null && i.enrollmentId != b.enrollmentId);
+  }
+
+  /// Hands [spec] and the dirty flag to the container once the frame is built
+  /// (a notifier must not change while the tree builds).
+  void _publish(PayBarSpec spec, bool dirty) {
+    final ValueNotifier<PayBarSpec?>? bar = widget.barSink;
+    final ValueNotifier<bool>? d = widget.dirtySink;
+    if (bar == null && d == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (bar != null && bar.value != spec) bar.value = spec;
+      if (d != null && d.value != dirty) d.value = dirty;
+    });
   }
 
   /// Single-shot: set synchronously on the first tap and kept after a
@@ -152,6 +198,13 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
   ({List<Widget> body, String label})? _frozen;
 
   Widget _frame(List<Widget> body, Widget bar) {
+    if (widget.barSink != null) {
+      // The container pins the save bar; the content just flows and scrolls.
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(top: BhorSpace.s4, bottom: BhorSpace.s8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+      );
+    }
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final Widget scroll = SingleChildScrollView(
@@ -180,6 +233,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
   Widget build(BuildContext context) {
     final ({List<Widget> body, String label})? frozen = _frozen;
     if (_locked && frozen != null) {
+      _publish((label: frozen.label, enabled: false, loading: true, reason: null, submit: _submit), true);
       return _frame(
         frozen.body,
         KeyedSubtree(
@@ -313,11 +367,9 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       const SizedBox(height: 16),
       _Label(l10n.payMonthsLabel),
       if (!editing && plan.openMonths.isNotEmpty) ...<Widget>[
-        ChipWrap(
+        _MonthGrid(
           key: const ValueKey<String>('pay-month-chips'),
-          spacing: BhorSpace.s8,
-          runSpacing: BhorSpace.s4,
-          children: <Widget>[
+          chips: <Widget>[
             for (final MonthDue md in plan.openMonths.take(6))
               BhorChip(
                 key: ValueKey<String>('pay-month-${md.month.toInt()}'),
@@ -352,6 +404,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         focusNode: _amountFocus,
         readOnly: manual,
         keyboardType: TextInputType.number,
+        localDigits: true,
         inputFormatters: <TextInputFormatter>[DigitsFormatter(fmt)],
         tabular: true,
         onChanged: (String t) => notifier.setAmount(parseDigits(t).toString()),
@@ -401,7 +454,10 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
               key: ValueKey<String>('pay-method-${m.code}'),
               label: paymentMethodLabel(l10n, m),
               selected: m == method,
-              onSelected: (bool _) => notifier.setMethod(m),
+              onSelected: (bool _) {
+                _touched = true;
+                notifier.setMethod(m);
+              },
             ),
         ],
       ),
@@ -465,6 +521,17 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     );
 
     _frozen = (body: body, label: buttonLabel);
+    final bool canSave = plan.ok && !input.busy && !_locked;
+    _publish(
+      (
+        label: buttonLabel,
+        enabled: canSave,
+        loading: input.busy || _locked,
+        reason: canSave ? null : disabledReason,
+        submit: _submit,
+      ),
+      _isDirty(input),
+    );
     return _frame(body, bar);
   }
 
@@ -650,6 +717,62 @@ class _SplitHeader extends StatelessWidget {
   }
 }
 
+/// What the pinned save bar shows (published by the form, drawn by [PayBar]).
+typedef PayBarSpec = ({String label, bool enabled, bool loading, String? reason, VoidCallback submit});
+
+/// The footer of a payment panel: the save bar for the published spec; tapping calls
+/// the form's own submit. Listens to [sink] (the form publishes into it).
+class PayBar extends StatelessWidget {
+  const PayBar({super.key, required this.sink, required this.fallbackLabel});
+
+  final ValueListenable<PayBarSpec?> sink;
+  final String fallbackLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<PayBarSpec?>(
+      valueListenable: sink,
+      builder: (BuildContext context, PayBarSpec? spec, Widget? _) => KeyedSubtree(
+        key: const ValueKey<String>('pay-bar'),
+        child: _ActionBar(
+          label: spec?.label ?? fallbackLabel,
+          onPressed: spec != null && spec.enabled ? spec.submit : null,
+          loading: spec?.loading ?? false,
+          disabledReason: spec?.reason,
+          framed: false,
+        ),
+      ),
+    );
+  }
+}
+
+/// Month chips in an even grid (2 or 3 equal columns, never a ragged wrap).
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({super.key, required this.chips});
+
+  final List<Widget> chips;
+
+  @override
+  Widget build(BuildContext context) {
+    const double gap = BhorSpace.s8;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints c) {
+        final double w = c.maxWidth.isFinite ? c.maxWidth : 360;
+        final int cols = (w - 2 * gap) / 3 >= 150 ? 3 : 2;
+        final double cell = (w - gap * (cols - 1)) / cols;
+        return Wrap(
+          spacing: gap,
+          children: <Widget>[
+            // At least one cell wide (an even grid); a long label may grow
+            // its chip rather than overflow.
+            for (final Widget chip in chips) ConstrainedBox(constraints: BoxConstraints(minWidth: cell), child: chip),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /// The big save button pinned under the form, with the reason it is disabled.
 /// While the save runs the button shows the spinner (and ignores taps).
 class _ActionBar extends StatelessWidget {
@@ -658,7 +781,11 @@ class _ActionBar extends StatelessWidget {
     required this.onPressed,
     required this.loading,
     this.disabledReason,
+    this.framed = true,
   });
+
+  /// False inside a container footer (it draws the top rule and padding).
+  final bool framed;
 
   final String label;
   final VoidCallback? onPressed;
@@ -669,9 +796,9 @@ class _ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     return DecoratedBox(
-      decoration: BoxDecoration(border: Border(top: BorderSide(color: b.colors.line))),
+      decoration: BoxDecoration(border: framed ? Border(top: BorderSide(color: b.colors.line)) : null),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, BhorSpace.s12, 0, BhorSpace.s4),
+        padding: framed ? const EdgeInsets.fromLTRB(0, BhorSpace.s12, 0, BhorSpace.s4) : EdgeInsets.zero,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

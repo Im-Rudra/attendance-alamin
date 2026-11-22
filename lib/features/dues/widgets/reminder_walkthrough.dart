@@ -17,12 +17,11 @@ import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 
 /// Opens the walk-through for [rows] (the students still to remind today).
 Future<void> showReminderWalkthrough(BuildContext context, List<DuesRow> rows) {
-  return showBhorDialog<void>(
+  return showBhorPanel<void>(
     context,
-    builder: (BuildContext ctx) => BhorDialog(
-      title: ctx.l10n.duesWalkTitle,
-      body: SingleChildScrollView(child: ReminderWalkthrough(rows: rows)),
-    ),
+    kind: BhorPanelKind.confirm,
+    title: context.l10n.duesWalkTitle,
+    builder: (BuildContext ctx) => ReminderWalkthrough(rows: rows),
   );
 }
 

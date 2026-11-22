@@ -66,11 +66,12 @@ void main() {
     await tester.pumpAndSettle();
     // One page: the body swaps in place, FeesScreen stays and the header is shared.
     expect(find.byType(FeesScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('coll-export-csv')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
     await tester.tap(find.text(l10n.duesSegDues));
     await tester.pumpAndSettle();
     expect(find.byType(FeesScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('coll-export-csv')), findsNothing);
+    // The same ⋮ on both segments.
+    expect(find.byKey(const ValueKey<String>('fees-more')), findsOneWidget);
   });
 
   testWidgets('outstanding of a month leads to the dues list for that month', (WidgetTester tester) async {

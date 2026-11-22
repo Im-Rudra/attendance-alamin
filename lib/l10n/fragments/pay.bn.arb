@@ -457,5 +457,21 @@
         "example": "নভেম্বর"
       }
     }
+  },
+  "payReceiptPaidStamp": "পরিশোধিত",
+  "@payReceiptPaidStamp": {
+    "description": "Stamp on the receipt card: the fee is paid."
+  },
+  "payReceiptStudent": "শিক্ষার্থী",
+  "@payReceiptStudent": {
+    "description": "Receipt card row label: the student."
+  },
+  "payBatchLabelShort": "ব্যাচ",
+  "@payBatchLabelShort": {
+    "description": "Receipt card row label: the batch."
+  },
+  "payMonthsLabelShort": "মাস",
+  "@payMonthsLabelShort": {
+    "description": "Receipt card row label: the months paid."
   }
 }

@@ -60,5 +60,15 @@
   "duesPickerTitle": "Whose payment?",
   "duesPickerSearch": "Type a name, roll or phone number",
   "duesPickerNone": "Nobody found",
-  "duesPickerOwes": "{amount} due"
+  "duesPickerOwes": "{amount} due",
+  "duesPickerRoll": "Roll {roll}",
+  "@duesPickerRoll": {
+    "description": "Roll number shown in the collect-fee student picker row.",
+    "placeholders": {
+      "roll": {
+        "type": "String",
+        "example": "12"
+      }
+    }
+  }
 }

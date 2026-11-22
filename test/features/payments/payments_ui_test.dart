@@ -54,6 +54,20 @@ bool _enabled(WidgetTester t) => t.widget<BhorButton>(_bar()).onPressed != null;
 String _amountText(WidgetTester t) => t.widget<BhorTextField>(_key('pay-amount')).controller!.text;
 String _monthsText(WidgetTester t) => t.widget<Text>(_key('pay-months')).data!;
 
+/// Every text of the designed receipt card, joined.
+String _receiptPlain(WidgetTester t) => t
+    .widgetList<Text>(find.descendant(of: _key('pay-receipt-text'), matching: find.byType(Text)))
+    .map((Text w) => w.data ?? w.textSpan?.toPlainText() ?? '')
+    .join(' | ');
+
+/// Opens the receipt's ⋮ menu and taps its Delete.
+Future<void> _tapDelete(WidgetTester tester) async {
+  await tester.tap(_key('pay-receipt-more'));
+  await tester.pumpAndSettle();
+  await tester.tap(_key('pay-receipt-delete'));
+  await tester.pumpAndSettle();
+}
+
 List<Payment> _receipts(SeededFakes f, {String student = kStuRahim}) => <Payment>[
       for (final Payment p in f.payments.payments)
         if (!p.waived && p.studentId == student) p,
@@ -82,10 +96,17 @@ Future<SeededFakes> _openCollect(
   return f;
 }
 
+/// Two frames: the pinned save bar is one frame behind the form (the form
+/// publishes its state to the panel footer after it has built).
+Future<void> _frames(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+}
+
 Future<void> _type(WidgetTester tester, String key, String text) async {
   await tester.ensureVisible(_key(key));
   await tester.enterText(_key(key), text);
-  await tester.pump();
+  await _frames(tester);
 }
 
 Future<void> _save(WidgetTester tester) async {
@@ -100,7 +121,7 @@ void main() {
       () => const CollectPaymentPanel(studentId: kStuRahim),
       overrides: () => seedFakes().overrides,
       verify: (WidgetTester tester) async {
-        await tester.pump();
+        await _frames(tester);
         expect(_key('pay-amount'), findsOneWidget);
         expect(_bar(), findsOneWidget);
       },
@@ -111,7 +132,7 @@ void main() {
       () => const CollectPaymentPanel(studentId: kStuSara),
       overrides: () => seedFakes(withPayments: false).overrides,
       verify: (WidgetTester tester) async {
-        await tester.pump();
+        await _frames(tester);
         expect(_key('pay-batch-$kEnrSaraPhys'), findsOneWidget);
         expect(_key('pay-batch-$kEnrSaraChem'), findsOneWidget);
       },
@@ -140,7 +161,7 @@ void main() {
       () => const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
       overrides: () => seedFakes().overrides,
       verify: (WidgetTester tester) async {
-        await tester.pump();
+        await _frames(tester);
         expect(_key('pay-history-pay-1'), findsOneWidget);
         expect(_key('pay-history-pay-2'), findsOneWidget);
       },
@@ -252,11 +273,11 @@ void main() {
       // No tiny echo of the amount under the field.
       expect(find.text(AppFormat(Lang.bn).money(1000)), findsNothing);
       await tester.tap(_key('pay-month-202612'));
-      await tester.pump();
+      await _frames(tester);
       expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
       expect(_label(tester), 'ডিসেম্বরের ${AppFormat(Lang.bn).money(1000)} অগ্রিম জমা করুন');
       await tester.tap(_key('pay-month-202611'));
-      await tester.pump();
+      await _frames(tester);
       expect(_monthsText(tester), 'নভেম্বর');
     });
 
@@ -306,7 +327,7 @@ void main() {
       final SeededFakes f = await _openCollect(tester);
       await tester.ensureVisible(_key('pay-method-bkash'));
       await tester.tap(_key('pay-method-bkash'));
-      await tester.pump();
+      await _frames(tester);
       await _save(tester);
       expect(f.localMeta.values[LocalMetaKeys.lastMethod(kStuRahim)], 'bkash');
       expect(_receipts(f).where((Payment p) => p.billingMonth == _nov).single.method, PaymentMethod.bkash);
@@ -368,7 +389,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       try {
         await tester.tap(_key('pay-snack-send'));
-        await tester.pump();
+        await _frames(tester);
         await tester.pump(const Duration(milliseconds: 100));
       } finally {
         debugDefaultTargetPlatformOverride = null;
@@ -384,7 +405,7 @@ void main() {
       final SeededFakes f = await _openCollect(tester, student: kStuSara, withPayments: false);
       expect(_key('pay-batch-$kEnrSaraPhys'), findsOneWidget);
       await tester.tap(_key('pay-batch-$kEnrSaraPhys'));
-      await tester.pump();
+      await _frames(tester);
       expect(_monthsText(tester), 'অক্টোবর');
       await _save(tester);
       final List<Payment> rows = _receipts(f, student: kStuSara);
@@ -396,7 +417,7 @@ void main() {
       // The other batch still opens on its own October.
       await _open(tester);
       await tester.tap(_key('pay-batch-$kEnrSaraChem'));
-      await tester.pump();
+      await _frames(tester);
       expect(_monthsText(tester), 'অক্টোবর');
       expect(_amountText(tester), '৮০০');
     });
@@ -423,7 +444,7 @@ void main() {
       // Back to automatic: the total is kept and allocated oldest first.
       await tester.ensureVisible(_key('pay-split-auto'));
       await tester.tap(_key('pay-split-auto'));
-      await tester.pump();
+      await _frames(tester);
       expect(_key('pay-split-auto'), findsNothing);
       expect(_amountText(tester), '১৪০০');
     });
@@ -452,7 +473,7 @@ void main() {
         const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuSara))),
         overrides: f.overrides,
       );
-      await tester.pump();
+      await _frames(tester);
       await tester.tap(find.text('নভেম্বর'));
       await tester.pumpAndSettle();
       final Finder text = _key('pay-receipt-text');
@@ -472,9 +493,12 @@ void main() {
         lang: Lang.en,
       );
       await _open(tester);
-      final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
-      expect(plain, contains('Months: October'));
-      expect(plain, contains('Paid: ৳1,000 (Cash), date 4 Oct 2026'));
+      final String plain = _receiptPlain(tester);
+      expect(plain, contains('Months'));
+      expect(plain, contains('October'));
+      expect(plain, contains('Cash'));
+      expect(plain, contains('4 Oct 2026'));
+      expect(plain, contains(const AppFormat(Lang.en).money(1000)));
       // QA-05: the balance as it was on 4 Oct (Sep and Oct paid), not today's.
       expect(plain, contains('All fees paid'));
       expect(RegExp(r'[০-৯]').hasMatch(plain), isFalse);
@@ -507,8 +531,8 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
-      expect(plain, contains('মাস: নভেম্বর (আংশিক)'));
+      final String plain = _receiptPlain(tester);
+      expect(plain, contains('নভেম্বর (আংশিক)'));
       expect(plain, contains('বাকি: ৳ ২,৪০০'));
       expect(plain, isNot(contains('সব বেতন পরিশোধিত')));
     });
@@ -537,7 +561,7 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      final String plain = tester.widget<Text>(_key('pay-receipt-text')).textSpan!.toPlainText();
+      final String plain = _receiptPlain(tester);
       // Oct and Nov were still owed when the first receipt was given.
       expect(plain, contains('বাকি: ৳ ২,০০০'));
     });
@@ -549,18 +573,16 @@ void main() {
         const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
-      await tester.pump();
+      await _frames(tester);
       await tester.tap(find.text('অক্টোবর'));
       await tester.pumpAndSettle();
-      await tester.tap(_key('pay-receipt-delete'));
-      await tester.pumpAndSettle();
+      await _tapDelete(tester);
       expect(find.text('এই পেমেন্ট (৳ ১,০০০, অক্টোবর) মুছে ফেলবেন?'), findsOneWidget);
       // Cancel keeps it.
       await tester.tap(_dialogCancel);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isTrue);
-      await tester.tap(_key('pay-receipt-delete'));
-      await tester.pumpAndSettle();
+      await _tapDelete(tester);
       await tester.tap(_dialogConfirm);
       await tester.pumpAndSettle();
       expect(_receipts(f).any((Payment p) => p.receiptId == 'rcp-2'), isFalse);
@@ -574,7 +596,7 @@ void main() {
         const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
-      await tester.pump();
+      await _frames(tester);
       await tester.tap(find.text('অক্টোবর'));
       await tester.pumpAndSettle();
       await tester.tap(_key('pay-receipt-edit'));
@@ -636,7 +658,7 @@ void main() {
         const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
         overrides: f.overrides,
       );
-      await tester.pump();
+      await _frames(tester);
       expect(find.text('নভেম্বর ২০২৬ · মাফ'), findsOneWidget);
       expect(find.text('কারণ'), findsOneWidget);
       await tester.tap(_key('pay-unwaive-${Ids.waiver(kEnrRahimPhys, _nov)}'));
@@ -656,7 +678,7 @@ void main() {
         overrides: f.overrides,
       );
       await _open(tester);
-      await tester.tap(_dialogCancel);
+      await tester.tap(_key('pay-waive-cancel'));
       await tester.pumpAndSettle();
       expect(f.payments.payments.any((Payment p) => p.waived), isFalse);
     });

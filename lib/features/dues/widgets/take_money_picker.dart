@@ -14,16 +14,28 @@ import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
+import 'package:attendance_alamin/features/dues/widgets/dues_tags.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 
 /// One line of the picker.
 class PickerStudent {
-  const PickerStudent({required this.student, required this.owed});
+  const PickerStudent({
+    required this.student,
+    required this.owed,
+    this.batch = '',
+    this.level,
+  });
 
   final Student student;
 
   /// Outstanding taka over all live enrollments.
   final int owed;
+
+  /// Names of the live batches of the student, joined (empty when unknown).
+  final String batch;
+
+  /// The worst due level (null when nothing is due).
+  final DueLevel? level;
 }
 
 /// Live students that have an enrollment, most owing first, then by name.
@@ -40,10 +52,25 @@ List<PickerStudent> buildPickerRows({
     if (report != null)
       for (final StudentDues d in report.active) d.studentId: d.totalOutstanding,
   };
+  final Map<String, DueLevel?> levels = <String, DueLevel?>{
+    if (report != null)
+      for (final StudentDues d in report.active) d.studentId: d.worst,
+  };
+  final Map<String, List<String>> batches = <String, List<String>>{};
+  for (final EnrollmentTerms t in terms) {
+    if (t.studentLeft || t.batchArchived || t.enrollmentEnded) continue;
+    final List<String> names = batches.putIfAbsent(t.studentId, () => <String>[]);
+    if (!names.contains(t.batchName)) names.add(t.batchName);
+  }
   final List<PickerStudent> rows = <PickerStudent>[
     for (final Student s in students)
       if (s.status == StudentStatus.active && enrolled.contains(s.id))
-        PickerStudent(student: s, owed: owed[s.id] ?? 0),
+        PickerStudent(
+          student: s,
+          owed: owed[s.id] ?? 0,
+          batch: (batches[s.id] ?? const <String>[]).join(', '),
+          level: levels[s.id],
+        ),
   ];
   rows.sort((PickerStudent a, PickerStudent b) {
     final int byOwed = b.owed.compareTo(a.owed);
@@ -70,6 +97,7 @@ Future<void> showTakeMoneyPicker(BuildContext context, {BuildContext? anchor}) a
     anchor: anchor,
     title: context.l10n.duesPickerTitle,
     kind: BhorPanelKind.list,
+    width: 420,
     scroll: false,
     builder: (BuildContext ctx) => const TakeMoneyPicker(),
   );
@@ -123,8 +151,9 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
                     itemBuilder: (BuildContext ctx, int i) {
                       final PickerStudent r = rows[i];
                       final List<String> sub = <String>[
-                        if (r.student.roll != null && r.student.roll!.isNotEmpty) fmt.digits(r.student.roll!),
-                        if (r.student.phone != null && r.student.phone!.isNotEmpty) fmt.digits(r.student.phone!),
+                        if (r.student.roll != null && r.student.roll!.isNotEmpty)
+                          l10n.duesPickerRoll(fmt.digits(r.student.roll!)),
+                        if (r.batch.isNotEmpty) r.batch,
                       ];
                       return BhorListRow(
                         key: ValueKey<String>('picker-${r.student.id}'),
@@ -133,8 +162,18 @@ class _TakeMoneyPickerState extends ConsumerState<TakeMoneyPicker> {
                         subtitle: sub.isEmpty ? null : sub.join(' · '),
                         divider: i < rows.length - 1,
                         trailing: r.owed > 0
-                            ? Text(l10n.duesPickerOwes(fmt.money(r.owed)), style: b.type.label)
-                            : null,
+                            ? Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: <Widget>[
+                                  BhorMoney(r.owed, style: b.type.bodyStrong),
+                                  if (r.level != null) ...<Widget>[
+                                    const SizedBox(height: 2),
+                                    dueLevelTag(context, r.level!, compact: true),
+                                  ],
+                                ],
+                              )
+                            : BhorTag(label: l10n.uiStatePaid, tone: BhorTone.ok, icon: BhorIcons.checkCircleFill),
                         onTap: () => Navigator.of(ctx).pop(r.student.id),
                       );
                     },
