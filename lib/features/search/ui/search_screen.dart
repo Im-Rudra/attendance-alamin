@@ -37,10 +37,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   SearchResults _cachedResults = const SearchResults();
 
   @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onEscape);
+  }
+
+  @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onEscape);
     _text.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  /// Esc anywhere on the page (not only in the field): with text it clears
+  /// the query, with an empty query it closes search. Ignored while a
+  /// popup is open above the page (it closes only the top-most layer).
+  bool _onEscape(KeyEvent event) {
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape || !mounted) return false;
+    if (bhorOverlayAbove(context)) return false;
+    if (_text.text.isNotEmpty) {
+      _setQuery('');
+    } else {
+      _close();
+    }
+    return true;
   }
 
   SearchResults _results(SearchIndex index) {
@@ -106,14 +127,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       _move(r, -1);
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      if (_text.text.trim().isNotEmpty) {
-        _setQuery('');
-      } else {
-        _close();
-      }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

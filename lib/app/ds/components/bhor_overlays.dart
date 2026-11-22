@@ -1,5 +1,6 @@
 // Overlays on the root navigator / root Overlay (docs/council/13-fluid-ui-spec.md):
-// - showBhorSheet / BhorSheetFrame: phone bottom sheet (r28 top, grab
+// - showBhorSheet / BhorSheetFrame: phone bottom sheet (desktop never: it
+//   delegates to showBhorPanel, the container rule) (r28 top, grab
 //   handle, spring up, scrim fade, drag to dismiss with velocity). Opens at
 //   its content height up to 92% (nothing below the fold), content scrolls,
 //   the footer stays pinned above the keyboard; the expanding variant drags
@@ -28,11 +29,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show HitTestEntry, HitTestResult, HitTestTarget;
 import 'package:flutter/physics.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_button.dart';
 import 'package:attendance_alamin/app/ds/components/bhor_display.dart' show BhorTone;
+import 'package:attendance_alamin/app/ds/components/bhor_guard.dart';
 import 'package:attendance_alamin/app/ds/components/bhor_motion.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart' show BhorTapTracker;
@@ -55,6 +58,28 @@ class BhorChromeInset extends InheritedWidget {
 
   @override
   bool updateShouldNotify(BhorChromeInset oldWidget) => oldWidget.start != start;
+}
+
+// ------------------------------------------------------------ Top layer ----
+
+/// True when the page holding [context] is not the top-most layer: its own
+/// route is covered, or a popup (menu, popover, side panel, sheet, dialog)
+/// is open above it on any navigator, e.g. the root navigator above a shell
+/// page whose own nested route still counts as "current".
+///
+/// Page-level key handlers (HardwareKeyboard handlers for Esc, ↑ / ↓,
+/// shortcuts) must do nothing while this is true, so Esc closes only the
+/// top-most layer (G2) and never, say, the selection behind a menu.
+/// Usage: `if (bhorOverlayAbove(context)) return false;`
+bool bhorOverlayAbove(BuildContext context) {
+  if (!context.mounted) return true;
+  final ModalRoute<Object?>? own = ModalRoute.of(context);
+  if (own != null && !own.isCurrent) return true;
+  // Popups take the focus into their own route when they open.
+  final BuildContext? focused = FocusManager.instance.primaryFocus?.context;
+  if (focused == null || !focused.mounted) return false;
+  final ModalRoute<Object?>? top = ModalRoute.of(focused);
+  return top != null && !identical(top, own) && top is PopupRoute<Object?> && top.isActive;
 }
 
 // -------------------------------------------------------------- Surface ----
@@ -176,8 +201,53 @@ Future<void> showBhorSuccess<T>(
 /// [footer] stays pinned under the scrolling content, above the keyboard.
 /// Pop it with
 /// `Navigator.pop(context, v)`.
+///
+/// Desktop never shows a sheet (container rule, docs/council/16 W1-A): on a
+/// wide window this delegates to [showBhorPanel] with [kind] (default: a
+/// [BhorPanelKind.form] side panel when the sheet has a [footer] or is
+/// [expanding], else a [BhorPanelKind.choice] popover). [dirty] guards
+/// unsaved changes (see [BhorGuard]).
 /// Usage: `final v = await showBhorSheet<int>(context, title: 'ব্যাচ', builder: (c) => ...)`.
 Future<T?> showBhorSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  String? title,
+  bool dismissible = true,
+  bool expanding = false,
+  WidgetBuilder? footer,
+  BhorPanelKind? kind,
+  ValueListenable<bool>? dirty,
+}) {
+  if (context.bhorIsWide) {
+    return showBhorPanel<T>(
+      context,
+      builder: builder,
+      kind: kind ?? (expanding || footer != null ? BhorPanelKind.form : BhorPanelKind.choice),
+      title: title,
+      footer: footer,
+      dismissible: dismissible,
+      // Sheet content already scrolls itself (its body is height-capped).
+      scroll: false,
+      dirty: dirty,
+    );
+  }
+  return _pushBhorSheet<T>(
+    context,
+    builder: _guarded(builder, dirty),
+    title: title,
+    dismissible: dismissible,
+    expanding: expanding,
+    footer: footer,
+  );
+}
+
+/// Wraps [builder] in a [BhorGuard] when [dirty] is given.
+WidgetBuilder _guarded(WidgetBuilder builder, ValueListenable<bool>? dirty) {
+  if (dirty == null) return builder;
+  return (BuildContext c) => BhorGuard(dirty: dirty, child: builder(c));
+}
+
+Future<T?> _pushBhorSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   String? title,
@@ -394,7 +464,7 @@ class _BhorSheetFrameState extends State<BhorSheetFrame>
     setState(() => _dragging = false);
     final bool expanded = _height != null && _height! > _natural + 1;
     if ((_drag > 80 || v > 700) && !expanded) {
-      Navigator.of(context).maybePop();
+      _dragDismiss(v);
       return;
     }
     final bool reduced = BhorMotion.reduced(context);
@@ -422,6 +492,21 @@ class _BhorSheetFrameState extends State<BhorSheetFrame>
         _settle.value = _drag;
         _settle.animateWith(SpringSimulation(BhorMotion.springGentle, _drag, 0, v));
       }
+    }
+  }
+
+  /// Pops on a dismiss drag; when an unsaved-changes guard keeps the sheet
+  /// open, it springs back into place.
+  Future<void> _dragDismiss(double v) async {
+    final ModalRoute<Object?>? route = ModalRoute.of(context);
+    await Navigator.of(context).maybePop();
+    final bool closing = route == null || !route.isActive || route.animation?.status == AnimationStatus.reverse;
+    if (!mounted || closing || _drag == 0) return;
+    if (BhorMotion.reduced(context)) {
+      setState(() => _drag = 0);
+    } else {
+      _settle.value = _drag;
+      _settle.animateWith(SpringSimulation(BhorMotion.springGentle, _drag, 0, v));
     }
   }
 
@@ -1059,24 +1144,37 @@ class BhorDialog extends StatelessWidget {
 // -------------------------------------------------------- Adaptive panel ----
 
 /// What a [showBhorPanel] holds; picks the desktop container.
+///
+/// The container rule (docs/council/16 W1-A, G1): on desktop every form is a
+/// side panel, every confirmation or short choice a dialog or an anchored
+/// popover, every menu an anchored popover; never a bottom sheet and never a
+/// full page for a form. Phones show a bottom sheet for all of them.
 enum BhorPanelKind {
   /// Forms (payment, student / batch edit, slot editor, other income,
   /// filters): side panel on desktop; on phones a sheet that opens at its
   /// content height and drags up to full height.
   form,
 
-  /// Confirmations and short choices: centred dialog on desktop.
+  /// Confirmations: centred dialog on desktop.
   confirm,
 
-  /// Short lists of choices: a popover anchored to the control that opened
-  /// it on desktop (a centred dialog when there is no such control).
+  /// Lists of choices or content tied to a control: a popover anchored to
+  /// the control that opened it on desktop (a centred dialog when there is
+  /// no such control).
   list,
 
-  /// Overflow (⋮) and row menus: an anchored popover on desktop.
+  /// Overflow (⋮) and row menus: an anchored popover on desktop. Prefer
+  /// [showBhorMenu], which also gives icons, keyboard and the destructive
+  /// order.
   menu,
 
   /// Date / time / value pickers: an anchored popover on desktop.
   picker,
+
+  /// Short single-choice lists (reminder minutes, cut-off day): a narrow
+  /// popover anchored to the control on desktop, a small centred dialog
+  /// when there is none.
+  choice,
 }
 
 /// The adaptive container (one API, two renderings). Phone (< 840): a
@@ -1084,15 +1182,19 @@ enum BhorPanelKind {
 /// every [BhorPanelKind.form]) lets it drag up to full height. Desktop: a
 /// floating side panel for [BhorPanelKind.form], a centred dialog for
 /// [BhorPanelKind.confirm], and a popover anchored to the invoking widget
-/// for [BhorPanelKind.list] / [BhorPanelKind.menu] / [BhorPanelKind.picker].
+/// for [BhorPanelKind.list] / [BhorPanelKind.menu] / [BhorPanelKind.picker] /
+/// [BhorPanelKind.choice].
 /// The anchor is [anchor] when given, else [context] itself when it is a
-/// control (a button's context), else the control the user just tapped;
+/// control (a button's context), else the control the user just pressed;
 /// with none of those it falls back to a centred dialog. [footer] (the save
 /// button) stays pinned under the content in every rendering. Pop with
 /// `Navigator.pop(ctx, v)`; finish a save with [showBhorSuccess].
+/// [dirty]: while it is true, closing with Esc, ✕, a click outside, a drag
+/// or back asks "Discard changes?" first ([BhorGuard]); saving (popping
+/// with a result, [showBhorSuccess]) is never blocked.
 /// Usage:
-/// `final ok = await showBhorPanel<bool>(context, title: 'টাকা নিন', builder: (c) => PaymentForm(), footer: (c) => saveButton);`
-/// `showBhorPanel<void>(buttonContext, kind: BhorPanelKind.menu, builder: (c) => rows);`
+/// `final ok = await showBhorPanel<bool>(context, title: 'টাকা নিন', builder: (c) => PaymentForm(), footer: (c) => saveButton, dirty: form.dirty);`
+/// `showBhorPanel<int>(buttonContext, kind: BhorPanelKind.choice, title: 'কত মিনিট আগে', builder: (c) => rows);`
 Future<T?> showBhorPanel<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -1104,17 +1206,21 @@ Future<T?> showBhorPanel<T>(
   double? width,
   bool scroll = true,
   BuildContext? anchor,
+  ValueListenable<bool>? dirty,
 }) {
   if (!context.bhorIsWide) {
-    return showBhorSheet<T>(
+    final WidgetBuilder body =
+        scroll ? ((BuildContext c) => SingleChildScrollView(child: builder(c))) : builder;
+    return _pushBhorSheet<T>(
       context,
       title: title,
       dismissible: dismissible,
       expanding: expand || kind == BhorPanelKind.form,
       footer: footer,
-      builder: scroll ? ((BuildContext c) => SingleChildScrollView(child: builder(c))) : builder,
+      builder: _guarded(body, dirty),
     );
   }
+  final WidgetBuilder guarded = _guarded(builder, dirty);
   switch (kind) {
     case BhorPanelKind.form:
       return showBhorSidePanel<T>(
@@ -1124,27 +1230,33 @@ Future<T?> showBhorPanel<T>(
         dismissible: dismissible,
         width: width ?? 480,
         scroll: scroll,
-        builder: builder,
+        builder: guarded,
       );
     case BhorPanelKind.list:
     case BhorPanelKind.menu:
     case BhorPanelKind.picker:
+    case BhorPanelKind.choice:
       return showBhorPopover<T>(
         context,
         anchor: anchor,
         title: title,
         footer: footer,
         dismissible: dismissible,
-        width: width ?? (kind == BhorPanelKind.menu ? 280 : 340),
+        width: width ??
+            (switch (kind) {
+              BhorPanelKind.menu => 280.0,
+              BhorPanelKind.choice => 320.0,
+              _ => 340.0,
+            }),
         scroll: scroll,
-        padding: kind == BhorPanelKind.picker
+        padding: kind == BhorPanelKind.picker || kind == BhorPanelKind.choice
             ? const EdgeInsets.fromLTRB(BhorSpace.s12, 0, BhorSpace.s12, BhorSpace.s12)
             : const EdgeInsets.fromLTRB(BhorSpace.s4, 0, BhorSpace.s4, BhorSpace.s4),
-        builder: builder,
+        builder: guarded,
       );
     case BhorPanelKind.confirm:
       return _showPanelDialog<T>(context,
-          builder: builder, title: title, footer: footer, dismissible: dismissible, width: width ?? 480, scroll: scroll);
+          builder: guarded, title: title, footer: footer, dismissible: dismissible, width: width ?? 480, scroll: scroll);
   }
 }
 
@@ -1176,6 +1288,12 @@ Future<T?> _showPanelDialog<T>(
 
 /// The rect of the control [context] belongs to, in the coordinates of the
 /// root navigator, or null when there is no control to anchor to.
+///
+/// Resolution order: [context] itself when it is control-sized (a button's
+/// own context, an explicit `anchor:`); otherwise the control the user just
+/// pressed or activated with the keyboard ([BhorTapTracker]) when it lies
+/// inside [context] (a ⋮ inside a card, a row's ⋯, a link inside the hero);
+/// otherwise [context] when it is at least smaller than a pane.
 Rect? bhorAnchorRect(BuildContext context) {
   final NavigatorState? nav = Navigator.maybeOf(context, rootNavigator: true);
   final RenderObject? navObject = nav?.context.findRenderObject();
@@ -1189,22 +1307,43 @@ Rect? bhorAnchorRect(BuildContext context) {
     final RenderObject? ro = context.findRenderObject();
     if (ro is RenderBox && ro.attached && ro.hasSize) {
       own = ro.localToGlobal(Offset.zero, ancestor: navBox) & ro.size;
-      if (control(own)) return own;
+      if (bhorIsSnugAnchor(own)) return own;
     }
   }
-  // A whole-screen context: anchor to the control the user just tapped.
+  // A card / row / whole-screen context: anchor to the control just used.
+  if (BhorTapTracker.position != null) {
+    final Rect? pressed = BhorTapTracker.controlRectIn(navBox) ?? _hitControl(navBox);
+    if (pressed != null &&
+        control(pressed) &&
+        (own == null || own.inflate(1).contains(pressed.center))) {
+      return pressed;
+    }
+  }
+  if (own != null && control(own)) return own;
+  return null;
+}
+
+/// True for a rect the size of a control (button, chip, field, short row):
+/// popovers hang from it directly.
+bool bhorIsSnugAnchor(Rect r) => r.width > 0 && r.height > 0 && r.width <= 360 && r.height <= 72;
+
+/// Fallback when the press was not on a [BhorPressable]: the innermost
+/// control-sized box under the last pointer-down.
+Rect? _hitControl(RenderBox navBox) {
   final Offset? tap = BhorTapTracker.position;
   final int? viewId = BhorTapTracker.viewId;
   if (tap == null || viewId == null) return null;
-  final Offset local = navBox.globalToLocal(tap);
-  if (own != null && !own.contains(local)) return null;
   final HitTestResult hit = HitTestResult();
   WidgetsBinding.instance.hitTestInView(hit, tap, viewId);
   for (final HitTestEntry e in hit.path) {
     final HitTestTarget t = e.target;
-    if (t is RenderBox && t.attached && t.hasSize && t.size.width >= 32 && t.size.height >= 32) {
-      final Rect r = t.localToGlobal(Offset.zero, ancestor: navBox) & t.size;
-      return control(r) ? r : null;
+    if (t is RenderBox && t.attached && t.hasSize && t.size.width >= 24 && t.size.height >= 24) {
+      RenderObject? p = t;
+      while (p != null && p != navBox) {
+        p = p.parent;
+      }
+      if (p == null) return null;
+      return t.localToGlobal(Offset.zero, ancestor: navBox) & t.size;
     }
   }
   return null;
@@ -1325,8 +1464,10 @@ class _BhorPopoverRoute<T> extends PopupRoute<T> {
 class BhorPopoverPlacement {
   const BhorPopoverPlacement({required this.rect, required this.below, required this.alignStart});
 
-  /// Left / top / width / max height of the popover (height is the most it
-  /// may take; the card hugs its content).
+  /// The box the popover may occupy: left / width, and the most height it
+  /// may take. The card hugs its content inside it: top-aligned when it
+  /// opens [below] the anchor, bottom-aligned (its bottom edge [gap] px
+  /// above the anchor) when flipped above. Always inside the window.
   final Rect rect;
 
   /// Opens under the anchor (false: flipped above it).
@@ -1338,31 +1479,80 @@ class BhorPopoverPlacement {
   /// The corner the popover grows from.
   Alignment get origin => Alignment(alignStart ? -1 : 1, below ? -1 : 1);
 
+  /// Top-left of a card of [childHeight] inside [rect].
+  Offset positionFor(double childHeight) =>
+      Offset(rect.left, below ? rect.top : rect.bottom - math.min(childHeight, rect.height));
+
   static const double gap = 6;
   static const double margin = 8;
 
+  /// Room below the anchor that is always enough (no flip above it).
+  static const double comfortable = 360;
+
+  /// Smallest useful height: with less room on both sides (a very short
+  /// window) the card overlaps the anchor rather than shrink below this.
+  static const double minHeight = 280;
+
   /// Places a [width]-wide popover next to [anchor] inside [area] (minus
-  /// [padding], e.g. the status bar and the keyboard).
+  /// [padding], e.g. the status bar and the keyboard). It opens below the
+  /// anchor when there is [comfortable] room or more room than above, else
+  /// above; taller content scrolls inside [rect]; it never leaves the
+  /// window and is clamped horizontally.
   static BhorPopoverPlacement of({
     required Rect anchor,
     required Size area,
     required EdgeInsets padding,
     required double width,
   }) {
-    final double w = math.min(width, area.width - 2 * margin);
-    final double roomBelow = area.height - padding.bottom - anchor.bottom - gap - margin;
-    final double roomAbove = anchor.top - padding.top - gap - margin;
-    final double fullH = math.max(120.0, area.height - padding.top - padding.bottom - 2 * margin);
-    // A short window (neither side has room for a useful card): use the
-    // whole window height, overlapping the anchor, so nothing is cut off.
-    final bool cramped = math.max(roomBelow, roomAbove) < 360 && fullH > math.max(roomBelow, roomAbove);
-    final bool below = cramped || roomBelow >= 360 || roomBelow >= roomAbove;
-    final double maxH = cramped ? fullH : math.max(120.0, below ? roomBelow : roomAbove);
-    final bool alignStart = anchor.left + w <= area.width - margin;
-    final double left = (alignStart ? anchor.left : anchor.right - w).clamp(margin, math.max(margin, area.width - w - margin));
-    final double top = cramped ? padding.top + margin : (below ? anchor.bottom + gap : anchor.top - gap - maxH);
-    return BhorPopoverPlacement(rect: Rect.fromLTWH(left, top, w, maxH), below: below, alignStart: alignStart);
+    final double minX = padding.left + margin;
+    final double maxX = math.max(minX, area.width - padding.right - margin);
+    final double minY = padding.top + margin;
+    final double maxY = math.max(minY, area.height - padding.bottom - margin);
+    final double w = math.max(0.0, math.min(width, maxX - minX));
+    final double roomBelow = maxY - (anchor.bottom + gap);
+    final double roomAbove = (anchor.top - gap) - minY;
+    final bool below = roomBelow >= comfortable || roomBelow >= roomAbove;
+    final double span = maxY - minY;
+    final double h = math.min(span, math.max(below ? roomBelow : roomAbove, math.min(minHeight, span)));
+    final double top;
+    final double bottom;
+    if (below) {
+      top = math.max(minY, math.min(anchor.bottom + gap, maxY - h));
+      bottom = top + h;
+    } else {
+      bottom = math.min(maxY, math.max(anchor.top - gap, minY + h));
+      top = bottom - h;
+    }
+    final bool alignStart = anchor.left + w <= maxX;
+    final double left = (alignStart ? anchor.left : anchor.right - w).clamp(minX, math.max(minX, maxX - w));
+    return BhorPopoverPlacement(
+      rect: Rect.fromLTRB(left, top, left + w, bottom),
+      below: below,
+      alignStart: alignStart,
+    );
   }
+}
+
+/// Lays the popover card out inside its placement box: [BhorPopoverPlacement.rect]
+/// caps its size; a flipped card is bottom-aligned to the anchor.
+class _PopoverLayout extends SingleChildLayoutDelegate {
+  _PopoverLayout(this.placement);
+
+  final BhorPopoverPlacement placement;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => BoxConstraints(
+        minWidth: placement.rect.width,
+        maxWidth: placement.rect.width,
+        maxHeight: placement.rect.height,
+      );
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => placement.positionFor(childSize.height);
+
+  @override
+  bool shouldRelayout(_PopoverLayout oldDelegate) =>
+      oldDelegate.placement.rect != placement.rect || oldDelegate.placement.below != placement.below;
 }
 
 /// The popover page: an anchored floating card (also usable inline with a
@@ -1487,34 +1677,22 @@ class BhorPopoverFrame extends StatelessWidget {
               );
               final Animation<double> a =
                   CurvedAnimation(parent: animation, curve: BhorMotion.ease, reverseCurve: BhorMotion.exitCurve);
-              final Widget sized = ConstrainedBox(
-                constraints: BoxConstraints(minWidth: p.rect.width, maxWidth: p.rect.width, maxHeight: p.rect.height),
-                child: card,
-              );
               final Widget moving = FadeTransition(
                 opacity: a,
                 child: reduced
-                    ? sized
+                    ? card
                     : AnimatedBuilder(
                         animation: a,
                         builder: (BuildContext context, Widget? child) => Transform.translate(
                           offset: Offset(0, (p.below ? -4 : 4) * (1 - a.value)),
                           child: Transform.scale(scale: 0.96 + 0.04 * a.value, alignment: p.origin, child: child),
                         ),
-                        child: sized,
+                        child: card,
                       ),
               );
-              return Stack(
-                children: <Widget>[
-                  Positioned(
-                    key: const ValueKey<String>('bhor-popover'),
-                    left: p.rect.left,
-                    width: p.rect.width,
-                    top: p.below ? p.rect.top : null,
-                    bottom: p.below ? null : box.biggest.height - anchor.top + BhorPopoverPlacement.gap,
-                    child: moving,
-                  ),
-                ],
+              return CustomSingleChildLayout(
+                delegate: _PopoverLayout(p),
+                child: KeyedSubtree(key: const ValueKey<String>('bhor-popover'), child: moving),
               );
             },
           ),
