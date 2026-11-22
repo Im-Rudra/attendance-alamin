@@ -90,6 +90,8 @@ jobs:
         run: bash tool/check_domain_purity.sh
       - name: No visible Material (Bhor)
         run: bash tool/check_no_material.sh
+      - name: Container rule (no direct sheets / dialogs in features)
+        run: bash tool/check_containers.sh
       - name: Font checksums
         run: sha256sum -c tool/fonts.sha256
       - name: Platform patches are applied (apply.py --verify)

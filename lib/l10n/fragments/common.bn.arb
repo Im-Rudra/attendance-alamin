@@ -22,6 +22,22 @@
   "@commonCancel": {
     "description": "Button: dismiss without saving."
   },
+  "commonDiscardTitle": "বাতিল করবেন?",
+  "@commonDiscardTitle": {
+    "description": "Title of the unsaved-changes guard, asked when a form with changes is closed (Esc, close button, click outside, back)."
+  },
+  "commonDiscardMessage": "আপনার পরিবর্তনগুলো সেভ হয়নি।",
+  "@commonDiscardMessage": {
+    "description": "Message of the unsaved-changes guard: the changes in the form are not saved yet."
+  },
+  "commonDiscardKeep": "এডিট চালিয়ে যান",
+  "@commonDiscardKeep": {
+    "description": "Unsaved-changes guard button: go back to the form and keep the changes."
+  },
+  "commonDiscardConfirm": "বাদ দিন",
+  "@commonDiscardConfirm": {
+    "description": "Unsaved-changes guard button: throw the changes away and close the form."
+  },
   "commonDelete": "মুছুন",
   "@commonDelete": {
     "description": "Button: delete an item."

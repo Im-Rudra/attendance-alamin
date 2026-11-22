@@ -7,6 +7,8 @@ export 'package:attendance_alamin/app/ds/components/bhor_button.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_choice.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_display.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_domain.dart';
+export 'package:attendance_alamin/app/ds/components/bhor_guard.dart';
+export 'package:attendance_alamin/app/ds/components/bhor_menu.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_motion.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_navigation.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_overlays.dart';
