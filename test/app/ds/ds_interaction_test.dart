@@ -95,9 +95,14 @@ void main() {
         await tester.pump();
         final EditableTextState s = tester.state<EditableTextState>(find.byType(EditableText).first);
         expect(s.widget.focusNode.hasFocus, isTrue);
-        final BhorFocusRing ring =
+        BhorFocusRing ring() =>
             tester.widget<BhorFocusRing>(find.descendant(of: find.byType(BhorTextField).first, matching: find.byType(BhorFocusRing)));
-        expect(ring.visible, isTrue);
+        // A tap focuses without a ring (review L1); the ring is keyboard-only.
+        expect(ring().visible, isFalse);
+        FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+        addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+        await tester.pump();
+        expect(ring().visible, isTrue);
 
         await tester.enterText(find.byType(BhorTextField).first, 'রহিম উদ্দিন');
         await tester.pump();

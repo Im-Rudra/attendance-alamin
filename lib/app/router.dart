@@ -5,9 +5,15 @@
 // own stack, switches fade through). Detail
 // routes (`/batches/:batchId`, `/students/:studentId`, `/fees/s/:studentId`)
 // go through AdaptiveDetail: list ‖ detail on wide windows, the detail alone
-// on phones. Forms, the roll call and the other full-screen flows sit on the
-// root navigator (no navigation chrome). Static segments are declared before
-// `:param` siblings. Only this file imports feature screens.
+// on phones. Forms and the other full-screen flows sit on the root navigator
+// (no navigation chrome). The roll call (`/rollcall/:occ` in the Today branch,
+// `/batches/:batchId/rollcall/:date` in the Batches branch) lives INSIDE the
+// shell so the sidebar stays on desktop (docs/council/16 W1-B 5, review R1);
+// pushed from another branch it stacks on that branch's navigator. On phones
+// the shell hides the bottom nav while a roll call is on top (it stays a
+// full-screen task there). Onboarding, search and reminder priming stay full
+// screen. Static segments are declared before `:param` siblings. Only this
+// file imports feature screens.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,7 +95,7 @@ Page<void> _page(GoRouterState state, Widget child) => CustomTransitionPage<void
       transitionsBuilder: bhorPageTransition,
     );
 
-/// Full-screen flows (roll call, search, onboarding, reminder priming):
+/// Full-screen flows (roll call in its branch, search, onboarding, reminder priming):
 /// rise in; on close they drop 24 px and fade out over 220 ms on their own
 /// opaque background, so the page below never shows through their text.
 Page<void> _fullPage(GoRouterState state, Widget child) => CustomTransitionPage<void>(
@@ -122,6 +128,16 @@ GoRouter buildRouter(String initialLocation) {
               GoRoute(
                 path: Routes.today,
                 pageBuilder: (BuildContext context, GoRouterState state) => _page(state, const TodayScreen()),
+              ),
+              // Roll call of one occurrence (Today / notification deep link).
+              // In the shell: the sidebar stays (review R1).
+              GoRoute(
+                path: '/rollcall/:occ',
+                name: AdaptiveScaffold.rollCallRouteName,
+                pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, RollCallScreen(
+                  occ: _param(state, 'occ'),
+                  returnTo: state.extra is String ? state.extra! as String : null,
+                )),
               ),
             ],
           ),
@@ -158,9 +174,10 @@ GoRouter buildRouter(String initialLocation) {
                         parentNavigatorKey: rootNavigatorKey,
                         pageBuilder: (BuildContext context, GoRouterState state) => _page(state, SlotEditorScreen(batchId: _param(state, 'batchId'))),
                       ),
+                      // In the shell (Batches branch navigator): the sidebar stays.
                       GoRoute(
                         path: 'rollcall/:date',
-                        parentNavigatorKey: rootNavigatorKey,
+                        name: AdaptiveScaffold.batchRollCallRouteName,
                         pageBuilder: (BuildContext context, GoRouterState state) {
                           final LocalDate? date = LocalDate.tryParse(state.pathParameters['date']);
                           if (date == null) return _page(state, const NotFoundScreen());
@@ -300,13 +317,6 @@ GoRouter buildRouter(String initialLocation) {
         ],
       ),
       // Full-screen routes: top-level, so they live on the root navigator.
-      GoRoute(
-        path: '/rollcall/:occ',
-        pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, RollCallScreen(
-          occ: _param(state, 'occ'),
-          returnTo: state.extra is String ? state.extra! as String : null,
-        )),
-      ),
       GoRoute(
         path: Routes.search,
         pageBuilder: (BuildContext context, GoRouterState state) => _fullPage(state, const SearchScreen()),

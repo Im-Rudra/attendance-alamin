@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/errors/app_exception.dart';
 import 'package:attendance_alamin/core/errors/error_codes.dart';
+import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
@@ -278,7 +279,7 @@ class CollectInput {
   int? get amount {
     final String? t = amountText;
     if (t == null) return null;
-    return int.tryParse(t) ?? 0;
+    return int.tryParse(AppFormat.toAsciiDigits(t)) ?? 0;
   }
 
   CollectInput copyWith({

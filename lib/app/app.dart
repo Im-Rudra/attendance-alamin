@@ -14,6 +14,7 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/router.dart';
 import 'package:attendance_alamin/app/shell/storage_banner.dart';
+import 'package:attendance_alamin/app/shell/window_chrome.dart';
 import 'package:attendance_alamin/app/widgets/effects_mode.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -47,8 +48,11 @@ class App extends ConsumerWidget {
 }
 
 /// The Bhor theme of [themeMode] ([ThemeMode.system] follows the platform
-/// brightness), default text and icon styles for every route (sheets and
-/// dialogs included) and the toast host. Used by [App] and the test harnesses.
+/// brightness) with the desktop type step on windows >= 1200 wide, default
+/// text and icon styles for every route (sheets and dialogs included) and the
+/// toast host. It also keeps the Windows title bar in the app's brightness
+/// (BhorWindowChrome) and shows focus rings only for keyboard traversal
+/// (BhorKeyboardFocusMode). Used by [App] and the test harnesses.
 class BhorAppRoot extends StatelessWidget {
   const BhorAppRoot({super.key, required this.themeMode, required this.child});
 
@@ -64,16 +68,22 @@ class BhorAppRoot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Brightness platform = MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light;
-    final BhorThemeData theme = BhorThemeData.of(brightnessOf(themeMode, platform));
-    return BhorTheme(
-      data: theme,
-      child: DefaultTextStyle(
-        style: theme.type.body,
-        child: IconTheme(
-          data: IconThemeData(color: theme.colors.text2, size: 22),
-          child: ColoredBox(
-            color: theme.colors.bg,
-            child: BhorToastHost(child: child),
+    final Brightness brightness = brightnessOf(themeMode, platform);
+    final BhorThemeData theme = BhorThemeData.forWidth(brightness, MediaQuery.maybeSizeOf(context)?.width ?? 0);
+    return BhorWindowChrome(
+      brightness: brightness,
+      child: BhorKeyboardFocusMode(
+        child: BhorTheme(
+          data: theme,
+          child: DefaultTextStyle(
+            style: theme.type.body,
+            child: IconTheme(
+              data: IconThemeData(color: theme.colors.text2, size: 22),
+              child: ColoredBox(
+                color: theme.colors.bg,
+                child: BhorToastHost(child: child),
+              ),
+            ),
           ),
         ),
       ),

@@ -89,26 +89,32 @@ void main() {
       expect(contrast(c.accent, c.surface, c.surface), greaterThanOrEqualTo(3.0));
     });
 
-    // Visual QA (docs/council/14-visual-qa.md C2, C3): selected states.
-    test('$theme attendance toggle: the selected thumb ring stands out from the track (>= 3:1)', () {
-      for (final (String n, Color tone, Color tint) in <(String, Color, Color)>[
-        ('present', c.ok, c.okBg),
-        ('absent', c.absentText, c.absentBg),
-        ('late', c.late, c.lateBg),
+    // Visual QA (docs/council/14-visual-qa.md C2, C3; 15-windows-ux-review.md
+    // R3 / L1): selected states are filled, never ringed.
+    test('$theme attendance toggle: the filled thumb stands out from the track (>= 3:1), its label is AA', () {
+      for (final (String n, Color tone) in <(String, Color)>[
+        ('present', c.ok),
+        ('absent', c.absentText),
+        ('late', c.late),
       ]) {
-        final double ring = contrast(tone, c.soft, c.soft);
-        expect(ring, greaterThanOrEqualTo(3.0), reason: '$theme $n ring = ${ring.toStringAsFixed(2)}:1');
-        // The label / icon on the thumb (surface + a light tint) stays AA.
-        final Color thumb = Color.alphaBlend(tint.withValues(alpha: tint.a * 0.6), c.surface);
-        final double label = contrast(tone, thumb, thumb);
+        final double fill = contrast(tone, c.soft, c.soft);
+        expect(fill, greaterThanOrEqualTo(3.0), reason: '$theme $n thumb = ${fill.toStringAsFixed(2)}:1');
+        final Color on = BhorAttendanceToggle.onStatusOf(c);
+        final double label = contrast(on, tone, tone);
         expect(label, greaterThanOrEqualTo(4.5), reason: '$theme $n label = ${label.toStringAsFixed(2)}:1');
       }
     });
 
-    test('$theme segmented: selected text is AA; dark thumb edge >= 3:1 on the track', () {
-      final Color thumb = t.isDark ? c.soft2 : c.surface;
-      expect(contrast(c.text, thumb, thumb), greaterThanOrEqualTo(4.5));
-      if (t.isDark) expect(contrast(c.segmentEdge, c.soft, c.soft), greaterThanOrEqualTo(3.0));
+    test('$theme segmented / tabs: selected text is AA on the filled thumb; the thumb separates from the track', () {
+      expect(contrast(c.text, c.thumb, c.thumb), greaterThanOrEqualTo(4.5));
+      if (t.isDark) expect(contrast(c.thumb, c.soft, c.soft), greaterThanOrEqualTo(2.0));
+    });
+
+    test('$theme selection style: text stays AA on the selected card fill', () {
+      final Color fill = BhorSelection.fillOn(c, c.surface);
+      expect(contrast(c.text, fill, fill), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.text2, fill, fill), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.accent, fill, fill), greaterThanOrEqualTo(3.0));
     });
 
     test('$theme overdue tag is the tinted pill and AA', () {

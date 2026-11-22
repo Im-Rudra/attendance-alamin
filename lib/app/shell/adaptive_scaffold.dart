@@ -13,7 +13,11 @@
 // content and keep the sidebar in view. Icons are Phosphor (BhorIcons).
 // The বেতন item carries the number of overdue students. Desktop keys:
 // Ctrl+1…5 destinations, Ctrl+F / Ctrl+K search, `?` shortcut list.
+// Focus routes (the roll call, [AdaptiveScaffold.focusRouteNames]) live in
+// the shell: the sidebar stays on desktop; on phones the bottom nav hides
+// while one is on top, so the task keeps the whole screen.
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +38,22 @@ class AdaptiveScaffold extends ConsumerStatefulWidget {
   static const Key bottomNavKey = Key('shell-bottom-nav');
   static const Key sidebarKey = Key('shell-sidebar');
 
+  /// GoRoute names of the focus tasks shown inside the shell (router.dart).
+  static const String rollCallRouteName = 'rollcall';
+  static const String batchRollCallRouteName = 'batch-rollcall';
+  static const Set<String> focusRouteNames = <String>{rollCallRouteName, batchRollCallRouteName};
+
+  /// True while the top-most route of [router] is a focus task.
+  static bool focusRouteOnTop(GoRouter? router) =>
+      router != null && focusRouteIn(router.routerDelegate.currentConfiguration);
+
+  /// True when the top-most route of [config] is a focus task.
+  static bool focusRouteIn(RouteMatchList config) {
+    if (config.isEmpty) return false;
+    final RouteBase route = config.last.route;
+    return route is GoRoute && focusRouteNames.contains(route.name);
+  }
+
   /// Height of the phone bottom nav: the pill plus its insets (without the
   /// gesture-bar inset).
   static const double bottomNavHeight = BhorBottomNav.height;
@@ -48,7 +68,42 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
 
   StatefulNavigationShell get _shell => widget.navigationShell;
 
+  /// The router whose pushes / pops may show or hide the phone nav.
+  GoRouterDelegate? _delegate;
+  bool _focusOnTop = false;
+
   void _select(int index) => _shell.goBranch(index, initialLocation: index == _shell.currentIndex);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final GoRouterDelegate? d = GoRouter.maybeOf(context)?.routerDelegate;
+    if (d != _delegate) {
+      _delegate?.removeListener(_onRoute);
+      _delegate = d;
+      d?.addListener(_onRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    _delegate?.removeListener(_onRoute);
+    super.dispose();
+  }
+
+  /// Rebuilds when a focus task comes to / leaves the top (phone nav).
+  void _onRoute() {
+    final GoRouterDelegate? d = _delegate;
+    if (d == null || !mounted) return;
+    if (AdaptiveScaffold.focusRouteIn(d.currentConfiguration) == _focusOnTop) return;
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,16 +113,19 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
     final int overdue = ref.watch(duesReportProvider).value?.overdueStudents ?? 0;
     final List<BhorNavItem> items = _items(context, l10n, overdue);
     final int index = _shell.currentIndex;
+    _focusOnTop = AdaptiveScaffold.focusRouteOnTop(GoRouter.maybeOf(context));
     final Widget scaffold;
     if (!wc.usesRail) {
       final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+      // A focus task (roll call) keeps the whole phone screen.
+      final bool hideNav = keyboardOpen || _focusOnTop;
       scaffold = BhorScaffold(
         wash: false,
         body: BhorToastInset(
-          bottom: keyboardOpen ? 0 : AdaptiveScaffold.bottomNavHeight,
+          bottom: hideNav ? 0 : AdaptiveScaffold.bottomNavHeight,
           child: _shell,
         ),
-        bottomNav: keyboardOpen
+        bottomNav: hideNav
             ? null
             : MediaQuery.withClampedTextScaling(
                 maxScaleFactor: 1.3,

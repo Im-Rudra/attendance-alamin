@@ -178,3 +178,28 @@ motion is reduced).
 - Never hand-roll `AnimatedContainer` timings: use `BhorMotion.of(context, BhorMotion.fast)` and
   `BhorMotion.curveOf(context, BhorMotion.spring)` so reduced motion works. Never put `BhorMotion.spring`
   (it overshoots) on opacity, colour or a size that animates towards 0.
+
+### 5. Windows rebuild, wave 1 (W1-B): what wave 2 adopts
+See `16-windows-rebuild-plan.md`. Use these and nothing hand-rolled:
+- **Templates** (`lib/app/shell/templates/templates.dart`): `BhorDashboardPage(overline:, title:, actions:, hero:, children:)`
+  (masonry, max 1320); `BhorMasterDetailPage(master:, detail:, emptyDetail:, rail:)` (list 360; the rail is a
+  column only on windows >= 1600, else read it in the detail with `BhorMasterDetailPage.foldedRailOf(context)`
+  and show it as a section); `BhorSettingsPage(sections:, selected:, onSelect:, title:, crumb:, onCrumb:, child:)`
+  (nav 240, content max 720, back crumb on sub-pages); `BhorFocusPage(title:, subtitle:, actions:, summary:,
+  primary:, body:)` (inside the shell, content max 880, sticky bar, Esc = back through `Navigator.maybePop`).
+- **Selection style** (one for every list card / row): `BhorCard(selected: true, ...)` or
+  `BhorListRow(selected: true, ...)`: the accent-tint fill + a 3 px accent bar, text in its normal colours.
+  Custom tiles: `BhorSelectable(selected:, child:)` or `BhorSelection.fillOn(c, c.surface)` + `BhorSelectionBar`.
+  Never paint a tint over the content (it dims the text) and never use a solid accent fill for a selected card.
+- **Tabs**: `BhorTabs(tabs:, index:, onChanged:)` is the segmented look now (soft track, filled thumb);
+  `expand: true` shares the width.
+- **Empty states**: `BhorEmptyState(size: BhorEmptySize.compact | regular | page, icon:, title:, message:, action:)`.
+- **Dashboards**: `BhorMasonry(children: cards)`: content-sized cards in 1 / 2 / 3 columns, never equal heights.
+- **Fields**: one soft style. Date / time / chosen-elsewhere values use `BhorPickerField(label:, value:, icon:,
+  onTap: (anchorCtx) => ...)`; never a white or outlined box. Read-only: `BhorTextField(readOnly: true)`
+  (text3 + lock). Number / phone fields show Bangla digits in bn automatically; read them with
+  `BhorDigits.parseInt(text)` (both digit sets).
+- **No rings on selected states**: segmented, radio cards, chips, the attendance thumb and the calendar
+  today cell are filled; the focus ring is keyboard-only (`BhorKeyboardFocusMode` at the app root).
+- **Type**: windows >= 1200 get the desktop step (`BhorType.desktop`: display 28, title 22, heading 18,
+  body 15, stat 30) through `context.bhor`; never hard-code font sizes to "fix" desktop.

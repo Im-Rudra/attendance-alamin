@@ -4,8 +4,13 @@
 // y -4 -> 0, fade, 200 ms) with a check on the chosen item; on phones the
 // options open as a bottom-sheet list instead. The chosen item is an accent
 // tint + check (never an outline) and the list opens scrolled to it. No
-// Material DropdownButton.
-// Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`.
+// Material DropdownButton. While open the field keeps its soft fill (one
+// field style): the label turns accent and the chevron turns; no ring.
+// BhorPickerField is the same soft field as a plain tap target (date, time
+// or any value chosen in a picker), so no feature draws its own white,
+// outlined or borderless "field".
+// Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`,
+// `BhorPickerField(label: 'শুরু', value: fmt.time(m), icon: BhorIcons.clock, onTap: pick)`.
 
 import 'dart:math' as math;
 
@@ -121,9 +126,12 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
           semanticLabel: '${widget.label ?? widget.semanticLabel ?? ''}${current == null ? '' : ', ${current.label}'}',
           excludeChildSemantics: true,
           scaleOnPress: false,
+          showFocusRing: false,
           radius: BhorRadius.control,
           builder: (BuildContext context, BhorStates s) => BhorFocusRing(
-            visible: _open,
+            // Keyboard focus only (BhorPressable's own ring is off here so
+            // the ring hugs the field box); opening never adds one.
+            visible: s.focused,
             radius: BhorRadius.control,
             child: AnimatedContainer(
               key: _boxKey,
@@ -132,7 +140,7 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
               constraints: BoxConstraints(minHeight: hasLabel ? BhorSize.field : BhorSize.control),
               padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 6, BhorSpace.s12, 6),
               decoration: BoxDecoration(
-                color: !enabled ? c.soft : (_open ? c.surface : (s.hovered || s.pressed ? c.soft2 : c.soft)),
+                color: !enabled ? c.soft : (_open || s.hovered || s.pressed ? c.soft2 : c.soft),
                 borderRadius: BorderRadius.circular(BhorRadius.control),
                 border: Border.all(color: hasError ? c.danger : c.danger.withValues(alpha: 0), width: 1.5),
               ),
@@ -184,6 +192,119 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(widget.error!, style: b.type.meta.copyWith(color: c.danger)),
+          ),
+      ],
+    );
+  }
+}
+
+/// A soft field that opens a picker (date, time, anything chosen elsewhere):
+/// the same box as [BhorTextField] / [BhorSelect] (soft fill r14, h56 with a
+/// label, soft2 on hover), the small label over the value and a trailing
+/// [icon]. Never white, outlined or borderless. The tap callback receives
+/// the field's own context so pickers can anchor to it.
+/// Usage: `BhorPickerField(label: 'শুরু', value: fmt.time(m), icon: BhorIcons.clock, onTap: (ctx) => pick(ctx))`.
+class BhorPickerField extends StatelessWidget {
+  const BhorPickerField({
+    super.key,
+    required this.value,
+    required this.onTap,
+    this.label,
+    this.placeholder,
+    this.icon = BhorIcons.chevronDown,
+    this.leading,
+    this.error,
+    this.semanticLabel,
+  });
+
+  /// Shown value; null / empty shows [placeholder] in text3.
+  final String? value;
+
+  /// Null disables the field. Gets the field's context (anchor).
+  final ValueChanged<BuildContext>? onTap;
+  final String? label;
+  final String? placeholder;
+
+  /// Trailing glyph (calendar, clock, chevron).
+  final IconData icon;
+
+  /// Optional leading glyph.
+  final IconData? leading;
+  final String? error;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final BhorColors c = b.colors;
+    final bool enabled = onTap != null;
+    final bool hasError = error != null && error!.isNotEmpty;
+    final bool empty = value == null || value!.isEmpty;
+    final bool hasLabel = label != null;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorPressable(
+          onTap: enabled ? () => onTap!(context) : null,
+          semanticLabel: <String>[
+            ?(label ?? semanticLabel),
+            if (!empty) value!,
+          ].join(', '),
+          excludeChildSemantics: true,
+          scaleOnPress: false,
+          radius: BhorRadius.control,
+          builder: (BuildContext context, BhorStates s) => AnimatedContainer(
+            duration: fast,
+            curve: BhorMotion.ease,
+            constraints: BoxConstraints(minHeight: hasLabel ? BhorSize.field : BhorSize.control),
+            padding: const EdgeInsets.fromLTRB(BhorSpace.s16, 6, BhorSpace.s12, 6),
+            decoration: BoxDecoration(
+              color: enabled && (s.hovered || s.pressed) ? c.soft2 : c.soft,
+              borderRadius: BorderRadius.circular(BhorRadius.control),
+              border: Border.all(color: hasError ? c.danger : c.danger.withValues(alpha: 0), width: 1.5),
+            ),
+            child: Row(
+              children: <Widget>[
+                if (leading != null) ...<Widget>[
+                  Icon(leading, size: BhorIconSize.chip, color: c.text2),
+                  const SizedBox(width: BhorSpace.s8),
+                ],
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      if (hasLabel)
+                        Text(
+                          label!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: b.type.label.copyWith(fontSize: 12, color: hasError ? c.danger : c.text2),
+                        ),
+                      Text(
+                        empty ? (placeholder ?? '') : value!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: BhorType.tabular(b.type.body).copyWith(
+                          fontSize: 15,
+                          color: empty || !enabled ? c.text3 : c.text,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: BhorSpace.s8),
+                Icon(icon, size: BhorIconSize.row, color: enabled ? c.text2 : c.text3),
+              ],
+            ),
+          ),
+        ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(error!, style: b.type.meta.copyWith(color: c.danger)),
           ),
       ],
     );

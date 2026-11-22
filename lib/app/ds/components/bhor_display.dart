@@ -2,8 +2,14 @@
 // BhorCard (+ hero, the only gradient), BhorList (surface card r20 with a
 // line edge holding rows), BhorListRow (inset hairline, soft hover/press),
 // BhorSectionHeader, BhorAvatar (circle), BhorProgress (animated fill),
-// BhorSkeleton (shimmer sweep), BhorEmptyState.
+// BhorSkeleton (shimmer sweep), BhorEmptyState (compact / regular / page),
+// the one selection style for list cards and rows (BhorSelection:
+// accentTint fill + a 3 px accent bar, text never dimmed; review B2) and
+// BhorMasonry (content-sized dashboard columns).
 
+import 'dart:math' as math;
+
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
@@ -103,14 +109,24 @@ class BhorTag extends StatelessWidget {
 
 /// Surface card with a 1 px line edge (r18); `hero` paints the signature
 /// gradient (r22, white text) and is the only gradient in the app.
-/// Tappable when [onTap] is set (hover edge, press scale).
-/// Usage: `BhorCard(child: ...)`, `BhorCard.hero(child: ...)`.
+/// Tappable when [onTap] is set (hover edge, press scale). [selected] is the
+/// one list-card selection style ([BhorSelection]): accent-tint fill and a
+/// 3 px accent bar at the start; the content keeps its colours.
+/// Usage: `BhorCard(child: ...)`, `BhorCard(selected: id == current, onTap: f, child: ...)`,
+/// `BhorCard.hero(child: ...)`.
 class BhorCard extends StatelessWidget {
-  const BhorCard({super.key, required this.child, this.padding, this.onTap, this.semanticLabel})
-      : hero = false;
+  const BhorCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.semanticLabel,
+    this.selected = false,
+  }) : hero = false;
 
   const BhorCard.hero({super.key, required this.child, this.padding, this.onTap, this.semanticLabel})
-      : hero = true;
+      : hero = true,
+        selected = false;
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -118,20 +134,27 @@ class BhorCard extends StatelessWidget {
   final String? semanticLabel;
   final bool hero;
 
+  /// The selected list card (master list).
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
     final double radius = hero ? BhorRadius.hero : BhorRadius.card;
+    final Color selectedFill = BhorSelection.fillOn(c, c.surface);
     Widget box(BhorStates s) => AnimatedContainer(
           duration: BhorMotion.of(context, BhorMotion.fast),
           curve: BhorMotion.ease,
           padding: padding ?? EdgeInsets.all(hero ? BhorSpace.s20 : BhorSpace.s16),
           decoration: BoxDecoration(
-            color: hero ? null : c.surface,
+            color: hero ? null : (selected ? selectedFill : c.surface),
             gradient: hero ? c.heroGradient : null,
             borderRadius: BorderRadius.circular(radius),
-            border: hero ? null : Border.all(color: s.hovered ? c.accentLine : c.line),
+            // Selected: the edge melts into the fill (no ring).
+            border: hero
+                ? null
+                : Border.all(color: selected ? selectedFill : (s.hovered ? c.accentLine : c.line)),
           ),
           foregroundDecoration:
               s.pressed ? BoxDecoration(color: c.pressShade, borderRadius: BorderRadius.circular(radius)) : null,
@@ -142,13 +165,109 @@ class BhorCard extends StatelessWidget {
                 )
               : child,
         );
-    if (onTap == null) return box(const BhorStates());
+    Widget framed(BhorStates s) => hero
+        ? box(s)
+        : Stack(
+            fit: StackFit.passthrough,
+            children: <Widget>[
+              box(s),
+              Positioned.fill(child: BhorSelectionBar(selected: selected)),
+            ],
+          );
+    if (onTap == null) return Semantics(selected: selected ? true : null, child: framed(const BhorStates()));
     return BhorPressable(
       onTap: onTap,
+      selected: selected ? true : null,
       semanticLabel: semanticLabel,
       radius: radius,
       pressScale: 0.985,
-      builder: (BuildContext context, BhorStates s) => box(s),
+      builder: (BuildContext context, BhorStates s) => framed(s),
+    );
+  }
+}
+
+/// The one selection style of list cards and rows (docs/council/16 W1-B 4,
+/// review B2): the accent-tint fill plus a 3 px accent bar at the leading
+/// edge. Text and icons keep their normal colours: a selected item never
+/// looks dimmed (light) and never turns into a solid indigo slab (dark).
+/// [BhorCard] and [BhorListRow] take `selected:`; custom tiles use
+/// [BhorSelectable] or [fillOn] + [BhorSelectionBar].
+abstract final class BhorSelection {
+  /// Width of the leading accent bar.
+  static const double barWidth = 3;
+
+  /// Vertical inset of the bar from the item's top and bottom.
+  static const double barInset = BhorSpace.s12;
+
+  /// The selected fill, painted opaque over [under] (surface for cards).
+  static Color fillOn(BhorColors c, Color under) => Color.alphaBlend(c.accentTint, under);
+}
+
+/// The 3 px accent bar of the selection style; fills its parent's height
+/// (inset [BhorSelection.barInset]) and slides in with the spring.
+/// Usage: `Stack(children: [tile, Positioned.fill(child: BhorSelectionBar(selected: on))])`.
+class BhorSelectionBar extends StatelessWidget {
+  const BhorSelectionBar({super.key, required this.selected, this.inset = BhorSelection.barInset});
+
+  final bool selected;
+
+  /// Top and bottom inset.
+  final double inset;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    return IgnorePointer(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: inset),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: AnimatedContainer(
+            duration: BhorMotion.of(context, BhorMotion.fast),
+            curve: BhorMotion.ease,
+            width: BhorSelection.barWidth,
+            decoration: BoxDecoration(
+              color: selected ? c.accent : c.accent.withValues(alpha: 0),
+              borderRadius: const BorderRadiusDirectional.horizontal(end: Radius.circular(2)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Paints the selection style behind / beside any tile: the accent-tint
+/// fill under [child] (which should be transparent where the fill must show)
+/// and the leading bar over it. Prefer `BhorCard(selected:)` for cards.
+/// Usage: `BhorSelectable(selected: on, child: myTile)`.
+class BhorSelectable extends StatelessWidget {
+  const BhorSelectable({super.key, required this.selected, required this.child, this.radius = BhorRadius.card});
+
+  final bool selected;
+  final Widget child;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    return Semantics(
+      selected: selected ? true : null,
+      child: AnimatedContainer(
+        duration: BhorMotion.of(context, BhorMotion.fast),
+        curve: BhorMotion.ease,
+        decoration: BoxDecoration(
+          color: selected ? c.accentTint : c.accentTint.withValues(alpha: 0),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: <Widget>[
+            child,
+            Positioned.fill(child: BhorSelectionBar(selected: selected)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -201,7 +320,8 @@ class _LastRow extends InheritedWidget {
 }
 
 /// Dense row with an inset hairline divider (48 tall on phones, 44 on
-/// desktop); hover / press paint the soft fill. Money goes in [trailing]
+/// desktop); hover / press paint the soft fill; [selected] is the selection
+/// style (accent tint + leading bar, text unchanged). Money goes in [trailing]
 /// (right-aligned, bold, tabular: `BhorMoney`).
 /// Usage: `BhorListRow(title: 'রহিম', subtitle: 'রোল ৩', trailing: tag, onTap: f)`.
 class BhorListRow extends StatelessWidget {
@@ -256,10 +376,7 @@ class BhorListRow extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text(title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: b.type.bodyStrong.copyWith(color: selected ? c.accent : c.text)),
+                          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.bodyStrong),
                           if (subtitle != null)
                             Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: b.type.meta),
                         ],
@@ -277,6 +394,7 @@ class BhorListRow extends StatelessWidget {
                   height: 1,
                   child: ColoredBox(color: c.line),
                 ),
+              Positioned.fill(child: BhorSelectionBar(selected: selected, inset: BhorSpace.s8)),
             ],
           ),
         );
@@ -528,46 +646,233 @@ class _SweepTransform extends GradientTransform {
       Matrix4.translationValues(bounds.width * (t * 2 - 1), 0, 0);
 }
 
-/// Calm empty state: icon tile, title, message and an optional action.
-/// Usage: `BhorEmptyState(icon: BhorIcons.batches, title: '...', message: '...', action: button)`.
+/// Size of a [BhorEmptyState].
+enum BhorEmptySize {
+  /// Inside a card or a short list (44 px glyph circle, label title).
+  compact,
+
+  /// A list or pane (64 px circle, heading title).
+  regular,
+
+  /// A whole page or a large pane (88 px circle, title-size title).
+  page,
+}
+
+/// Designed empty state (review L3): the glyph in a tinted circle, a title,
+/// a one-line body and an optional action, centred. Three sizes.
+/// Usage: `BhorEmptyState(icon: BhorIcons.batches, title: '...', message: '...', action: button)`,
+/// `BhorEmptyState(size: BhorEmptySize.compact, icon: ..., title: ...)`.
 class BhorEmptyState extends StatelessWidget {
-  const BhorEmptyState({super.key, required this.icon, required this.title, this.message, this.action});
+  const BhorEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+    this.size = BhorEmptySize.regular,
+  });
 
   final IconData icon;
   final String title;
+
+  /// One short line under the title.
   final String? message;
   final Widget? action;
+  final BhorEmptySize size;
 
   @override
   Widget build(BuildContext context) {
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
+    final (double circle, double glyph, EdgeInsets pad, TextStyle titleStyle, double gap) = switch (size) {
+      BhorEmptySize.compact => (
+          44.0,
+          22.0,
+          const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s16),
+          b.type.bodyStrong,
+          BhorSpace.s8,
+        ),
+      BhorEmptySize.regular => (
+          64.0,
+          28.0,
+          const EdgeInsets.symmetric(horizontal: BhorSpace.s24, vertical: BhorSpace.s32),
+          b.type.heading,
+          BhorSpace.s16,
+        ),
+      BhorEmptySize.page => (
+          88.0,
+          40.0,
+          const EdgeInsets.symmetric(horizontal: BhorSpace.s32, vertical: BhorSpace.s40 + BhorSpace.s8),
+          b.type.title,
+          BhorSpace.s20,
+        ),
+    };
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s24, vertical: BhorSpace.s32),
+      padding: pad,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: c.accentTint,
-              borderRadius: BorderRadius.circular(BhorRadius.card),
-            ),
-            child: Icon(icon, size: BhorIconSize.nav + 4, color: c.accent),
+            width: circle,
+            height: circle,
+            decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
+            child: Icon(icon, size: glyph, color: c.accent),
           ),
-          const SizedBox(height: BhorSpace.s16),
-          Semantics(header: true, child: Text(title, textAlign: TextAlign.center, style: b.type.heading)),
+          SizedBox(height: gap),
+          Semantics(header: true, child: Text(title, textAlign: TextAlign.center, style: titleStyle)),
           if (message != null) ...<Widget>[
             const SizedBox(height: BhorSpace.s4),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: Text(message!, textAlign: TextAlign.center, style: b.type.body.copyWith(color: c.text2)),
+              constraints: BoxConstraints(maxWidth: size == BhorEmptySize.page ? 440 : 360),
+              child: Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: (size == BhorEmptySize.compact ? b.type.meta : b.type.body).copyWith(color: c.text2),
+              ),
             ),
           ],
-          if (action != null) ...<Widget>[const SizedBox(height: BhorSpace.s16), action!],
+          if (action != null) ...<Widget>[SizedBox(height: gap), action!],
         ],
       ),
     );
   }
+}
+
+/// Dashboard masonry: content-sized cards in 1 / 2 / 3 columns by the
+/// available width (never equal-height rows, so no hollow or clipped cards;
+/// review T1 / L4). Each child goes to the currently shortest column, in
+/// order. Put it in a scroll view; it sizes itself to its content.
+/// Usage: `BhorMasonry(children: [todayCard, paymentsCard, backupCard])`.
+class BhorMasonry extends MultiChildRenderObjectWidget {
+  const BhorMasonry({
+    super.key,
+    required super.children,
+    this.gap = BhorSpace.s16,
+    this.minColumnWidth = 340,
+    this.maxColumns = 3,
+  });
+
+  /// Space between columns and between cards.
+  final double gap;
+
+  /// A column is never narrower than this (fewer columns instead).
+  final double minColumnWidth;
+  final int maxColumns;
+
+  /// Columns for [width]: as many as fit at [minColumnWidth], 1..[maxColumns].
+  static int columnsFor(double width, {double minColumnWidth = 340, int maxColumns = 3, double gap = BhorSpace.s16}) {
+    if (!width.isFinite || width <= 0) return 1;
+    final int n = ((width + gap) / (minColumnWidth + gap)).floor();
+    return n.clamp(1, math.max(1, maxColumns)).toInt();
+  }
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMasonry(gap: gap, minColumnWidth: minColumnWidth, maxColumns: maxColumns);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderMasonry renderObject) {
+    renderObject
+      ..gap = gap
+      ..minColumnWidth = minColumnWidth
+      ..maxColumns = maxColumns;
+  }
+}
+
+class _MasonryParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderMasonry extends RenderBox
+    with ContainerRenderObjectMixin<RenderBox, _MasonryParentData>, RenderBoxContainerDefaultsMixin<RenderBox, _MasonryParentData> {
+  _RenderMasonry({required double gap, required double minColumnWidth, required int maxColumns})
+      : _gap = gap,
+        _minColumnWidth = minColumnWidth,
+        _maxColumns = maxColumns;
+
+  double _gap;
+  double get gap => _gap;
+  set gap(double v) {
+    if (v == _gap) return;
+    _gap = v;
+    markNeedsLayout();
+  }
+
+  double _minColumnWidth;
+  double get minColumnWidth => _minColumnWidth;
+  set minColumnWidth(double v) {
+    if (v == _minColumnWidth) return;
+    _minColumnWidth = v;
+    markNeedsLayout();
+  }
+
+  int _maxColumns;
+  int get maxColumns => _maxColumns;
+  set maxColumns(int v) {
+    if (v == _maxColumns) return;
+    _maxColumns = v;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _MasonryParentData) child.parentData = _MasonryParentData();
+  }
+
+  /// Lays the children out (or measures them for a dry layout) and returns
+  /// the size; [place] receives each child's offset on a real layout.
+  Size _layout(BoxConstraints constraints, {required bool dry}) {
+    final double width = constraints.maxWidth.isFinite ? constraints.maxWidth : minColumnWidth;
+    final int n = BhorMasonry.columnsFor(width, minColumnWidth: minColumnWidth, maxColumns: maxColumns, gap: gap);
+    final double colW = math.max(0, (width - gap * (n - 1)) / n);
+    final List<double> heights = List<double>.filled(n, 0);
+    final BoxConstraints childBox = BoxConstraints.tightFor(width: colW);
+    bool any = false;
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final _MasonryParentData pd = child.parentData! as _MasonryParentData;
+      final Size size;
+      if (dry) {
+        size = child.getDryLayout(childBox);
+      } else {
+        child.layout(childBox, parentUsesSize: true);
+        size = child.size;
+      }
+      int col = 0;
+      for (int i = 1; i < n; i++) {
+        if (heights[i] < heights[col] - 0.5) col = i;
+      }
+      if (!dry) pd.offset = Offset(col * (colW + gap), heights[col]);
+      heights[col] += size.height + gap;
+      any = true;
+      child = pd.nextSibling;
+    }
+    final double tallest = any ? heights.reduce(math.max) - gap : 0;
+    return constraints.constrain(Size(width, math.max(0, tallest)));
+  }
+
+  @override
+  void performLayout() {
+    size = _layout(constraints, dry: false);
+  }
+
+  @override
+  Size computeDryLayout(covariant BoxConstraints constraints) => _layout(constraints, dry: true);
+
+  @override
+  double computeMinIntrinsicWidth(double height) => 0;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => minColumnWidth;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _layout(BoxConstraints(maxWidth: width), dry: true).height;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => computeMinIntrinsicHeight(width);
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
