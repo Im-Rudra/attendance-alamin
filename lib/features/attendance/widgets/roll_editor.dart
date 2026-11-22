@@ -217,7 +217,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       final bool readOnly = bs.batch.archived || date.isAfter(today);
       final Map<String, int> rolls = <String, int>{};
       for (var i = 0; i < roster.length; i++) {
-        rolls[roster[i].id] = int.tryParse(roster[i].roll ?? '') ?? (i + 1);
+        rolls[roster[i].id] = int.tryParse(AppFormat.toAsciiDigits(roster[i].roll ?? '')) ?? (i + 1);
       }
 
       final RollCallController controller = RollCallController(

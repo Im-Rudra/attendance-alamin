@@ -21,8 +21,13 @@ Android
   app/proguard-rules.pro        R8 rules (gson / flutter_local_notifications); build.gradle.kts gets
                                 minify + shrinkResources + packaging excludes + compressed native libs
 Windows
-  runner/main.cpp               window title "Hajira Khata", initial size 1280x800
+  runner/main.cpp               window title "Hajira Khata", initial size 1280x800,
+                                single instance (named mutex; a second launch restores
+                                and foregrounds the running window, then exits)
   runner/win32_window.cpp       WM_GETMINMAXINFO: minimum client area 960x600 (DPI scaled)
+  runner/flutter_window.cpp     MethodChannel `bhor/window` setDark(bool): the title bar
+                                follows the app theme (DWMWA_USE_IMMERSIVE_DARK_MODE),
+                                kept across WM_DWMCOLORIZATIONCOLORCHANGED
   runner/Runner.rc              ProductName / FileDescription
 Web
   index.html                    <title>, description, apple title, theme-color
@@ -80,6 +85,12 @@ WEB_THEME_COLOR = "#0A0C12"
 
 WINDOW_SIZE = (1280, 800)
 WINDOW_MIN_CLIENT = (960, 600)
+# Single-instance lock (docs/council/15-windows-ux-review.md G6). Per user session.
+SINGLE_INSTANCE_MUTEX = r"Local\\HajiraKhata.SingleInstance"
+# Window class of the Flutter Windows template (runner/win32_window.cpp kWindowClassName).
+WINDOW_CLASS = "FLUTTER_RUNNER_WIN32_WINDOW"
+# Theme channel shared with lib/app/shell/window_chrome.dart (G5).
+WINDOW_CHANNEL = "bhor/window"
 
 NOTIFICATION_PERMISSIONS = (
     "android.permission.POST_NOTIFICATIONS",
@@ -574,6 +585,28 @@ _KEEP_XML = """\
 # ---------------------------------------------------------------------------
 
 
+_SINGLE_INSTANCE = """\
+// Single instance (added by tool/platform_patches/apply.py): two copies on the
+// same database are a data-safety risk. A second launch restores and
+// foregrounds the running window, then exits.
+HANDLE single_instance = ::CreateMutexW(nullptr, TRUE, L"{mutex}");
+if (single_instance != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
+  HWND running = ::FindWindowW(L"{cls}", L"{title}");
+  if (running != nullptr) {
+    if (::IsIconic(running)) {
+      ::ShowWindow(running, SW_RESTORE);
+    } else {
+      ::ShowWindow(running, SW_SHOW);
+    }
+    ::SetForegroundWindow(running);
+  }
+  ::CloseHandle(single_instance);
+  return EXIT_SUCCESS;
+}
+
+""".replace("{mutex}", SINGLE_INSTANCE_MUTEX).replace("{cls}", WINDOW_CLASS).replace("{title}", APP_NAME_LATIN)
+
+
 def patch_main_cpp(text: str, rel: str) -> str:
     m = _one(rel, text, r'window\.Create\(L"(?P<v>[^"]*)"', 'window.Create(L"<title>", origin, size)')
     if m["v"] != APP_NAME_LATIN:
@@ -582,6 +615,16 @@ def patch_main_cpp(text: str, rel: str) -> str:
     want = f"{WINDOW_SIZE[0]}, {WINDOW_SIZE[1]}"
     if m["v"] != want:
         text = _splice(text, m.start("v"), m.end("v"), want)
+    if "HajiraKhata.SingleInstance" not in text:
+        m = _one(
+            rel,
+            text,
+            r"^int APIENTRY wWinMain\([^)]*\)\s*\{\n",
+            "`int APIENTRY wWinMain(...) {` (the single-instance lock goes first)",
+        )
+        # Indent like the first statement of the body.
+        indent = re.match(r"[ \t]*", text[m.end():]).group(0) or "  "
+        text = _splice(text, m.end(), m.end(), _indent_block(_SINGLE_INSTANCE, indent))
     return text
 
 
@@ -618,6 +661,95 @@ def patch_win32_window_cpp(text: str, rel: str) -> str:
         return text
     m = _one(rel, text, r"^(?P<i>[ \t]*)case WM_DPICHANGED:", "case WM_DPICHANGED:")
     return _splice(text, m.start(), m.start(), _indent_block(_MINMAX_CASE, m["i"]))
+
+
+_FW_INCLUDES = """\
+// bhor/window (added by tool/platform_patches/apply.py): the title bar follows
+// the app theme, set from Dart (lib/app/shell/window_chrome.dart).
+#include <dwmapi.h>
+#include <flutter/encodable_value.h>
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+
+namespace {
+
+std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> g_window_channel;
+
+// -1: follow Windows (the template's UpdateTheme); 0: light; 1: dark.
+int g_app_dark = -1;
+
+void ApplyAppTitleBar(HWND hwnd) {
+  if (hwnd == nullptr || g_app_dark < 0) {
+    return;
+  }
+  BOOL dark = g_app_dark == 1 ? TRUE : FALSE;
+  DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+}
+
+}  // namespace
+""".replace("bhor/window", WINDOW_CHANNEL)
+
+_FW_CHANNEL = """\
+// bhor/window setDark(bool) (apply.py).
+g_window_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+    flutter_controller_->engine()->messenger(), "bhor/window",
+    &flutter::StandardMethodCodec::GetInstance());
+g_window_channel->SetMethodCallHandler(
+    [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+           std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+      if (call.method_name() == "setDark") {
+        const bool* dark = std::get_if<bool>(call.arguments());
+        if (dark == nullptr) {
+          result->Error("bad-args", "setDark expects a bool");
+          return;
+        }
+        g_app_dark = *dark ? 1 : 0;
+        ApplyAppTitleBar(GetHandle());
+        result->Success();
+        return;
+      }
+      result->NotImplemented();
+    });
+""".replace("bhor/window", WINDOW_CHANNEL)
+
+_FW_CASE = """\
+case WM_DWMCOLORIZATIONCOLORCHANGED: {
+  // The template re-reads the Windows theme here; keep the app's (apply.py).
+  LRESULT handled = Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+  ApplyAppTitleBar(hwnd);
+  return handled;
+}
+"""
+
+
+def patch_flutter_window_cpp(text: str, rel: str) -> str:
+    if "g_window_channel" not in text:
+        m = _one(rel, text, r'^#include "flutter/generated_plugin_registrant\.h"\n', '#include "flutter/generated_plugin_registrant.h"')
+        text = _splice(text, m.end(), m.end(), "\n" + _FW_INCLUDES)
+    if "g_window_channel = std::make_unique" not in text:
+        m = _one(
+            rel,
+            text,
+            r"^(?P<i>[ \t]*)RegisterPlugins\(flutter_controller_->engine\(\)\);\n",
+            "RegisterPlugins(flutter_controller_->engine()); in FlutterWindow::OnCreate",
+        )
+        text = _splice(text, m.end(), m.end(), _indent_block(_FW_CHANNEL, m["i"]))
+    if "g_window_channel = nullptr;" not in text:
+        m = _one(
+            rel,
+            text,
+            r"^void FlutterWindow::OnDestroy\(\) \{\n(?P<i>[ \t]*)",
+            "void FlutterWindow::OnDestroy() {",
+        )
+        text = _splice(text, m.start("i"), m.start("i"), m["i"] + "g_window_channel = nullptr;  // apply.py: before the engine goes\n")
+    if not re.search(r"^[ \t]*case WM_DWMCOLORIZATIONCOLORCHANGED:", text, re.M):
+        m = _one(rel, text, r"^(?P<i>[ \t]*)case WM_FONTCHANGE:", "case WM_FONTCHANGE: in FlutterWindow::MessageHandler")
+        text = _splice(text, m.start(), m.start(), _indent_block(_FW_CASE, m["i"]))
+    return text
 
 
 def patch_runner_rc(text: str, rel: str) -> str:
@@ -726,6 +858,7 @@ TEXT_PATCHES: list[tuple[str, Callable[[str, str], str]]] = [
     ("android/app/src/main/AndroidManifest.xml", patch_manifest),
     ("windows/runner/main.cpp", patch_main_cpp),
     ("windows/runner/win32_window.cpp", patch_win32_window_cpp),
+    ("windows/runner/flutter_window.cpp", patch_flutter_window_cpp),
     ("windows/runner/Runner.rc", patch_runner_rc),
     ("web/index.html", patch_index_html),
     ("web/manifest.json", patch_manifest_json),

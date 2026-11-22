@@ -1,9 +1,13 @@
 // BhorTextField (docs/council/13-fluid-ui-spec.md, TextField): filled, no
 // border. h56, r14, soft fill (hover soft2). The label floats inside the box
 // (15 px at rest -> 12 px at the top on focus / when filled, 220 ms). Focus:
-// surface fill + 1.5 px accent ring + 4 px focus ring, accent label. Error:
-// 1.5 px error ring and a message that slides down 4 px and fades in.
-// Built on EditableText (no Material InputDecorator).
+// the fill stays soft (one field style, review L2), the label turns accent;
+// the 4 px focus ring shows only while the keyboard drives focus (Tab), never
+// after a click. Error: 1.5 px error ring and a message that slides down 4 px
+// and fades in. Read-only: text3 text and a lock icon, same fill.
+// Number / phone keyboards show the UI's digits (Bangla in bn) while the
+// value stays ASCII (BhorDigits). Built on EditableText (no Material
+// InputDecorator).
 // Usage: `BhorTextField(label: 'নাম', controller: c, error: err, onChanged: f)`.
 
 import 'dart:async';
@@ -12,10 +16,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:attendance_alamin/app/ds/foundation/bhor_digits.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
+import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 
 class BhorTextField extends StatefulWidget {
   const BhorTextField({
@@ -45,6 +51,7 @@ class BhorTextField extends StatefulWidget {
     this.textAlign = TextAlign.start,
     this.tabular = false,
     this.semanticLabel,
+    this.localDigits,
   });
 
   /// Floating label inside the box.
@@ -88,6 +95,12 @@ class BhorTextField extends StatefulWidget {
   /// Accessible name when there is no visible [label].
   final String? semanticLabel;
 
+  /// Show the UI's digits (Bangla in bn) while storing ASCII. Null: on for
+  /// number / phone keyboards ([BhorDigits.isNumericKeyboard]).
+  final bool? localDigits;
+
+  bool get _digits => localDigits ?? BhorDigits.isNumericKeyboard(keyboardType);
+
   @override
   State<BhorTextField> createState() => _BhorTextFieldState();
 }
@@ -100,6 +113,13 @@ class _BhorTextFieldState extends State<BhorTextField>
       TextSelectionGestureDetectorBuilder(delegate: this);
   bool _hovered = false;
   Offset? _downAt;
+
+  /// Display twin of [_controller] for digit fields: same value, shown in
+  /// the UI's digits. Kept in sync both ways.
+  BhorDigitsController? _display;
+
+  /// The keyboard drives focus (show the focus ring).
+  bool _keyboardMode = FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
 
   @override
   final GlobalKey<EditableTextState> editableTextKey = GlobalKey<EditableTextState>();
@@ -119,6 +139,8 @@ class _BhorTextFieldState extends State<BhorTextField>
   void initState() {
     super.initState();
     _focus.addListener(_onFocus);
+    FocusManager.instance.addHighlightModeListener(_onHighlightMode);
+    _configureDisplay();
   }
 
   @override
@@ -128,6 +150,44 @@ class _BhorTextFieldState extends State<BhorTextField>
       (oldWidget.focusNode ?? _ownFocus)?.removeListener(_onFocus);
       _focus.addListener(_onFocus);
     }
+    if (oldWidget.controller != widget.controller && _display != null) {
+      (oldWidget.controller ?? _ownController)?.removeListener(_pullFromOuter);
+      _display!.dispose();
+      _display = null;
+    }
+    _configureDisplay();
+  }
+
+  void _onHighlightMode(FocusHighlightMode mode) {
+    final bool keyboard = mode == FocusHighlightMode.traditional;
+    if (keyboard != _keyboardMode && mounted) setState(() => _keyboardMode = keyboard);
+  }
+
+  /// Creates / drops the digit display twin as [BhorTextField.localDigits]
+  /// (or the keyboard type) asks.
+  void _configureDisplay() {
+    if (widget._digits) {
+      if (_display == null) {
+        final BhorDigitsController d = BhorDigitsController.fromValue(_controller.value);
+        d.addListener(_pushToOuter);
+        _controller.addListener(_pullFromOuter);
+        _display = d;
+      }
+    } else if (_display != null) {
+      _controller.removeListener(_pullFromOuter);
+      _display!.dispose();
+      _display = null;
+    }
+  }
+
+  void _pullFromOuter() {
+    final BhorDigitsController? d = _display;
+    if (d != null && d.value != _controller.value) d.value = _controller.value;
+  }
+
+  void _pushToOuter() {
+    final BhorDigitsController? d = _display;
+    if (d != null && _controller.value != d.value) _controller.value = d.value;
   }
 
   /// A tap outside the field unfocuses it, but only once the tap has been
@@ -159,6 +219,11 @@ class _BhorTextFieldState extends State<BhorTextField>
   @override
   void dispose() {
     _focus.removeListener(_onFocus);
+    FocusManager.instance.removeHighlightModeListener(_onHighlightMode);
+    if (_display != null) {
+      _controller.removeListener(_pullFromOuter);
+      _display!.dispose();
+    }
     _ownController?.dispose();
     _ownFocus?.dispose();
     super.dispose();
@@ -172,14 +237,21 @@ class _BhorTextFieldState extends State<BhorTextField>
     final bool hasError = widget.error != null && widget.error!.isNotEmpty;
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
     final Duration labelDur = BhorMotion.of(context, const Duration(milliseconds: 220));
-    TextStyle style = b.type.body.copyWith(color: widget.enabled ? c.text : c.text3, fontSize: 15);
+    // Read-only (but enabled): text3 text + a lock icon, the fill unchanged.
+    final bool locked = widget.enabled && widget.readOnly;
+    TextStyle style = b.type.body.copyWith(color: widget.enabled && !locked ? c.text : c.text3, fontSize: 15);
     if (widget.tabular) style = BhorType.tabular(style);
     final bool multi = widget.maxLines == null || widget.maxLines! > 1;
     final bool hasLabel = widget.label != null;
+    final BhorDigitsController? display = _display;
+    final bool bangla = BhorDigits.banglaOf(context);
+    display?.bangla = bangla;
+    final Widget? suffix = widget.suffix ??
+        (locked ? Semantics(label: context.l10n.layoutReadOnly, child: const Icon(BhorIcons.lock)) : null);
 
     final Widget editable = EditableText(
       key: editableTextKey,
-      controller: _controller,
+      controller: display ?? _controller,
       focusNode: _focus,
       readOnly: widget.readOnly || !widget.enabled,
       obscureText: widget.obscureText,
@@ -194,6 +266,8 @@ class _BhorTextFieldState extends State<BhorTextField>
       textCapitalization: widget.textCapitalization,
       inputFormatters: <TextInputFormatter>[
         if (widget.maxLength != null) LengthLimitingTextInputFormatter(widget.maxLength),
+        // Typed Bangla digits are stored as ASCII; the field still shows them.
+        if (display != null) BhorDigits.asciiFormatter,
         ...?widget.inputFormatters,
       ],
       maxLines: widget.obscureText ? 1 : widget.maxLines,
@@ -224,7 +298,7 @@ class _BhorTextFieldState extends State<BhorTextField>
                       opacity: empty && floated ? 1 : 0,
                       duration: fast,
                       child: Text(
-                        widget.hint!,
+                        display != null ? BhorDigits.localize(widget.hint!, bangla: bangla) : widget.hint!,
                         maxLines: multi ? null : 1,
                         overflow: multi ? null : TextOverflow.ellipsis,
                         textAlign: widget.textAlign,
@@ -273,11 +347,8 @@ class _BhorTextFieldState extends State<BhorTextField>
       },
     );
 
-    final Color fill = !widget.enabled
-        ? c.soft
-        : focused
-            ? c.surface
-            : (_hovered ? c.soft2 : c.soft);
+    // One field style: soft at rest, focused and read-only; soft2 on hover.
+    final Color fill = !widget.enabled || locked || focused ? c.soft : (_hovered ? c.soft2 : c.soft);
 
     final Widget box = MouseRegion(
       cursor: widget.enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
@@ -297,7 +368,7 @@ class _BhorTextFieldState extends State<BhorTextField>
         child: _gestures.buildGestureDetector(
           behavior: HitTestBehavior.translucent,
           child: BhorFocusRing(
-            visible: focused && !hasError,
+            visible: focused && !hasError && _keyboardMode,
             radius: BhorRadius.control,
             child: AnimatedContainer(
               duration: fast,
@@ -319,9 +390,9 @@ class _BhorTextFieldState extends State<BhorTextField>
                     const SizedBox(width: BhorSpace.s8),
                   ],
                   Expanded(child: field),
-                  if (widget.suffix != null) ...<Widget>[
+                  if (suffix != null) ...<Widget>[
                     const SizedBox(width: BhorSpace.s8),
-                    IconTheme(data: IconThemeData(color: c.text3, size: BhorIconSize.chip), child: widget.suffix!),
+                    IconTheme(data: IconThemeData(color: c.text3, size: BhorIconSize.chip), child: suffix),
                   ],
                 ],
               ),

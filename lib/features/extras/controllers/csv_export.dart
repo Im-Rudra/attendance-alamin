@@ -5,6 +5,7 @@
 
 import 'dart:typed_data';
 
+import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/attendance_repository.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
@@ -96,8 +97,8 @@ CsvFile buildStudentsCsv({
 }
 
 int _byRollThenName(Student a, Student b) {
-  final int? ra = int.tryParse(a.roll ?? '');
-  final int? rb = int.tryParse(b.roll ?? '');
+  final int? ra = int.tryParse(AppFormat.toAsciiDigits(a.roll ?? ''));
+  final int? rb = int.tryParse(AppFormat.toAsciiDigits(b.roll ?? ''));
   if (ra != null && rb != null && ra != rb) return ra.compareTo(rb);
   if (ra != null && rb == null) return -1;
   if (ra == null && rb != null) return 1;

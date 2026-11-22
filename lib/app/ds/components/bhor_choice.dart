@@ -22,7 +22,8 @@ class BhorSegment<T> {
 }
 
 /// Equal-width segmented control: soft track r14 with 4 px padding; the
-/// surface thumb glides (spring, 400 ms) and the labels cross-fade.
+/// filled thumb ([BhorColors.thumb], no edge) glides (spring, 400 ms) and the
+/// labels cross-fade.
 /// Usage: `BhorSegmented<int>(segments: [...], value: v, onChanged: f)`.
 class BhorSegmented<T> extends StatelessWidget {
   const BhorSegmented({
@@ -69,12 +70,11 @@ class BhorSegmented<T> extends StatelessWidget {
                   widthFactor: 1 / n,
                   heightFactor: 1,
                   child: Container(
+                    // Filled thumb, never an outline ring (review L1): white
+                    // in light, the lifted dark grey in dark.
                     decoration: BoxDecoration(
-                      color: c.isDark ? c.soft2 : c.surface,
+                      color: c.thumb,
                       borderRadius: BorderRadius.circular(BhorRadius.control - 4),
-                      // Dark: a 1 px edge at >= 3:1 so the selected segment
-                      // is easy to find on the dark track.
-                      border: c.isDark ? Border.all(color: c.segmentEdge) : null,
                       boxShadow: c.thumbShadow,
                     ),
                   ),
@@ -402,7 +402,7 @@ class BhorCheckPainter extends CustomPainter {
 }
 
 /// A selectable card with a radio dot (one of a group). Soft fill; the
-/// chosen card gets the accent tint, an accent ring and a popping dot.
+/// chosen card gets the accent tint and a filled dot that pops (no ring).
 /// Usage: `BhorRadioCard<int>(value: 1, groupValue: g, onChanged: f, title: 'মাসিক')`.
 class BhorRadioCard<T> extends StatelessWidget {
   const BhorRadioCard({
@@ -441,10 +441,10 @@ class BhorRadioCard<T> extends StatelessWidget {
         curve: BhorMotion.ease,
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s12),
+        // Selected = the accent tint fill and a filled dot; no ring (L1).
         decoration: BoxDecoration(
           color: sel ? c.accentTint : (s.hovered || s.pressed ? c.soft2 : c.soft),
           borderRadius: BorderRadius.circular(BhorRadius.card),
-          border: Border.all(color: sel ? c.accent : c.accent.withValues(alpha: 0), width: 1.5),
         ),
         child: Row(
           children: <Widget>[
@@ -463,14 +463,16 @@ class BhorRadioCard<T> extends StatelessWidget {
               ),
             ),
             const SizedBox(width: BhorSpace.s8),
+            // The dot: an empty circle (the affordance) that fills with the
+            // accent and pops a white centre when chosen.
             AnimatedContainer(
               duration: fast,
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: sel ? c.accentFill : c.text3, width: 1.5),
-                color: c.surface,
+                border: sel ? null : Border.all(color: c.text3, width: 1.5),
+                color: sel ? c.accentFill : c.surface,
               ),
               alignment: Alignment.center,
               child: AnimatedScale(
@@ -478,9 +480,9 @@ class BhorRadioCard<T> extends StatelessWidget {
                 duration: BhorMotion.of(context, BhorMotion.glide),
                 curve: sel ? BhorMotion.curveOf(context, BhorMotion.spring) : BhorMotion.ease,
                 child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(color: c.accentFill, shape: BoxShape.circle),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: c.onAccentFill, shape: BoxShape.circle),
                 ),
               ),
             ),

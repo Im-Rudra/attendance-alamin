@@ -1,5 +1,5 @@
-// Navigation chrome (docs/council/13-fluid-ui-spec.md): BhorTabs (gliding
-// underline), BhorBottomNav (phone: floating pill, inset 10, r20, line edge;
+// Navigation chrome (docs/council/13-fluid-ui-spec.md): BhorTabs (segmented
+// look: soft track, gliding filled thumb), BhorBottomNav (phone: floating pill, inset 10, r20, line edge;
 // an accent-tint indicator glides between items, the active icon switches
 // regular -> fill), BhorSidebar (desktop: solid brand mark, h40 r12 items, a
 // gliding indicator, collapsible to icons) and BhorHeader (replaces AppBar;
@@ -84,15 +84,34 @@ class _NavIcon extends StatelessWidget {
   }
 }
 
-/// Underline tabs (scroll horizontally when they do not fit); the accent
-/// underline glides to the selected tab.
+/// Detail tabs in the segmented look (review B3): a soft track r14 with
+/// content-sized segments; the filled thumb ([BhorColors.thumb], no edge,
+/// no underline) glides to the selected tab with the spring. Scrolls
+/// horizontally when the tabs do not fit; [expand] makes the segments share
+/// the full width instead. Keyboard: the tabs are a mutually exclusive group.
 /// Usage: `BhorTabs(tabs: ['শিক্ষার্থী', 'রুটিন'], index: i, onChanged: f)`.
 class BhorTabs extends StatefulWidget {
-  const BhorTabs({super.key, required this.tabs, required this.index, required this.onChanged});
+  const BhorTabs({
+    super.key,
+    required this.tabs,
+    required this.index,
+    required this.onChanged,
+    this.icons,
+    this.expand = false,
+  });
 
   final List<String> tabs;
   final int index;
   final ValueChanged<int> onChanged;
+
+  /// Optional icon per tab (same length as [tabs]).
+  final List<IconData>? icons;
+
+  /// Equal-width segments over the full width (no scrolling).
+  final bool expand;
+
+  /// Height of the track.
+  static const double height = BhorSize.control;
 
   @override
   State<BhorTabs> createState() => _BhorTabsState();
@@ -101,7 +120,7 @@ class BhorTabs extends StatefulWidget {
 class _BhorTabsState extends State<BhorTabs> {
   final GlobalKey _rowKey = GlobalKey();
   List<GlobalKey> _keys = <GlobalKey>[];
-  (double, double)? _bar;
+  (double, double)? _thumb;
 
   void _syncKeys() {
     if (_keys.length != widget.tabs.length) {
@@ -113,13 +132,13 @@ class _BhorTabsState extends State<BhorTabs> {
     if (!mounted) return;
     final RenderBox? row = _rowKey.currentContext?.findRenderObject() as RenderBox?;
     final int i = widget.index;
-    if (row == null || i < 0 || i >= _keys.length) return;
+    if (row == null || !row.hasSize || i < 0 || i >= _keys.length) return;
     final RenderBox? tab = _keys[i].currentContext?.findRenderObject() as RenderBox?;
     if (tab == null || !tab.hasSize) return;
-    final double left = tab.localToGlobal(Offset.zero, ancestor: row).dx + BhorSpace.s8;
-    final double width = tab.size.width - 2 * BhorSpace.s8;
-    if (_bar == null || (_bar!.$1 - left).abs() > 0.5 || (_bar!.$2 - width).abs() > 0.5) {
-      setState(() => _bar = (left, width));
+    final double left = tab.localToGlobal(Offset.zero, ancestor: row).dx;
+    final double width = tab.size.width;
+    if (_thumb == null || (_thumb!.$1 - left).abs() > 0.5 || (_thumb!.$2 - width).abs() > 0.5) {
+      setState(() => _thumb = (left, width));
     }
   }
 
@@ -129,63 +148,107 @@ class _BhorTabsState extends State<BhorTabs> {
     SchedulerBinding.instance.addPostFrameCallback((_) => _measure());
     final BhorThemeData b = context.bhor;
     final BhorColors c = b.colors;
-    final (double, double)? bar = _bar;
-    return DecoratedBox(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.line))),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Stack(
-          key: _rowKey,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                for (int i = 0; i < widget.tabs.length; i++)
-                  KeyedSubtree(
-                    key: _keys[i],
-                    child: BhorPressable(
-                      onTap: () => widget.onChanged(i),
-                      selected: i == widget.index,
-                      inMutuallyExclusiveGroup: true,
-                      semanticLabel: widget.tabs[i],
-                      excludeChildSemantics: true,
-                      scaleOnPress: false,
-                      radius: 10,
-                      builder: (BuildContext context, BhorStates s) => SizedBox(
-                        height: BhorSize.control,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
-                          child: Center(
-                            widthFactor: 1,
-                            child: AnimatedDefaultTextStyle(
-                              duration: BhorMotion.of(context, BhorMotion.fast),
-                              style: (i == widget.index ? b.type.bodyStrong : b.type.body)
-                                  .copyWith(color: i == widget.index ? c.accent : (s.hovered ? c.text : c.text2)),
-                              child: Text(widget.tabs[i], maxLines: 1),
-                            ),
-                          ),
+    final (double, double)? thumb = _thumb;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+
+    Widget tab(int i) {
+      final bool sel = i == widget.index;
+      final IconData? icon = widget.icons != null && i < widget.icons!.length ? widget.icons![i] : null;
+      return KeyedSubtree(
+        key: _keys[i],
+        child: BhorPressable(
+          onTap: () => widget.onChanged(i),
+          selected: sel,
+          inMutuallyExclusiveGroup: true,
+          semanticLabel: widget.tabs[i],
+          excludeChildSemantics: true,
+          scaleOnPress: false,
+          radius: BhorRadius.control - 4,
+          builder: (BuildContext context, BhorStates s) {
+            final Color fg = sel || s.hovered ? c.text : c.text2;
+            return SizedBox(
+              height: BhorTabs.height - 8,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16),
+                child: Center(
+                  widthFactor: widget.expand ? null : 1,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (icon != null) ...<Widget>[
+                        Icon(icon, size: BhorIconSize.inline, color: fg),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: AnimatedDefaultTextStyle(
+                          duration: fast,
+                          curve: BhorMotion.ease,
+                          style: (sel ? b.type.bodyStrong : b.type.body).copyWith(color: fg),
+                          child: Text(widget.tabs[i], maxLines: 1, overflow: TextOverflow.ellipsis),
                         ),
                       ),
-                    ),
-                  ),
-              ],
-            ),
-            if (bar != null)
-              AnimatedPositioned(
-                duration: BhorMotion.of(context, BhorMotion.glide),
-                curve: BhorMotion.curveOf(context, BhorMotion.spring),
-                left: bar.$1,
-                width: bar.$2,
-                bottom: 0,
-                height: 2.5,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                    ],
                   ),
                 ),
               ),
-          ],
+            );
+          },
         ),
+      );
+    }
+
+    final Widget row = Row(
+      mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
+      children: <Widget>[
+        for (int i = 0; i < widget.tabs.length; i++) widget.expand ? Expanded(child: tab(i)) : tab(i),
+      ],
+    );
+
+    final Widget track = Container(
+      height: BhorTabs.height,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: c.soft, borderRadius: BorderRadius.circular(BhorRadius.control)),
+      child: Stack(
+        key: _rowKey,
+        children: <Widget>[
+          if (thumb != null)
+            AnimatedPositioned(
+              duration: BhorMotion.of(context, BhorMotion.glide),
+              curve: BhorMotion.curveOf(context, BhorMotion.spring),
+              left: thumb.$1,
+              width: thumb.$2,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: c.thumb,
+                    borderRadius: BorderRadius.circular(BhorRadius.control - 4),
+                    boxShadow: c.thumbShadow,
+                  ),
+                ),
+              ),
+            ),
+          row,
+        ],
       ),
+    );
+
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: widget.expand
+          // Re-measure the thumb when the width changes (no rebuild otherwise).
+          ? LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints _) {
+                SchedulerBinding.instance.addPostFrameCallback((_) => _measure());
+                return track;
+              },
+            )
+          : Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: track),
+            ),
     );
   }
 }

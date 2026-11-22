@@ -1,6 +1,7 @@
 // Developer gallery of every Bhor component and motion
 // (docs/council/13-fluid-ui-spec.md), in light / dark / both themes and at
-// phone (360) / desktop (1024) / fit widths. Hidden route
+// phone (360) / desktop (1024) / fit widths, plus the four page templates
+// (lib/app/shell/templates) in framed previews. Hidden route
 // `/more/design-system` (long-press the version row in More › Diagnostics).
 // Demo labels are sample content, not product copy.
 
@@ -8,6 +9,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 
 enum _ThemePick { light, dark, both }
@@ -127,8 +129,11 @@ class _DemoState extends ChangeNotifier {
   int replay = 0;
   bool saving = false;
   bool saved = false;
+  int pick = 0;
+  String section = 'look';
   final TextEditingController name = TextEditingController();
   final TextEditingController fee = TextEditingController(text: '১৫০০');
+  final TextEditingController phone = TextEditingController(text: '01712345678');
 
   void set(void Function() f) {
     f();
@@ -139,6 +144,7 @@ class _DemoState extends ChangeNotifier {
   void dispose() {
     name.dispose();
     fee.dispose();
+    phone.dispose();
     super.dispose();
   }
 }
@@ -892,6 +898,179 @@ class _Sections extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ]),
+        _Section('Selection · Picker field · Empty sizes', <Widget>[
+          for (int i = 0; i < 2; i++) ...<Widget>[
+            BhorCard(
+              selected: demo.pick == i,
+              onTap: () => demo.set(() => demo.pick = i),
+              semanticLabel: i == 0 ? 'নবম শ্রেণি · গণিত' : 'দশম শ্রেণি · পদার্থ',
+              child: Row(
+                children: <Widget>[
+                  BhorAvatar(name: i == 0 ? 'নবম' : 'দশম', size: 40),
+                  const SizedBox(width: BhorSpace.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(i == 0 ? 'নবম শ্রেণি · গণিত' : 'দশম শ্রেণি · পদার্থ', style: b.type.heading),
+                        Text('শনি · সোম · বুধ  ৪:০০', style: b.type.meta),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: BhorSpace.s8),
+          ],
+          BhorPickerField(
+            label: 'শুরুর সময়',
+            value: fmt.time(demo.time),
+            icon: BhorIcons.clock,
+            onTap: (BuildContext _) {},
+          ),
+          const SizedBox(height: BhorSpace.s8),
+          BhorPickerField(label: 'তারিখ', value: null, placeholder: 'তারিখ বেছে নিন', icon: BhorIcons.calendar, onTap: null),
+          const SizedBox(height: BhorSpace.s8),
+          const BhorTextField(label: 'বিষয়', initialValue: 'গণিত', readOnly: true),
+          const SizedBox(height: BhorSpace.s8),
+          BhorTextField(label: 'ফোন', controller: demo.phone, keyboardType: TextInputType.phone),
+          const BhorEmptyState(
+            size: BhorEmptySize.compact,
+            icon: BhorIcons.receipt,
+            title: 'আজ কোনো পেমেন্ট নেই',
+            message: 'টাকা নিলে এখানে দেখা যাবে।',
+          ),
+          const BhorEmptyState(
+            size: BhorEmptySize.page,
+            icon: BhorIcons.holiday,
+            title: 'কোনো ছুটি নেই',
+            message: 'ছুটির দিন যোগ করলে সেদিন ক্লাস হবে না।',
+          ),
+        ]),
+        _Section('Page templates', <Widget>[
+          Text('BhorDashboardPage', style: b.type.label),
+          const SizedBox(height: BhorSpace.s4),
+          _Framed(
+            height: 360,
+            child: BhorDashboardPage(
+              overline: 'শনিবার, ২১ নভেম্বর',
+              title: 'শুভ সকাল',
+              actions: <Widget>[BhorButton(label: 'নতুন', icon: BhorIcons.add, size: BhorButtonSize.sm, onPressed: () {})],
+              hero: BhorCard.hero(child: Text('পরের ক্লাস · ৪:০০', style: b.type.heading.copyWith(color: c.onHero))),
+              children: <Widget>[
+                BhorCard(child: Text('আজকের ক্লাস', style: b.type.heading)),
+                BhorCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('সাম্প্রতিক পেমেন্ট', style: b.type.heading),
+                      const SizedBox(height: BhorSpace.s8),
+                      for (int i = 0; i < 4; i++) Text('রহিম · ৳${fmt.number(500 + i * 100)}', style: b.type.body),
+                    ],
+                  ),
+                ),
+                BhorCard(child: Text('ব্যাকআপ', style: b.type.heading)),
+              ],
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          Text('BhorMasterDetailPage', style: b.type.label),
+          const SizedBox(height: BhorSpace.s4),
+          _Framed(
+            height: 360,
+            child: BhorMasterDetailPage(
+              master: ListView(
+                padding: const EdgeInsets.all(BhorSpace.s12),
+                children: <Widget>[
+                  for (int i = 0; i < 3; i++) ...<Widget>[
+                    BhorCard(
+                      selected: demo.pick == i,
+                      onTap: () => demo.set(() => demo.pick = i),
+                      child: Text('ব্যাচ ${fmt.number(i + 1)}', style: b.type.bodyStrong),
+                    ),
+                    const SizedBox(height: BhorSpace.s8),
+                  ],
+                ],
+              ),
+              detail: Builder(
+                builder: (BuildContext context) {
+                  final Widget? rail = BhorMasterDetailPage.foldedRailOf(context);
+                  return ListView(
+                    padding: const EdgeInsets.all(BhorSpace.s16),
+                    children: <Widget>[
+                      Text('ব্যাচ ${fmt.number(demo.pick + 1)}', style: b.type.title),
+                      const SizedBox(height: BhorSpace.s12),
+                      BhorTabs(
+                        tabs: const <String>['শিক্ষার্থী', 'হাজিরা', 'বেতন'],
+                        index: demo.tab % 3,
+                        onChanged: (int v) => demo.set(() => demo.tab = v),
+                      ),
+                      const SizedBox(height: BhorSpace.s12),
+                      ?rail,
+                    ],
+                  );
+                },
+              ),
+              rail: BhorCard(child: Text('সাপ্তাহিক রুটিন', style: b.type.heading)),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          Text('BhorSettingsPage', style: b.type.label),
+          const SizedBox(height: BhorSpace.s4),
+          _Framed(
+            height: 360,
+            child: BhorSettingsPage(
+              sections: const <BhorSettingsSection>[
+                BhorSettingsSection(id: 'look', label: 'চেহারা', icon: BhorIcons.light),
+                BhorSettingsSection(id: 'fees', label: 'বেতন ও পেমেন্ট', icon: BhorIcons.money),
+                BhorSettingsSection(id: 'holidays', label: 'ছুটি', icon: BhorIcons.holiday),
+              ],
+              selected: demo.section,
+              onSelect: (String id) => demo.set(() => demo.section = id),
+              crumb: demo.section == 'fees' ? 'বেতন ও পেমেন্ট' : null,
+              onCrumb: () => demo.set(() => demo.section = 'look'),
+              title: demo.section == 'fees' ? 'রসিদের টেমপ্লেট' : 'চেহারা',
+              child: BhorList(
+                children: <Widget>[
+                  BhorListRow(title: 'থিম', subtitle: 'সিস্টেম অনুযায়ী', onTap: () {}),
+                  BhorListRow(title: 'ভাষা', subtitle: 'বাংলা', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: BhorSpace.s12),
+          Text('BhorFocusPage', style: b.type.label),
+          const SizedBox(height: BhorSpace.s4),
+          _Framed(
+            height: 360,
+            child: BhorFocusPage(
+              title: 'হাজিরা · নবম গণিত',
+              subtitle: 'শনিবার, ২১ নভেম্বর',
+              onBack: () {},
+              escToBack: false,
+              summary: Text('${fmt.number(present)} উপস্থিত · ${fmt.number(demo.roll.length - present)} অনুপস্থিত'),
+              primary: BhorButton(label: 'সংরক্ষণ', onPressed: () {}),
+              body: Column(
+                children: <Widget>[
+                  for (int i = 0; i < roster.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: BhorSpace.s8),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(child: Text(roster[i].$1, style: b.type.bodyStrong)),
+                          BhorAttendanceToggle(
+                            value: demo.roll[i],
+                            iconOnly: true,
+                            onChanged: (AttendanceKind k) => demo.set(() => demo.roll[i] = k),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ]),

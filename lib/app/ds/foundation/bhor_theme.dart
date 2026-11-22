@@ -4,6 +4,7 @@
 // Usage: `BhorTheme(data: BhorThemeData.dark(), child: ...)`, then
 // `final b = context.bhor; b.colors.accent; b.type.title;`.
 // Without a BhorTheme ancestor, the platform brightness picks light or dark.
+// Windows >= 1200 wide use the desktop type step (BhorType.desktop).
 
 import 'package:flutter/widgets.dart';
 
@@ -11,20 +12,33 @@ import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 
 /// Everything a component needs to paint itself.
 class BhorThemeData {
-  BhorThemeData._(this.colors) : type = BhorType(colors.text, colors.text2);
+  BhorThemeData._(this.colors, {this.desktop = false})
+      : type = BhorType(colors.text, colors.text2, desktop: desktop);
 
   factory BhorThemeData.light() => _light;
   factory BhorThemeData.dark() => _dark;
 
-  /// Light or dark by [brightness].
-  factory BhorThemeData.of(Brightness brightness) =>
-      brightness == Brightness.dark ? _dark : _light;
+  /// Light or dark by [brightness]; [desktop] picks the desktop type step
+  /// (windows >= [BhorType.desktopMinWidth]).
+  factory BhorThemeData.of(Brightness brightness, {bool desktop = false}) => brightness == Brightness.dark
+      ? (desktop ? _darkDesktop : _dark)
+      : (desktop ? _lightDesktop : _light);
+
+  /// The theme for a window [width] logical px wide: the desktop type step
+  /// from [BhorType.desktopMinWidth] up, the phone scale below.
+  factory BhorThemeData.forWidth(Brightness brightness, double width) =>
+      BhorThemeData.of(brightness, desktop: width >= BhorType.desktopMinWidth);
 
   static final BhorThemeData _light = BhorThemeData._(BhorColors.light);
   static final BhorThemeData _dark = BhorThemeData._(BhorColors.dark);
+  static final BhorThemeData _lightDesktop = BhorThemeData._(BhorColors.light, desktop: true);
+  static final BhorThemeData _darkDesktop = BhorThemeData._(BhorColors.dark, desktop: true);
 
   final BhorColors colors;
   final BhorType type;
+
+  /// True for the desktop type step.
+  final bool desktop;
 
   Brightness get brightness => colors.brightness;
   bool get isDark => colors.isDark;
@@ -36,12 +50,13 @@ class BhorTheme extends InheritedWidget {
 
   final BhorThemeData data;
 
-  /// The nearest theme, or the platform-brightness default.
+  /// The nearest theme, or the platform-brightness default (with the
+  /// desktop type step on windows >= 1200 wide).
   static BhorThemeData of(BuildContext context) {
     final BhorTheme? t = context.dependOnInheritedWidgetOfExactType<BhorTheme>();
     if (t != null) return t.data;
     final Brightness b = MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light;
-    return BhorThemeData.of(b);
+    return BhorThemeData.forWidth(b, MediaQuery.maybeSizeOf(context)?.width ?? 0);
   }
 
   @override

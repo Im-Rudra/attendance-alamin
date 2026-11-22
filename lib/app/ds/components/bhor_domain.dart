@@ -19,10 +19,10 @@ import 'package:attendance_alamin/app/theme/tokens.dart' show AttendanceKind;
 import 'package:attendance_alamin/core/format/app_format.dart';
 
 /// Three-way attendance control for one student: a soft pill track whose
-/// thumb glides to the chosen status with the spring. The thumb is the
-/// surface with a light status tint and a 1.5 px status-coloured ring, so
-/// the selected state stands out from the track at >= 3:1 (light and dark);
-/// the icon / text colour follows. Fills the width when
+/// thumb glides to the chosen status with the spring. The thumb is filled
+/// with the status colour (no ring, review R3 / L1) and stands out from the
+/// track at >= 3:1 (light and dark); the chosen icon / text is the
+/// [onStatusOf] colour on it (AA). Fills the width when
 /// labelled; [compact] uses short labels, [iconOnly] shows ✓ ✕ clock for
 /// dense phone rows.
 /// Usage: `BhorAttendanceToggle(value: AttendanceKind.present, onChanged: f)`,
@@ -50,6 +50,10 @@ class BhorAttendanceToggle extends StatelessWidget {
 
   /// Icons only (✓ ✕ clock), sized to its content.
   final bool iconOnly;
+
+  /// Text / icon colour on a filled status thumb: white in light, the page
+  /// background (near-black) on the light dark-theme tones.
+  static Color onStatusOf(BhorColors c) => c.isDark ? c.bg : c.surface;
 
   static IconData iconOf(AttendanceKind k) => switch (k) {
         AttendanceKind.present => BhorIcons.present,
@@ -87,9 +91,9 @@ class BhorAttendanceToggle extends StatelessWidget {
     final Duration fast = BhorMotion.of(context, BhorMotion.fast);
 
     Widget track(double segW) {
-      final (Color tint, Color tone) = look(sel < 0 ? AttendanceKind.present : kinds[sel]);
-      // Surface + a whisper of the status tint, edged in the status colour.
-      final Color thumbFill = Color.alphaBlend(tint.withValues(alpha: tint.a * 0.6), c.surface);
+      final (Color _, Color tone) = look(sel < 0 ? AttendanceKind.present : kinds[sel]);
+      // Filled with the status colour; no outline ring.
+      final Color thumbFill = tone;
       return Container(
         height: h,
         padding: const EdgeInsets.all(3),
@@ -112,7 +116,6 @@ class BhorAttendanceToggle extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: thumbFill,
                     borderRadius: BorderRadius.circular(BhorRadius.pill),
-                    border: Border.all(color: tone, width: 1.5),
                     boxShadow: c.thumbShadow,
                   ),
                 ),
@@ -138,7 +141,7 @@ class BhorAttendanceToggle extends StatelessWidget {
                       pressScale: 0.94,
                       builder: (BuildContext context, BhorStates s) {
                         final bool on = i == sel;
-                        final Color fg = on ? look(kinds[i]).$2 : (s.hovered ? c.text : c.text2);
+                        final Color fg = on ? onStatusOf(c) : (s.hovered ? c.text : c.text2);
                         final Widget glyph = TweenAnimationBuilder<Color?>(
                           tween: ColorTween(end: fg),
                           duration: fast,

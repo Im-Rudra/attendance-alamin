@@ -54,16 +54,25 @@ class _Cell extends StatelessWidget {
         duration: BhorMotion.fast,
         height: height,
         alignment: Alignment.center,
+        // Selected = solid accent; today ([outlined], the older name) = the
+        // accent tint with accent text. Filled, never a ring (review L1).
         decoration: BoxDecoration(
-          color: selected ? c.accent : (s.hovered ? c.surface2 : null),
+          color: selected
+              ? c.accentFill
+              : outlined
+                  ? (s.hovered ? c.accentLine : c.accentTint)
+                  : (s.hovered ? c.surface2 : null),
           borderRadius: BorderRadius.circular(BhorRadius.chip),
-          border: outlined && !selected ? Border.all(color: c.accentLine, width: 1.5) : null,
         ),
         child: Text(
           label,
           maxLines: 1,
-          style: BhorType.tabular(selected ? b.type.bodyStrong : b.type.body).copyWith(
-            color: onTap == null ? c.text3 : (selected ? c.onAccent : c.text),
+          style: BhorType.tabular(selected || outlined ? b.type.bodyStrong : b.type.body).copyWith(
+            color: onTap == null
+                ? c.text3
+                : selected
+                    ? c.onAccentFill
+                    : (outlined ? c.accent : c.text),
           ),
         ),
       ),
@@ -94,7 +103,8 @@ class BhorDatePicker extends StatefulWidget {
   final DateTime lastDate;
   final int weekStart;
 
-  /// Ringed day (pass the app clock's today; null rings nothing).
+  /// Marked day (pass the app clock's today; null marks nothing): a filled
+  /// accent-tint cell, never a ring.
   final DateTime? today;
 
   /// Height of a day cell (40 in the desktop popover).

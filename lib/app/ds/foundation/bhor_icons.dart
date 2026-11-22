@@ -101,4 +101,7 @@ abstract final class BhorIcons {
   static const IconData chevronRight = IconData(0xe13a, fontFamily: _regular, fontPackage: _pkg);
   static const IconData sidebarCollapse = IconData(0xe128, fontFamily: _regular, fontPackage: _pkg);
   static const IconData sidebarExpand = IconData(0xe12a, fontFamily: _regular, fontPackage: _pkg);
+
+  /// Read-only field marker (lock-simple).
+  static const IconData lock = IconData(0xe308, fontFamily: _regular, fontPackage: _pkg);
 }

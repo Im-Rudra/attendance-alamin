@@ -69,6 +69,7 @@ class BhorColors {
     required this.scrim,
     required this.panelScrim,
     required this.segmentEdge,
+    required this.thumb,
     required this.pressShade,
     required this.shadow,
     required this.highlight,
@@ -148,7 +149,13 @@ class BhorColors {
   final Color panelScrim;
 
   /// Edge of the selected segmented thumb (dark: >= 3:1 against the track).
+  /// No longer painted (selected states are filled, never ringed); kept for
+  /// callers and the contrast table.
   final Color segmentEdge;
+
+  /// Fill of a selected thumb on a soft track (segmented control, BhorTabs):
+  /// white in light, a lifted grey in dark. Filled, never outlined.
+  final Color thumb;
   final Color pressShade;
 
   /// Soft neutral shadow: only floating toasts, menus and panels use it.
@@ -240,6 +247,7 @@ class BhorColors {
     scrim: BhorPaletteLight.scrim,
     panelScrim: BhorPaletteLight.panelScrim,
     segmentEdge: BhorPaletteLight.segmentEdge,
+    thumb: BhorPaletteLight.surface,
     pressShade: BhorPaletteLight.pressShade,
     shadow: BhorPaletteLight.shadow,
     highlight: BhorPaletteLight.highlight,
@@ -293,6 +301,9 @@ class BhorColors {
     scrim: BhorPaletteDark.scrim,
     panelScrim: BhorPaletteDark.panelScrim,
     segmentEdge: BhorPaletteDark.segmentEdge,
+    // soft2 lifted 40% toward text3 (#545864): text stays AA on it and the
+    // thumb separates from the soft track without an edge.
+    thumb: Color.lerp(BhorPaletteDark.soft2, BhorPaletteDark.text3, 0.4)!,
     pressShade: BhorPaletteDark.pressShade,
     shadow: BhorPaletteDark.shadow,
     highlight: BhorPaletteDark.highlight,
@@ -305,17 +316,29 @@ class BhorColors {
 /// Type scale (Hind Siliguri, line height 1.45 for Bangla). Bangla never
 /// below 12.5; body 14.5; titles 17-26 bold. Colours default to the theme's
 /// [BhorColors.text]; recolour with `copyWith`.
+///
+/// Desktop step (docs/council/16-windows-rebuild-plan.md W1-B 1): windows at
+/// least [desktopMinWidth] wide get display 28, title 22, heading 18, body
+/// 15, stat 30 (label 13.5, meta / caption 13). Phones are unchanged.
+/// `BhorThemeData.of(brightness, desktop: true)` carries it; the app root
+/// picks it from the window width.
 class BhorType {
-  BhorType(Color text, Color text2)
-      : display = _s(26, FontWeight.w700, text, tracking: -0.3),
-        title = _s(19, FontWeight.w700, text, tracking: -0.1),
-        heading = _s(16, FontWeight.w600, text),
-        body = _s(14.5, FontWeight.w400, text),
-        bodyStrong = _s(14.5, FontWeight.w600, text),
-        label = _s(13, FontWeight.w600, text),
-        meta = _s(12.5, FontWeight.w400, text2),
-        caption = _s(12.5, FontWeight.w400, text2),
-        stat = _s(24, FontWeight.w700, text, tracking: -0.2).copyWith(fontFeatures: _tabular);
+  BhorType(Color text, Color text2, {this.desktop = false})
+      : display = _s(desktop ? 28 : 26, FontWeight.w700, text, tracking: -0.3),
+        title = _s(desktop ? 22 : 19, FontWeight.w700, text, tracking: -0.1),
+        heading = _s(desktop ? 18 : 16, FontWeight.w600, text),
+        body = _s(desktop ? 15 : 14.5, FontWeight.w400, text),
+        bodyStrong = _s(desktop ? 15 : 14.5, FontWeight.w600, text),
+        label = _s(desktop ? 13.5 : 13, FontWeight.w600, text),
+        meta = _s(desktop ? 13 : 12.5, FontWeight.w400, text2),
+        caption = _s(desktop ? 13 : 12.5, FontWeight.w400, text2),
+        stat = _s(desktop ? 30 : 24, FontWeight.w700, text, tracking: -0.2).copyWith(fontFeatures: _tabular);
+
+  /// Window width (logical px) from which the desktop step applies.
+  static const double desktopMinWidth = 1200;
+
+  /// True for the desktop step.
+  final bool desktop;
 
   static const List<FontFeature> _tabular = <FontFeature>[FontFeature.tabularFigures()];
 

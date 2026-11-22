@@ -1,0 +1,11 @@
+{
+  "@@locale": "bn",
+  "layoutReadOnly": "শুধু দেখার জন্য",
+  "@layoutReadOnly": {
+    "description": "Screen-reader label of the lock icon on a read-only field (BhorTextField)."
+  },
+  "layoutSettingsSections": "সেটিংসের ভাগ",
+  "@layoutSettingsSections": {
+    "description": "Screen-reader label of the section list on the left of a settings page (BhorSettingsPage)."
+  }
+}

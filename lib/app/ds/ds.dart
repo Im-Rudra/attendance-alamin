@@ -16,6 +16,7 @@ export 'package:attendance_alamin/app/ds/components/bhor_pickers.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_scaffold.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_select.dart';
 export 'package:attendance_alamin/app/ds/components/bhor_text_field.dart';
+export 'package:attendance_alamin/app/ds/foundation/bhor_digits.dart';
 export 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 export 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 export 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
