@@ -467,10 +467,26 @@ class DriftBatchesRepository implements BatchesRepository {
 
   @override
   Future<int> unarchive(String id,
-      {bool acceptClashes = false, bool waiveGap = true}) {
+      {bool acceptClashes = false, bool waiveGap = true, LocalDate? on}) {
     return _db.transaction(() async {
       final old = await _store.requireBatch(id);
       if (old.archivedAt == null) return 0;
+      final today = _store.today();
+      final reopenOn = on ?? today;
+      if (on != null) {
+        if (on.isAfter(today)) {
+          throw const ValidationException(ErrorCodes.dateInFuture,
+              field: 'date');
+        }
+        // From the day after it was finished; a batch finished today (or
+        // later) can still reopen today.
+        var earliest = _center.dateOfEpochMs(old.archivedAt!).addDays(1);
+        if (earliest.isAfter(today)) earliest = today;
+        if (on.isBefore(earliest)) {
+          throw const ValidationException(ErrorCodes.dateInvalid,
+              field: 'date');
+        }
+      }
       if (!acceptClashes) {
         final result = await _unarchiveCheck(id);
         if (!result.ok) throw ScheduleClashException(result);
@@ -478,8 +494,7 @@ class DriftBatchesRepository implements BatchesRepository {
       await _store.updateBatch(
           old, const BatchesCompanion(archivedAt: Value<int?>(null)));
 
-      final today = _store.today();
-      final lastGapMonth = today.yearMonth.addMonths(-1);
+      final lastGapMonth = reopenOn.yearMonth.addMonths(-1);
       final ended = await (_db.select(_db.enrollments)
             ..where((t) =>
                 t.batchId.equals(id) &

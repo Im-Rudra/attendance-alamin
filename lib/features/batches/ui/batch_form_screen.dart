@@ -180,7 +180,9 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     });
   }
 
+  /// Blank means "no fee yet" = 0; null when the text is not an amount.
   int? _parsedFee() {
+    if (_fee.text.trim().isEmpty) return 0;
     try {
       return Validators.amount(_fee.text);
     } on ValidationException {
@@ -281,7 +283,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           subjectId: subjectId,
           name: Validators.name(_name.text),
           billingType: _billing,
-          monthlyFee: Validators.amount(_fee.text),
+          monthlyFee: _parsedFee() ?? 0,
           feeFrom: today.yearMonth,
           slots: _slots,
           slotsFrom: today,
@@ -293,7 +295,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   Future<bool> _saveEdit() async {
     final Batch batch = _batch!;
     final BatchesRepository repo = ref.read(batchesRepositoryProvider);
-    final int newFee = Validators.amount(_fee.text);
+    final int newFee = _parsedFee() ?? 0;
     final int? oldFee = _oldFee;
     final LocalDate today = ref.read(todayProvider);
     YearMonth? from;
@@ -490,6 +492,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                     label: l10n.batchFeeLabel,
                     prefix: Text('৳ ', style: th.type.body.copyWith(color: th.colors.text2)),
                     error: _feeError(),
+                    helper: _feeError() == null ? l10n.batchFeeBlankHelp : null,
                     tabular: true,
                   ),
                   const SizedBox(height: 16),

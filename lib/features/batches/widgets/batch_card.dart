@@ -93,6 +93,7 @@ class BatchCard extends ConsumerWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
                       BillingPill(type: data.batch.billingType),
+                      NoFeeTag(batchId: data.batch.id, month: today.yearMonth),
                       Text(l10n.studentCountText(data.studentCount, fmt.number(data.studentCount)), style: th.type.label),
                       if (pct != null)
                         Text(

@@ -124,6 +124,20 @@ void main() {
       expect((await h.batches.getById(physics))?.createdOn, today);
     });
 
+    test('a batch can be created with fee 0 (no fee yet) and priced later',
+        () async {
+      final sub = await h.subject('Physics');
+      final id = await h.batch(sub, 'Physics Z',
+          fee: 0, slots: [slot(sat, 960, 1020)]);
+      expect(await h.batches.watchFees(id).first,
+          [const FeePeriod(effective: YearMonth(2026, 11), amount: 0)]);
+      await h.batches.setFee(id, 900, const YearMonth(2026, 12));
+      expect(await h.batches.watchFees(id).first, [
+        const FeePeriod(effective: YearMonth(2026, 11), amount: 0),
+        const FeePeriod(effective: YearMonth(2026, 12), amount: 900),
+      ]);
+    });
+
     test('remembers the billing type as last_billing_type', () async {
       await h.chemB();
       final row = await (h.db.select(h.db.localMeta)
@@ -492,6 +506,80 @@ void main() {
       final e = await h.enrollmentRow('enr-1');
       expect(e.endMonth, 202610);
       expect(e.endDate, '2026-10-25');
+    });
+
+    test('finished-on date: the batch is finished on the chosen past day',
+        () async {
+      final id = await h.physicsA();
+      await addEnrollment(h, id);
+      await h.batches.archive(id,
+          on: d(2026, 11, 3), lastBillableMonth: const YearMonth(2026, 10));
+      expect((await h.batches.getById(id))?.archivedOn, d(2026, 11, 3));
+      final e = await h.enrollmentRow('enr-1');
+      expect(e.endMonth, 202610);
+    });
+
+    test('reopen date: billing restarts from that month', () async {
+      final id = await h.physicsA();
+      await addEnrollment(h, id);
+      await h.batches.archive(id,
+          on: d(2026, 11, 15), lastBillableMonth: const YearMonth(2026, 11));
+      h.setNow(DateTime.utc(2027, 1, 10, 6));
+
+      // Classes started again on 5 Jan: December is the closed month.
+      expect(await h.batches.unarchive(id, on: d(2027, 1, 5)), 1);
+      expect((await h.batches.getById(id))?.archived, isFalse);
+      final e = await h.enrollmentRow('enr-1');
+      expect(e.endMonth, isNull);
+      final waivers = await h.db.select(h.db.payments).get();
+      expect([for (final w in waivers) w.billingMonth], [202612]);
+      // The waiver is recorded on the real day, not the reopen date.
+      expect(waivers.single.paidOn, '2027-01-10');
+    });
+
+    test('reopen date in the month after finishing leaves no gap', () async {
+      final id = await h.physicsA();
+      await addEnrollment(h, id);
+      await h.batches.archive(id,
+          on: d(2026, 11, 15), lastBillableMonth: const YearMonth(2026, 11));
+      h.setNow(DateTime.utc(2027, 1, 10, 6));
+      // 20 Dec: classes restart in December, so December is billed.
+      expect(await h.batches.unarchive(id, on: d(2026, 12, 20)), 0);
+      expect(await h.db.select(h.db.payments).get(), isEmpty);
+      expect((await h.enrollmentRow('enr-1')).endMonth, isNull);
+    });
+
+    test('reopen date without waiving keeps the closed months as dues',
+        () async {
+      final id = await h.physicsA();
+      await addEnrollment(h, id);
+      await h.batches.archive(id,
+          on: d(2026, 11, 15), lastBillableMonth: const YearMonth(2026, 11));
+      h.setNow(DateTime.utc(2027, 1, 10, 6));
+      expect(
+          await h.batches.unarchive(id, waiveGap: false, on: d(2027, 1, 2)), 1);
+      expect(await h.db.select(h.db.payments).get(), isEmpty);
+    });
+
+    test('reopen date must lie between the day after finishing and today',
+        () async {
+      final id = await h.physicsA();
+      await addEnrollment(h, id);
+      await h.batches.archive(id,
+          on: d(2026, 11, 15), lastBillableMonth: const YearMonth(2026, 11));
+      h.setNow(DateTime.utc(2027, 1, 10, 6));
+      // Not on or before the finish day.
+      await expectLater(h.batches.unarchive(id, on: d(2026, 11, 15)),
+          validation(ErrorCodes.dateInvalid));
+      await expectLater(h.batches.unarchive(id, on: d(2026, 10, 1)),
+          validation(ErrorCodes.dateInvalid));
+      // Not in the future.
+      await expectLater(h.batches.unarchive(id, on: d(2027, 1, 11)),
+          validation(ErrorCodes.dateInFuture));
+      expect((await h.batches.getById(id))?.archived, isTrue);
+      // The day after finishing is the earliest allowed.
+      await h.batches.unarchive(id, on: d(2026, 11, 16));
+      expect((await h.batches.getById(id))?.archived, isFalse);
     });
 
     test('unarchive of a live batch is a no-op', () async {

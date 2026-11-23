@@ -54,8 +54,13 @@ abstract interface class BatchesRepository {
   /// set, no end date) reopen. Returns the number of gap months (largest
   /// per-enrollment count of months between the old last billable month and
   /// last month); with [waiveGap] those months get waived rows.
+  ///
+  /// [on] is the day classes started again (default today). Billing restarts
+  /// from that month, so the gap ends the month before it. When given it must
+  /// lie between the day after the batch was finished and today (throws
+  /// `dateInvalid` / `dateInFuture`).
   Future<int> unarchive(String id,
-      {bool acceptClashes = false, bool waiveGap = true});
+      {bool acceptClashes = false, bool waiveGap = true, LocalDate? on});
 
   Future<DeleteImpact> deleteImpact(String id);
 

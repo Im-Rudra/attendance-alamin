@@ -64,11 +64,11 @@
   "@batchMenuOpen": {
     "description": "Context-menu item: open the batch."
   },
-  "batchMenuArchive": "আর্কাইভ করুন",
+  "batchMenuArchive": "ব্যাচ শেষ করুন",
   "@batchMenuArchive": {
     "description": "Menu item: archive the batch."
   },
-  "batchMenuUnarchive": "আর্কাইভ তুলুন",
+  "batchMenuUnarchive": "আবার চালু করুন",
   "@batchMenuUnarchive": {
     "description": "Menu item / button: bring an archived batch back."
   },
@@ -202,7 +202,7 @@
   "@batchReasonName": {
     "description": "Reason shown under a disabled save button."
   },
-  "batchReasonFee": "মাসিক ফি লিখুন",
+  "batchReasonFee": "মাসিক ফি ঠিক করুন",
   "@batchReasonFee": {
     "description": "Reason shown under a disabled save button."
   },
@@ -328,7 +328,7 @@
   "@batchAllPaid": {
     "description": "Student row: no dues."
   },
-  "batchArchivedBanner": "এই ব্যাচ {date} তারিখে আর্কাইভ করা হয়েছে",
+  "batchArchivedBanner": "এই ব্যাচ {date} তারিখে শেষ হয়েছে",
   "@batchArchivedBanner": {
     "description": "Banner on an archived batch. date is pre-formatted.",
     "placeholders": {
@@ -338,7 +338,7 @@
       }
     }
   },
-  "batchArchiveTitle": "\"{name}\" আর্কাইভ করবেন?",
+  "batchArchiveTitle": "\"{name}\" শেষ করবেন?",
   "@batchArchiveTitle": {
     "description": "Archive dialog title.",
     "placeholders": {
@@ -348,7 +348,7 @@
       }
     }
   },
-  "batchArchiveBody": "তথ্য মুছবে না, শুধু তালিকা থেকে সরে যাবে। রুটিন ও হাজিরায় আর আসবে না।",
+  "batchArchiveBody": "সব তথ্য যেমন আছে তেমনই থাকবে। ব্যাচটি তালিকা, রুটিন ও হাজিরা থেকে সরে যাবে; চাইলে যেকোনো সময় আবার চালু করতে পারবেন।",
   "@batchArchiveBody": {
     "description": "Archive dialog body."
   },
@@ -356,7 +356,7 @@
   "@batchArchiveLbmLabel": {
     "description": "Archive dialog: last billable month label."
   },
-  "batchArchiveLbmHelp": "{month} পর্যন্ত বেতন ধরা হবে। এরপর নতুন বকেয়া হবে না; আগের বকেয়া থেকে যাবে।",
+  "batchArchiveLbmHelp": "{month}-এর পরে নতুন বকেয়া হবে না। আগের তথ্য থাকবে; চাইলে আবার চালু করতে পারবেন।",
   "@batchArchiveLbmHelp": {
     "description": "Archive dialog explanation. month is pre-formatted.",
     "placeholders": {
@@ -366,15 +366,15 @@
       }
     }
   },
-  "batchArchiveConfirm": "আর্কাইভ করুন",
+  "batchArchiveConfirm": "ব্যাচ শেষ করুন",
   "@batchArchiveConfirm": {
     "description": "Archive dialog confirm button."
   },
-  "batchArchivedToast": "ব্যাচ আর্কাইভ করা হয়েছে",
+  "batchArchivedToast": "ব্যাচ শেষ করা হয়েছে",
   "@batchArchivedToast": {
     "description": "Snackbar after archiving."
   },
-  "batchUnarchiveTitle": "\"{name}\" আর্কাইভ থেকে তুলবেন?",
+  "batchUnarchiveTitle": "\"{name}\" আবার চালু করবেন?",
   "@batchUnarchiveTitle": {
     "description": "Unarchive dialog title.",
     "placeholders": {
@@ -392,15 +392,15 @@
   "@batchUnarchiveClash": {
     "description": "Unarchive dialog: intro to the list of clashes."
   },
-  "batchUnarchiveClashHint": "তুলে নেওয়ার পর রুটিন ঠিক না করা পর্যন্ত “সময়ের সংঘাত” দেখাবে।",
+  "batchUnarchiveClashHint": "আবার চালু করার পর রুটিন ঠিক না করা পর্যন্ত “সময়ের সংঘাত” দেখাবে।",
   "@batchUnarchiveClashHint": {
     "description": "Unarchive dialog: what happens with clashes."
   },
-  "batchUnarchiveConfirm": "আর্কাইভ তুলুন",
+  "batchUnarchiveConfirm": "আবার চালু করুন",
   "@batchUnarchiveConfirm": {
     "description": "Unarchive dialog confirm button."
   },
-  "batchUnarchiveFix": "আর্কাইভ তুলুন ও রুটিন ঠিক করুন",
+  "batchUnarchiveFix": "আবার চালু করুন ও রুটিন ঠিক করুন",
   "@batchUnarchiveFix": {
     "description": "Unarchive dialog confirm button when there are clashes."
   },
@@ -418,7 +418,7 @@
   "@batchGapHint": {
     "description": "Unarchive dialog switch explanation."
   },
-  "batchUnarchivedToast": "ব্যাচ আর্কাইভ থেকে তোলা হয়েছে",
+  "batchUnarchivedToast": "ব্যাচ আবার চালু হয়েছে",
   "@batchUnarchivedToast": {
     "description": "Snackbar after unarchiving."
   },
@@ -482,7 +482,7 @@
       }
     }
   },
-  "batchDeleteHint": "মুছে ফেলার বদলে আর্কাইভ করলে কিছুই হারাবে না।",
+  "batchDeleteHint": "মুছে ফেলার বদলে শেষ করলে কিছুই হারাবে না।",
   "@batchDeleteHint": {
     "description": "Delete confirmation hint."
   },
@@ -494,11 +494,11 @@
   "@batchDeletedToast": {
     "description": "Snackbar after deleting."
   },
-  "batchArchivedEmpty": "কোনো আর্কাইভ করা ব্যাচ নেই",
+  "batchArchivedEmpty": "শেষ হওয়া কোনো ব্যাচ নেই",
   "@batchArchivedEmpty": {
     "description": "Empty state of the archived batches screen."
   },
-  "batchArchivedOn": "আর্কাইভ: {date}",
+  "batchArchivedOn": "শেষ হয়েছে: {date}",
   "@batchArchivedOn": {
     "description": "Archived batch row caption. date is pre-formatted.",
     "placeholders": {
@@ -645,5 +645,21 @@
         "example": "1"
       }
     }
+  },
+  "batchFinishedOnLabel": "শেষ হয়েছে যেদিন",
+  "@batchFinishedOnLabel": {
+    "description": "Finish-batch dialog: date field label."
+  },
+  "batchReopenOnLabel": "আবার ক্লাস শুরু হয়েছে যেদিন",
+  "@batchReopenOnLabel": {
+    "description": "Reopen-batch dialog: date field label."
+  },
+  "batchNoFeeYet": "ফি এখনো ঠিক হয়নি",
+  "@batchNoFeeYet": {
+    "description": "Tag on a batch whose monthly fee is 0 / not set yet."
+  },
+  "batchFeeBlankHelp": "ফি এখনো ঠিক না হলে ফাঁকা বা ০ রাখুন।",
+  "@batchFeeBlankHelp": {
+    "description": "Helper text under the monthly fee field."
   }
 }

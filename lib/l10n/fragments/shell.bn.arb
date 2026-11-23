@@ -158,7 +158,7 @@
   "@shellTitleBackupReview": {
     "description": "Screen title: review the changes of a backup before applying it."
   },
-  "shellTitleArchived": "আর্কাইভ করা ব্যাচ",
+  "shellTitleArchived": "শেষ হওয়া ব্যাচ",
   "@shellTitleArchived": {
     "description": "Screen title: archived batches."
   },
