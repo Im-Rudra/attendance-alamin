@@ -7,6 +7,8 @@ import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/mappers.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/repositories/drift/people_common.dart';
+import 'package:attendance_alamin/data/repositories/drift/places_repository_drift.dart'
+    show requirePlace;
 import 'package:attendance_alamin/data/repositories/other_income_repository.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:drift/drift.dart' hide Batch;
@@ -52,6 +54,8 @@ class DriftOtherIncomeRepository implements OtherIncomeRepository {
     return _db.transaction(() async {
       final studentId = draft.studentId;
       if (studentId != null) await requireStudent(_db, studentId);
+      final placeId = draft.placeId;
+      if (placeId != null) await requirePlace(_db, placeId);
       final id = Ids.v4();
       final now = _stamper.nowMs();
       final row = OtherIncome(
@@ -62,6 +66,7 @@ class DriftOtherIncomeRepository implements OtherIncomeRepository {
         paidOn: draft.paidOn,
         method: method,
         note: trimOrNull(draft.note),
+        placeId: placeId,
       );
       await _db.into(_db.otherIncome).insert(otherIncomeToCompanion(row)
           .copyWith(

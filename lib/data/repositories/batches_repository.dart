@@ -18,11 +18,24 @@ abstract interface class BatchesRepository {
   Future<Batch?> getById(String id);
 
   /// Batch + first fee row + slots in one transaction, clash-checked
+  /// (schema v2: `draft.kind`, `draft.placeId` (null = default place, must
+  /// exist), `draft.subjectId == kNoSubjectId` for a tuition without subject)
   /// (throws `ScheduleClashException`). Remembers the billing type as the
   /// device's `last_billing_type`. Returns the new batch id.
   Future<String> create(BatchDraft draft);
 
   Future<void> rename(String id, String name);
+
+  /// Moves the batch to another place (schema v2). Throws `NotFoundException`
+  /// for an unknown batch or place. Billing and history are unchanged.
+  Future<void> setPlace(String id, String placeId);
+
+  /// Whether another live (not deleted; finished ones count) batch of the same
+  /// [kind] already has [name], compared case- and space-insensitively
+  /// (`batchNameKey`). [excludeId] = the batch being renamed. For forms to
+  /// warn; [create] / [rename] do not enforce it.
+  Future<bool> isNameTaken(String name,
+      {required BatchKind kind, String? excludeId});
   Future<void> setBillingType(String id, BillingType t);
 
   /// `null` = default lead, `0` = off, otherwise 1..720.

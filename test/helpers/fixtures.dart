@@ -12,6 +12,7 @@ import 'package:attendance_alamin/core/ids/ids.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
@@ -27,6 +28,7 @@ import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
 
 import 'fakes/fake_people_repos.dart';
+import 'fakes/fake_places_repo.dart';
 import 'fakes/fake_settings_repos.dart';
 import 'fakes/fake_structure_repos.dart';
 
@@ -330,7 +332,8 @@ class SeededFakes {
     required this.otherIncome,
     required this.settings,
     required this.localMeta,
-  });
+    FakePlacesRepository? places,
+  }) : places = places ?? FakePlacesRepository();
 
   final FakeStructureStore store;
   final FakeSubjectsRepository subjects;
@@ -343,6 +346,9 @@ class SeededFakes {
   final FakeOtherIncomeRepository otherIncome;
   final FakeSettingsRepository settings;
   final FakeLocalMetaRepository localMeta;
+
+  /// Schema v2 places: only the default place unless a test adds more.
+  final FakePlacesRepository places;
 
   /// Provider overrides wiring every fake in (pass to `pumpApp` /
   /// `makeContainer`).
@@ -357,6 +363,7 @@ class SeededFakes {
         otherIncomeRepositoryProvider.overrideWithValue(otherIncome),
         settingsRepositoryProvider.overrideWithValue(settings),
         localMetaRepositoryProvider.overrideWithValue(localMeta),
+        placesRepositoryProvider.overrideWithValue(places),
       ];
 }
 

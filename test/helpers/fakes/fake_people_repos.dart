@@ -27,6 +27,7 @@ import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/receipt_no.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
@@ -474,7 +475,17 @@ class FakePaymentsRepository with _FakeBase implements PaymentsRepository {
           ),
       ]);
 
-  List<Payment> _rows(String receiptId, PaymentDraft d) {
+  /// Last slip sequence given out per year (never reused, like the drift
+  /// repository).
+  final Map<int, int> receiptSeq = {};
+
+  String _nextReceiptNo(LocalDate paidOn) {
+    final seq = (receiptSeq[paidOn.year] ?? 0) + 1;
+    receiptSeq[paidOn.year] = seq;
+    return ReceiptNo.format(paidOn.year, seq);
+  }
+
+  List<Payment> _rows(String receiptId, PaymentDraft d, [String? receiptNo]) {
     final sums = <YearMonth, int>{};
     for (final a in d.allocations) {
       sums[a.month] = (sums[a.month] ?? 0) + a.amount;
@@ -493,6 +504,7 @@ class FakePaymentsRepository with _FakeBase implements PaymentsRepository {
           paidOn: d.paidOn,
           method: d.method,
           note: d.note,
+          receiptNo: receiptNo,
         ),
     ];
   }
@@ -501,7 +513,7 @@ class FakePaymentsRepository with _FakeBase implements PaymentsRepository {
   Future<String> record(PaymentDraft d) async {
     _write();
     final receiptId = Ids.v4();
-    payments.addAll(_rows(receiptId, d));
+    payments.addAll(_rows(receiptId, d, _nextReceiptNo(d.paidOn)));
     _changed();
     return receiptId;
   }
@@ -509,8 +521,12 @@ class FakePaymentsRepository with _FakeBase implements PaymentsRepository {
   @override
   Future<void> updateReceipt(String receiptId, PaymentDraft d) async {
     _write();
+    String? receiptNo;
+    for (final p in payments) {
+      if (p.receiptId == receiptId && !p.waived) receiptNo ??= p.receiptNo;
+    }
     payments.removeWhere((p) => p.receiptId == receiptId && !p.waived);
-    payments.addAll(_rows(receiptId, d));
+    payments.addAll(_rows(receiptId, d, receiptNo));
     _changed();
   }
 
@@ -732,6 +748,7 @@ class FakeOtherIncomeRepository with _FakeBase implements OtherIncomeRepository 
       paidOn: draft.paidOn,
       method: draft.method,
       note: draft.note,
+      placeId: draft.placeId,
     ));
     _changed();
     return id;

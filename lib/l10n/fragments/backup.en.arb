@@ -80,5 +80,6 @@
   "backupDoneSafety": "A safety copy of your earlier data was kept.",
   "backupUndo": "Go back to how it was",
   "backupUndone": "Everything is back to how it was",
-  "backupOverfilled": "{n} months have more money recorded than the fee. Please review the payments."
+  "backupOverfilled": "{n} months have more money recorded than the fee. Please review the payments.",
+  "backupSafetyReasonMigration": "Before the app update"
 }

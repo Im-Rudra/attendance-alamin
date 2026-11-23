@@ -88,9 +88,9 @@
       }
     }
   },
-  "duesInactiveGroup": "ছেড়ে যাওয়া / আর্কাইভ",
+  "duesInactiveGroup": "ছেড়ে যাওয়া / শেষ হওয়া ব্যাচ",
   "@duesInactiveGroup": {
-    "description": "Title of the grey group of dues of students who left or archived batches."
+    "description": "Title of the grey group of dues of students who left or whose batch is finished."
   },
   "duesInactiveHint": "এদের বকেয়া আলাদা রাখা হয়েছে, কোনো সতর্কতা দেখানো হয় না।",
   "@duesInactiveHint": {
@@ -108,9 +108,9 @@
   "@duesReasonLeft": {
     "description": "Why a due is in the grey group: the student left."
   },
-  "duesReasonArchived": "ব্যাচ আর্কাইভ",
+  "duesReasonArchived": "ব্যাচ শেষ",
   "@duesReasonArchived": {
-    "description": "Why a due is in the grey group: the batch is archived."
+    "description": "Why a due is in the grey group: the batch is finished."
   },
   "duesReasonEnded": "ভর্তি শেষ",
   "@duesReasonEnded": {

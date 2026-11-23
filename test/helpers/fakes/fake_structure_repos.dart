@@ -13,9 +13,11 @@ import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
+import 'package:attendance_alamin/domain/models/batch_names.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
@@ -174,6 +176,8 @@ class FakeBatchesRepository implements BatchesRepository {
       sortOrder: store.batches.length,
       reminderLeadMin: draft.reminderLeadMin,
       notes: draft.notes,
+      kind: draft.kind,
+      placeId: draft.placeId ?? kDefaultPlaceId,
     ));
     store.fees[id] = [
       FeePeriod(effective: draft.feeFrom, amount: draft.monthlyFee),
@@ -206,6 +210,7 @@ class FakeBatchesRepository implements BatchesRepository {
     int? Function()? reminderLeadMin,
     LocalDate? Function()? archivedOn,
     String? Function()? notes,
+    String? placeId,
   }) =>
       Batch(
         id: b.id,
@@ -218,11 +223,22 @@ class FakeBatchesRepository implements BatchesRepository {
             reminderLeadMin != null ? reminderLeadMin() : b.reminderLeadMin,
         archivedOn: archivedOn != null ? archivedOn() : b.archivedOn,
         notes: notes != null ? notes() : b.notes,
+        kind: b.kind,
+        placeId: placeId ?? b.placeId,
       );
 
   @override
   Future<void> rename(String id, String name) =>
       _edit(id, (b) => _copy(b, name: name.trim()));
+
+  @override
+  Future<void> setPlace(String id, String placeId) =>
+      _edit(id, (b) => _copy(b, placeId: placeId));
+
+  @override
+  Future<bool> isNameTaken(String name,
+          {required BatchKind kind, String? excludeId}) async =>
+      isBatchNameTaken(store.batches, name, kind: kind, excludeId: excludeId);
 
   @override
   Future<void> setBillingType(String id, BillingType t) =>

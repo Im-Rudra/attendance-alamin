@@ -19,6 +19,7 @@ class Payment {
     required this.method,
     this.note,
     this.waived = false,
+    this.receiptNo,
   });
 
   final String id;
@@ -33,6 +34,11 @@ class Payment {
   final String? note;
   final bool waived;
 
+  /// Slip number of the receipt (`2026-0007`, see `ReceiptNo`), the same on
+  /// every row of the receipt. Null on waivers and on receipts not numbered
+  /// yet (schema v2 numbers every receipt on save / migration / import).
+  final String? receiptNo;
+
   @override
   bool operator ==(Object other) =>
       other is Payment &&
@@ -46,11 +52,12 @@ class Payment {
       other.paidOn == paidOn &&
       other.method == method &&
       other.note == note &&
-      other.waived == waived;
+      other.waived == waived &&
+      other.receiptNo == receiptNo;
 
   @override
   int get hashCode => Object.hash(id, receiptId, studentId, enrollmentId,
-      batchId, billingMonth, amount, paidOn, method, note, waived);
+      batchId, billingMonth, amount, paidOn, method, note, waived, receiptNo);
 
   @override
   String toString() => 'Payment($id, $billingMonth, $amount)';

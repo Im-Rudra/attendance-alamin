@@ -40,8 +40,11 @@ class BatchDraft {
     required this.slotsFrom,
     this.reminderLeadMin,
     this.notes,
+    this.kind = BatchKind.batch,
+    this.placeId,
   });
 
+  /// `kNoSubjectId` (domain/models/subject.dart) = a tuition without subject.
   final String subjectId;
   final String name;
   final BillingType billingType;
@@ -51,6 +54,12 @@ class BatchDraft {
   final List<SlotDraft> slots;
   final LocalDate slotsFrom;
   final String? notes;
+
+  /// Batch or private tuition (schema v2).
+  final BatchKind kind;
+
+  /// The place; null = the default place (`kDefaultPlaceId`).
+  final String? placeId;
 
   @override
   bool operator ==(Object other) =>
@@ -63,11 +72,13 @@ class BatchDraft {
       other.feeFrom == feeFrom &&
       listEq(other.slots, slots) &&
       other.slotsFrom == slotsFrom &&
-      other.notes == notes;
+      other.notes == notes &&
+      other.kind == kind &&
+      other.placeId == placeId;
 
   @override
   int get hashCode => Object.hash(subjectId, name, billingType, reminderLeadMin,
-      monthlyFee, feeFrom, Object.hashAll(slots), slotsFrom, notes);
+      monthlyFee, feeFrom, Object.hashAll(slots), slotsFrom, notes, kind, placeId);
 }
 
 class StudentDraft {

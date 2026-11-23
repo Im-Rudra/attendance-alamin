@@ -9,11 +9,14 @@ part 'app_database.g.dart';
 
 /// The app's SQLite database (Arch 3, plan M3-A).
 ///
-/// 14 synced tables (in `kSyncedTables` order) + 3 local-only tables.
+/// 15 synced tables (in `kSyncedTables` order) + 3 local-only tables.
+/// Schema v2 (teacher feedback 1-3) added `places`, `batches.kind`,
+/// `batches.place_id`, `payments.receipt_no` and `other_income.place_id`.
 /// Repositories are the only writers; they stamp sync columns through
 /// `SyncStamper` and never hard-delete. Open with `openConnection()` in the
 /// app and `NativeDatabase.memory()` in tests.
 @DriftDatabase(tables: [
+  Places,
   Subjects,
   Batches,
   BatchSlots,
@@ -38,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   /// Must equal `kCurrentSchemaVersion` (asserted by a test). Kept as a
   /// literal because drift_dev reads it from the source for schema dumps.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => buildMigrationStrategy(this);

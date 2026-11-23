@@ -44,7 +44,7 @@ void main() {
   test('drift tables are exactly kSyncedTables + local tables', () {
     final db = openMemoryDb();
     final names = db.allTables.map((t) => t.actualTableName).toList();
-    expect(names, hasLength(17));
+    expect(names, hasLength(18));
     expect(names.toSet(), {...kSyncedTables, ..._localTables});
   });
 

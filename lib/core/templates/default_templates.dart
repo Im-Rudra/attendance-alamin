@@ -6,7 +6,8 @@ import 'package:attendance_alamin/core/format/lang.dart';
 /// Reminder placeholders: `{student}` `{batch}` `{months}` `{amount}`
 /// `{center}` `{teacher_phone}`.
 /// Receipt placeholders: `{center}` `{student}` `{id}` `{batch}` `{months}`
-/// `{amount}` `{method}` `{date}` `{remaining_line}`.
+/// `{amount}` `{method}` `{date}` `{remaining_line}` `{receipt_no}` (slip
+/// number, schema v2; not in the defaults yet).
 abstract final class DefaultTemplates {
   static const reminderBn = 'সম্মানিত অভিভাবক,\n'
       '{student}-এর {batch} ব্যাচের {months} মাসের বেতন মোট ৳{amount} এখনো বাকি আছে। '

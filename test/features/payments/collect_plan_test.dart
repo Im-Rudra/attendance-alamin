@@ -334,6 +334,60 @@ void main() {
     });
   });
 
+  group('slip number', () {
+    test('{receipt_no} is the slip number in the app digits; none leaves no brackets', () {
+      final List<Payment> base = <Payment>[
+        Payment(
+          id: 'p1',
+          receiptId: 'r1',
+          studentId: kStuRahim,
+          enrollmentId: kEnrRahimPhys,
+          batchId: kBatPhysA,
+          billingMonth: _nov,
+          amount: 1000,
+          paidOn: kToday,
+          method: PaymentMethod.cash,
+        ),
+      ];
+      ReceiptFacts withNo(String? no) => ReceiptFacts(
+            studentName: 'রহিম উদ্দিন',
+            batchName: 'Physics A',
+            rows: <Payment>[
+              for (final Payment p in base)
+                Payment(
+                  id: p.id,
+                  receiptId: p.receiptId,
+                  studentId: p.studentId,
+                  enrollmentId: p.enrollmentId,
+                  batchId: p.batchId,
+                  billingMonth: p.billingMonth,
+                  amount: p.amount,
+                  paidOn: p.paidOn,
+                  method: p.method,
+                  receiptNo: no,
+                ),
+            ],
+            partialMonths: const <YearMonth>{},
+            remaining: 0,
+          );
+      String slip(Lang lang, ReceiptFacts f) => renderReceiptText(
+            facts: f,
+            template: 'Slip ({receipt_no}) for {student}',
+            center: '',
+            fmt: AppFormat(lang),
+            l10n: lookupAppLocalizations(Locale(lang == Lang.bn ? 'bn' : 'en')),
+            today: kToday,
+            methodLabel: 'Cash',
+            paidOn: kToday,
+          );
+      expect(withNo('2026-0007').receiptNo, '2026-0007');
+      expect(withNo(null).receiptNo, '');
+      expect(slip(Lang.en, withNo('2026-0007')), 'Slip (2026-0007) for রহিম উদ্দিন');
+      expect(slip(Lang.bn, withNo('2026-0007')), 'Slip (২০২৬-০০০৭) for রহিম উদ্দিন');
+      expect(slip(Lang.en, withNo(null)), 'Slip for রহিম উদ্দিন');
+    });
+  });
+
   group('edit dues exclude the receipt\'s own rows', () {
     test('November is paid with the receipt and open again without it', () async {
       final SeededFakes fakes = seedFakes();

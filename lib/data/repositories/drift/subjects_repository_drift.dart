@@ -12,6 +12,37 @@ import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:drift/drift.dart' hide Batch;
 
+/// Writes the hidden "no subject" row ([kNoSubjectId], name `''`) used by
+/// private tuitions without a subject, or revives it. Call inside a
+/// transaction. Never listed by [DriftSubjectsRepository].
+Future<void> ensureNoSubjectRow(AppDatabase db, SyncStamper stamper) async {
+  final old = await (db.select(db.subjects)
+        ..where((t) => t.id.equals(kNoSubjectId)))
+      .getSingleOrNull();
+  if (old == null) {
+    final now = stamper.nowMs();
+    await db.into(db.subjects).insert(SubjectsCompanion(
+          id: const Value(kNoSubjectId),
+          name: const Value(''),
+          sortOrder: const Value(1 << 30),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          deviceId: Value(stamper.deviceId),
+          rev: const Value(1),
+        ));
+    return;
+  }
+  if (old.deletedAt == null) return;
+  await (db.update(db.subjects)..where((t) => t.id.equals(kNoSubjectId))).write(
+    SubjectsCompanion(
+      deletedAt: const Value(null),
+      updatedAt: Value(stamper.nextUpdatedAt(old.updatedAt)),
+      rev: Value(stamper.nextRev(old.rev)),
+      deviceId: Value(stamper.deviceId),
+    ),
+  );
+}
+
 class DriftSubjectsRepository implements SubjectsRepository {
   DriftSubjectsRepository(
     this._db,
@@ -26,7 +57,7 @@ class DriftSubjectsRepository implements SubjectsRepository {
   @override
   Stream<List<Subject>> watchAll() {
     final q = _db.select(_db.subjects)
-      ..where((t) => t.deletedAt.isNull())
+      ..where((t) => t.deletedAt.isNull() & t.id.equals(kNoSubjectId).not())
       ..orderBy([
         (t) => OrderingTerm.asc(t.sortOrder),
         (t) => OrderingTerm.asc(t.name),
@@ -40,7 +71,7 @@ class DriftSubjectsRepository implements SubjectsRepository {
     final wanted = name.trim().toLowerCase();
     if (wanted.isEmpty) return null;
     final rows = await (_db.select(_db.subjects)
-          ..where((t) => t.deletedAt.isNull())
+          ..where((t) => t.deletedAt.isNull() & t.id.equals(kNoSubjectId).not())
           ..orderBy([
             (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.asc(t.id),
@@ -58,7 +89,7 @@ class DriftSubjectsRepository implements SubjectsRepository {
     final note = StructureStore.cleanNote(notes);
     return _db.transaction(() async {
       final maxRow = await (_db.select(_db.subjects)
-            ..where((t) => t.deletedAt.isNull())
+            ..where((t) => t.deletedAt.isNull() & t.id.equals(kNoSubjectId).not())
             ..orderBy([(t) => OrderingTerm.desc(t.sortOrder)])
             ..limit(1))
           .getSingleOrNull();
@@ -117,6 +148,9 @@ class DriftSubjectsRepository implements SubjectsRepository {
   }
 
   Future<SubjectRow> _live(String id) async {
+    if (id == kNoSubjectId) {
+      throw NotFoundException(ErrorCodes.notFound, detail: 'subject $id');
+    }
     final row = await (_db.select(_db.subjects)
           ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
         .getSingleOrNull();

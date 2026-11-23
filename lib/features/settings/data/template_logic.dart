@@ -46,6 +46,7 @@ List<String> placeholdersOf(TemplateKind kind) => switch (kind) {
           'method',
           'date',
           'remaining_line',
+          'receipt_no',
         ],
     };
 
@@ -92,6 +93,7 @@ Map<String, String> sampleValues(TemplateKind kind, Lang lang) {
       'method': 'বিকাশ',
       'date': '২১ নভেম্বর ২০২৬',
       'remaining_line': 'বাকি: ৳৫০০',
+      'receipt_no': '২০২৬-০০০৭',
     };
   }
   return const <String, String>{
@@ -105,6 +107,7 @@ Map<String, String> sampleValues(TemplateKind kind, Lang lang) {
     'method': 'bKash',
     'date': '21 Nov 2026',
     'remaining_line': 'Remaining: ৳500',
+    'receipt_no': '2026-0007',
   };
 }
 

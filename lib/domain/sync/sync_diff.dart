@@ -288,6 +288,8 @@ abstract final class SyncDiff {
   }
 
   static final Map<String, _Rule> _rules = {
+    // Places (schema v2) are centre details: counted with the settings.
+    'places': _Rule(SummaryEntity.settings, (r) => _own('place', r), 'places', (r) => _str(r['id'])),
     'subjects': _Rule(SummaryEntity.subjects, (r) => _own('subject', r), 'subjects', (r) => _str(r['id'])),
     'batches': _Rule(SummaryEntity.batches, (r) => _own('batch', r), 'batches', (r) => _str(r['id'])),
     'batch_fees': _Rule(SummaryEntity.batches, (r) => _parent('batch', 'batch_id', 'batch_fees', r), 'batches',

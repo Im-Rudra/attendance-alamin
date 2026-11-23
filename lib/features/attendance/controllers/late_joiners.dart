@@ -7,14 +7,11 @@ import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 
 /// Marking a late joiner means moving their join date back to the roll-call
-/// date first (otherwise the mark would not belong to their enrolment).
-/// That needs `EnrollmentsRepository.updateJoinDate(enrollmentId, joinDate)`,
-/// added by the Students work. Until the Chair wires it, "Show" is read-only.
-///
-/// TODO(w1-shell/late-joiners): when `updateJoinDate` is on main, flip this to
-/// true, ask "Move {name}'s join date to {date}?" once, call `updateJoinDate`,
-/// then reload the roster (see `_RollEditorState._reloadRoster`).
-const bool kLateJoinerMoveEnabled = false;
+/// date first (otherwise the mark would not belong to their enrolment): the
+/// list asks once "Move {name}'s join date to {date}?", calls
+/// `EnrollmentsRepository.updateJoinDate` and reloads the roster, so the
+/// student can be marked. Billing is not touched.
+const bool kLateJoinerMoveEnabled = true;
 
 class LateJoiner {
   const LateJoiner({required this.enrollmentId, required this.student, required this.joinDate});

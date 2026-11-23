@@ -7,6 +7,7 @@ import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/db_queries.dart';
 import 'package:attendance_alamin/data/db/mappers.dart';
+import 'package:attendance_alamin/data/db/schema_v2.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/repositories/drift/people_common.dart';
 import 'package:attendance_alamin/data/repositories/payments_repository.dart';
@@ -152,7 +153,7 @@ class DriftPaymentsRepository implements PaymentsRepository {
   }
 
   Payment _row(String id, String receiptId, PaymentDraft d, _CheckedDraft c,
-          YearMonth month, int amount) =>
+          YearMonth month, int amount, String? receiptNo) =>
       Payment(
         id: id,
         receiptId: receiptId,
@@ -164,6 +165,7 @@ class DriftPaymentsRepository implements PaymentsRepository {
         paidOn: d.paidOn,
         method: c.method,
         note: c.note,
+        receiptNo: receiptNo,
       );
 
   Future<void> _insert(Payment p) {
@@ -180,8 +182,10 @@ class DriftPaymentsRepository implements PaymentsRepository {
     return _db.transaction(() async {
       final c = await _check(d);
       final receiptId = Ids.v4();
+      // Slip number, given out inside this transaction (never reused).
+      final receiptNo = await allocateReceiptNo(_db, d.paidOn);
       for (final (month, amount) in c.byMonth) {
-        await _insert(_row(Ids.v4(), receiptId, d, c, month, amount));
+        await _insert(_row(Ids.v4(), receiptId, d, c, month, amount, receiptNo));
       }
       return receiptId;
     });
@@ -201,6 +205,13 @@ class DriftPaymentsRepository implements PaymentsRepository {
       final old = await _receiptRows(receiptId);
       if (old.isEmpty) throw notFound('receipt $receiptId');
       final c = await _check(d, excludeReceiptId: receiptId);
+      // The number stays with the receipt (even if the date moves to another
+      // year); a receipt from before numbering gets one now.
+      String? receiptNo;
+      for (final r in old) {
+        receiptNo ??= r.receiptNo;
+      }
+      receiptNo ??= await allocateReceiptNo(_db, d.paidOn);
 
       // Same (enrollment, month) keeps its row id; every other old row is
       // tombstoned and new months get new rows, all with this receipt id.
@@ -212,11 +223,12 @@ class DriftPaymentsRepository implements PaymentsRepository {
       for (final (month, amount) in c.byMonth) {
         final prev = reusable.remove('${c.enrollment.id}:${month.toInt()}');
         if (prev == null) {
-          await _insert(_row(Ids.v4(), receiptId, d, c, month, amount));
+          await _insert(
+              _row(Ids.v4(), receiptId, d, c, month, amount, receiptNo));
           continue;
         }
         kept.add(prev.id);
-        final next = _row(prev.id, receiptId, d, c, month, amount);
+        final next = _row(prev.id, receiptId, d, c, month, amount, receiptNo);
         if (paymentFromRow(prev) == next) continue;
         await (_db.update(_db.payments)..where((t) => t.id.equals(prev.id)))
             .write(paymentToCompanion(next).copyWith(

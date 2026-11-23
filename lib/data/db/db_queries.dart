@@ -146,6 +146,7 @@ Future<List<EnrollmentTerms>> loadEnrollmentTerms(
       batchArchived: batch.archivedAt != null,
       studentLeft: StudentStatus.parse(student.status) == StudentStatus.left,
       enrollmentEnded: en.endDate != null,
+      placeId: batch.placeId,
     ));
   }
   terms.sort((a, b) {

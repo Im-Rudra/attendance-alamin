@@ -22,6 +22,7 @@ import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
@@ -64,8 +65,19 @@ Batch batchFromRow(BatchRow r, CenterTime c) {
     reminderLeadMin: r.reminderLeadMin,
     archivedOn: archivedAt == null ? null : c.dateOfEpochMs(archivedAt),
     notes: r.notes,
+    kind: BatchKind.parse(r.kind),
+    placeId: r.placeId,
   );
 }
+
+Place placeFromRow(PlaceRow r) => Place(
+      id: r.id,
+      name: r.name,
+      phone: r.phone,
+      address: r.address,
+      sortOrder: r.sortOrder,
+      archived: r.archivedAt != null,
+    );
 
 Slot slotFromRow(SlotRow r) => Slot(
       id: r.id,
@@ -133,6 +145,7 @@ Payment paymentFromRow(PaymentRow r) => Payment(
       method: PaymentMethod.parse(r.method),
       note: r.note,
       waived: r.waived,
+      receiptNo: r.receiptNo,
     );
 
 AttendanceSession sessionFromRow(SessionRow r) => AttendanceSession(
@@ -165,6 +178,7 @@ OtherIncome otherIncomeFromRow(OtherIncomeRow r) => OtherIncome(
       paidOn: LocalDate.parse(r.paidOn),
       method: PaymentMethod.parse(r.method),
       note: r.note,
+      placeId: r.placeId,
     );
 
 // ---------------------------------------------------------------- domain -> companion
@@ -191,8 +205,19 @@ BatchesCompanion batchToCompanion(Batch b, CenterTime c) {
         Value(archivedOn == null ? null : centerMidnightMs(archivedOn, c)),
     sortOrder: Value(b.sortOrder),
     notes: Value(b.notes),
+    kind: Value(b.kind.code),
+    placeId: Value(b.placeId),
   );
 }
+
+/// `archived_at` is left absent (the repository stamps it).
+PlacesCompanion placeToCompanion(Place p) => PlacesCompanion(
+      id: Value(p.id),
+      name: Value(p.name),
+      phone: Value(p.phone),
+      address: Value(p.address),
+      sortOrder: Value(p.sortOrder),
+    );
 
 BatchSlotsCompanion slotToCompanion(Slot s) => BatchSlotsCompanion(
       id: Value(s.id),
@@ -280,6 +305,8 @@ PaymentsCompanion paymentToCompanion(Payment p) => PaymentsCompanion(
       method: Value(p.method.code),
       note: Value(p.note),
       waived: Value(p.waived),
+      // A null number is never written over an allocated one.
+      receiptNo: p.receiptNo == null ? const Value.absent() : Value(p.receiptNo),
     );
 
 AttendanceSessionsCompanion sessionToCompanion(AttendanceSession s) =>
@@ -315,4 +342,5 @@ OtherIncomeCompanion otherIncomeToCompanion(OtherIncome o) =>
       paidOn: Value(o.paidOn.toIso()),
       method: Value(o.method.code),
       note: Value(o.note),
+      placeId: Value(o.placeId),
     );

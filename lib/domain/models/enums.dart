@@ -17,6 +17,19 @@ enum BillingType {
   }
 }
 
+/// What a `batches` row is (schema v2). DB codes: `batch`, `tuition`
+/// (a private tuition: usually 1-2 students, same weekly slots, the subject
+/// may be absent). Unknown codes read as [batch].
+enum BatchKind {
+  batch,
+  tuition;
+
+  String get code => name;
+
+  static BatchKind parse(String? s) =>
+      s == 'tuition' ? BatchKind.tuition : BatchKind.batch;
+}
+
 /// DB codes: `active`, `left`.
 enum StudentStatus {
   active,

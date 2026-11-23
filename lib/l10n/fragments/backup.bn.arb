@@ -461,5 +461,9 @@
         "type": "String"
       }
     }
+  },
+  "backupSafetyReasonMigration": "অ্যাপ আপডেটের আগে",
+  "@backupSafetyReasonMigration": {
+    "description": "Backup screen: reason label of a safety copy the app made before updating its data format."
   }
 }

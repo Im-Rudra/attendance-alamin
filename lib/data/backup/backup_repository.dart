@@ -78,6 +78,9 @@ class SafetyCopyInfo {
 abstract final class SafetyCopyReason {
   static const beforeImport = 'import';
   static const beforeRestore = 'restore';
+
+  /// Written by a schema migration (`kSafetyReasonMigration`).
+  static const beforeMigration = 'migration';
 }
 
 /// How many safety copies are kept (plan section 1 #15).

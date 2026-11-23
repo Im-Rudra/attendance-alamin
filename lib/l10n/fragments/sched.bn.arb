@@ -215,9 +215,9 @@
   "@schedNoClass": {
     "description": "A weekday with no class in the overview."
   },
-  "schedArchivedReadOnly": "ব্যাচটি আর্কাইভ করা আছে, তাই সময় বদলানো যাবে না।",
+  "schedArchivedReadOnly": "ব্যাচটি শেষ হয়ে গেছে, তাই সময় বদলানো যাবে না।",
   "@schedArchivedReadOnly": {
-    "description": "Note on the schedule of an archived batch."
+    "description": "Note on the schedule of a finished batch."
   },
   "schedChangeWeekly": "প্রতি সপ্তাহের সময় বদলান",
   "@schedChangeWeekly": {

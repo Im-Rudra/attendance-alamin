@@ -7,7 +7,8 @@ abstract interface class OtherIncomeRepository {
   Stream<List<OtherIncome>> watchBetween(LocalDate from, LocalDate to);
 
   /// Validates and stores [draft] under a new id (`draft.id` is ignored);
-  /// returns the id.
+  /// returns the id. `draft.placeId` (schema v2) must be a live place or null
+  /// (= general income).
   Future<String> add(OtherIncome draft);
   Future<void> softDelete(String id);
 }

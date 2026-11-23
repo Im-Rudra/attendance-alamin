@@ -37,6 +37,15 @@ class ReceiptFacts {
   final int remaining;
 
   int get total => rows.fold(0, (int s, Payment p) => s + p.amount);
+
+  /// Slip number of the receipt (`2026-0007`), or '' when it has none yet.
+  String get receiptNo {
+    for (final Payment p in rows) {
+      final String? no = p.receiptNo;
+      if (no != null && no.isNotEmpty) return no;
+    }
+    return '';
+  }
   List<YearMonth> get months => <YearMonth>[for (final Payment p in rows) p.billingMonth];
 }
 
@@ -51,9 +60,11 @@ Set<YearMonth> partialMonthsOf(List<Payment> rows, EnrollmentDues? dues) {
 }
 
 /// The receipt message for [facts] from [template] (Product 5). Placeholders:
-/// center, student, id, batch, months, amount, method, date, remaining_line.
-/// An empty center or id removes its surrounding " — {center}" / " ({id})" so
-/// the message never shows empty brackets.
+/// center, student, id, batch, months, amount, method, date, remaining_line,
+/// receipt_no (schema v2 slip number, digits in the app language).
+/// An empty center, id or receipt number removes its surrounding
+/// " — {center}" / " ({id})" / " ({receipt_no})" / " #{receipt_no}" so the
+/// message never shows empty brackets.
 String renderReceiptText({
   required ReceiptFacts facts,
   required String template,
@@ -69,6 +80,10 @@ String renderReceiptText({
   final String centerName = center.trim();
   if (id.isEmpty) text = text.replaceAll(' ({id})', '');
   if (centerName.isEmpty) text = text.replaceAll(' — {center}', '');
+  final String receiptNo = facts.receiptNo;
+  if (receiptNo.isEmpty) {
+    text = text.replaceAll(' ({receipt_no})', '').replaceAll(' #{receipt_no}', '');
+  }
   final String remainingLine =
       facts.remaining > 0 ? l10n.payReceiptRemaining(fmt.money(facts.remaining)) : l10n.payReceiptAllPaid;
   final String filled = fillTemplate(text, <String, String>{
@@ -81,6 +96,7 @@ String renderReceiptText({
     'method': methodLabel,
     'date': fmt.date(paidOn),
     'remaining_line': remainingLine,
+    'receipt_no': fmt.digits(receiptNo),
   });
   return filled;
 }

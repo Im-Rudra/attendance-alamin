@@ -1,6 +1,6 @@
 // W1-Shell (feedback items 5 and 6): the roll-call header date is a button that
 // opens the calendar under it, and a past day lists the students who joined
-// after it (read-only until the join date can be moved).
+// after it; "Add to this day" moves a late joiner's join date (asked once).
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,8 +67,8 @@ void main() {
       expect(out.first.joinDate, const LocalDate(2026, 11, 10));
     });
 
-    test('moving the join date is not switched on yet', () {
-      expect(kLateJoinerMoveEnabled, isFalse);
+    test('moving the join date is switched on', () {
+      expect(kLateJoinerMoveEnabled, isTrue);
     });
   });
 
@@ -102,7 +102,7 @@ void main() {
   });
 
   group('late joiners line', () {
-    testWidgets('a past day lists who joined after it, read-only', (WidgetTester tester) async {
+    testWidgets('a past day lists who joined after it', (WidgetTester tester) async {
       final SeededFakes f = seedFakes();
       await _open(tester, RollCallScreen(occ: physOcc('2026-11-07')), f);
 
@@ -115,7 +115,7 @@ void main() {
       expect(find.text('নীলা বেগম'), findsOneWidget);
       expect(find.text('Joined 10 Nov 2026'), findsOneWidget);
       expect(
-        find.text('They were not in this batch on 7 Nov 2026. Change their join date in Students to mark them.'),
+        find.text('They were not in this batch on 7 Nov 2026. Adding someone moves their join date to this day.'),
         findsOneWidget,
       );
       // Nothing was marked or saved for the late joiner.
@@ -124,6 +124,41 @@ void main() {
         isEmpty,
       );
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Add asks once, moves the join date and puts them on the roster', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await _open(tester, RollCallScreen(occ: physOcc('2026-11-07')), f);
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to this day'));
+      await tester.pumpAndSettle();
+      expect(find.text("Move নীলা বেগম's join date to 7 Nov 2026?"), findsOneWidget);
+      await tester.tap(find.text('Move date'));
+      await tester.pumpAndSettle();
+
+      final Enrollment moved = f.enrollments.enrollments.firstWhere((Enrollment e) => e.id == kEnrNilaPhys);
+      expect(moved.joinDate, const LocalDate(2026, 11, 7));
+      expect(find.text('নীলা বেগম'), findsWidgets);
+      expect(find.byType(LateJoinersFooter), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Cancel leaves the join date alone', (WidgetTester tester) async {
+      final SeededFakes f = seedFakes();
+      await _open(tester, RollCallScreen(occ: physOcc('2026-11-07')), f);
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to this day'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      final Enrollment same = f.enrollments.enrollments.firstWhere((Enrollment e) => e.id == kEnrNilaPhys);
+      expect(same.joinDate, const LocalDate(2026, 11, 10));
+      expect(find.byType(LateJoinersFooter), findsOneWidget);
     });
 
     testWidgets('a day after everyone joined has no line', (WidgetTester tester) async {
