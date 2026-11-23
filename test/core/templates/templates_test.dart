@@ -55,6 +55,7 @@ void main() {
       'method',
       'date',
       'remaining_line',
+      'receipt_no',
     };
 
     Set<String> keysOf(String t) =>
@@ -91,7 +92,7 @@ void main() {
     test('receiptBn is the Product text verbatim', () {
       expect(
         DefaultTemplates.receiptBn,
-        'রসিদ — {center}\n'
+        'রসিদ নং {receipt_no} — {center}\n'
         'শিক্ষার্থী: {student} ({id})\n'
         'ব্যাচ: {batch}\n'
         'মাস: {months}\n'
@@ -155,10 +156,11 @@ void main() {
         'method': 'ক্যাশ',
         'date': '৫ নভেম্বর ২০২৬',
         'remaining_line': 'বাকি: ৳৫০০',
+        'receipt_no': '২০২৬-০০০৭',
       });
       expect(
         text,
-        'রসিদ — আলো কোচিং\n'
+        'রসিদ নং ২০২৬-০০০৭ — আলো কোচিং\n'
         'শিক্ষার্থী: রহিম (১২)\n'
         'ব্যাচ: Physics A\n'
         'মাস: সেপ্টেম্বর, অক্টোবর, নভেম্বর (আংশিক)\n'
@@ -179,10 +181,11 @@ void main() {
         'method': 'Cash',
         'date': '5 Nov 2026',
         'remaining_line': 'All fees paid',
+        'receipt_no': '2026-0007',
       });
       expect(
         text,
-        'Receipt — Alo Coaching\n'
+        'Receipt #2026-0007 — Alo Coaching\n'
         'Student: Rahim (12)\n'
         'Batch: Physics A\n'
         'Months: November\n'

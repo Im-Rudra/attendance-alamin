@@ -456,7 +456,19 @@ class _ReceiptRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          BhorMoney(line.amount, style: b.type.bodyStrong),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              BhorMoney(line.amount, style: b.type.bodyStrong),
+              if ((line.receiptNo ?? '').isNotEmpty)
+                Text(
+                  l10n.payReceiptNoShort(context.fmt.digits(line.receiptNo!)),
+                  key: ValueKey<String>('coll-receipt-no-${line.receiptId}'),
+                  style: b.type.meta,
+                ),
+            ],
+          ),
           BhorIconButton(
             icon: BhorIcons.share,
             semanticLabel: l10n.collShareReceipt,

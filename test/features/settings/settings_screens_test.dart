@@ -55,6 +55,7 @@ String _shown(String text) => toDisplayText(text, <String, String>{
       'method': _bn.setPhMethod,
       'date': _bn.setPhDate,
       'remaining_line': _bn.setPhRemainingLine,
+      'receipt_no': _bn.setPhReceiptNo,
     });
 
 List<Override> _overrides(SeededFakes fakes) => <Override>[

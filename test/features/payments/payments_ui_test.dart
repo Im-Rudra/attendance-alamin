@@ -63,6 +63,8 @@ String _receiptPlain(WidgetTester t) => t
 
 /// Opens the receipt's ⋮ menu and taps its Delete.
 Future<void> _tapDelete(WidgetTester tester) async {
+  // The sheet has one more row (Print / Save PDF): on a phone the more button may be below the fold.
+  await tester.ensureVisible(_key('pay-receipt-more'));
   await tester.tap(_key('pay-receipt-more'));
   await tester.pumpAndSettle();
   await tester.tap(_key('pay-receipt-delete'));
@@ -715,6 +717,7 @@ void main() {
       await _frames(tester);
       await tester.tap(find.text('অক্টোবর'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_key('pay-receipt-edit'));
       await tester.tap(_key('pay-receipt-edit'));
       await tester.pumpAndSettle();
       expect(find.text('পেমেন্ট এডিট'), findsOneWidget);
