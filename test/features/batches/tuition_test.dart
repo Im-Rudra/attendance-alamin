@@ -259,6 +259,7 @@ void main() {
     testWidgets('a "Private tuitions" group after the subjects, cards tagged Private', (WidgetTester tester) async {
       final SeededFakes f = _withTuition();
       await pumpApp(tester, const BatchesScreen(), overrides: f.overrides);
+      tester.view.physicalSize = const Size(360, 1600);
       await _settle(tester);
       expect(find.text(bn.batchGroupTuitions), findsOneWidget);
       // Name only: no " · " in front of a subject-less tuition.
@@ -281,6 +282,7 @@ void main() {
         kind: BatchKind.tuition,
       ));
       await pumpApp(tester, const BatchesScreen(), overrides: f.overrides);
+      tester.view.physicalSize = const Size(360, 1600);
       await _settle(tester);
       expect(find.text(bn.batchGroupTuitions), findsOneWidget);
       expect(find.text('${kSubjects[0].name} · নিলয়'), findsOneWidget);
