@@ -144,5 +144,12 @@
   "setHelpA6": "Tap remind on the fees list or a student's page. You can edit the wording under Messages on the More page.",
   "setCsvExport": "CSV export (Excel)",
   "setCsvExportValue": "This month's students, fees, attendance",
-  "setSavedTick": "Saved"
+  "setSavedTick": "Saved",
+  "setTextSize": "Text size",
+  "setTextSizeSmall": "Small",
+  "setTextSizeNormal": "Normal",
+  "setTextSizeLarge": "Large",
+  "setTextSizeXLarge": "Extra large",
+  "setTextSizePreview": "12 students present today, 3 absent.",
+  "setTextSizeKeys": "On the keyboard: Ctrl + = bigger, Ctrl + − smaller, Ctrl + 0 normal."
 }

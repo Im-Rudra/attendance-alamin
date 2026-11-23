@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SettingKeys registry', () {
-    test('has 26 keys with unique snake_case ids', () {
-      expect(SettingKeys.all.length, 26);
+    test('has 27 keys with unique snake_case ids', () {
+      expect(SettingKeys.all.length, 27);
       final ids = SettingKeys.all.map((k) => k.id).toList();
       expect(ids.toSet().length, ids.length);
       final re = RegExp(r'^[a-z][a-z0-9_]*$');
@@ -13,11 +13,11 @@ void main() {
       }
     });
 
-    test('scopes: 14 synced, 12 device', () {
+    test('scopes: 14 synced, 13 device', () {
       final synced = SettingKeys.all.where((k) => k.scope == SettingScope.synced);
       final device = SettingKeys.all.where((k) => k.scope == SettingScope.device);
       expect(synced.length, 14);
-      expect(device.length, 12);
+      expect(device.length, 13);
     });
 
     // (key, id, scope, default)
@@ -38,6 +38,7 @@ void main() {
       (SettingKeys.centerUtcOffset, 'center_utc_offset_min', SettingScope.synced, 360),
       (SettingKeys.locale, 'locale', SettingScope.device, 'bn'),
       (SettingKeys.themeMode, 'theme_mode', SettingScope.device, 'system'),
+      (SettingKeys.textSize, 'text_size', SettingScope.device, 'normal'),
       (SettingKeys.remindersEnabled, 'reminders_enabled', SettingScope.device, true),
       (SettingKeys.reducedEffects, 'reduced_effects', SettingScope.device, 'auto'),
       (SettingKeys.backupReminderDays, 'backup_reminder_days', SettingScope.device, 7),
@@ -116,6 +117,13 @@ void main() {
       expect(SettingKeys.centerUtcOffset.decode(330.0), 330);
       expect(SettingKeys.centerUtcOffset.decode(330.5), 360);
       expect(SettingKeys.centerUtcOffset.decode(double.nan), 360);
+    });
+
+    test('text size accepts only the four levels', () {
+      expect(SettingKeys.textSize.decode('large'), 'large');
+      expect(SettingKeys.textSize.decode('xlarge'), 'xlarge');
+      expect(SettingKeys.textSize.decode('huge'), 'normal');
+      expect(SettingKeys.textSize.decode(1.3), 'normal');
     });
 
     test('bool', () {

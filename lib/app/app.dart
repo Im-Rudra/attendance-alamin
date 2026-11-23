@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
+import 'package:attendance_alamin/app/providers/text_size.dart';
 import 'package:attendance_alamin/app/router.dart';
 import 'package:attendance_alamin/app/shell/storage_banner.dart';
 import 'package:attendance_alamin/app/shell/window_chrome.dart';
@@ -28,6 +29,7 @@ class App extends ConsumerWidget {
     final Lang lang = ref.watch(langProvider);
     final ThemeMode themeMode = ref.watch(themeModeProvider);
     final bool reduced = ref.watch(reducedEffectsProvider);
+    final TextSizeLevel textSize = ref.watch(textSizeProvider);
     return WidgetsApp.router(
       debugShowCheckedModeBanner: false,
       routerConfig: router,
@@ -36,11 +38,14 @@ class App extends ConsumerWidget {
       locale: Locale(lang.code),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (BuildContext context, Widget? child) => BhorAppRoot(
-        themeMode: themeMode,
-        child: EffectsMode(
-          reduced: reduced,
-          child: StorageBanner(child: child ?? const SizedBox.shrink()),
+      builder: (BuildContext context, Widget? child) => AppTextScale(
+        level: textSize,
+        child: BhorAppRoot(
+          themeMode: themeMode,
+          child: EffectsMode(
+            reduced: reduced,
+            child: StorageBanner(child: child ?? const SizedBox.shrink()),
+          ),
         ),
       ),
     );

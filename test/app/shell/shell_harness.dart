@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:attendance_alamin/app/app.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
+import 'package:attendance_alamin/app/providers/text_size.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -37,6 +38,7 @@ Future<ShellHarness> pumpShell(
   Lang lang = Lang.bn,
   ThemeMode themeMode = ThemeMode.light,
   bool reducedEffects = true,
+  TextSizeLevel textSize = TextSizeLevel.normal,
   FakeSettingsRepository? settings,
   FakeLocalMetaRepository? meta,
 }) async {
@@ -71,6 +73,7 @@ Future<ShellHarness> pumpShell(
           themeMode: themeMode,
           reducedEffects: reducedEffects,
           onboardingDone: true,
+          textSize: textSize,
         )),
         initialLocationProvider.overrideWithValue(location),
       ],

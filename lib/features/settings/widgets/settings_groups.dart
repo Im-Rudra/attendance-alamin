@@ -11,7 +11,9 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
+import 'package:attendance_alamin/app/providers/text_size.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -195,6 +197,14 @@ class SettingsGroupBody extends ConsumerWidget {
     final int weekStart = ref.watch(weekStartProvider).value ?? SettingKeys.weekStart.defaultValue;
     final fmt = context.fmt;
 
+    final TextSizeLevel textSize = ref.watch(textSizeProvider);
+    String textSizeName(TextSizeLevel l) => switch (l) {
+          TextSizeLevel.small => l10n.setTextSizeSmall,
+          TextSizeLevel.normal => l10n.setTextSizeNormal,
+          TextSizeLevel.large => l10n.setTextSizeLarge,
+          TextSizeLevel.xlarge => l10n.setTextSizeXLarge,
+        };
+
     String themeName(ThemeMode m) => switch (m) {
           ThemeMode.system => l10n.shellThemeSystem,
           ThemeMode.light => l10n.shellThemeLight,
@@ -228,6 +238,40 @@ class SettingsGroupBody extends ConsumerWidget {
                 labelOf: themeName,
                 onChanged: (ThemeMode v) => ref.read(themeModeProvider.notifier).set(v),
               ),
+            ],
+          ),
+        ),
+        SettingControlRow(
+          title: l10n.setTextSize,
+          value: textSizeName(textSize),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Wrap(
+                key: const Key('more-text-size'),
+                spacing: BhorSpace.s8,
+                runSpacing: BhorSpace.s4,
+                children: <Widget>[
+                  for (final TextSizeLevel v in TextSizeLevel.values)
+                    BhorChip(
+                      label: textSizeName(v),
+                      selected: v == textSize,
+                      onSelected: (bool _) => ref.read(textSizeProvider.notifier).set(v),
+                    ),
+                ],
+              ),
+              const SizedBox(height: BhorSpace.s12),
+              // Live preview: the whole app already follows the choice, so
+              // this line is shown at the chosen size too.
+              Text(l10n.setTextSizePreview, key: const Key('more-text-size-preview'), style: context.bhor.type.body),
+              if (WindowClass.of(context).usesRail)
+                Padding(
+                  padding: const EdgeInsets.only(top: BhorSpace.s4),
+                  child: Text(
+                    l10n.setTextSizeKeys,
+                    style: context.bhor.type.meta.copyWith(color: context.bhor.colors.text2),
+                  ),
+                ),
             ],
           ),
         ),

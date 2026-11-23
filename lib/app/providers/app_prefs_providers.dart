@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:attendance_alamin/app/providers/text_size.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
@@ -19,9 +20,11 @@ class AppPrefs {
     required this.themeMode,
     required this.reducedEffects,
     required this.onboardingDone,
+    this.textSize = TextSizeLevel.normal,
   });
 
   final Lang lang;
+  final TextSizeLevel textSize;
   final ThemeMode themeMode;
 
   /// Resolved app-level choice: the Settings toggle is "on" OR the one-time
@@ -52,9 +55,11 @@ Future<AppPrefs> loadAppPrefs(SettingsRepository settings, LocalMetaRepository m
   final String theme = await settings.get(SettingKeys.themeMode);
   final String effects = await settings.get(SettingKeys.reducedEffects);
   final bool onboardingDone = await settings.get(SettingKeys.onboardingDone);
+  final String size = await settings.get(SettingKeys.textSize);
   final bool slow = await meta.getRaw(kEffectsRasterMetaKey) == 'slow';
   return AppPrefs(
     lang: Lang.fromCode(locale),
+    textSize: TextSizeLevel.fromCode(size),
     themeMode: themeModeFromCode(theme),
     reducedEffects: effects == 'on' || slow,
     onboardingDone: onboardingDone,
@@ -70,6 +75,7 @@ final initialLocationProvider = Provider<String>((ref) => Routes.today);
 
 final langProvider = NotifierProvider<LangController, Lang>(LangController.new);
 final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final textSizeProvider = NotifierProvider<TextSizeController, TextSizeLevel>(TextSizeController.new);
 final reducedEffectsProvider =
     NotifierProvider<ReducedEffectsController, bool>(ReducedEffectsController.new);
 
@@ -94,6 +100,24 @@ class ThemeModeController extends Notifier<ThemeMode> {
     state = mode;
     await ref.read(settingsRepositoryProvider).set(SettingKeys.themeMode, themeModeCode(mode));
   }
+}
+
+/// App text size: switches the whole app now, then remembers it on this device.
+class TextSizeController extends Notifier<TextSizeLevel> {
+  @override
+  TextSizeLevel build() => ref.watch(initialPrefsProvider).textSize;
+
+  Future<void> set(TextSizeLevel level) async {
+    if (state == level) return;
+    state = level;
+    await ref.read(settingsRepositoryProvider).set(SettingKeys.textSize, level.code);
+  }
+
+  /// One level bigger (+1) or smaller (-1); Ctrl + = / Ctrl + -.
+  Future<void> step(int delta) => set(state.step(delta));
+
+  /// Back to Normal; Ctrl + 0.
+  Future<void> reset() => set(TextSizeLevel.normal);
 }
 
 /// Reduced effects (UX 4 rule 5). State = Settings toggle "on" OR the

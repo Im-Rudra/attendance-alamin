@@ -82,6 +82,12 @@ int _backupDays(Object? j) {
   throw FormatException('Backup reminder days must be 0..365', j.toString());
 }
 
+String _textSize(Object? j) {
+  final String v = _str(j);
+  if (v == 'small' || v == 'normal' || v == 'large' || v == 'xlarge') return v;
+  throw FormatException('Unknown text size', v);
+}
+
 Object? _idStr(String v) => v;
 Object? _idInt(int v) => v;
 Object? _idIntN(int? v) => v;
@@ -141,6 +147,10 @@ abstract final class SettingKeys {
   /// `'system'`, `'light'` or `'dark'`.
   static const themeMode = SettingKey<String>(
       'theme_mode', SettingScope.device, 'system', _str, _idStr);
+
+  /// App text size: `'small'`, `'normal'`, `'large'` or `'xlarge'`.
+  static const textSize = SettingKey<String>(
+      'text_size', SettingScope.device, 'normal', _textSize, _idStr);
   static const remindersEnabled = SettingKey<bool>(
       'reminders_enabled', SettingScope.device, true, _bool, _idBool);
 
@@ -190,6 +200,7 @@ abstract final class SettingKeys {
     centerUtcOffset,
     locale,
     themeMode,
+    textSize,
     remindersEnabled,
     reducedEffects,
     backupReminderDays,

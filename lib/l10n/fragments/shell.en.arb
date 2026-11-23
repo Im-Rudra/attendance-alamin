@@ -61,5 +61,7 @@
   "shellLangChipBn": "বাং",
   "shellLangChipEn": "EN",
   "shellArchiveGroup": "Archive",
-  "shellSettingsGroup": "Settings"
+  "shellSettingsGroup": "Settings",
+  "shellShortcutTextSize": "Text bigger · smaller · normal",
+  "shellKeysTextSize": "Ctrl + = · Ctrl + − · Ctrl + 0"
 }

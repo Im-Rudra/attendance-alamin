@@ -435,5 +435,53 @@
   "rollRowMenu": "আরও বিকল্প",
   "@rollRowMenu": {
     "description": "Tooltip of the row options."
+  },
+  "rollPickDate": "তারিখ বদলাতে চাপুন",
+  "@rollPickDate": {
+    "description": "Screen-reader hint of the roll-call date button that opens the calendar."
+  },
+  "rollLateLine": "এই তারিখের পরে {count} জন শিক্ষার্থী যোগ দিয়েছে",
+  "@rollLateLine": {
+    "description": "Quiet footer line of a past roll call: students who joined the batch after the date shown.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "rollLateShow": "দেখুন",
+  "@rollLateShow": {
+    "description": "Button of the late-joiners footer line that lists those students."
+  },
+  "rollLateTitle": "পরে যোগ দিয়েছে ({count} জন)",
+  "@rollLateTitle": {
+    "description": "Title of the list of students who joined after the roll-call date.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "rollLateNote": "{date} তারিখে এরা এই ব্যাচে ছিল না। হাজিরা নিতে শিক্ষার্থী পাতা থেকে এদের যোগদানের তারিখ বদলান।",
+  "@rollLateNote": {
+    "description": "Note above the late-joiners list: they were not in the batch on that date; change the join date in Students to mark them.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "5 Nov 2026"
+      }
+    }
+  },
+  "rollLateJoined": "যোগ দিয়েছে {date}",
+  "@rollLateJoined": {
+    "description": "Right side of a late-joiners row: the date the student joined.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "5 Nov 2026"
+      }
+    }
   }
 }
