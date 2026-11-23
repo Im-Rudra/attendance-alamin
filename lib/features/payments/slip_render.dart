@@ -3,7 +3,7 @@
 // The slip PDF is made from this image, not from PDF text, so Bangla shapes
 // exactly as it does on screen (the `pdf` package has no complex-script
 // shaping). The card is mounted for a frame in the root Overlay far outside
-// the window, inside a light theme on white (a dark-mode slip must still
+// the window, inside a light theme on the light surface (a dark-mode slip must still
 // print dark-on-white) and at text scale 1 (the app's text size setting must
 // not change what comes out of the printer).
 
@@ -50,7 +50,7 @@ Future<SlipImage> renderSlipImage(BuildContext context, Widget card, SlipPaper p
             child: RepaintBoundary(
               key: boundaryKey,
               child: ColoredBox(
-                color: const Color(0xFFFFFFFF),
+                color: light.colors.surface,
                 child: SizedBox(width: paper.cardWidth, child: card),
               ),
             ),
