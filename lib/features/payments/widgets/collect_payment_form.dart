@@ -3,7 +3,7 @@
 // button that repeats the months and the amount.
 
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/foundation.dart' show ValueListenable, setEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +23,7 @@ import 'package:attendance_alamin/features/payments/controllers/collect_payment_
 import 'package:attendance_alamin/features/payments/controllers/pay_providers.dart';
 import 'package:attendance_alamin/features/payments/receipt_text.dart';
 import 'package:attendance_alamin/features/payments/widgets/allocation_editor.dart';
+import 'package:attendance_alamin/features/payments/widgets/month_grid_picker.dart';
 import 'package:attendance_alamin/features/payments/widgets/waive_dialog.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -156,7 +157,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
   /// or split, a note, the method or date): closing then asks first.
   bool _isDirty(CollectInput i) {
     final CollectInput b = _base;
-    if (i.amountText != b.amountText || i.startMonth != b.startMonth || i.note != b.note) return true;
+    if (i.amountText != b.amountText || !setEquals(i.selected, b.selected) || i.note != b.note) return true;
     if (!_sameSplit(i.split, b.split)) return true;
     if (widget.receiptId != null) return i.method != b.method || i.paidOn != b.paidOn;
     return _touched || (i.enrollmentId != null && i.enrollmentId != b.enrollmentId);
@@ -275,18 +276,15 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
       today: today,
       amount: input.amount,
       split: input.split,
-      start: input.startMonth,
+      selected: input.selected,
     );
     final bool manual = input.split != null;
+    final bool picked = !manual && input.selected != null;
     final List<PaymentMethod> visible = ref.watch(paymentMethodsConfigProvider).visible;
     final PaymentMethod method = input.method ?? defaultMethod(visible);
     final LocalDate paidOn = input.paidOn ?? today;
-    final Set<YearMonth> selectedMonths = plan.months.isNotEmpty
-        ? plan.months.toSet()
-        : <YearMonth>{
-            if (plan.openMonths.isNotEmpty) input.startMonth ?? plan.openMonths.first.month,
-          };
-    final int shownAmount = manual ? plan.total : (input.amount ?? plan.prefill);
+    final Set<YearMonth> selectedMonths = picked ? input.selected! : plan.months.toSet();
+    final int shownAmount = manual || picked ? plan.total : (input.amount ?? plan.prefill);
     _showAmount(fmt, shownAmount);
 
     final notifier = ref.read(collectPaymentControllerProvider(args).notifier);
@@ -302,7 +300,7 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     };
     final String? disabledReason = switch (plan.problem) {
       PlanProblem.none => null,
-      PlanProblem.noAmount => l10n.payDisabledAmount,
+      PlanProblem.noAmount => picked ? l10n.payDisabledPickMonth : l10n.payDisabledAmount,
       PlanProblem.overflow => l10n.payDisabledOverflow,
       PlanProblem.splitExceeds => l10n.payDisabledSplit,
       PlanProblem.nothingOpen => l10n.payDisabledNoMonths,
@@ -370,13 +368,22 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
         _MonthGrid(
           key: const ValueKey<String>('pay-month-chips'),
           chips: <Widget>[
-            for (final MonthDue md in plan.openMonths.take(6))
-              BhorChip(
-                key: ValueKey<String>('pay-month-${md.month.toInt()}'),
-                label: _chipLabel(l10n, fmt, md, today),
-                selected: selectedMonths.contains(md.month),
-                onSelected: (bool _) => notifier.pickMonth(md.month),
+            for (final MonthDue md in chipMonths(dues, today, selectedMonths))
+              _monthChip(l10n, fmt, md, today, selectedMonths, notifier.toggleMonth),
+            Builder(
+              builder: (BuildContext bc) => BhorChip(
+                key: const ValueKey<String>('pay-month-more'),
+                label: l10n.payMoreMonths,
+                icon: BhorIcons.calendar,
+                selected: false,
+                onSelected: (bool _) => showPayMonthGrid(
+                  context,
+                  anchor: bc,
+                  args: args,
+                  enrollmentId: enrollmentId,
+                ),
               ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -535,11 +542,50 @@ class _CollectPaymentFormState extends ConsumerState<CollectPaymentForm> {
     return _frame(body, bar);
   }
 
-  String _chipLabel(AppLocalizations l10n, AppFormat fmt, MonthDue md, LocalDate today) {
+  /// A month chip: open months toggle; paid, waived and free months are
+  /// greyed (paid with a check) and cannot be picked.
+  Widget _monthChip(
+    AppLocalizations l10n,
+    AppFormat fmt,
+    MonthDue md,
+    LocalDate today,
+    Set<YearMonth> selected,
+    ValueChanged<YearMonth> onToggle,
+  ) {
     final String name = fmt.monthList(<YearMonth>[md.month], currentYear: today.year);
-    if (!md.isDue) return l10n.payChipAdvance(name);
-    if (md.paid > 0) return l10n.payChipPartial(name);
-    return name;
+    final Key key = ValueKey<String>('pay-month-${md.month.toInt()}');
+    if (monthSelectable(md, today)) {
+      final String label = !md.isDue
+          ? l10n.payChipAdvance(name)
+          : (md.paid > 0 ? l10n.payChipPartial(name) : name);
+      return BhorChip(
+        key: key,
+        label: label,
+        selected: selected.contains(md.month),
+        onSelected: (bool _) => onToggle(md.month),
+      );
+    }
+    final PayMonthStatus status = payMonthStatus(md);
+    final bool settled = status == PayMonthStatus.paid || status == PayMonthStatus.advance;
+    final String label = switch (status) {
+      PayMonthStatus.waived => l10n.payChipWaived(name),
+      PayMonthStatus.free => l10n.payChipFree(name),
+      _ => name,
+    };
+    return Semantics(
+      key: key,
+      label: l10n.payGridCellA11y(name, payMonthStatusText(l10n, status)),
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: 0.55,
+        child: BhorChip(
+          label: label,
+          icon: settled ? BhorIcons.check : null,
+          selected: false,
+          onSelected: null,
+        ),
+      ),
+    );
   }
 
   String _subtitle(EnrollmentTerms t) {

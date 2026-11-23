@@ -473,5 +473,105 @@
   "payMonthsLabelShort": "মাস",
   "@payMonthsLabelShort": {
     "description": "Receipt card row label: the months paid."
+  },
+  "payMoreMonths": "আরও মাস…",
+  "@payMoreMonths": {
+    "description": "Chip that opens the month grid of the collect form."
+  },
+  "payGridTitle": "মাস বেছে নিন",
+  "@payGridTitle": {
+    "description": "Title of the month grid of the collect form."
+  },
+  "payGridPrevYear": "আগের বছর",
+  "@payGridPrevYear": {
+    "description": "Month grid: go to the previous year."
+  },
+  "payGridNextYear": "পরের বছর",
+  "@payGridNextYear": {
+    "description": "Month grid: go to the next year."
+  },
+  "payGridPaid": "পরিশোধিত",
+  "@payGridPaid": {
+    "description": "Month grid status: paid in full."
+  },
+  "payGridAdvance": "অগ্রিম জমা",
+  "@payGridAdvance": {
+    "description": "Month grid status: paid in full before it was due."
+  },
+  "payGridDue": "বাকি",
+  "@payGridDue": {
+    "description": "Month grid status: due and nothing paid."
+  },
+  "payGridPartial": "আংশিক",
+  "@payGridPartial": {
+    "description": "Month grid status: partly paid."
+  },
+  "payGridNotDue": "এখনো সময় হয়নি",
+  "@payGridNotDue": {
+    "description": "Month grid status: owes money but the due date has not come."
+  },
+  "payGridWaived": "মাফ",
+  "@payGridWaived": {
+    "description": "Month grid status: the fee was waived."
+  },
+  "payGridFree": "ফ্রি",
+  "@payGridFree": {
+    "description": "Month grid status: no fee for this month."
+  },
+  "payGridNone": "বিল নেই",
+  "@payGridNone": {
+    "description": "Month grid status: the student is not billed for this month."
+  },
+  "payGridCellA11y": "{month}, {status}",
+  "@payGridCellA11y": {
+    "description": "Screen-reader label of a month in the grid or a greyed month chip.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর ২০২৬"
+      },
+      "status": {
+        "type": "String",
+        "example": "পরিশোধিত"
+      }
+    }
+  },
+  "payGridTotal": "{count}টি মাস · {amount}",
+  "@payGridTotal": {
+    "description": "Month grid footer: how many months are ticked and their total.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      },
+      "amount": {
+        "type": "String",
+        "example": "৳ ৩,০০০"
+      }
+    }
+  },
+  "payChipWaived": "{month} · মাফ",
+  "@payChipWaived": {
+    "description": "Greyed month chip of a waived month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর"
+      }
+    }
+  },
+  "payChipFree": "{month} · ফ্রি",
+  "@payChipFree": {
+    "description": "Greyed month chip of a month without a fee.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর"
+      }
+    }
+  },
+  "payDisabledPickMonth": "মাস বেছে নিন বা পরিমাণ লিখুন",
+  "@payDisabledPickMonth": {
+    "description": "Why the save button is off: every month chip was unticked."
   }
 }
