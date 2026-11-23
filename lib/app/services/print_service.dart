@@ -9,8 +9,6 @@
 //     and web hand the PDF to the system (`Printing.sharePdf`: share sheet /
 //     browser download).
 
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,8 +59,8 @@ class PluginPrintService implements PrintService {
       await Printing.sharePdf(bytes: pdf, filename: fileName);
       return true;
     }
-    final String? path = await FilePicker.saveFile(fileName: fileName, bytes: pdf, mimeType: 'application/pdf');
-    return path != null;
+    final Uri? saved = await FilePicker.saveFile(fileName: fileName, bytes: pdf, mimeType: 'application/pdf');
+    return saved != null;
   }
 }
 
