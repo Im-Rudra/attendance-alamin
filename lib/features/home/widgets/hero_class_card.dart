@@ -12,6 +12,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/onboarding/onboarding_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
@@ -139,9 +140,16 @@ class HeroClassCard extends ConsumerWidget {
         if (focus != null) {
           texts
             ..add(const SizedBox(height: 4))
-            ..add(t(l10n.clsClassLabel(focus.subjectName, focus.batch.name), title))
+            ..add(t(batchLabel(l10n, focus.subjectName, focus.batch.name), title))
             ..add(const SizedBox(height: BhorSpace.s4))
-            ..add(t(fmt.timeRange(focus.startMin, focus.endMin), line, maxLines: 1));
+            // A private tuition says so after its time (item 1).
+            ..add(t(
+              focus.batch.isTuition
+                  ? '${fmt.timeRange(focus.startMin, focus.endMin)} · ${l10n.batchPrivateTag}'
+                  : fmt.timeRange(focus.startMin, focus.endMin),
+              line,
+              maxLines: 1,
+            ));
           actions.add(CoachMarkAnchor(
             child: _HeroPill(
               expand: expandPill,

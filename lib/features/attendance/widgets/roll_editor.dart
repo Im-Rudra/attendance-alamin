@@ -44,8 +44,31 @@ import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_skeleton.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
+import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
 
 enum _LeaveChoice { save, discard }
+
+/// "Subject — Batch"; a private tuition without a subject: its name alone.
+String rollTitleOf(AppLocalizations l10n, RollTarget t) =>
+    t.subjectName.trim().isEmpty ? t.batch.name : l10n.rollTitle(t.subjectName, t.batch.name);
+
+/// The roll call title, with a "Private" tag on a private tuition.
+Widget _titleText(BuildContext context, RollTarget t, TextStyle style) {
+  final Widget text = Text(rollTitleOf(context.l10n, t), maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
+  if (!t.batch.isTuition) return text;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: <Widget>[
+      Flexible(child: text),
+      const SizedBox(width: BhorSpace.s8),
+      BhorTag(
+        key: const ValueKey<String>('roll-private-tag'),
+        label: context.l10n.batchPrivateTag,
+        tone: BhorTone.accent,
+      ),
+    ],
+  );
+}
 
 class RollEditor extends ConsumerStatefulWidget {
   const RollEditor({
@@ -1006,19 +1029,14 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         ),
       );
       content = BhorFocusPage(
-        title: l10n.rollTitle(t.subjectName, t.batch.name),
+        title: rollTitleOf(l10n, t),
         titleWidget: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Semantics(
               header: true,
-              child: Text(
-                l10n.rollTitle(t.subjectName, t.batch.name),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: b.type.title,
-              ),
+              child: _titleText(context, t, b.type.title),
             ),
             RollDateHeader(
               date: widget.date,
@@ -1063,12 +1081,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            l10n.rollTitle(t.subjectName, t.batch.name),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: b.type.title,
-          ),
+          _titleText(context, t, b.type.title),
           stateLine,
         ],
       );
@@ -1332,7 +1345,9 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     final List<String> lines = <String>[
       for (final ClashGroup g in r.groups.take(3))
         l10n.rollClashLine(
-          '${byBatch[g.batchId]?.subjectName ?? ''} · ${byBatch[g.batchId]?.batch.name ?? ''}',
+          (byBatch[g.batchId]?.subjectName ?? '').trim().isEmpty
+              ? byBatch[g.batchId]?.batch.name ?? ''
+              : '${byBatch[g.batchId]?.subjectName ?? ''} · ${byBatch[g.batchId]?.batch.name ?? ''}',
           fmt.timeRange(g.startMin, g.endMin),
         ),
     ];

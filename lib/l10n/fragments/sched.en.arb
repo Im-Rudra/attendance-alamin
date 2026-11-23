@@ -59,5 +59,6 @@
   "schedLeadCustomLabel": "Minutes (1 to 180)",
   "schedLeadCustomError": "Enter a number from 1 to 180",
   "schedLeadOff": "Off for this batch",
-  "schedLeadReset": "Reset to default"
+  "schedLeadReset": "Reset to default",
+  "schedClashLineNoSubject": "{batch} · {when} · {range}"
 }

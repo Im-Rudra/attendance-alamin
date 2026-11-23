@@ -1,6 +1,7 @@
 // Add / edit a student (full-screen route). A new student can be enrolled in
-// one batch at once (`initialBatchId` comes from the route `extra`); saving
-// runs the duplicate guard (UX 2e).
+// one batch or private tuition at once ("Enrol in: Not yet · Batch · Private
+// tuition", then a searchable picker of that kind; `initialBatchId` comes from
+// the route `extra`); saving runs the duplicate guard (UX 2e).
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,9 +80,16 @@ class StudentFormScreen extends ConsumerStatefulWidget {
   ConsumerState<StudentFormScreen> createState() => _StudentFormScreenState();
 }
 
+/// "Enrol in" of the add-student form.
+enum EnrollKindChoice { none, batch, tuition }
+
 class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
   StudentFormModel? _model;
   EnrollChoice? _choice;
+
+  /// The teacher's "Enrol in" pick; null = follow the chosen batch (none
+  /// until one is chosen, e.g. from the route).
+  EnrollKindChoice? _kindPick;
   bool _missing = false;
   bool _busy = false;
   String? _error;
@@ -298,6 +306,14 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
       return '';
     }
 
+    EnrollKindChoice kindOf(String? batchId) {
+      if (_kindPick != null) return _kindPick!;
+      for (final Batch b in batches) {
+        if (b.id == batchId) return b.isTuition ? EnrollKindChoice.tuition : EnrollKindChoice.batch;
+      }
+      return EnrollKindChoice.none;
+    }
+
     final Widget form = model == null ? const SizedBox.shrink() : Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -309,31 +325,71 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         ),
         if (_isNew && choice != null) ...<Widget>[
           const SizedBox(height: BhorSpace.s16),
-          Text(l10n.stuEnrollSection, style: th.type.heading),
+          Text(l10n.stuEnrollIn, style: th.type.heading),
           const SizedBox(height: BhorSpace.s8),
           ListenableBuilder(
             listenable: choice,
             builder: (BuildContext context, Widget? _) {
-              final String? chosen = choice.batchId;
+              final EnrollKindChoice kind = kindOf(choice.batchId);
+              final List<Batch> ofKind = <Batch>[
+                for (final Batch b in batches)
+                  if (b.isTuition == (kind == EnrollKindChoice.tuition)) b,
+              ];
+              final String? chosen =
+                  ofKind.any((Batch b) => b.id == choice.batchId) ? choice.batchId : null;
+              void pickKind(EnrollKindChoice k) {
+                // A batch of the other kind (or "Not yet") is no longer chosen.
+                final bool keep = k != EnrollKindChoice.none &&
+                    batches.any((Batch b) =>
+                        b.id == choice.batchId && b.isTuition == (k == EnrollKindChoice.tuition));
+                setState(() => _kindPick = k);
+                if (!keep && choice.batchId != null) choice.setBatch(null);
+              }
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  BhorSelect<String>(
-                    key: const ValueKey<String>('stu-form-batch'),
-                    label: l10n.stuBatchOptional,
-                    value: batches.any((Batch b) => b.id == chosen) ? chosen : '',
-                    options: <BhorOption<String>>[
-                      BhorOption<String>('', l10n.stuNoBatch),
-                      for (final Batch b in batches)
-                        BhorOption<String>(
-                          b.id,
-                          subjectOf(b).isEmpty
-                              ? b.name
-                              : '${subjectOf(b)} · ${b.name}',
+                  Wrap(
+                    key: const ValueKey<String>('stu-form-enroll-kind'),
+                    spacing: BhorSpace.s8,
+                    runSpacing: BhorSpace.s8,
+                    children: <Widget>[
+                      for (final (EnrollKindChoice k, String label) in <(EnrollKindChoice, String)>[
+                        (EnrollKindChoice.none, l10n.stuEnrollKindNone),
+                        (EnrollKindChoice.batch, l10n.stuEnrollKindBatch),
+                        (EnrollKindChoice.tuition, l10n.stuEnrollKindTuition),
+                      ])
+                        BhorChip(
+                          key: ValueKey<String>('stu-enroll-kind-${k.name}'),
+                          label: label,
+                          selected: kind == k,
+                          onSelected: (_) => pickKind(k),
                         ),
                     ],
-                    onChanged: (String v) => choice.setBatch(v.isEmpty ? null : v),
                   ),
+                  if (kind != EnrollKindChoice.none) ...<Widget>[
+                    const SizedBox(height: BhorSpace.s12),
+                    if (ofKind.isEmpty)
+                      Text(
+                        kind == EnrollKindChoice.tuition ? l10n.stuNoTuitionsYet : l10n.stuNoBatchesYet,
+                        style: th.type.body.copyWith(color: th.colors.text2),
+                      )
+                    else
+                      BhorSelect<String>(
+                        key: const ValueKey<String>('stu-form-batch'),
+                        label: kind == EnrollKindChoice.tuition ? l10n.stuPickTuition : l10n.stuBatchOptional,
+                        hint: l10n.stuPickHint,
+                        value: chosen,
+                        options: <BhorOption<String>>[
+                          for (final Batch b in ofKind)
+                            BhorOption<String>(
+                              b.id,
+                              subjectOf(b).isEmpty ? b.name : '${subjectOf(b)} · ${b.name}',
+                            ),
+                        ],
+                        onChanged: choice.setBatch,
+                      ),
+                  ],
                   if (chosen != null) ...<Widget>[
                     const SizedBox(height: BhorSpace.s12),
                     ListenableBuilder(

@@ -92,6 +92,7 @@ class BatchCard extends ConsumerWidget {
                     runSpacing: BhorSpace.s4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
+                      if (data.batch.isTuition) const PrivateTag(),
                       BillingPill(type: data.batch.billingType),
                       NoFeeTag(batchId: data.batch.id, month: today.yearMonth),
                       Text(l10n.studentCountText(data.studentCount, fmt.number(data.studentCount)), style: th.type.label),

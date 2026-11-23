@@ -311,5 +311,20 @@
   "schedLeadReset": "ডিফল্টে ফেরান",
   "@schedLeadReset": {
     "description": "Link that clears the batch's own lead."
+  },
+  "schedClashLineNoSubject": "{batch} · {when} · {range}",
+  "@schedClashLineNoSubject": {
+    "description": "A clash line for a class without a subject (private tuition).",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
   }
 }

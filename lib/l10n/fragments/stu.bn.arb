@@ -911,5 +911,45 @@
   "stuBulkNoPhones": "কারও ফোন নম্বর নেই",
   "@stuBulkNoPhones": {
     "description": "Copy numbers with none."
+  },
+  "stuEnrollIn": "ভর্তি করুন",
+  "@stuEnrollIn": {
+    "description": "Heading of the enrol choice in the add-student form."
+  },
+  "stuEnrollKindNone": "এখন না",
+  "@stuEnrollKindNone": {
+    "description": "Enrol choice: do not enrol the new student yet."
+  },
+  "stuEnrollKindBatch": "ব্যাচ",
+  "@stuEnrollKindBatch": {
+    "description": "Enrol choice: a batch."
+  },
+  "stuEnrollKindTuition": "প্রাইভেট টিউশন",
+  "@stuEnrollKindTuition": {
+    "description": "Enrol choice: a private tuition."
+  },
+  "stuPickTuition": "প্রাইভেট টিউশন",
+  "@stuPickTuition": {
+    "description": "Label of the private tuition picker in the student forms."
+  },
+  "stuPickHint": "বেছে নিন",
+  "@stuPickHint": {
+    "description": "Placeholder of the batch / tuition picker before a choice."
+  },
+  "stuNoTuitionsYet": "এখনো কোনো প্রাইভেট টিউশন নেই",
+  "@stuNoTuitionsYet": {
+    "description": "Shown when the teacher picks Private tuition but has none."
+  },
+  "stuNoBatchesYet": "এখনো কোনো ব্যাচ নেই",
+  "@stuNoBatchesYet": {
+    "description": "Shown when the teacher picks Batch but has none."
+  },
+  "stuEnrollSearch": "নাম দিয়ে খুঁজুন",
+  "@stuEnrollSearch": {
+    "description": "Filter field above a long batch / tuition list in the enrol panel."
+  },
+  "stuPickTuitionFirst": "আগে একটি টিউশন বেছে নিন",
+  "@stuPickTuitionFirst": {
+    "description": "Hint under the enrol button until a tuition is chosen."
   }
 }

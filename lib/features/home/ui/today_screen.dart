@@ -14,6 +14,8 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
 import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
@@ -97,8 +99,9 @@ class TodayScreen extends ConsumerWidget {
 }
 
 /// Desktop: one "নতুন…" button that lists the quick actions (collect fee, add
-/// student, extra class), each opening in place. At narrow desktop widths it
-/// is an icon button with a tooltip, so it never disappears.
+/// student, extra class) and new batch / new private tuition, each opening in
+/// place. At narrow desktop widths it is an icon button with a tooltip, so it
+/// never disappears.
 class _NewMenuButton extends StatelessWidget {
   const _NewMenuButton({required this.date});
 
@@ -116,6 +119,18 @@ class _NewMenuButton extends StatelessWidget {
             bc,
             items: <BhorMenuItem>[
               for (final QuickAction a in actions) BhorMenuItem(icon: a.icon, label: a.label, onTap: a.onTap),
+              BhorMenuItem(
+                key: const ValueKey<String>('today-new-batch'),
+                icon: BhorIcons.batches,
+                label: l10n.batchNew,
+                onTap: () => showNewBatchFlow(context),
+              ),
+              BhorMenuItem(
+                key: const ValueKey<String>('today-new-tuition'),
+                icon: BhorIcons.students,
+                label: l10n.batchNewTuition,
+                onTap: () => showNewBatchFlow(context, kind: BatchKind.tuition),
+              ),
             ],
           );
         }

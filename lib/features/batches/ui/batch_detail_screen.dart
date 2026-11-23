@@ -67,13 +67,13 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
         else
           BhorMenuItem(
             icon: BhorIcons.archive,
-            label: l10n.batchMenuArchive,
+            label: b.isTuition ? l10n.batchMenuArchiveTuition : l10n.batchMenuArchive,
             onTap: () => showArchiveBatchDialog(context, batchId: widget.batchId),
           ),
         // Destructive: last, in the error colour, then the confirm.
         BhorMenuItem(
           icon: BhorIcons.delete,
-          label: l10n.batchMenuDelete,
+          label: b.isTuition ? l10n.batchMenuDeleteTuition : l10n.batchMenuDelete,
           destructive: true,
           onTap: () async {
             final bool gone = await confirmDeleteBatch(context, batchId: widget.batchId);
@@ -133,7 +133,7 @@ class _BatchDetailScreenState extends ConsumerState<BatchDetailScreen> {
             BhorIconButton(
               semanticLabel: l10n.commonEdit,
               icon: BhorIcons.edit,
-              onPressed: () => showBatchFormPanel(context, batchId: b.id),
+              onPressed: () => showBatchFormPanel(context, batchId: b.id, kind: b.kind),
             ),
             Builder(
               builder: (BuildContext bc) => BhorIconButton(
@@ -234,6 +234,10 @@ class _BatchHeader extends ConsumerWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
+                  if (batch.isTuition) ...<Widget>[
+                    const PrivateTag(),
+                    const SizedBox(width: BhorSpace.s8),
+                  ],
                   Expanded(
                     child: Text(
                       subjectName,
@@ -309,7 +313,9 @@ class _ArchivedBanner extends StatelessWidget {
         Icon(BhorIcons.archive, color: th.colors.text2),
         if (on != null)
           Text(
-            l10n.batchArchivedBanner(context.fmt.date(on)),
+            batch.isTuition
+                ? l10n.batchArchivedBannerTuition(context.fmt.date(on))
+                : l10n.batchArchivedBanner(context.fmt.date(on)),
             style: th.type.body.copyWith(color: th.colors.text2),
           ),
         BhorButton(

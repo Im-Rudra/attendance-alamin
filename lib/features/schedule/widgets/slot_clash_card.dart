@@ -50,7 +50,9 @@ class SlotClashCard extends ConsumerWidget {
       if (bs == null || g.batchId == ownBatchId) {
         lines.add(l10n.schedClashSameBatch(when, range));
       } else {
-        lines.add(l10n.schedClashLine(bs.subjectName, bs.batch.name, when, range));
+        lines.add(bs.subjectName.trim().isEmpty
+            ? l10n.schedClashLineNoSubject(bs.batch.name, when, range)
+            : l10n.schedClashLine(bs.subjectName, bs.batch.name, when, range));
       }
     }
 

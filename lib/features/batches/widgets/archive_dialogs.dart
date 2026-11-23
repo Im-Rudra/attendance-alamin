@@ -106,6 +106,9 @@ class FinishState extends ChangeNotifier {
 Future<FinishChoice?> showArchiveBatchPanel(
   BuildContext context, {
   required String batchName,
+
+  /// A private tuition: "Finish tuition" wording.
+  bool tuition = false,
   required LocalDate today,
 
   /// The earliest day the batch can be finished on.
@@ -122,13 +125,14 @@ Future<FinishChoice?> showArchiveBatchPanel(
     title: context.l10n.batchArchiveTitle(batchName),
     builder: (BuildContext ctx) => ArchiveBatchBody(
       state: state,
+      tuition: tuition,
       today: today,
       earliest: earliest,
       weekStart: weekStart,
     ),
     footer: (BuildContext ctx) => _footer(
       ctx,
-      confirmLabel: ctx.l10n.batchArchiveConfirm,
+      confirmLabel: tuition ? ctx.l10n.batchMenuArchiveTuition : ctx.l10n.batchArchiveConfirm,
       onConfirm: () => Navigator.of(ctx).pop<FinishChoice>(
         (lastBillableMonth: state.month, on: state.on),
       ),
@@ -143,9 +147,11 @@ class ArchiveBatchBody extends StatelessWidget {
     required this.today,
     required this.earliest,
     required this.weekStart,
+    this.tuition = false,
   });
 
   final FinishState state;
+  final bool tuition;
   final LocalDate today;
   final LocalDate earliest;
   final int weekStart;
@@ -169,7 +175,7 @@ class ArchiveBatchBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(l10n.batchArchiveBody, style: b.type.body),
+            Text(tuition ? l10n.batchArchiveBodyTuition : l10n.batchArchiveBody, style: b.type.body),
             const SizedBox(height: BhorSpace.s16),
             BatchDateField(
               label: l10n.batchFinishedOnLabel,
@@ -214,6 +220,9 @@ Future<UnarchiveChoice?> showUnarchiveBatchPanel(
   BuildContext context, {
   required String batchName,
 
+  /// A private tuition: "tuition" wording.
+  bool tuition = false,
+
   /// "রসায়ন · কেমিস্ট্রি বি · প্রতি রবিবার · সকাল ১০:০০–১১:০০"; empty = no clash.
   required List<String> clashLines,
 
@@ -234,6 +243,7 @@ Future<UnarchiveChoice?> showUnarchiveBatchPanel(
     title: context.l10n.batchUnarchiveTitle(batchName),
     builder: (BuildContext ctx) => UnarchiveBatchBody(
       clashLines: clashLines,
+      tuition: tuition,
       gapFor: gapFor,
       waive: waive,
       on: on,
@@ -261,9 +271,11 @@ class UnarchiveBatchBody extends StatelessWidget {
     required this.today,
     required this.earliest,
     required this.weekStart,
+    this.tuition = false,
   });
 
   final List<String> clashLines;
+  final bool tuition;
   final int Function(LocalDate on) gapFor;
   final ValueNotifier<bool> waive;
   final ValueNotifier<LocalDate> on;
@@ -281,7 +293,7 @@ class UnarchiveBatchBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(l10n.batchUnarchiveBody, style: b.type.body),
+        Text(tuition ? l10n.batchUnarchiveBodyTuition : l10n.batchUnarchiveBody, style: b.type.body),
         const SizedBox(height: BhorSpace.s16),
         ValueListenableBuilder<LocalDate>(
           valueListenable: on,

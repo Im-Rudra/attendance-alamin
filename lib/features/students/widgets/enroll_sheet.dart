@@ -1,6 +1,7 @@
 // "অন্য ব্যাচে ভর্তি" (UX 2e): a batch picker grouped by subject (the student's
-// current batches are disabled and ticked), the first billable month and an
-// optional fee override.
+// current batches are left out), the first billable month and an optional fee
+// override. With private tuitions around, "Batch · Private tuition" chips pick
+// the kind (item 1); a long list gets a filter field.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
+import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/app/providers/attendance_providers.dart';
@@ -49,6 +51,8 @@ class EnrollSheet extends ConsumerStatefulWidget {
 
 class _EnrollSheetState extends ConsumerState<EnrollSheet> {
   final EnrollChoice _choice = EnrollChoice();
+  final TextEditingController _query = TextEditingController();
+  BatchKind _kind = BatchKind.batch;
   bool _busy = false;
   String? _error;
 
@@ -66,7 +70,17 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
   @override
   void dispose() {
     _choice.dispose();
+    _query.dispose();
     super.dispose();
+  }
+
+  void _setKind(BatchKind k) {
+    if (k == _kind) return;
+    setState(() {
+      _kind = k;
+      _query.clear();
+    });
+    _choice.setBatch(null);
   }
 
   Future<void> _enroll(LocalDate today, int cutoff) async {
@@ -120,11 +134,25 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
         if (!b.archived) b,
     ];
     // Only batches the student is NOT in.
-    final List<Batch> open = <Batch>[
+    final List<Batch> openAll = <Batch>[
       for (final Batch b in live)
         if (!enrolled.contains(b.id)) b,
     ]..sort((Batch x, Batch y) => x.sortOrder.compareTo(y.sortOrder));
-    final bool inEveryBatch = live.isNotEmpty && open.isEmpty;
+    final bool inEveryBatch = live.isNotEmpty && openAll.isEmpty;
+    final bool hasTuitions = openAll.any((Batch b) => b.isTuition);
+    final bool hasBatches = openAll.any((Batch b) => !b.isTuition);
+    // Only tuitions left: show them without making the teacher switch.
+    final BatchKind kind = hasTuitions && !hasBatches ? BatchKind.tuition : _kind;
+    final List<Batch> ofKind = <Batch>[
+      for (final Batch b in openAll)
+        if (b.kind == kind) b,
+    ];
+    final bool searchable = ofKind.length > kBhorSelectSearchAbove;
+    final String q = bhorSearchNorm(_query.text);
+    final List<Batch> open = <Batch>[
+      for (final Batch b in ofKind)
+        if (q.isEmpty || bhorSearchNorm(b.name).contains(q)) b,
+    ];
 
     List<Widget> buildGroups() {
       final List<Widget> groups = <Widget>[];
@@ -152,6 +180,11 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
         }
       }
 
+      if (kind == BatchKind.tuition) {
+        // Tuitions are one list by name (their subject is optional).
+        addGroup(l10n.stuEnrollKindTuition, open);
+        return groups;
+      }
       for (final Subject s in subjects) {
         addGroup(s.name, <Batch>[
           for (final Batch bt in open)
@@ -176,7 +209,46 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
               children: <Widget>[
                 if (student != null)
                   Text(student.name, style: th.type.body.copyWith(color: th.colors.text2)),
-                if (groups.isEmpty)
+                if (hasTuitions && hasBatches) ...<Widget>[
+                  const SizedBox(height: BhorSpace.s12),
+                  Wrap(
+                    spacing: BhorSpace.s8,
+                    runSpacing: BhorSpace.s8,
+                    children: <Widget>[
+                      BhorChip(
+                        key: const ValueKey<String>('stu-enroll-kind-batch'),
+                        label: l10n.stuEnrollKindBatch,
+                        selected: kind == BatchKind.batch,
+                        onSelected: (_) => _setKind(BatchKind.batch),
+                      ),
+                      BhorChip(
+                        key: const ValueKey<String>('stu-enroll-kind-tuition'),
+                        label: l10n.stuEnrollKindTuition,
+                        selected: kind == BatchKind.tuition,
+                        onSelected: (_) => _setKind(BatchKind.tuition),
+                      ),
+                    ],
+                  ),
+                ],
+                if (searchable) ...<Widget>[
+                  const SizedBox(height: BhorSpace.s12),
+                  BhorTextField(
+                    key: const ValueKey<String>('stu-enroll-search'),
+                    controller: _query,
+                    hint: l10n.stuEnrollSearch,
+                    prefix: const Icon(BhorIcons.search),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+                if (groups.isEmpty && searchable)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: BhorSpace.s12),
+                    child: Text(
+                      context.l10n.dsNoMatch,
+                      style: th.type.body.copyWith(color: th.colors.text2),
+                    ),
+                  )
+                else if (groups.isEmpty)
                   BhorEmptyState(
                     key: const ValueKey<String>('stu-enroll-empty'),
                     icon: BhorIcons.batches,
@@ -210,7 +282,7 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: BhorSpace.s8),
                     child: Text(
-                      l10n.stuPickBatchFirst,
+                      kind == BatchKind.tuition ? l10n.stuPickTuitionFirst : l10n.stuPickBatchFirst,
                       textAlign: TextAlign.center,
                       style: th.type.label.copyWith(color: th.colors.text2),
                     ),

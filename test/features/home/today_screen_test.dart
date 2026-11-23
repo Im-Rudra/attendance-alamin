@@ -23,8 +23,10 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/attendance.dart';
+import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
+import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/occ_id.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/ui/today_screen.dart';
@@ -861,4 +863,47 @@ void main() {
       expectNoException(tester, '1.3x ${v.name}');
     });
   }
+
+  // ---- private tuition (W3-Tuition, item 1) ---------------------------------------------
+  group('private tuition', () {
+    const String name = 'রাফি (বাসা)';
+    SeededFakes withTuition() {
+      final SeededFakes f = seedFakes();
+      f.store.batches.add(const Batch(
+        id: 'bat-tuition',
+        subjectId: kNoSubjectId,
+        name: name,
+        billingType: BillingType.prepaid,
+        createdOn: LocalDate(2026, 1, 1),
+        sortOrder: 2,
+        kind: BatchKind.tuition,
+      ));
+      f.store.slots.add(const Slot(
+          id: 'slot-tuition', batchId: 'bat-tuition', weekday: 6, startMin: 19 * 60, endMin: 20 * 60));
+      return f;
+    }
+
+    testWidgets('a tuition class reads as its name alone, tagged Private', (WidgetTester tester) async {
+      await _pumpPhone(tester, fakes: withTuition());
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      expect(find.text(name), findsWidgets);
+      expect(find.text(l10n.batchPrivateTag), findsWidgets);
+      expect(find.textContaining(' · $name'), findsNothing);
+      expectNoException(tester, 'tuition on Today');
+    });
+
+    testWidgets('New… offers New batch and New private tuition; the tuition form opens in place',
+        (WidgetTester tester) async {
+      await _pumpDesktop(tester);
+      final AppLocalizations l10n = _l10n(Lang.bn);
+      await tester.tap(find.widgetWithText(BhorButton, l10n.todayNewMenu));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey<String>('today-new-batch')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey<String>('today-new-tuition')));
+      await _settle(tester);
+      await _settle(tester);
+      expect(find.text(l10n.batchTuitionNameLabel), findsOneWidget);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+  });
 }

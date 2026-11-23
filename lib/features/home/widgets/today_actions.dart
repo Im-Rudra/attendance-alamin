@@ -13,6 +13,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 
 /// Roll call of one class occurrence (full screen).
 void openRollCall(BuildContext context, String occ) {
@@ -47,8 +48,7 @@ Future<void> showBatchPickerSheet(
       s.batch.id: s.subjectName,
   };
   String labelOf(Batch b) {
-    final String subject = subjects[b.id] ?? '';
-    return subject.isEmpty ? b.name : l10n.clsClassLabel(subject, b.name);
+    return batchLabel(l10n, subjects[b.id] ?? '', b.name);
   }
 
   final String? id = await showBhorPanel<String>(
