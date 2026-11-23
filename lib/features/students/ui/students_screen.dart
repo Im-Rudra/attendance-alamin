@@ -7,6 +7,7 @@
 // detail column is the roster overview.
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
@@ -15,13 +16,14 @@ import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
+import 'package:attendance_alamin/features/students/controllers/student_selection.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
 import 'package:attendance_alamin/features/students/ui/student_profile_screen.dart';
 import 'package:attendance_alamin/features/students/widgets/student_keys.dart';
 import 'package:attendance_alamin/features/students/widgets/students_list_pane.dart';
 import 'package:attendance_alamin/features/students/widgets/students_overview.dart';
 
-class StudentsScreen extends StatelessWidget {
+class StudentsScreen extends ConsumerWidget {
   const StudentsScreen({super.key, this.selectedId});
 
   /// Student shown in the detail pane on wide windows.
@@ -39,11 +41,15 @@ class StudentsScreen extends StatelessWidget {
   static const double tableMinPaneWidth = 600;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final String? id = selectedId;
+    // Esc clears a multi-selection first, then closes the profile.
+    final bool selecting = ref.watch(stuSelectionProvider.select((StudentSelection s) => s.isNotEmpty));
     return StudentKeys(
       onNew: () => openAddStudent(context),
-      onEscape: id == null ? null : () => stuGo(context, Routes.students),
+      onEscape: selecting
+          ? () => ref.read(stuSelectionProvider.notifier).clear()
+          : (id == null ? null : () => stuGo(context, Routes.students)),
       child: _build(context, id),
     );
   }
@@ -72,17 +78,20 @@ class StudentsScreen extends StatelessWidget {
   }
 }
 
-class _ListScaffold extends StatelessWidget {
+class _ListScaffold extends ConsumerWidget {
   const _ListScaffold({required this.selectedId, this.table = false});
 
   final String? selectedId;
   final bool table;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final WindowClass wc = WindowClass.of(context);
     final double g = wc.gutter;
+    // On phones the selection bar takes the FAB's place above the nav pill.
+    final bool selecting = ref.watch(stuSelectionProvider.select((StudentSelection s) => s.isNotEmpty));
+    final double pill = wc.usesRail ? 0 : 84;
     return BhorScaffold(
       header: BhorHeader(
         title: l10n.navStudents,
@@ -99,7 +108,7 @@ class _ListScaffold extends StatelessWidget {
             ),
         ],
       ),
-      floating: wc.isWide
+      floating: wc.isWide || selecting
           ? null
           : Padding(
               // Lift the button above the floating nav pill on phones (QA-03).
@@ -113,7 +122,7 @@ class _ListScaffold extends StatelessWidget {
             ),
       body: Padding(
         padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, g),
-        child: StudentsListPane(selectedId: selectedId, table: table),
+        child: StudentsListPane(selectedId: selectedId, table: table, bottomInset: wc.isWide ? 0 : pill),
       ),
     );
   }

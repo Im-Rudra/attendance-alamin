@@ -541,10 +541,16 @@ void main() {
       expect(find.text('মাঝের ৩ মাস মাফ করবেন?'), findsOneWidget);
       await tester.tap(find.text('হ্যাঁ, মাফ করুন'));
       await tester.pumpAndSettle();
+      final Finder confirm = find.byKey(const ValueKey<String>('stu-rejoin-confirm'));
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
 
       final Student after =
           f.students.students.firstWhere((Student s) => s.id == kStuRahim);
       expect(after.status, StudentStatus.active);
+      expect(f.students.rejoinedOn, kToday);
+      expect(f.students.rejoinWaived, isTrue);
     });
   });
 }

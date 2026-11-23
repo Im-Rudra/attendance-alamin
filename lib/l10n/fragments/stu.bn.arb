@@ -603,5 +603,313 @@
         "example": "1"
       }
     }
+  },
+  "stuJoinedOn": "ব্যাচে যোগ দেওয়ার তারিখ",
+  "@stuJoinedOn": {
+    "description": "Join date field in every enrol flow."
+  },
+  "stuJoinedOnHint": "এই দিন থেকে হাজিরায় নাম আসবে। আগের তারিখও দেওয়া যায়।",
+  "@stuJoinedOnHint": {
+    "description": "Hint under the join date field."
+  },
+  "stuJoinedLine": "যোগ দিয়েছে {date}",
+  "@stuJoinedLine": {
+    "description": "Join date line on an enrolment card.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "১০ নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuChangeJoinDate": "যোগ দেওয়ার তারিখ বদলান",
+  "@stuChangeJoinDate": {
+    "description": "Enrolment menu item and panel title."
+  },
+  "stuJoinDateKeepsFee": "বেতন আগের মতোই {month} থেকে ধরা হবে।",
+  "@stuJoinDateKeepsFee": {
+    "description": "Note in the change-join-date panel: billing start is not changed.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuJoinAfterEnd": "যোগ দেওয়ার তারিখ ব্যাচ ছাড়ার দিনের ({date}) পরে হতে পারে না।",
+  "@stuJoinAfterEnd": {
+    "description": "Join date after the enrolment's end date.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "৫ আগস্ট ২০২৬"
+      }
+    }
+  },
+  "stuJoinOverlap": "ওই সময়ে শিক্ষার্থী এই ব্যাচে আগে থেকেই ছিল। পরের কোনো তারিখ দিন।",
+  "@stuJoinOverlap": {
+    "description": "Join date would overlap an earlier enrolment in the same batch."
+  },
+  "stuJoinDateSaved": "যোগ দেওয়ার তারিখ বদলানো হয়েছে",
+  "@stuJoinDateSaved": {
+    "description": "Toast after changing the join date."
+  },
+  "stuChangeFee": "এই শিক্ষার্থীর ফি বদলান",
+  "@stuChangeFee": {
+    "description": "Enrolment menu item and panel title."
+  },
+  "stuChangeFeeAmount": "এই শিক্ষার্থীর মাসিক ফি",
+  "@stuChangeFeeAmount": {
+    "description": "Amount field of the student fee change."
+  },
+  "stuChangeFeeHint": "খালি রাখলে ব্যাচের ফি ({amount}) ধরা হবে",
+  "@stuChangeFeeHint": {
+    "description": "Helper under the student fee field.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳১,০০০"
+      }
+    }
+  },
+  "stuChangeFeeFrom": "কোন মাস থেকে?",
+  "@stuChangeFeeFrom": {
+    "description": "Month choice of the student fee change."
+  },
+  "stuFeeEarlierMonth": "আরও আগের মাস",
+  "@stuFeeEarlierMonth": {
+    "description": "Dropdown for months before the quick chips."
+  },
+  "stuChangeFeeNote": "এর আগের মাসগুলোর ফি আগের মতোই থাকবে।",
+  "@stuChangeFeeNote": {
+    "description": "Note under the month choice."
+  },
+  "stuFeeChanged": "ফি বদলানো হয়েছে",
+  "@stuFeeChanged": {
+    "description": "Toast after changing a student's fee."
+  },
+  "stuSpecialFee": "বিশেষ ফি {amount}",
+  "@stuSpecialFee": {
+    "description": "Tag on an enrolment card with a student fee.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "৳৭৫০"
+      }
+    }
+  },
+  "stuRejoinBackFrom": "কবে থেকে আবার আসছে",
+  "@stuRejoinBackFrom": {
+    "description": "Rejoin date field."
+  },
+  "stuRejoinLeftOn": "ছেড়ে গিয়েছিল {date}",
+  "@stuRejoinLeftOn": {
+    "description": "Line in the rejoin panel.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "৫ আগস্ট ২০২৬"
+      }
+    }
+  },
+  "stuSelectedCount": "{count} জন বাছাই করা",
+  "@stuSelectedCount": {
+    "description": "Selection bar count.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuSelect": "{name} বাছাই করুন",
+  "@stuSelect": {
+    "description": "Accessibility label of a row's select box.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "রাকিব"
+      }
+    }
+  },
+  "stuBulkActions": "কাজ",
+  "@stuBulkActions": {
+    "description": "Selection bar menu button on narrow windows."
+  },
+  "stuBulkEnroll": "ব্যাচে ভর্তি",
+  "@stuBulkEnroll": {
+    "description": "Bulk action."
+  },
+  "stuBulkLeft": "ছেড়ে গেছে",
+  "@stuBulkLeft": {
+    "description": "Bulk action."
+  },
+  "stuBulkRemind": "বেতনের রিমাইন্ডার",
+  "@stuBulkRemind": {
+    "description": "Bulk action."
+  },
+  "stuBulkCopyPhones": "ফোন নম্বর কপি",
+  "@stuBulkCopyPhones": {
+    "description": "Bulk action."
+  },
+  "stuBulkExport": "CSV এক্সপোর্ট",
+  "@stuBulkExport": {
+    "description": "Bulk action."
+  },
+  "stuBulkClear": "বাছাই বাতিল",
+  "@stuBulkClear": {
+    "description": "Bulk action: clear the selection."
+  },
+  "stuBulkEnrollTitle": "বাছাই করা শিক্ষার্থীদের ভর্তি ({count})",
+  "@stuBulkEnrollTitle": {
+    "description": "Bulk enrol panel title.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkEnrollConfirm": "{count} জনকে ভর্তি করুন",
+  "@stuBulkEnrollConfirm": {
+    "description": "Bulk enrol confirm button.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkEnrolled": "ভর্তি হয়েছে: {count} জন",
+  "@stuBulkEnrolled": {
+    "description": "Toast after bulk enrol.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkSkipped": "বাদ গেছে (আগে থেকেই আছে বা ছেড়ে গেছে): {count} জন",
+  "@stuBulkSkipped": {
+    "description": "Bulk enrol skipped count.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "১"
+      }
+    }
+  },
+  "stuBulkLeftTitle": "ছেড়ে গেছে ({count} জন)",
+  "@stuBulkLeftTitle": {
+    "description": "Bulk leave panel title.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkLeftBody": "সবার বেতন {month} পর্যন্ত ধরা হবে।",
+  "@stuBulkLeftBody": {
+    "description": "Bulk leave: default last billable month.",
+    "placeholders": {
+      "month": {
+        "type": "String",
+        "example": "নভেম্বর ২০২৬"
+      }
+    }
+  },
+  "stuBulkLeftConfirm": "{count} জনকে ছেড়ে গেছে করুন",
+  "@stuBulkLeftConfirm": {
+    "description": "Bulk leave confirm button.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkLeftDone": "ছেড়ে গেছে করা হয়েছে: {count} জন",
+  "@stuBulkLeftDone": {
+    "description": "Toast after bulk leave.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkLeftFailed": "{count} জনের পর থেমে গেছে। আবার চেষ্টা করুন।",
+  "@stuBulkLeftFailed": {
+    "description": "Bulk leave failed part way.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "২"
+      }
+    }
+  },
+  "stuBulkNoneActive": "বাছাই করা সবাই আগেই ছেড়ে গেছে",
+  "@stuBulkNoneActive": {
+    "description": "Bulk leave with no active student."
+  },
+  "stuBulkRemindTitle": "বেতনের রিমাইন্ডার",
+  "@stuBulkRemindTitle": {
+    "description": "Bulk reminder panel title."
+  },
+  "stuBulkRemindProgress": "অভিভাবক {current} / {total}",
+  "@stuBulkRemindProgress": {
+    "description": "Bulk reminder progress.",
+    "placeholders": {
+      "current": {
+        "type": "String",
+        "example": "১"
+      },
+      "total": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkRemindSkip": "বাদ দিন",
+  "@stuBulkRemindSkip": {
+    "description": "Bulk reminder: skip this guardian."
+  },
+  "stuBulkRemindShare": "পাঠান",
+  "@stuBulkRemindShare": {
+    "description": "Bulk reminder: share this message."
+  },
+  "stuBulkRemindDone": "রিমাইন্ডার পাঠানো হয়েছে: {count}টি",
+  "@stuBulkRemindDone": {
+    "description": "Bulk reminder done.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkRemindNone": "বাছাই করা কারও বকেয়া নেই",
+  "@stuBulkRemindNone": {
+    "description": "Bulk reminder with nothing due."
+  },
+  "stuBulkRemindNoPhone": "ফোন নম্বর নেই। মেসেজটি কপি হবে।",
+  "@stuBulkRemindNoPhone": {
+    "description": "Bulk reminder guardian without a number."
+  },
+  "stuBulkPhonesCopied": "নম্বর কপি হয়েছে: {count}টি",
+  "@stuBulkPhonesCopied": {
+    "description": "Toast after copying numbers.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "৩"
+      }
+    }
+  },
+  "stuBulkNoPhones": "কারও ফোন নম্বর নেই",
+  "@stuBulkNoPhones": {
+    "description": "Copy numbers with none."
   }
 }

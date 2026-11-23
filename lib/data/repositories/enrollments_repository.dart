@@ -7,6 +7,9 @@ import 'package:attendance_alamin/domain/models/student.dart';
 
 /// Student <-> batch links, their fee overrides and roll-call rosters
 /// (plan M4-B, Product 3.1/3.2/3.6).
+/// The earliest join date the app accepts.
+const LocalDate kEarliestJoinDate = LocalDate(2015, 1, 1);
+
 abstract interface class EnrollmentsRepository {
   Stream<List<Enrollment>> watchAll();
   Stream<List<Enrollment>> watchForStudent(String studentId);
@@ -36,6 +39,15 @@ abstract interface class EnrollmentsRepository {
 
   /// Live override history, ascending by month.
   Stream<List<FeePeriod>> watchOverrides(String enrollmentId);
+
+  /// Moves the roll-call join date of one enrollment to [joinDate] (its
+  /// calendar day; the time of day is ignored). The first billable month is
+  /// not touched. Throws `dateInvalid` (field `joinDate`) when the date is
+  /// before [kEarliestJoinDate] or after the enrollment's end date, and
+  /// `dateInvalid` (field `overlap`) when the enrollment would then overlap
+  /// another enrollment of the same student in the same batch. The same date
+  /// again is a no-op.
+  Future<void> updateJoinDate(String enrollmentId, DateTime joinDate);
 
   /// Removes the student from this batch only: end date + LBM.
   Future<void> end(String enrollmentId,

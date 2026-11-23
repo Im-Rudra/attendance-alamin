@@ -10,6 +10,7 @@ import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
+import 'package:attendance_alamin/data/repositories/enrollments_repository.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_form_model.dart';
 import 'package:attendance_alamin/features/students/widgets/photo_picker.dart';
@@ -328,11 +329,17 @@ class StartMonthFeeFields extends StatefulWidget {
     required this.choice,
     required this.join,
     required this.cutoff,
+    this.showJoin = true,
   });
 
   final EnrollChoice choice;
+
+  /// The join date until the teacher picks one ([EnrollChoice.joinFor]).
   final LocalDate join;
   final int cutoff;
+
+  /// Show the "Joined this batch on" field at the top.
+  final bool showJoin;
 
   @override
   State<StartMonthFeeFields> createState() => _StartMonthFeeFieldsState();
@@ -344,18 +351,22 @@ class _StartMonthFeeFieldsState extends State<StartMonthFeeFields> {
   @override
   Widget build(BuildContext context) {
     final EnrollChoice choice = widget.choice;
-    final LocalDate join = widget.join;
     final int cutoff = widget.cutoff;
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     return ListenableBuilder(
       listenable: choice,
       builder: (BuildContext context, Widget? _) {
+        final LocalDate join = choice.joinFor(widget.join);
         final YearMonth start = choice.startFor(join, cutoff);
         final YearMonth base = join.yearMonth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (widget.showJoin) ...<Widget>[
+              JoinDateField(value: join, onChanged: choice.setJoin),
+              const SizedBox(height: BhorSpace.s16),
+            ],
             Semantics(
               liveRegion: true,
               child: Text(
@@ -421,3 +432,43 @@ class _StartMonthFeeFieldsState extends State<StartMonthFeeFields> {
 
 String cutoffDayText(BuildContext context, int cutoff) =>
     context.fmt.number(cutoff);
+
+/// "Joined this batch on" (item 6): default today, any day from 2015 up to
+/// today (or the given date when it is later, e.g. a future admission).
+class JoinDateField extends ConsumerWidget {
+  const JoinDateField({super.key, required this.value, required this.onChanged, this.hint = true, this.lastDate});
+
+  final LocalDate value;
+  final ValueChanged<LocalDate> onChanged;
+
+  /// Show the "roll call lists the student from this day" line under it.
+  final bool hint;
+
+  /// The latest day offered (an ended enrollment's end date); default today.
+  final LocalDate? lastDate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final BhorThemeData b = context.bhor;
+    final LocalDate today = lastDate ?? ref.watch(todayProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        DateField(
+          key: const ValueKey<String>('stu-join-date'),
+          label: l10n.stuJoinedOn,
+          value: value,
+          firstDate: kEarliestJoinDate,
+          lastDate: value.isAfter(today) ? value : today,
+          onChanged: onChanged,
+        ),
+        if (hint) ...<Widget>[
+          const SizedBox(height: BhorSpace.s4),
+          Text(l10n.stuJoinedOnHint, style: b.type.label.copyWith(color: b.colors.text2)),
+        ],
+      ],
+    );
+  }
+}

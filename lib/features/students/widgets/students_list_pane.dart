@@ -1,6 +1,8 @@
 // The students list: search field, filter chips (batch, has dues, left) and
 // either rows or, on large windows, the data table with a sticky header (UX 3b
 // columns: রোল · নাম · ব্যাচ · অভিভাবকের ফোন · হাজিরা % · বকেয়া · শেষ পেমেন্ট).
+// Multi-select (item 10): Ctrl+click, Shift+click, Ctrl+A, Esc, a hover select
+// box on desktop, long press on phones; the selection bar sits at the bottom.
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,18 +16,24 @@ import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/students/controllers/student_nav.dart';
+import 'package:attendance_alamin/features/students/controllers/student_selection.dart';
 import 'package:attendance_alamin/features/students/students_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
+import 'package:attendance_alamin/features/students/widgets/student_bulk_actions.dart';
+import 'package:attendance_alamin/features/students/widgets/student_keys.dart';
 import 'package:attendance_alamin/features/students/widgets/student_row_tile.dart';
 
 class StudentsListPane extends ConsumerStatefulWidget {
-  const StudentsListPane({super.key, this.selectedId, this.table = false});
+  const StudentsListPane({super.key, this.selectedId, this.table = false, this.bottomInset = 0});
 
   final String? selectedId;
 
   /// Large windows: rows become the data table.
   final bool table;
+
+  /// Space the selection bar keeps free at the bottom (the phone nav pill).
+  final double bottomInset;
 
   @override
   ConsumerState<StudentsListPane> createState() => _StudentsListPaneState();
@@ -33,15 +41,48 @@ class StudentsListPane extends ConsumerStatefulWidget {
 
 class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
   final TextEditingController _query = TextEditingController();
+  final FocusNode _searchFocus = FocusNode(debugLabel: 'students search');
   StudentFilter _filter = const StudentFilter();
+
+  /// Ids of the listed rows, in list order (Shift+click ranges, Ctrl+A).
+  List<String> _order = const <String>[];
 
   @override
   void dispose() {
     _query.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
   void _open(String id) => stuGo(context, Routes.student(id));
+
+  StudentSelectionController get _selection => ref.read(stuSelectionProvider.notifier);
+
+  /// A row click: Shift = range, Ctrl (or the select box) = toggle; while
+  /// selecting on a phone a tap toggles; otherwise the profile opens.
+  void _onRowTap(String id, {bool box = false}) {
+    final HardwareKeyboard kb = HardwareKeyboard.instance;
+    if (kb.isShiftPressed) {
+      _selection.range(_order, id);
+      _leaveSearch();
+      return;
+    }
+    if (box || kb.isControlPressed || kb.isMetaPressed) {
+      _selection.toggle(id);
+      _leaveSearch();
+      return;
+    }
+    if (!WindowClass.of(context).isWide && ref.read(stuSelectionProvider).isNotEmpty) {
+      _selection.toggle(id);
+      return;
+    }
+    _open(id);
+  }
+
+  /// Hands the keyboard back to the list (Ctrl+A, Esc) after a selection click.
+  void _leaveSearch() {
+    if (_searchFocus.hasFocus) _searchFocus.unfocus();
+  }
 
   void _new() => openAddStudent(context);
 
@@ -98,6 +139,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
     final Widget search = BhorTextField(
       key: const ValueKey<String>('stu-search'),
       controller: _query,
+      focusNode: _searchFocus,
       autofocus: wide,
       textInputAction: TextInputAction.search,
       onChanged: (String v) => setState(() => _filter = _filter.copyWith(query: v)),
@@ -150,6 +192,17 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
       ],
     );
 
+    final StudentSelection selection = ref.watch(stuSelectionProvider);
+    // Only listed rows count: a filter hides the others from the bar too.
+    final List<StudentRow>? loaded = async.value;
+    final List<StudentRow> listed =
+        loaded == null ? const <StudentRow>[] : applyStudentFilter(loaded, _filter);
+    final List<Student> picked = <Student>[
+      for (final StudentRow r in listed)
+        if (selection.contains(r.id)) r.student,
+    ];
+    final bool selecting = picked.isNotEmpty;
+
     final Widget body = async.when(
       loading: () => const Center(child: BhorSpinner()),
       error: (Object e, StackTrace st) =>
@@ -163,6 +216,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
           );
         }
         final List<StudentRow> rows = applyStudentFilter(all, _filter);
+        _order = <String>[for (final StudentRow r in rows) r.id];
         if (rows.isEmpty) {
           final String q = _filter.query.trim();
           return Align(
@@ -189,7 +243,14 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
           );
         }
         if (widget.table) {
-          return _Table(rows: rows, selectedId: widget.selectedId, onOpen: _open);
+          return _Table(
+            rows: rows,
+            selectedId: widget.selectedId,
+            checked: selection.ids,
+            selecting: selecting,
+            onTap: _onRowTap,
+            onToggle: (String id) => _onRowTap(id, box: true),
+          );
         }
         return BhorStaggerScope(
           // The card hugs its rows; 88 px of tail clears the FAB.
@@ -205,7 +266,11 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
                       row: rows[i],
                       selected: rows[i].id == widget.selectedId,
                       last: i == rows.length - 1,
-                      onTap: () => _open(rows[i].id),
+                      checked: selection.contains(rows[i].id),
+                      selecting: selecting,
+                      onTap: () => _onRowTap(rows[i].id),
+                      onToggle: () => _onRowTap(rows[i].id, box: true),
+                      onLongPress: () => _selection.toggle(rows[i].id),
                     ),
                   ),
               ],
@@ -215,28 +280,66 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
       },
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        search,
-        const SizedBox(height: BhorSpace.s8),
-        chips,
-        const SizedBox(height: BhorSpace.s4),
-        Expanded(child: body),
-      ],
+    return StudentKeys(
+      onSelectAll: () => _selection.selectAll(_order),
+      selectAllWhileTyping: () => _searchFocus.hasFocus && _query.text.isEmpty,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          search,
+          const SizedBox(height: BhorSpace.s8),
+          chips,
+          const SizedBox(height: BhorSpace.s4),
+          Expanded(child: body),
+          if (selecting)
+            Padding(
+              padding: EdgeInsets.only(top: BhorSpace.s8, bottom: widget.bottomInset),
+              child: StudentSelectionBar(
+                students: picked,
+                onClear: () => ref.read(stuSelectionProvider.notifier).clear(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _Table extends StatelessWidget {
-  const _Table({required this.rows, required this.selectedId, required this.onOpen});
+class _Table extends StatefulWidget {
+  const _Table({
+    required this.rows,
+    required this.selectedId,
+    required this.checked,
+    required this.selecting,
+    required this.onTap,
+    required this.onToggle,
+  });
 
   final List<StudentRow> rows;
   final String? selectedId;
-  final ValueChanged<String> onOpen;
+  final Set<String> checked;
+  final bool selecting;
+  final ValueChanged<String> onTap;
+  final ValueChanged<String> onToggle;
+
+  @override
+  State<_Table> createState() => _TableState();
+}
+
+class _TableState extends State<_Table> {
+  /// The row under the mouse: its select box shows.
+  final ValueNotifier<String?> _hovered = ValueNotifier<String?>(null);
+
+  @override
+  void dispose() {
+    _hovered.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<StudentRow> rows = widget.rows;
+    final String? selectedId = widget.selectedId;
     final l10n = context.l10n;
     final fmt = context.fmt;
     final BhorThemeData b = context.bhor;
@@ -249,10 +352,13 @@ class _Table extends StatelessWidget {
           style: override ?? style,
         );
 
-    Widget menu(StudentRow r, Widget child) => GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onSecondaryTapUp: (TapUpDetails d) => showStudentContextMenu(context, d.globalPosition, r),
-          child: child,
+    Widget menu(StudentRow r, Widget child) => MouseRegion(
+          onEnter: (_) => _hovered.value = r.id,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onSecondaryTapUp: (TapUpDetails d) => showStudentContextMenu(context, d.globalPosition, r),
+            child: child,
+          ),
         );
 
     // The Due column exists only when somebody owes (amount + level tag);
@@ -268,13 +374,40 @@ class _Table extends StatelessWidget {
         final bool showLast = box.maxWidth >= 1040;
         // The card hugs its rows (a scroll view gives the table an unbounded
         // height); long lists scroll as one card.
-        return SingleChildScrollView(
-          child: BatchTable<StudentRow>(
+        return MouseRegion(
+          onExit: (_) => _hovered.value = null,
+          child: SingleChildScrollView(
+            child: BatchTable<StudentRow>(
             rows: rows,
             semanticLabel: (StudentRow r) => r.student.name,
-            isSelected: (StudentRow r) => r.id == selectedId,
-            onRowTap: (StudentRow r) => onOpen(r.id),
+            isSelected: (StudentRow r) => r.id == selectedId || widget.checked.contains(r.id),
+            onRowTap: (StudentRow r) => widget.onTap(r.id),
             columns: <BatchColumn<StudentRow>>[
+              BatchColumn<StudentRow>(
+                label: '',
+                fixedWidth: 32,
+                cell: (StudentRow r) => menu(
+                  r,
+                  ValueListenableBuilder<String?>(
+                    valueListenable: _hovered,
+                    builder: (BuildContext context, String? hovered, Widget? _) {
+                      final bool on = widget.checked.contains(r.id);
+                      final bool show = on || widget.selecting || hovered == r.id;
+                      return AnimatedOpacity(
+                        opacity: show ? 1 : 0,
+                        duration: BhorMotion.of(context, BhorMotion.fast),
+                        child: StudentSelectBox(
+                          key: ValueKey<String>('stu-check-${r.id}'),
+                          checked: on,
+                          size: 32,
+                          semanticLabel: l10n.stuSelect(r.student.name),
+                          onTap: () => widget.onToggle(r.id),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
               BatchColumn<StudentRow>(
                 label: l10n.stuColRoll,
                 fixedWidth: 56,
@@ -327,6 +460,7 @@ class _Table extends StatelessWidget {
                       menu(r, text(r.lastPaidOn == null ? '—' : fmt.dateShort(r.lastPaidOn!))),
                 ),
             ],
+            ),
           ),
         );
       },

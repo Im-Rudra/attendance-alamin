@@ -11,7 +11,79 @@ import 'package:attendance_alamin/data/repositories/students_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
+import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+
+/// The batch fee in force in [m] (the earliest one before the history
+/// starts); null when the batch has no fee.
+int? batchFeeAt(List<FeePeriod> fees, YearMonth m) {
+  FeePeriod? best;
+  FeePeriod? first;
+  for (final FeePeriod f in fees) {
+    if (first == null || f.effective.isBefore(first.effective)) first = f;
+    if (!f.effective.isAfter(m) && (best == null || f.effective.isAfter(best.effective))) best = f;
+  }
+  return (best ?? first)?.amount;
+}
+
+/// The student's own fee in force in [m] ("Special fee ৳750"), or null when
+/// the batch fee applies (no override yet, or the override was cleared).
+int? specialFeeAt(List<FeePeriod> overrides, YearMonth m) {
+  FeePeriod? best;
+  for (final FeePeriod f in overrides) {
+    if (!f.effective.isAfter(m) && (best == null || f.effective.isAfter(best.effective))) best = f;
+  }
+  return best?.amount;
+}
+
+/// "From which month?" for a student's fee change: the quick chips (two
+/// months back to six ahead of [current]) and the older months for the
+/// "earlier month" list, newest first. Nothing before [first] (the first
+/// billable month) is offered.
+({List<YearMonth> quick, List<YearMonth> older}) feeChangeMonths(YearMonth current, YearMonth first) {
+  final List<YearMonth> quick = <YearMonth>[
+    for (int i = -2; i <= 6; i++)
+      if (!current.addMonths(i).isBefore(first)) current.addMonths(i),
+  ];
+  final List<YearMonth> older = <YearMonth>[
+    for (YearMonth m = current.addMonths(-3); !m.isBefore(first); m = m.addMonths(-1)) m,
+  ];
+  return (quick: quick, older: older);
+}
+
+/// Earliest "back from" day of a rejoin: the day after leaving (today at
+/// the latest).
+LocalDate rejoinFirstDay(Student student, LocalDate today) {
+  final LocalDate? left = student.leftDate;
+  if (left == null) return today;
+  final LocalDate next = left.addDays(1);
+  return next.isAfter(today) ? today : next;
+}
+
+/// Students grouped by the number a reminder goes to (guardian, else the
+/// student), in list order; students without a number get a group each.
+List<List<Student>> groupByGuardian(List<Student> students) {
+  final Map<String, List<Student>> byKey = <String, List<Student>>{};
+  for (final Student s in students) {
+    final String? n = s.callNumber?.trim();
+    final String key = (n == null || n.isEmpty) ? 'id:${s.id}' : 'tel:$n';
+    (byKey[key] ??= <Student>[]).add(s);
+  }
+  return byKey.values.toList();
+}
+
+/// The distinct phone numbers of [students] (guardian first, then the
+/// student's own), in list order.
+List<String> phoneNumbersOf(List<Student> students) {
+  final List<String> out = <String>[];
+  for (final Student s in students) {
+    for (final String? p in <String?>[s.guardianPhone, s.phone]) {
+      final String? t = p?.trim();
+      if (t != null && t.isNotEmpty && !out.contains(t)) out.add(t);
+    }
+  }
+  return out;
+}
 
 /// Existing students that already use one of the draft's phone numbers
 /// (UX 2e duplicate guard: phone alone, or name and phone, matches).
@@ -48,6 +120,7 @@ Future<String> createStudentAndEnroll({
   String? batchId,
   YearMonth? startMonth,
   int? feeOverride,
+  LocalDate? joinDate,
 }) async {
   final String id = await students.create(draft);
   try {
@@ -56,7 +129,7 @@ Future<String> createStudentAndEnroll({
       await enrollments.enroll(
         studentId: id,
         batchId: batchId,
-        joinDate: draft.admissionDate,
+        joinDate: joinDate ?? draft.admissionDate,
         startMonth: startMonth,
         feeOverride: feeOverride,
       );
