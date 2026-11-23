@@ -143,9 +143,13 @@ class ReceiptLine {
     required this.method,
     required this.amount,
     required this.months,
+    this.receiptNo,
   });
 
   final String receiptId;
+
+  /// Slip number (schema v2), null for a receipt without one.
+  final String? receiptNo;
   final String studentId;
   final LocalDate paidOn;
   final PaymentMethod method;
@@ -230,6 +234,7 @@ CollectionSummary buildCollectionSummary({
         method: a.first.method,
         amount: a.amount,
         months: a.months.toList()..sort(),
+        receiptNo: a.first.receiptNo,
       ),
   ]..sort((ReceiptLine a, ReceiptLine b) {
       final int byDate = b.paidOn.compareTo(a.paidOn);
@@ -260,4 +265,119 @@ class _ReceiptAcc {
   final Payment first;
   int amount = 0;
   final Set<YearMonth> months = <YearMonth>{};
+}
+
+// ---- per place (schema v2, feedback item 3) ----------------------------------
+
+/// [buildCollectionSummary] restricted to one place: the enrollments of its
+/// batches (`EnrollmentTerms.placeId`), the payments of those batches and the
+/// other income stored with that place. [batchPlaces] (batch id -> place id)
+/// covers batches that have no live enrollment left; the terms win otherwise.
+CollectionSummary buildPlaceCollectionSummary({
+  required String placeId,
+  required YearMonth month,
+  required LocalDate today,
+  required List<EnrollmentTerms> terms,
+  required List<PaymentFact> facts,
+  required List<Payment> payments,
+  required List<OtherIncome> otherIncome,
+  Map<String, String> batchPlaces = const <String, String>{},
+}) {
+  final Map<String, String> placeOfBatch = <String, String>{
+    ...batchPlaces,
+    for (final EnrollmentTerms t in terms) t.batchId: t.placeId,
+  };
+  final List<EnrollmentTerms> mine = <EnrollmentTerms>[
+    for (final EnrollmentTerms t in terms)
+      if (t.placeId == placeId) t,
+  ];
+  final Set<String> enrollments = <String>{for (final EnrollmentTerms t in mine) t.enrollmentId};
+  return buildCollectionSummary(
+    month: month,
+    today: today,
+    terms: mine,
+    facts: <PaymentFact>[
+      for (final PaymentFact f in facts)
+        if (enrollments.contains(f.enrollmentId)) f,
+    ],
+    payments: <Payment>[
+      for (final Payment p in payments)
+        if (placeOfBatch[p.batchId] == placeId) p,
+    ],
+    otherIncome: <OtherIncome>[
+      for (final OtherIncome o in otherIncome)
+        if (o.placeId == placeId) o,
+    ],
+  );
+}
+
+/// One place's month: the place-restricted collection summary plus the three
+/// numbers the per-place totals show.
+class PlaceMonthSummary {
+  const PlaceMonthSummary({required this.placeId, required this.summary});
+
+  final String placeId;
+  final CollectionSummary summary;
+
+  /// Fee money received in the calendar month (by payment date).
+  int get collected => summary.feesCash;
+
+  /// Still owed for the billing month.
+  int get dues => summary.totals.outstanding;
+
+  /// Other income of the place received in the calendar month.
+  int get otherIncome => summary.otherIncome;
+}
+
+/// Every place's month, in `placeIds` order, plus the other income that
+/// belongs to no place ("general").
+class PlacesMonthBreakdown {
+  const PlacesMonthBreakdown({
+    required this.month,
+    required this.places,
+    required this.generalOtherIncome,
+  });
+
+  final YearMonth month;
+  final List<PlaceMonthSummary> places;
+  final int generalOtherIncome;
+}
+
+PlacesMonthBreakdown buildPlacesMonthBreakdown({
+  required List<String> placeIds,
+  required YearMonth month,
+  required LocalDate today,
+  required List<EnrollmentTerms> terms,
+  required List<PaymentFact> facts,
+  required List<Payment> payments,
+  required List<OtherIncome> otherIncome,
+  Map<String, String> batchPlaces = const <String, String>{},
+}) {
+  final LocalDate first = month.firstDay;
+  final LocalDate last = month.lastDay;
+  var general = 0;
+  for (final OtherIncome o in otherIncome) {
+    if (o.placeId != null || o.paidOn.isBefore(first) || o.paidOn.isAfter(last)) continue;
+    general += o.amount;
+  }
+  return PlacesMonthBreakdown(
+    month: month,
+    places: <PlaceMonthSummary>[
+      for (final String id in placeIds)
+        PlaceMonthSummary(
+          placeId: id,
+          summary: buildPlaceCollectionSummary(
+            placeId: id,
+            month: month,
+            today: today,
+            terms: terms,
+            facts: facts,
+            payments: payments,
+            otherIncome: otherIncome,
+            batchPlaces: batchPlaces,
+          ),
+        ),
+    ],
+    generalOtherIncome: general,
+  );
 }

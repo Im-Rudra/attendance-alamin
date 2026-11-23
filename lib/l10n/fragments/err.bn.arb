@@ -68,9 +68,9 @@
   "@errHeldClassToFuture": {
     "description": "Rescheduling a class whose roll call is saved to a date after today (QA-04)."
   },
-  "errBatchArchived": "ব্যাচটি আর্কাইভ করা আছে, আগে চালু করুন",
+  "errBatchArchived": "ব্যাচটি শেষ হয়ে গেছে, আগে আবার চালু করুন",
   "@errBatchArchived": {
-    "description": "Action on an archived batch."
+    "description": "Action on a finished batch."
   },
   "errPhotoTooLarge": "ছবিটি অনেক বড়, ছোট ছবি দিন",
   "@errPhotoTooLarge": {

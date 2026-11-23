@@ -19,6 +19,7 @@ import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/csv_builder.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -106,7 +107,9 @@ int _byRollThenName(Student a, Student b) {
 }
 
 /// Money received in [month] (by payment date): fee rows, waived months and
-/// other income, oldest first.
+/// other income, oldest first. The receipt column holds the slip number
+/// (schema v2). With 2+ [places] a last "Place" column names the batch's
+/// place (other income: its own place, blank = general).
 CsvFile buildPaymentsCsv({
   required AppLocalizations l10n,
   required YearMonth month,
@@ -115,9 +118,13 @@ CsvFile buildPaymentsCsv({
   required List<Student> students,
   required List<Batch> batches,
   required String Function(PaymentMethod method) methodLabel,
+  List<Place> places = const <Place>[],
 }) {
   final Map<String, String> studentName = <String, String>{for (final Student s in students) s.id: s.name};
   final Map<String, String> batchName = <String, String>{for (final Batch b in batches) b.id: b.name};
+  final bool withPlace = places.length > 1;
+  final Map<String, String> placeName = <String, String>{for (final Place p in places) p.id: p.name};
+  final Map<String, String> batchPlace = <String, String>{for (final Batch b in batches) b.id: b.placeId};
   final List<({String date, int order, List<String> row})> lines =
       <({String date, int order, List<String> row})>[];
   for (final Payment p in payments) {
@@ -127,7 +134,8 @@ CsvFile buildPaymentsCsv({
       order: 0,
       row: <String>[
         p.paidOn.toIso(),
-        _shortId(p.receiptId),
+        // Slip number (schema v2); short id for a receipt without one.
+        p.receiptNo ?? _shortId(p.receiptId),
         studentName[p.studentId] ?? '',
         batchName[p.batchId] ?? '',
         csvMonth(p.billingMonth),
@@ -135,6 +143,7 @@ CsvFile buildPaymentsCsv({
         p.waived ? '' : methodLabel(p.method),
         p.waived ? l10n.extraTypeWaived : l10n.extraTypeFee,
         p.note ?? '',
+        if (withPlace) placeName[batchPlace[p.batchId]] ?? '',
       ],
     ));
   }
@@ -153,6 +162,7 @@ CsvFile buildPaymentsCsv({
         methodLabel(o.method),
         l10n.extraTypeOther,
         o.note ?? '',
+        if (withPlace) placeName[o.placeId] ?? '',
       ],
     ));
   }
@@ -173,6 +183,7 @@ CsvFile buildPaymentsCsv({
       l10n.extraColMethod,
       l10n.extraColType,
       l10n.extraColNote,
+      if (withPlace) l10n.extraColPlace,
     ],
     <List<String>>[for (final l in lines) l.row],
   );
@@ -248,6 +259,7 @@ Future<CsvFile> loadCsvFile({
   required OtherIncomeRepository otherIncome,
   required AttendanceRepository attendance,
   required String Function(PaymentMethod method) methodLabel,
+  List<Place> places = const <Place>[],
 }) async {
   final List<Student> allStudents = await students.watchAll().first;
   final List<Batch> allBatches = await batches.watchAll(includeArchived: true).first;
@@ -269,6 +281,7 @@ Future<CsvFile> loadCsvFile({
         students: allStudents,
         batches: allBatches,
         methodLabel: methodLabel,
+        places: places,
       );
     case CsvKind.attendance:
       final List<SessionSummary> summaries =

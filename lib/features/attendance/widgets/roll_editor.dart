@@ -280,18 +280,49 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     }
   }
 
-  /// "Show" of the late-joiners footer: who joined after this date.
-  Future<void> _showLateJoiners(BuildContext anchor) {
+  /// "Show" of the late-joiners footer: who joined after this date. "Add" on
+  /// a row asks once, moves that join date to this day and reloads the roster
+  /// so the student can be marked.
+  Future<void> _showLateJoiners(BuildContext anchor) async {
     final LocalDate date = _target?.date ?? widget.date;
     final List<LateJoiner> shown = _late;
-    return showBhorPanel<void>(
+    final LateJoiner? picked = await showBhorPanel<LateJoiner>(
       context,
       kind: BhorPanelKind.list,
       anchor: anchor,
       title: context.l10n.rollLateTitle(context.fmt.number(shown.length)),
       width: 400,
-      builder: (BuildContext ctx) => LateJoinersList(joiners: shown, date: date),
+      builder: (BuildContext ctx) => LateJoinersList(
+        joiners: shown,
+        date: date,
+        onAdd: (LateJoiner j) => Navigator.of(ctx).pop(j),
+      ),
     );
+    if (picked == null || !mounted) return;
+    await _moveLateJoiner(picked, date);
+  }
+
+  Future<void> _moveLateJoiner(LateJoiner j, LocalDate date) async {
+    final l10n = context.l10n;
+    final bool ok = await showBhorConfirm(
+      context,
+      title: l10n.rollLateMoveTitle(j.student.name, context.fmt.date(date)),
+      message: l10n.rollLateMoveBody,
+      confirmLabel: l10n.rollLateMoveConfirm,
+    );
+    if (!ok || !mounted) return;
+    try {
+      await ref
+          .read(enrollmentsRepositoryProvider)
+          .updateJoinDate(j.enrollmentId, DateTime(date.year, date.month, date.day));
+    } on Object catch (e) {
+      if (mounted) BhorToast.show(context, message: errorText(l10n, e), tone: BhorTone.danger);
+      return;
+    }
+    if (!mounted) return;
+    // Marks not saved yet live in the roll-call draft (written on every
+    // change) and come back with the reloaded roster.
+    _reloadRoster();
   }
 
   /// Date button of the header: the calendar hangs from it, 2 years back to

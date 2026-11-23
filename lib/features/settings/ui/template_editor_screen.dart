@@ -202,6 +202,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         'method' => l10n.setPhMethod,
         'date' => l10n.setPhDate,
         'remaining_line' => l10n.setPhRemainingLine,
+        'receipt_no' => l10n.setPhReceiptNo,
         _ => name,
       };
 

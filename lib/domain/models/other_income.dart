@@ -11,6 +11,7 @@ class OtherIncome {
     required this.method,
     this.studentId,
     this.note,
+    this.placeId,
   });
 
   final String id;
@@ -21,6 +22,9 @@ class OtherIncome {
   final PaymentMethod method;
   final String? note;
 
+  /// The place it belongs to (schema v2); null = general (no place).
+  final String? placeId;
+
   @override
   bool operator ==(Object other) =>
       other is OtherIncome &&
@@ -30,11 +34,12 @@ class OtherIncome {
       other.amount == amount &&
       other.paidOn == paidOn &&
       other.method == method &&
-      other.note == note;
+      other.note == note &&
+      other.placeId == placeId;
 
   @override
   int get hashCode =>
-      Object.hash(id, studentId, label, amount, paidOn, method, note);
+      Object.hash(id, studentId, label, amount, paidOn, method, note, placeId);
 
   @override
   String toString() => 'OtherIncome($id, $label, $amount)';

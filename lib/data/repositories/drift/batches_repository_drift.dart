@@ -12,14 +12,21 @@ import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/mappers.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
+import 'package:attendance_alamin/data/repositories/drift/places_repository_drift.dart'
+    show requirePlace;
 import 'package:attendance_alamin/data/repositories/drift/structure_store.dart';
+import 'package:attendance_alamin/data/repositories/drift/subjects_repository_drift.dart'
+    show ensureNoSubjectRow;
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
+import 'package:attendance_alamin/domain/models/batch_names.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
+import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_engine.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:drift/drift.dart' hide Batch;
@@ -125,6 +132,9 @@ class DriftBatchesRepository implements BatchesRepository {
     final notes = StructureStore.cleanNote(draft.notes);
 
     return _db.transaction(() async {
+      if (draft.subjectId == kNoSubjectId) await ensureNoSubjectRow(_db, _stamper);
+      final placeId = draft.placeId ?? kDefaultPlaceId;
+      await requirePlace(_db, placeId);
       final subject = await (_db.select(_db.subjects)
             ..where(
                 (t) => t.id.equals(draft.subjectId) & t.deletedAt.isNull()))
@@ -163,6 +173,8 @@ class DriftBatchesRepository implements BatchesRepository {
           billingType: draft.billingType,
           createdOn: today,
           sortOrder: sortOrder,
+          kind: draft.kind,
+          placeId: placeId,
         ),
         subjectName: subject.name,
         slots: slots,
@@ -187,6 +199,8 @@ class DriftBatchesRepository implements BatchesRepository {
             reminderLeadMin: Value(draft.reminderLeadMin),
             sortOrder: Value(sortOrder),
             notes: Value(notes),
+            kind: Value(draft.kind.code),
+            placeId: Value(placeId),
             createdAt: Value(now),
             updatedAt: Value(now),
             deviceId: Value(_stamper.deviceId),
@@ -243,6 +257,30 @@ class DriftBatchesRepository implements BatchesRepository {
       final old = await _store.requireBatch(id);
       await _store.updateBatch(old, BatchesCompanion(notes: Value(clean)));
     });
+  }
+
+  @override
+  Future<void> setPlace(String id, String placeId) async {
+    await _db.transaction(() async {
+      await requirePlace(_db, placeId);
+      final old = await _store.requireBatch(id);
+      if (old.placeId == placeId) return;
+      await _store.updateBatch(old, BatchesCompanion(placeId: Value(placeId)));
+    });
+  }
+
+  @override
+  Future<bool> isNameTaken(String name,
+      {required BatchKind kind, String? excludeId}) async {
+    final rows = await (_db.select(_db.batches)
+          ..where((t) => t.deletedAt.isNull()))
+        .get();
+    return isBatchNameTaken(
+      [for (final r in rows) batchFromRow(r, _center)],
+      name,
+      kind: kind,
+      excludeId: excludeId,
+    );
   }
 
   static void _checkLead(int? minutes) {

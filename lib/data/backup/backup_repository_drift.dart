@@ -11,6 +11,7 @@ import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/backup/backup_repository.dart';
 import 'package:attendance_alamin/data/db/app_database.dart';
 import 'package:attendance_alamin/data/db/db_queries.dart';
+import 'package:attendance_alamin/data/db/schema_v2.dart';
 import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/repositories/drift/settings_repository_drift.dart'
     show decodeSetting;
@@ -96,6 +97,7 @@ class DriftBackupRepository implements BackupRepository {
       await _db.customStatement('PRAGMA defer_foreign_keys = ON');
       // Winners are already ordered: deletions first, then registry order.
       await _writeRows([for (final w in diff.winners) (w.table, w.incoming)], schema);
+      await _afterRawWrite(incoming);
       final now = _stamper.nowMs();
       await _db.into(_db.importLog).insert(ImportLogCompanion.insert(
             id: Ids.v4(),
@@ -155,6 +157,7 @@ class DriftBackupRepository implements BackupRepository {
         for (final t in kSyncedTables)
           for (final r in snapshot.tables[t] ?? const <RowMap>[]) (t, r),
       ], schema);
+      await _afterRawWrite(snapshot);
       await _integrityChecks();
     });
     _notifySyncedTables();
@@ -189,6 +192,17 @@ class DriftBackupRepository implements BackupRepository {
   }
 
   // ---------------------------------------------------------------- internals
+
+  /// Schema v2 after rows were written straight into the tables: the default
+  /// place must exist (a full restore deletes it), and rows of a v1 file
+  /// (schemaVersion 1, or the pre-migration safety copy, which has no
+  /// `places` table) get slip numbers in payment-date order.
+  Future<void> _afterRawWrite(Snapshot s) async {
+    await ensureDefaultPlace(_db);
+    if (s.schemaVersion < 2 || !s.tables.containsKey('places')) {
+      await backfillReceiptNumbers(_db);
+    }
+  }
 
   /// Every row (tombstones included) of every synced table; blobs as base64.
   Future<Map<String, List<RowMap>>> _readSyncedTables() async {

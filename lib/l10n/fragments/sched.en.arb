@@ -42,7 +42,7 @@
   "schedDiscardConfirm": "Discard",
   "schedPreviewTitle": "Week at a glance",
   "schedNoClass": "No class",
-  "schedArchivedReadOnly": "This batch is archived, so its times cannot be changed.",
+  "schedArchivedReadOnly": "This batch is finished, so its times cannot be changed.",
   "schedChangeWeekly": "Change weekly times",
   "schedTabEmpty": "No class times have been set for this batch yet",
   "schedTabAddFirst": "Add class times",

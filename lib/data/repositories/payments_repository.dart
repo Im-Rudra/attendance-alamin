@@ -19,11 +19,14 @@ abstract interface class PaymentsRepository {
 
   /// Validates the allocations with `DuesEngine.validateAllocations` (dues
   /// for today, 12 months ahead) and writes one row per month, all with one
-  /// new receipt id, in one transaction. Returns the receipt id.
+  /// new receipt id, in one transaction. Returns the receipt id. Every row
+  /// carries the receipt's slip number (`Payment.receiptNo`, `2026-0007`),
+  /// the next of the payment date's year, given out in the same transaction.
   Future<String> record(PaymentDraft d);
 
   /// Re-validates against dues built WITHOUT this receipt's rows, then
   /// replaces its rows atomically (same month = same row, kept id).
+  /// The receipt keeps its slip number.
   Future<void> updateReceipt(String receiptId, PaymentDraft d);
 
   /// Tombstones every row of the receipt.

@@ -445,7 +445,7 @@ void _expectCounts(String a, String b, String c, [String? d]) {
     ));
     await open(tester, RollCallScreen(occ: physOcc('2026-11-18')), f);
 
-    expect(find.text('This batch is archived — attendance is read-only'), findsOneWidget);
+    expect(find.text('This batch is finished — attendance is read-only'), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
     await tester.tap(find.text('রহিম উদ্দিন'));
     await tester.pump();

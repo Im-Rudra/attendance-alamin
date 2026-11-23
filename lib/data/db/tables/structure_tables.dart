@@ -14,7 +14,27 @@ class Subjects extends Table with SyncColumns {
   Set<Column> get primaryKey => {id};
 }
 
+/// `places` (schema v2): where classes happen. `archived_at` hides a place
+/// from pickers; rows are never hard-deleted. The default place
+/// (`kDefaultPlaceId`) is seeded by `onCreate` and by the v1 -> v2 migration.
+@DataClassName('PlaceRow')
+class Places extends Table with SyncColumns {
+  TextColumn get name => text()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get address => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  IntColumn get archivedAt => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// `batches` (Arch 3.2). `reminder_lead_min`: NULL = global default, 0 = off.
+///
+/// Schema v2 adds `kind` (`batch` | `tuition`) and `place_id` (the place; no
+/// foreign key, because SQLite cannot `ADD COLUMN` a NOT NULL reference with a
+/// non-null default; the repositories keep it valid). The `place_id` default
+/// literal must equal `kDefaultPlaceId` (domain/models/place.dart).
 @DataClassName('BatchRow')
 @TableIndex(name: 'idx_batches_subject', columns: {#subjectId})
 class Batches extends Table with SyncColumns {
@@ -25,6 +45,9 @@ class Batches extends Table with SyncColumns {
   IntColumn get archivedAt => integer().nullable()();
   IntColumn get sortOrder => integer()();
   TextColumn get notes => text().nullable()();
+  TextColumn get kind => text().withDefault(const Constant('batch'))();
+  TextColumn get placeId => text()
+      .withDefault(const Constant('00000000-0000-4000-8000-00000000d1ac'))();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -231,10 +231,12 @@ void main() {
 
   group('synced tables', () {
     test('contract values', () {
-      expect(kCurrentSchemaVersion, 1);
-      expect(kSyncedTables.length, 14);
-      expect(kSyncedTables.toSet().length, 14);
-      expect(kSyncedTables, containsAll(['enrollment_fees', 'other_income', 'settings']));
+      expect(kCurrentSchemaVersion, 2);
+      expect(kSyncedTables.length, 15);
+      expect(kSyncedTables.toSet().length, 15);
+      expect(kSyncedTables, containsAll(['enrollment_fees', 'other_income', 'settings', 'places']));
+      // Parents first: places before the batches that point at them.
+      expect(kSyncedTables.indexOf('places'), lessThan(kSyncedTables.indexOf('batches')));
       expect(kBlobColumns['student_photos'], {'jpeg'});
       expect(kSyncColumns, {'id', 'created_at', 'updated_at', 'deleted_at', 'device_id', 'rev'});
     });

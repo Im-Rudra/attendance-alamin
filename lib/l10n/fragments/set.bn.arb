@@ -695,5 +695,9 @@
   "setTextSizeKeys": "কিবোর্ডে বড় করতে Ctrl + =, ছোট করতে Ctrl + −, স্বাভাবিক করতে Ctrl + 0।",
   "@setTextSizeKeys": {
     "description": "Hint under the text size preview about the desktop shortcuts."
+  },
+  "setPhReceiptNo": "রসিদ নম্বর",
+  "@setPhReceiptNo": {
+    "description": "Receipt template editor: chip of the {receipt_no} variable (slip number like 2026-0007)."
   }
 }

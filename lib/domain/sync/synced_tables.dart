@@ -1,8 +1,9 @@
 /// Current drift schema version (also the snapshot `schemaVersion`).
-const kCurrentSchemaVersion = 1;
+const kCurrentSchemaVersion = 2;
 
 /// Every table that travels in a backup snapshot, parents before children.
 const kSyncedTables = <String>[
+  'places',
   'subjects',
   'batches',
   'batch_slots',

@@ -11,6 +11,8 @@ import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/backup/backup_files.dart';
 import 'package:attendance_alamin/data/backup/backup_providers.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/features/extras/controllers/csv_export.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
@@ -47,6 +49,13 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
     final l10n = context.l10n;
     final BackupFiles files = widget.files ?? ref.read(backupFilesProvider);
     setState(() => _busy = kind);
+    // Places only add a column when there are 2+; never fail the export.
+    List<Place> places = const <Place>[];
+    try {
+      places = await ref.read(placesRepositoryProvider).getAll(includeArchived: true);
+    } on Object {
+      places = const <Place>[];
+    }
     try {
       final CsvFile file = await loadCsvFile(
         kind: kind,
@@ -59,6 +68,7 @@ class _CsvExportSheetState extends ConsumerState<CsvExportSheet> {
         otherIncome: ref.read(otherIncomeRepositoryProvider),
         attendance: ref.read(attendanceRepositoryProvider),
         methodLabel: (m) => paymentMethodLabel(l10n, m),
+        places: places,
       );
       if (share) {
         await files.share(file.bytes, fileName: file.fileName);

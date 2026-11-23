@@ -265,9 +265,11 @@ class _SafetyRow extends ConsumerWidget {
     final AppFormat fmt = context.fmt;
     final BhorThemeData b = context.bhor;
     final CenterTime center = ref.watch(centerTimeProvider);
-    final String reason = copy.reason == SafetyCopyReason.beforeRestore
-        ? l10n.backupSafetyReasonRestore
-        : l10n.backupSafetyReasonImport;
+    final String reason = switch (copy.reason) {
+      SafetyCopyReason.beforeRestore => l10n.backupSafetyReasonRestore,
+      SafetyCopyReason.beforeMigration => l10n.backupSafetyReasonMigration,
+      _ => l10n.backupSafetyReasonImport,
+    };
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 64),
       child: Padding(

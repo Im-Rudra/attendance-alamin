@@ -2,6 +2,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/value_equality.dart';
 
 /// Warning level of an open month (Product 3.5, levels 0..6).
@@ -54,6 +55,7 @@ class EnrollmentTerms {
     this.batchArchived = false,
     this.studentLeft = false,
     this.enrollmentEnded = false,
+    this.placeId = kDefaultPlaceId,
   });
 
   final String enrollmentId;
@@ -75,6 +77,9 @@ class EnrollmentTerms {
   final bool studentLeft;
   final bool enrollmentEnded;
 
+  /// Place of the batch (schema v2), for per-place totals.
+  final String placeId;
+
   @override
   bool operator ==(Object other) =>
       other is EnrollmentTerms &&
@@ -91,7 +96,8 @@ class EnrollmentTerms {
       listEq(other.overrides, overrides) &&
       other.batchArchived == batchArchived &&
       other.studentLeft == studentLeft &&
-      other.enrollmentEnded == enrollmentEnded;
+      other.enrollmentEnded == enrollmentEnded &&
+      other.placeId == placeId;
 
   @override
   int get hashCode => Object.hash(
@@ -109,6 +115,7 @@ class EnrollmentTerms {
         batchArchived,
         studentLeft,
         enrollmentEnded,
+        placeId,
       );
 
   @override

@@ -14,6 +14,7 @@ import 'package:attendance_alamin/data/db/sync_stamper.dart';
 import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/data/repositories/drift/settings_repository_drift.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/sync/snapshot_codec.dart';
 import 'package:attendance_alamin/domain/sync/sync_diff.dart';
 import 'package:attendance_alamin/domain/sync/sync_models.dart';
@@ -225,6 +226,35 @@ Snapshot rebuilt(Snapshot s, void Function(Map<String, List<RowMap>> tables) edi
     deviceName: s.deviceName,
     createdAtMs: s.createdAtMs,
   );
+}
+
+/// [s] as schema v1 wrote it: no places table, none of the v2 columns.
+Snapshot asV1(Snapshot s) {
+  final v2 = rebuilt(s, (tables) {
+    tables.remove('places');
+    for (final r in tables['batches'] ?? const <RowMap>[]) {
+      r.remove('kind');
+      r.remove('place_id');
+    }
+    for (final r in tables['payments'] ?? const <RowMap>[]) {
+      r.remove('receipt_no');
+    }
+    for (final r in tables['other_income'] ?? const <RowMap>[]) {
+      r.remove('place_id');
+    }
+  });
+  return SnapshotCodec.decode(SnapshotCodec.encode(Snapshot(
+    formatVersion: v2.formatVersion,
+    schemaVersion: 1,
+    appVersion: v2.appVersion,
+    snapshotId: v2.snapshotId,
+    deviceId: v2.deviceId,
+    deviceName: v2.deviceName,
+    createdAtMs: v2.createdAtMs,
+    counts: v2.counts,
+    sha256: v2.sha256,
+    tables: v2.tables,
+  )));
 }
 
 void main() {
@@ -454,6 +484,56 @@ void main() {
       await expectLater(
           w.repo.restoreSafetyCopy('nope'),
           throwsA(isA<NotFoundException>().having((e) => e.code, 'code', ErrorCodes.notFound)));
+    });
+  });
+
+  group('schema v1 backups', () {
+    test('an old (v1) backup imports: defaults filled, default place kept, receipts numbered', () async {
+      await p.seedAll();
+      final old = asV1(await p.exportFile());
+      expect(old.schemaVersion, 1);
+      expect(old.tables.containsKey('places'), isFalse);
+
+      final outcome = await w.importFile(old);
+      expect(outcome.applied, greaterThan(0));
+
+      final b1 = await w.row('batches', 'b1');
+      expect((b1['kind'], b1['place_id']), ('batch', kDefaultPlaceId));
+      expect((await w.row('payments', 'pay1'))['receipt_no'], '2026-0001');
+      expect((await w.row('other_income', 'oi1'))['place_id'], isNull);
+      expect(await w.count('places'), 1);
+      expect((await w.row('places', kDefaultPlaceId))['deleted_at'], isNull);
+    });
+
+    test('merging a v1 backup keeps local v2 values', () async {
+      await p.seedAll();
+      final old = asV1(await p.exportFile());
+      await w.importFile(await p.exportFile());
+      await w.db.customStatement("UPDATE payments SET receipt_no = '2026-0042' WHERE id = 'pay1'");
+      await w.db.customStatement("UPDATE batches SET kind = 'tuition' WHERE id = 'b1'");
+
+      final summary = await w.repo.preview(old);
+      expect(summary.isEmpty, isTrue, reason: 'same rows, same stamps');
+      await w.repo.apply(old, summary);
+      expect((await w.row('payments', 'pay1'))['receipt_no'], '2026-0042');
+      expect((await w.row('batches', 'b1'))['kind'], 'tuition');
+    });
+
+    test('restoring a v1 safety copy (e.g. the pre-migration one) refills places and numbers', () async {
+      await p.seedAll();
+      final old = asV1(await p.exportFile());
+      await w.db.into(w.db.safetySnapshots).insert(SafetySnapshotsCompanion.insert(
+            id: 'mig',
+            createdAt: t0,
+            reason: SafetyCopyReason.beforeMigration,
+            bytes: Uint8List.fromList(SnapshotCodec.encode(old)),
+          ));
+
+      await w.repo.restoreSafetyCopy('mig');
+      expect(await w.count('students'), 1);
+      expect(await w.count('places'), 1);
+      expect((await w.row('payments', 'pay1'))['receipt_no'], '2026-0001');
+      expect((await w.row('batches', 'b1'))['place_id'], kDefaultPlaceId);
     });
   });
 

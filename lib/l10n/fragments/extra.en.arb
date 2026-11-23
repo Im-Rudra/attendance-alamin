@@ -107,5 +107,6 @@
   "extraImportNone": "No students were found in the file",
   "extraImportReadFailed": "The file could not be read",
   "extraImportNoteSamePhone": "Same guardian phone",
-  "extraImportNoteSameName": "Another student has this name"
+  "extraImportNoteSameName": "Another student has this name",
+  "extraColPlace": "Place"
 }

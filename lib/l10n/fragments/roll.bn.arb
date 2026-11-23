@@ -114,9 +114,9 @@
   "@rollBannerAdHoc": {
     "description": "Note shown when the batch has no class on the chosen date."
   },
-  "rollBannerArchived": "এই ব্যাচ আর্কাইভ করা — হাজিরা শুধু দেখা যাবে",
+  "rollBannerArchived": "এই ব্যাচ শেষ হয়ে গেছে — হাজিরা শুধু দেখা যাবে",
   "@rollBannerArchived": {
-    "description": "Banner shown for an archived batch."
+    "description": "Banner shown for a finished batch."
   },
   "rollBannerDraft": "আগের অসম্পূর্ণ হাজিরা ফিরিয়ে আনা হয়েছে",
   "@rollBannerDraft": {
@@ -284,9 +284,9 @@
   "@rollReasonFuture": {
     "description": "Reason under the disabled save button."
   },
-  "rollReasonArchived": "আর্কাইভ করা ব্যাচ — শুধু দেখা যাবে",
+  "rollReasonArchived": "শেষ হওয়া ব্যাচ — শুধু দেখা যাবে",
   "@rollReasonArchived": {
-    "description": "Reason under the disabled save button."
+    "description": "Reason under the disabled save button (the batch is finished)."
   },
   "rollReasonNoStudents": "আগে শিক্ষার্থী যোগ করুন",
   "@rollReasonNoStudents": {
@@ -464,9 +464,9 @@
       }
     }
   },
-  "rollLateNote": "{date} তারিখে এরা এই ব্যাচে ছিল না। হাজিরা নিতে শিক্ষার্থী পাতা থেকে এদের যোগদানের তারিখ বদলান।",
+  "rollLateNote": "{date} তারিখে এরা এই ব্যাচে ছিল না। কাউকে এই দিনে যোগ করলে তার যোগদানের তারিখ সরে আসবে।",
   "@rollLateNote": {
-    "description": "Note above the late-joiners list: they were not in the batch on that date; change the join date in Students to mark them.",
+    "description": "Note above the late-joiners list: they were not in the batch on that date; Add moves the join date to it.",
     "placeholders": {
       "date": {
         "type": "String",
@@ -483,5 +483,31 @@
         "example": "5 Nov 2026"
       }
     }
+  },
+  "rollLateAdd": "এই দিনে যোগ করুন",
+  "@rollLateAdd": {
+    "description": "Button on a late-joiners row: move the student's join date to the roll-call date so they can be marked."
+  },
+  "rollLateMoveTitle": "{name}-এর যোগদানের তারিখ {date} করবেন?",
+  "@rollLateMoveTitle": {
+    "description": "Confirm title before moving a late joiner's join date to the roll-call date.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Rahim"
+      },
+      "date": {
+        "type": "String",
+        "example": "5 Nov 2026"
+      }
+    }
+  },
+  "rollLateMoveBody": "তাহলে এই দিনের হাজিরায় নাম আসবে। বেতনের হিসাব বদলাবে না।",
+  "@rollLateMoveBody": {
+    "description": "Confirm body: moving the join date puts the student on that roll call; billing is unchanged."
+  },
+  "rollLateMoveConfirm": "তারিখ বদলান",
+  "@rollLateMoveConfirm": {
+    "description": "Confirm button that moves the join date."
   }
 }

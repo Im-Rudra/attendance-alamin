@@ -581,5 +581,9 @@
   "extraImportNoteSameName": "একই নামে আরেকজন আছে",
   "@extraImportNoteSameName": {
     "description": "Soft note on a CSV row whose name is shared with another student; the row is still added."
+  },
+  "extraColPlace": "জায়গা",
+  "@extraColPlace": {
+    "description": "CSV column title: the place (coaching centre) of the batch, shown only with 2 or more places."
   }
 }

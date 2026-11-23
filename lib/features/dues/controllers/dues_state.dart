@@ -14,12 +14,14 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
@@ -157,6 +159,64 @@ final collectionSummaryProvider =
     ref.watch(collOtherIncomeProvider(month)),
     (_Money m, List<OtherIncome> o) => buildCollectionSummary(
       month: month,
+      today: today,
+      terms: m.terms,
+      facts: m.facts,
+      payments: m.payments,
+      otherIncome: o,
+    ),
+  );
+});
+
+/// Per-place totals of [month] (schema v2, feedback item 3): one
+/// [PlaceMonthSummary] per place that is not archived, in the teacher's order,
+/// plus general other income. Only meant to be shown with 2+ places
+/// (`hasManyPlacesProvider`); with one place it equals the collection summary.
+final placesMonthBreakdownProvider =
+    Provider.family<AsyncValue<PlacesMonthBreakdown>, YearMonth>((ref, month) {
+  final LocalDate today = ref.watch(todayProvider);
+  final AsyncValue<_Money> money = combine3(
+    ref.watch(enrollmentTermsProvider),
+    ref.watch(paymentFactsProvider),
+    ref.watch(collPaymentsProvider),
+    (List<EnrollmentTerms> t, List<PaymentFact> f, List<Payment> p) =>
+        _Money(t, f, p),
+  );
+  return combine3(
+    money,
+    ref.watch(collOtherIncomeProvider(month)),
+    ref.watch(placesProvider),
+    (_Money m, List<OtherIncome> o, List<Place> places) =>
+        buildPlacesMonthBreakdown(
+      placeIds: <String>[for (final Place p in places) p.id],
+      month: month,
+      today: today,
+      terms: m.terms,
+      facts: m.facts,
+      payments: m.payments,
+      otherIncome: o,
+    ),
+  );
+});
+
+/// One place's collection summary of a month (filters on Fees, wave 3).
+final placeCollectionSummaryProvider = Provider.family<
+    AsyncValue<CollectionSummary>,
+    ({String placeId, YearMonth month})>((ref, key) {
+  final LocalDate today = ref.watch(todayProvider);
+  final AsyncValue<_Money> money = combine3(
+    ref.watch(enrollmentTermsProvider),
+    ref.watch(paymentFactsProvider),
+    ref.watch(collPaymentsProvider),
+    (List<EnrollmentTerms> t, List<PaymentFact> f, List<Payment> p) =>
+        _Money(t, f, p),
+  );
+  return combine2(
+    money,
+    ref.watch(collOtherIncomeProvider(key.month)),
+    (_Money m, List<OtherIncome> o) => buildPlaceCollectionSummary(
+      placeId: key.placeId,
+      month: key.month,
       today: today,
       terms: m.terms,
       facts: m.facts,

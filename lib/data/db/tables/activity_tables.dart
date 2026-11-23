@@ -78,6 +78,10 @@ class Payments extends Table with SyncColumns {
   /// INTEGER 0/1 (drift adds `CHECK (waived IN (0, 1))`).
   BoolColumn get waived => boolean().withDefault(const Constant(false))();
 
+  /// Schema v2: slip number `{year}-{seq:4}`, same on every row of a receipt,
+  /// NULL on waivers (see `receipt_numbers.dart`).
+  TextColumn get receiptNo => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -101,6 +105,10 @@ class OtherIncome extends Table with SyncColumns {
   TextColumn get paidOn => text()();
   TextColumn get method => text()();
   TextColumn get note => text().nullable()();
+
+  /// Schema v2: the place it belongs to; NULL = general. No foreign key
+  /// (kept valid by the repository, like `batches.place_id`).
+  TextColumn get placeId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
