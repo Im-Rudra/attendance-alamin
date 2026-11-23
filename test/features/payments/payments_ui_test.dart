@@ -17,6 +17,7 @@ import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/features/payments/widgets/collect_payment_sheet.dart';
+import 'package:attendance_alamin/features/payments/widgets/month_grid_picker.dart';
 import 'package:attendance_alamin/features/payments/widgets/receipt_preview.dart';
 
 import '../../helpers/fixtures.dart';
@@ -157,6 +158,29 @@ void main() {
     );
 
     testScreenMatrix(
+      'month grid',
+      () => const BhorScaffold(
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 320,
+            child: PayMonthGrid(
+              args: (studentId: kStuRahim, enrollmentId: kEnrRahimPhys, receiptId: null),
+              enrollmentId: kEnrRahimPhys,
+            ),
+          ),
+        ),
+      ),
+      overrides: () => seedFakes().overrides,
+      verify: (WidgetTester tester) async {
+        await _frames(tester);
+        await _frames(tester);
+        expect(_key('pay-grid-202611'), findsOneWidget);
+        expect(_key('pay-grid-total'), findsOneWidget);
+      },
+    );
+
+    testScreenMatrix(
       'payment history',
       () => const BhorScaffold(body: SingleChildScrollView(child: PaymentHistoryList(studentId: kStuRahim))),
       overrides: () => seedFakes().overrides,
@@ -262,7 +286,7 @@ void main() {
       expect(_label(tester), 'ডিসেম্বরের ৳ ১,০০০ অগ্রিম জমা করুন');
     });
 
-    testWidgets('the month chips are visible up front; one tap picks another month',
+    testWidgets('the month chips are visible up front; taps tick and untick months',
         (WidgetTester tester) async {
       await _openCollect(tester);
       // No need to open "split by month": the months being paid are chips.
@@ -272,13 +296,105 @@ void main() {
       expect(find.text('ডিসেম্বর · অগ্রিম'), findsOneWidget);
       // No tiny echo of the amount under the field.
       expect(find.text(AppFormat(Lang.bn).money(1000)), findsNothing);
+      // November is ticked; December joins it.
       await tester.tap(_key('pay-month-202612'));
+      await _frames(tester);
+      expect(_monthsText(tester), 'নভেম্বর, ডিসেম্বর');
+      expect(_amountText(tester), '২০০০');
+      expect(_label(tester), 'নভেম্বর–ডিসেম্বরের ${AppFormat(Lang.bn).money(2000)} জমা করুন');
+      // Unticking November leaves December alone.
+      await tester.tap(_key('pay-month-202611'));
       await _frames(tester);
       expect(_monthsText(tester), 'ডিসেম্বরের অগ্রিম');
       expect(_label(tester), 'ডিসেম্বরের ${AppFormat(Lang.bn).money(1000)} অগ্রিম জমা করুন');
-      await tester.tap(_key('pay-month-202611'));
+      // Nothing ticked: nothing to save, and the bar says why.
+      await tester.tap(_key('pay-month-202612'));
+      await _frames(tester);
+      expect(_amountText(tester), '');
+      expect(_enabled(tester), isFalse);
+      expect(find.text('মাস বেছে নিন বা পরিমাণ লিখুন'), findsOneWidget);
+    });
+
+    testWidgets('months with a gap are recorded as ticked (English wording)', (WidgetTester tester) async {
+      final SeededFakes f = await _openCollect(tester, lang: Lang.en);
+      await tester.ensureVisible(_key('pay-month-202701'));
+      await tester.tap(_key('pay-month-202701'));
+      await _frames(tester);
+      expect(_amountText(tester), '2000');
+      expect(_label(tester), 'Record ${AppFormat(Lang.en).money(2000)} for November, January 2027');
+      await _save(tester);
+      final Map<YearMonth, int> byMonth = <YearMonth, int>{
+        for (final Payment p in _receipts(f))
+          if (p.paidOn == kToday) p.billingMonth: p.amount,
+      };
+      expect(byMonth, <YearMonth, int>{_nov: 1000, const YearMonth(2027, 1): 1000});
+    });
+
+    testWidgets('paid months show greyed with a check and cannot be picked', (WidgetTester tester) async {
+      await _openCollect(tester);
+      expect(_key('pay-month-202609'), findsOneWidget);
+      expect(_key('pay-month-202610'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _key('pay-month-202610'),
+          matching: find.byWidgetPredicate(
+              (Widget w) => w is BhorChip && w.icon == BhorIcons.check && w.onSelected == null),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<Opacity>(find.descendant(of: _key('pay-month-202610'), matching: find.byType(Opacity)).first).opacity,
+        lessThan(1),
+      );
+      await tester.tap(_key('pay-month-202610'));
       await _frames(tester);
       expect(_monthsText(tester), 'নভেম্বর');
+      expect(_amountText(tester), '১০০০');
+    });
+
+    testWidgets('typing an amount clears the ticked months and spreads from the oldest',
+        (WidgetTester tester) async {
+      await _openCollect(tester);
+      await tester.ensureVisible(_key('pay-month-202701'));
+      await tester.tap(_key('pay-month-202701'));
+      await _frames(tester);
+      expect(_amountText(tester), '২০০০');
+      await _type(tester, 'pay-amount', '2500');
+      expect(_monthsText(tester), 'নভেম্বর, ডিসেম্বর, জানুয়ারি ২০২৭ (আংশিক)');
+    });
+
+    testWidgets('More months opens the month grid; months beyond the chips can be ticked',
+        (WidgetTester tester) async {
+      await _openCollect(tester);
+      await tester.ensureVisible(_key('pay-month-more'));
+      await tester.tap(_key('pay-month-more'));
+      await tester.pumpAndSettle();
+      expect(_key('pay-grid-year'), findsOneWidget);
+      expect(find.text('পরিশোধিত'), findsNWidgets(2)); // September, October
+      expect(find.text('এখনো সময় হয়নি'), findsOneWidget); // December
+      // A paid month cannot be ticked.
+      await tester.ensureVisible(_key('pay-grid-202610'));
+      await tester.tap(_key('pay-grid-202610'));
+      await tester.pump();
+      expect(find.text('১টি মাস · ${AppFormat(Lang.bn).money(1000)}'), findsOneWidget);
+      // The next year: tick March to July (more than the six chips).
+      await tester.ensureVisible(_key('pay-grid-next'));
+      await tester.tap(_key('pay-grid-next'));
+      await tester.pumpAndSettle();
+      for (int m = 3; m <= 7; m++) {
+        await tester.ensureVisible(_key('pay-grid-${202700 + m}'));
+        await tester.tap(_key('pay-grid-${202700 + m}'));
+        await tester.pump();
+      }
+      expect(find.text('৬টি মাস · ${AppFormat(Lang.bn).money(6000)}'), findsOneWidget);
+      await tester.ensureVisible(_key('pay-grid-done'));
+      await tester.tap(_key('pay-grid-done'));
+      await tester.pumpAndSettle();
+      expect(_key('pay-grid-year'), findsNothing);
+      await _frames(tester);
+      expect(_amountText(tester), '৬০০০');
+      expect(_key('pay-month-202707'), findsOneWidget);
+      expect(_label(tester), '৬ মাসের ${AppFormat(Lang.bn).money(6000)} জমা করুন');
     });
 
     testWidgets('scenario 5: 2,500 over three unpaid months', (WidgetTester tester) async {

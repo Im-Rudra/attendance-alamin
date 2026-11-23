@@ -1,9 +1,10 @@
 // Record / edit a payment (Product 3.4, plan 1 #35, UX 2c).
 //
 // [buildPlan] is the whole allocation rule, pure and table-testable: the
-// amount follows the oldest open month, typed money fills open months oldest
-// first (never beyond 12 months ahead), and a manual split may not give a
-// month more than it still owes. [CollectPaymentController] keeps what the
+// amount follows the oldest open month, ticked months (any, gaps allowed) each
+// get what they still owe, typed money fills open months oldest first (never
+// beyond 12 months ahead), and a manual split may not give a month more than
+// it still owes. [CollectPaymentController] keeps what the
 // teacher typed; everything else is derived.
 
 import 'dart:async';
@@ -83,47 +84,28 @@ class CollectPlan {
   }
 }
 
-/// The allocation rule. [amount] null = follow the prefill; [split] non-null =
-/// the teacher splits by hand (then [amount] is ignored).
+/// The allocation rule. [amount] null = follow the prefill; [selected]
+/// non-null = the month chips the teacher picked (each gets what it still
+/// owes, any order, gaps allowed; paid or closed months are ignored); [split]
+/// non-null = the teacher splits by hand. [split] wins over [selected], which
+/// wins over [amount].
 CollectPlan buildPlan({
   required EnrollmentDues dues,
   required LocalDate today,
   int? amount,
   Map<YearMonth, int>? split,
-  YearMonth? start,
+  Set<YearMonth>? selected,
 }) {
   final YearMonth horizon = today.yearMonth.addMonths(12);
   final List<MonthDue> open = <MonthDue>[
     for (final MonthDue md in dues.months)
       if (md.isOpen && !md.month.isAfter(horizon)) md,
   ];
-  // The month the teacher picked on the chips: the amount starts there.
-  final List<MonthDue> openFrom = start == null
-      ? open
-      : <MonthDue>[
-          for (final MonthDue md in open)
-            if (!md.month.isBefore(start)) md,
-        ];
-  final EnrollmentDues from = start == null
-      ? dues
-      : EnrollmentDues(
-          terms: dues.terms,
-          months: <MonthDue>[
-            for (final MonthDue md in dues.months)
-              if (!md.month.isBefore(start)) md,
-          ],
-          openDue: dues.openDue,
-          totalOutstanding: dues.totalOutstanding,
-          inactive: dues.inactive,
-          worst: dues.worst,
-          worstDay: dues.worstDay,
-          oldestOpenDue: dues.oldestOpenDue,
-        );
   final Map<YearMonth, MonthDue> byMonth = <YearMonth, MonthDue>{
     for (final MonthDue md in dues.months) md.month: md,
   };
-  final int prefill = openFrom.isEmpty ? 0 : openFrom.first.remaining;
-  final int maxPlaceable = openFrom.fold<int>(0, (int s, MonthDue m) => s + m.remaining);
+  final int prefill = open.isEmpty ? 0 : open.first.remaining;
+  final int maxPlaceable = open.fold<int>(0, (int s, MonthDue m) => s + m.remaining);
 
   CollectPlan rejected(PlanProblem p, int total, [List<Allocation> entered = const <Allocation>[]]) => CollectPlan(
         allocations: entered,
@@ -151,12 +133,19 @@ CollectPlan buildPlan({
           : (e.code == ErrorCodes.amountInvalid ? PlanProblem.noAmount : PlanProblem.splitExceeds);
       return rejected(p, sum, allocations);
     }
+  } else if (selected != null) {
+    if (open.isEmpty) return rejected(PlanProblem.nothingOpen, 0);
+    allocations = <Allocation>[
+      for (final MonthDue md in open)
+        if (selected.contains(md.month) && md.remaining > 0) Allocation(month: md.month, amount: md.remaining),
+    ];
+    if (allocations.isEmpty) return rejected(PlanProblem.noAmount, 0);
   } else {
     final int wanted = amount ?? prefill;
     if (wanted <= 0) return rejected(PlanProblem.noAmount, 0);
-    if (openFrom.isEmpty) return rejected(PlanProblem.nothingOpen, wanted);
+    if (open.isEmpty) return rejected(PlanProblem.nothingOpen, wanted);
     try {
-      allocations = DuesEngine.autoAllocate(dues: from, amount: wanted, today: today);
+      allocations = DuesEngine.autoAllocate(dues: dues, amount: wanted, today: today);
     } on ValidationException catch (e) {
       return rejected(
         e.code == ErrorCodes.allocationBeyondHorizon ? PlanProblem.overflow : PlanProblem.noAmount,
@@ -198,6 +187,42 @@ CollectPlan buildPlan({
   );
 }
 
+/// A month the teacher can tick: it still owes money and lies within the
+/// 12-month horizon (paid, waived, free and far-future months cannot).
+bool monthSelectable(MonthDue md, LocalDate today) =>
+    md.isOpen && md.remaining > 0 && !md.month.isAfter(today.yearMonth.addMonths(12));
+
+/// The months the chips show, oldest first: up to two settled months just
+/// before the first month that still owes (so the teacher sees what is
+/// paid), then on, [count] in all within the 12-month horizon; plus every
+/// ticked month outside that window (picked in the month grid).
+List<MonthDue> chipMonths(
+  EnrollmentDues dues,
+  LocalDate today,
+  Set<YearMonth> selected, {
+  int count = 6,
+}) {
+  final YearMonth horizon = today.yearMonth.addMonths(12);
+  final List<MonthDue> months = <MonthDue>[
+    for (final MonthDue md in dues.months)
+      if (!md.month.isAfter(horizon)) md,
+  ];
+  final int first = months.indexWhere((MonthDue md) => monthSelectable(md, today));
+  final int from = first < 0
+      ? (months.length - count < 0 ? 0 : months.length - count)
+      : (first - 2 < 0 ? 0 : first - 2);
+  final int to = from + count > months.length ? months.length : from + count;
+  final List<MonthDue> window = months.sublist(from, to);
+  final Set<YearMonth> shown = <YearMonth>{for (final MonthDue md in window) md.month};
+  final List<MonthDue> out = <MonthDue>[
+    ...window,
+    for (final MonthDue md in months)
+      if (selected.contains(md.month) && !shown.contains(md.month)) md,
+  ];
+  out.sort((MonthDue a, MonthDue b) => a.month.compareTo(b.month));
+  return out;
+}
+
 /// Cash when it is shown, else the first shown method.
 PaymentMethod defaultMethod(List<PaymentMethod> visible) {
   if (visible.contains(PaymentMethod.cash) || visible.isEmpty) return PaymentMethod.cash;
@@ -237,7 +262,7 @@ class CollectInput {
     this.enrollmentId,
     this.amountText,
     this.split,
-    this.startMonth,
+    this.selected,
     this.method,
     this.paidOn,
     this.note = '',
@@ -265,8 +290,9 @@ class CollectInput {
   /// Manual split by month; null = automatic.
   final Map<YearMonth, int>? split;
 
-  /// The month chip the teacher tapped; null = the oldest open month.
-  final YearMonth? startMonth;
+  /// The months the teacher ticked (chips or the month grid); null = follow
+  /// the typed or prefilled amount. Empty = every month was unticked.
+  final Set<YearMonth>? selected;
   final PaymentMethod? method;
   final LocalDate? paidOn;
   final String note;
@@ -288,8 +314,8 @@ class CollectInput {
     bool clearAmount = false,
     Map<YearMonth, int>? split,
     bool clearSplit = false,
-    YearMonth? startMonth,
-    bool clearStart = false,
+    Set<YearMonth>? selected,
+    bool clearSelected = false,
     PaymentMethod? method,
     LocalDate? paidOn,
     String? note,
@@ -301,7 +327,7 @@ class CollectInput {
       enrollmentId: enrollmentId ?? this.enrollmentId,
       amountText: clearAmount ? null : (amountText ?? this.amountText),
       split: clearSplit ? null : (split ?? this.split),
-      startMonth: clearStart ? null : (startMonth ?? this.startMonth),
+      selected: clearSelected ? null : (selected ?? this.selected),
       method: method ?? this.method,
       paidOn: paidOn ?? this.paidOn,
       note: note ?? this.note,
@@ -357,15 +383,55 @@ class CollectPaymentController extends Notifier<CollectInput> {
     );
   }
 
-  /// A month chip was tapped: pay from [month] on (the amount and any split
-  /// start over).
-  void pickMonth(YearMonth month) {
-    state = state.copyWith(startMonth: month, clearAmount: true, clearSplit: true, clearError: true);
+  /// The dues the form works on now (null while they load).
+  EnrollmentDues? _dues() {
+    final List<EnrollmentDues> choices =
+        ref.read(payChoicesProvider(args.studentId)).value ?? const <EnrollmentDues>[];
+    final String? enrollmentId = resolveEnrollmentId(
+      picked: state.enrollmentId,
+      requested: args.enrollmentId,
+      choices: choices,
+    );
+    if (enrollmentId == null) return null;
+    return ref.read(payDuesProvider((enrollmentId: enrollmentId, receiptId: args.receiptId))).value;
   }
 
-  /// [ascii] holds digits only. A typed amount drops a manual split.
+  /// The months ticked now: the teacher's own pick, else the months the
+  /// current amount or split pays.
+  Set<YearMonth> shownMonths(EnrollmentDues dues) {
+    final Set<YearMonth>? picked = state.selected;
+    if (picked != null) return picked;
+    final CollectPlan plan = buildPlan(
+      dues: dues,
+      today: ref.read(todayProvider),
+      amount: state.amount,
+      split: state.split,
+    );
+    return plan.months.toSet();
+  }
+
+  /// A month chip (or a month-grid cell) was tapped: tick or untick [month].
+  /// Any months, in any order, with gaps. The amount becomes the sum of what
+  /// the ticked months still owe; a typed amount or a manual split is
+  /// dropped. Months that cannot take money (paid, waived, beyond the
+  /// horizon) are ignored.
+  void toggleMonth(YearMonth month) {
+    final EnrollmentDues? dues = _dues();
+    if (dues == null) return;
+    MonthDue? md;
+    for (final MonthDue m in dues.months) {
+      if (m.month == month) md = m;
+    }
+    if (md == null || !monthSelectable(md, ref.read(todayProvider))) return;
+    final Set<YearMonth> next = <YearMonth>{...shownMonths(dues)};
+    if (!next.remove(month)) next.add(month);
+    state = state.copyWith(selected: next, clearAmount: true, clearSplit: true, clearError: true);
+  }
+
+  /// [ascii] holds digits only. A typed amount drops a manual split and the
+  /// ticked months: it spreads from the oldest open month again.
   void setAmount(String ascii) {
-    state = state.copyWith(amountText: ascii, clearSplit: true, clearError: true);
+    state = state.copyWith(amountText: ascii, clearSplit: true, clearSelected: true, clearError: true);
   }
 
   /// Gives [month] exactly [amount] in a manual split. [base] is the split the
@@ -377,13 +443,14 @@ class CollectPaymentController extends Notifier<CollectInput> {
     } else {
       next[month] = amount;
     }
-    state = state.copyWith(split: next, clearAmount: true, clearError: true);
+    state = state.copyWith(split: next, clearAmount: true, clearSelected: true, clearError: true);
   }
 
   /// Back to automatic allocation of the typed (or prefilled) amount.
   void resetSplit({int? keepAmount}) {
     state = state.copyWith(
       clearSplit: true,
+      clearSelected: true,
       clearAmount: keepAmount == null,
       amountText: keepAmount?.toString(),
       clearError: true,
@@ -416,7 +483,7 @@ class CollectPaymentController extends Notifier<CollectInput> {
       today: today,
       amount: input.amount,
       split: input.split,
-      start: input.startMonth,
+      selected: input.selected,
     );
     if (!plan.ok) return null;
 
