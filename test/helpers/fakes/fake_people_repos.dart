@@ -85,6 +85,10 @@ class FakeStudentsRepository with _FakeBase implements StudentsRepository {
   /// `today` used by [rejoin]; defaults to 2026-11-20.
   LocalDate today = const LocalDate(2026, 11, 20);
 
+  /// The "back from" date and waive choice of the last [rejoin].
+  LocalDate? rejoinedOn;
+  bool? rejoinWaived;
+
   Student? _find(String id) {
     for (final s in students) {
       if (s.id == id) return s;
@@ -207,15 +211,17 @@ class FakeStudentsRepository with _FakeBase implements StudentsRepository {
   }
 
   @override
-  Future<int> rejoin(String id, {required bool waiveGap}) async {
+  Future<int> rejoin(String id, {required bool waiveGap, LocalDate? on}) async {
     _write();
     final s = _find(id);
     if (s == null || s.status != StudentStatus.left) return 0;
+    rejoinedOn = on ?? today;
+    rejoinWaived = waiveGap;
     _replace(_copy(s, status: StudentStatus.active, clearLeft: true));
     final left = s.leftDate;
     if (left == null) return 0;
     final lbm = DuesEngine.defaultLastBillableMonth(left);
-    final gap = lbm.monthsUntil(today.yearMonth) - 1;
+    final gap = lbm.monthsUntil((on ?? today).yearMonth) - 1;
     return gap < 0 ? 0 : gap;
   }
 
@@ -367,6 +373,23 @@ class FakeEnrollmentsRepository with _FakeBase implements EnrollmentsRepository 
   @override
   Stream<List<FeePeriod>> watchOverrides(String enrollmentId) =>
       _watch(() => [...?overrides[enrollmentId]]);
+
+  @override
+  Future<void> updateJoinDate(String enrollmentId, DateTime joinDate) async {
+    _write();
+    final e = _find(enrollmentId);
+    if (e == null) return;
+    _replace(Enrollment(
+      id: e.id,
+      studentId: e.studentId,
+      batchId: e.batchId,
+      joinDate: LocalDate(joinDate.year, joinDate.month, joinDate.day),
+      startMonth: e.startMonth,
+      endMonth: e.endMonth,
+      endDate: e.endDate,
+      notes: e.notes,
+    ));
+  }
 
   @override
   Future<void> end(String enrollmentId,

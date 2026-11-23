@@ -41,8 +41,10 @@ abstract interface class StudentsRepository {
 
   /// Status active again; re-opens the enrollments that ended with the leave
   /// (clears LBM and end date). Returns the number of distinct gap months
-  /// (after the LBM, before today's month); with [waiveGap] they are waived.
-  Future<int> rejoin(String id, {required bool waiveGap});
+  /// (after the LBM, before the month of [on], default today); with
+  /// [waiveGap] they are waived. [on] ("back from") before the leave date
+  /// throws `dateInvalid`.
+  Future<int> rejoin(String id, {required bool waiveGap, LocalDate? on});
 
   Future<Uint8List?> getPhoto(String id);
 

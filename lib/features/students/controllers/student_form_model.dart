@@ -170,10 +170,24 @@ class EnrollChoice extends ChangeNotifier {
   final String? _initialBatchId;
 
   /// A different batch, start month or fee than the form opened with.
-  bool get isDirty => batchId != _initialBatchId || _startOverride != null || fee.text.trim().isNotEmpty;
+  bool get isDirty =>
+      batchId != _initialBatchId || _startOverride != null || _joinOverride != null || fee.text.trim().isNotEmpty;
 
   Listenable get changes => Listenable.merge(<Listenable>[this, fee]);
   YearMonth? _startOverride;
+  LocalDate? _joinOverride;
+
+  /// "Joined this batch on": the teacher's pick, else [fallback] (today, or
+  /// the admission date of a new student). Drives the roll call and the
+  /// default first billable month.
+  LocalDate joinFor(LocalDate fallback) => _joinOverride ?? fallback;
+
+  bool get joinEdited => _joinOverride != null;
+
+  void setJoin(LocalDate d) {
+    _joinOverride = d;
+    notifyListeners();
+  }
 
   /// Optional monthly fee override (blank = the batch fee).
   final TextEditingController fee = TextEditingController();

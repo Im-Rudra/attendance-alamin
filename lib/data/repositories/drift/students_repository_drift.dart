@@ -183,11 +183,16 @@ class DriftStudentsRepository implements StudentsRepository {
   }
 
   @override
-  Future<int> rejoin(String id, {required bool waiveGap}) {
+  Future<int> rejoin(String id, {required bool waiveGap, LocalDate? on}) {
     return _db.transaction(() async {
       final s = await requireStudent(_db, id);
       if (s.status != StudentStatus.left.name) return 0;
       final today = todayOf(_stamper, _center);
+      final LocalDate back = on ?? today;
+      final LocalDate? leftOn = LocalDate.tryParse(s.leftDate);
+      if (leftOn != null && back.isBefore(leftOn)) {
+        throw const ValidationException(ErrorCodes.dateInvalid, field: 'on');
+      }
       await (_db.update(_db.students)..where((t) => t.id.equals(id)))
           .write(StudentsCompanion(
         status: Value(StudentStatus.active.name),
@@ -219,7 +224,7 @@ class DriftStudentsRepository implements StudentsRepository {
         final start = YearMonth.fromInt(e.startMonth);
         var m = YearMonth.fromInt(endMonth).addMonths(1);
         if (m.isBefore(start)) m = start;
-        for (; m.isBefore(today.yearMonth); m = m.addMonths(1)) {
+        for (; m.isBefore(back.yearMonth); m = m.addMonths(1)) {
           gap.add(m);
           if (waiveGap) {
             await writeWaiver(_db, _stamper, e, m, on: today);

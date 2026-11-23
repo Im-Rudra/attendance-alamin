@@ -1,5 +1,6 @@
 // Desktop keys of the students screens (UX 3b): Ctrl+N new student, Ctrl+P
-// collect for the selected student, F2 edit, Esc clears the selection. Same
+// collect for the selected student, F2 edit, Ctrl+A selects every listed
+// student, Esc clears the selection. Same
 // mechanism as the shell's window shortcuts (a HardwareKeyboard handler), and
 // only active while the screen's route is on top.
 
@@ -16,6 +17,8 @@ class StudentKeys extends StatefulWidget {
     this.onCollect,
     this.onEdit,
     this.onEscape,
+    this.onSelectAll,
+    this.selectAllWhileTyping,
   });
 
   final Widget child;
@@ -23,6 +26,11 @@ class StudentKeys extends StatefulWidget {
   final VoidCallback? onCollect;
   final VoidCallback? onEdit;
   final VoidCallback? onEscape;
+
+  /// Ctrl+A (item 10): select every listed student. Not while typing, unless
+  /// [selectAllWhileTyping] says so (the list's empty search box).
+  final VoidCallback? onSelectAll;
+  final bool Function()? selectAllWhileTyping;
 
   @override
   State<StudentKeys> createState() => _StudentKeysState();
@@ -58,6 +66,12 @@ class _StudentKeysState extends State<StudentKeys> {
     if (kb.isControlPressed && !kb.isAltPressed) {
       if (key == LogicalKeyboardKey.keyN && widget.onNew != null) {
         widget.onNew!();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyA &&
+          widget.onSelectAll != null &&
+          (!_typing() || (widget.selectAllWhileTyping?.call() ?? false))) {
+        widget.onSelectAll!();
         return true;
       }
       if (key == LogicalKeyboardKey.keyP && widget.onCollect != null) {

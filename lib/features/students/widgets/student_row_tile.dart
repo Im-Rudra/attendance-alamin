@@ -59,6 +59,10 @@ class StudentRowTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.last = false,
+    this.checked = false,
+    this.selecting = false,
+    this.onToggle,
+    this.onLongPress,
   });
 
   final StudentRow row;
@@ -67,6 +71,19 @@ class StudentRowTile extends StatelessWidget {
 
   /// The last row of a list draws no divider.
   final bool last;
+
+  /// Part of the multi-selection (item 10).
+  final bool checked;
+
+  /// A selection is in progress: every row shows its select box.
+  final bool selecting;
+
+  /// Tapping the select box (shown on hover on desktop, always while
+  /// [selecting]). Null = no select box.
+  final VoidCallback? onToggle;
+
+  /// Long press (phones start selecting with it).
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -101,14 +118,17 @@ class StudentRowTile extends StatelessWidget {
       onSecondaryTapUp: (TapUpDetails d) => showStudentContextMenu(context, d.globalPosition, row),
       child: BhorPressable(
         onTap: onTap,
-        selected: selected,
+        onLongPress: onLongPress,
+        selected: selected || checked,
         semanticLabel: subtitle.isEmpty ? s.name : '${s.name}, $subtitle',
         scaleOnPress: false,
         radius: 0,
         builder: (BuildContext context, BhorStates st) => AnimatedContainer(
           duration: BhorMotion.of(context, BhorMotion.instant),
           constraints: BoxConstraints(minHeight: minH),
-          color: selected ? c.accentTint : (st.hovered || st.pressed ? c.soft : c.soft.withValues(alpha: 0)),
+          color: selected || checked
+              ? c.accentTint
+              : (st.hovered || st.pressed ? c.soft : c.soft.withValues(alpha: 0)),
           child: Stack(
             alignment: AlignmentDirectional.centerStart,
             children: <Widget>[
@@ -116,7 +136,15 @@ class StudentRowTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: 8),
                 child: Row(
                   children: <Widget>[
-                    StudentAvatar(student: s, size: 40),
+                    if (onToggle != null && (selecting || checked || (st.hovered && context.bhorIsWide)))
+                      StudentSelectBox(
+                        key: ValueKey<String>('stu-check-${s.id}'),
+                        checked: checked,
+                        onTap: onToggle!,
+                        semanticLabel: l10n.stuSelect(s.name),
+                      )
+                    else
+                      StudentAvatar(student: s, size: 40),
                     const SizedBox(width: BhorSpace.s12),
                     Expanded(
                       child: Column(
@@ -142,6 +170,63 @@ class StudentRowTile extends StatelessWidget {
                 ),
               Positioned.fill(child: BhorSelectionBar(selected: selected, inset: BhorSpace.s8)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The select box of a student row (item 10): a 22 px box drawn like
+/// [BhorCheckbox] inside a [size] square tap target, so it can stand in for
+/// the 40 px avatar without moving the row.
+class StudentSelectBox extends StatelessWidget {
+  const StudentSelectBox({
+    super.key,
+    required this.checked,
+    required this.onTap,
+    required this.semanticLabel,
+    this.size = 40,
+  });
+
+  final bool checked;
+  final VoidCallback onTap;
+  final String semanticLabel;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorColors c = context.bhor.colors;
+    final Duration fast = BhorMotion.of(context, BhorMotion.fast);
+    return BhorPressable(
+      onTap: onTap,
+      checked: checked,
+      isButton: false,
+      semanticLabel: semanticLabel,
+      excludeChildSemantics: true,
+      radius: 8,
+      scaleOnPress: false,
+      builder: (BuildContext context, BhorStates st) => SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: AnimatedContainer(
+            duration: fast,
+            curve: BhorMotion.ease,
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: checked ? c.accentFill : (st.hovered ? c.soft2 : c.surface),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(color: checked ? c.accentFill : c.text3, width: 1.5),
+            ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: checked ? 1 : 0),
+              duration: fast,
+              curve: BhorMotion.ease,
+              builder: (BuildContext context, double t, Widget? _) =>
+                  CustomPaint(painter: BhorCheckPainter(progress: t, color: c.onAccentFill, strokeWidth: 2)),
+            ),
           ),
         ),
       ),

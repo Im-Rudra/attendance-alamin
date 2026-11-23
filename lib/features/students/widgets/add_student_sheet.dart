@@ -87,6 +87,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   @override
   void initState() {
     super.initState();
+    // One choice for both paths, so a join date picked while searching is
+    // kept when the teacher goes on to create a new student.
+    _choice = EnrollChoice(batchId: widget.batchId);
     focusAfterOpen(this, _queryFocus);
   }
 
@@ -146,11 +149,13 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     try {
       final LocalDate today = ref.read(todayProvider);
       final int cutoff = await ref.read(stuCutoffProvider.future);
+      final EnrollChoice? choice = _choice;
+      final LocalDate join = choice?.joinFor(today) ?? today;
       await ref.read(enrollmentsRepositoryProvider).enroll(
             studentId: s.id,
             batchId: widget.batchId,
-            joinDate: today,
-            startMonth: DuesEngine.defaultFirstBillableMonth(today, cutoff),
+            joinDate: join,
+            startMonth: choice?.startFor(join, cutoff) ?? DuesEngine.defaultFirstBillableMonth(join, cutoff),
           );
       if (!mounted) return;
       Navigator.of(context).pop(s.id);
@@ -198,8 +203,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
         draft: draft,
         photo: model.photo,
         batchId: widget.batchId,
-        startMonth: choice.startFor(draft.admissionDate, cutoff),
+        startMonth: choice.startFor(choice.joinFor(draft.admissionDate), cutoff),
         feeOverride: fee.amount,
+        joinDate: choice.joinFor(draft.admissionDate),
       );
       if (!mounted) return;
       Navigator.of(context).pop(id);
@@ -272,6 +278,18 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                 padding: const EdgeInsets.symmetric(vertical: BhorSpace.s12),
                 child: Text(l10n.stuAddSearchHelp, style: th.type.body.copyWith(color: th.colors.text2)),
               ),
+            // "Joined this batch on" for an existing student added here.
+            if (matches.isNotEmpty && choice != null) ...<Widget>[
+              ListenableBuilder(
+                listenable: choice,
+                builder: (BuildContext context, Widget? _) => JoinDateField(
+                  value: choice.joinFor(today),
+                  onChanged: choice.setJoin,
+                  hint: false,
+                ),
+              ),
+              const SizedBox(height: BhorSpace.s12),
+            ],
             for (final Student s in matches)
               Padding(
                 padding: const EdgeInsets.only(bottom: BhorSpace.s8),

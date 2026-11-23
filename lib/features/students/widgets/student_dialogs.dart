@@ -1,5 +1,5 @@
-// Small confirmations of the students feature: duplicate guard and rejoin gap
-// waiver. They go through showBhorPanel (kind confirm): a dialog on desktop,
+// Small confirmations of the students feature: duplicate guard. It goes
+// through showBhorPanel (kind confirm): a dialog on desktop,
 // a sheet on phones.
 
 import 'package:flutter/widgets.dart';
@@ -44,35 +44,6 @@ Future<DuplicateChoice?> showDuplicateDialog(
       BhorButton(
         label: hasBatch ? l10n.stuDuplicateUse : l10n.stuDuplicateOpen,
         onPressed: () => Navigator.of(ctx).pop(DuplicateChoice.useExisting),
-      ),
-    ]),
-  );
-}
-
-/// "মাঝের {n} মাস মাফ করবেন?" Returns true to waive, false to keep the months
-/// owed, null when cancelled.
-Future<bool?> showRejoinGapDialog(BuildContext context, {required int months}) {
-  final l10n = context.l10n;
-  return showBhorPanel<bool>(
-    context,
-    kind: BhorPanelKind.confirm,
-    title: l10n.stuRejoinTitle,
-    scroll: false,
-    builder: (BuildContext ctx) => _message(ctx, months == 1 ? l10n.stuRejoinGapBodyOne(ctx.fmt.number(months)) : l10n.stuRejoinGapBody(ctx.fmt.number(months))),
-    footer: (BuildContext ctx) => _actions(<Widget>[
-      BhorButton(
-        label: l10n.commonCancel,
-        variant: BhorButtonVariant.ghost,
-        onPressed: () => Navigator.of(ctx).pop(),
-      ),
-      BhorButton(
-        label: l10n.stuRejoinKeepDues,
-        variant: BhorButtonVariant.secondary,
-        onPressed: () => Navigator.of(ctx).pop(false),
-      ),
-      BhorButton(
-        label: l10n.stuRejoinWaive,
-        onPressed: () => Navigator.of(ctx).pop(true),
       ),
     ]),
   );

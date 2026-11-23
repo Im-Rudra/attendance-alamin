@@ -180,6 +180,50 @@ class DriftEnrollmentsRepository implements EnrollmentsRepository {
   }
 
   @override
+  Future<void> updateJoinDate(String enrollmentId, DateTime joinDate) {
+    final LocalDate join =
+        LocalDate(joinDate.year, joinDate.month, joinDate.day);
+    return _db.transaction(() async {
+      final e = await requireEnrollment(_db, enrollmentId);
+      final Enrollment current = enrollmentFromRow(e);
+      if (current.joinDate == join) return;
+      final LocalDate? end = current.endDate;
+      if (join.isBefore(kEarliestJoinDate) ||
+          (end != null && join.isAfter(end))) {
+        throw const ValidationException(ErrorCodes.dateInvalid,
+            field: 'joinDate');
+      }
+      final others = await (_db.select(_db.enrollments)
+            ..where((t) =>
+                t.studentId.equals(e.studentId) &
+                t.batchId.equals(e.batchId) &
+                t.deletedAt.isNull() &
+                t.id.equals(enrollmentId).not()))
+          .get();
+      for (final o in others) {
+        final Enrollment other = enrollmentFromRow(o);
+        final LocalDate? otherEnd = other.endDate;
+        final bool startsBeforeOtherEnds =
+            otherEnd == null || !join.isAfter(otherEnd);
+        final bool otherStartsBeforeThisEnds =
+            end == null || !other.joinDate.isAfter(end);
+        if (startsBeforeOtherEnds && otherStartsBeforeThisEnds) {
+          throw const ValidationException(ErrorCodes.dateInvalid,
+              field: 'overlap');
+        }
+      }
+      await (_db.update(_db.enrollments)
+            ..where((t) => t.id.equals(enrollmentId)))
+          .write(EnrollmentsCompanion(
+        joinDate: Value(join.toIso()),
+        updatedAt: Value(_stamper.nextUpdatedAt(e.updatedAt)),
+        rev: Value(_stamper.nextRev(e.rev)),
+        deviceId: Value(_stamper.deviceId),
+      ));
+    });
+  }
+
+  @override
   Future<void> end(String enrollmentId,
       {required LocalDate on, required YearMonth lastBillableMonth}) {
     return _db.transaction(() async {

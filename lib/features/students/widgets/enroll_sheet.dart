@@ -79,12 +79,13 @@ class _EnrollSheetState extends ConsumerState<EnrollSheet> {
       _busy = true;
       _error = null;
     });
+    final LocalDate join = _choice.joinFor(today);
     try {
       await ref.read(enrollmentsRepositoryProvider).enroll(
             studentId: widget.studentId,
             batchId: batchId,
-            joinDate: today,
-            startMonth: _choice.startFor(today, cutoff),
+            joinDate: join,
+            startMonth: _choice.startFor(join, cutoff),
             feeOverride: fee.amount,
           );
       if (!mounted) return;

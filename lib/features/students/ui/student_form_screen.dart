@@ -231,13 +231,14 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         }
         if (c == DuplicateChoice.useExisting) {
           final Student existing = dups.first;
-          if (batchId != null) {
+          if (batchId != null && choice != null) {
             final int cutoffDay = await ref.read(stuCutoffProvider.future);
+            final LocalDate join = choice.joinFor(draft.admissionDate);
             await ref.read(enrollmentsRepositoryProvider).enroll(
                   studentId: existing.id,
                   batchId: batchId,
-                  joinDate: draft.admissionDate,
-                  startMonth: choice!.startFor(draft.admissionDate, cutoffDay),
+                  joinDate: join,
+                  startMonth: choice.startFor(join, cutoffDay),
                   feeOverride: fee.amount,
                 );
             if (!mounted) return;
@@ -251,14 +252,16 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
         }
       }
       final int startCutoff = await ref.read(stuCutoffProvider.future);
+      final LocalDate? join = choice?.joinFor(draft.admissionDate);
       await createStudentAndEnroll(
         students: students,
         enrollments: ref.read(enrollmentsRepositoryProvider),
         draft: draft,
         photo: model.photo,
         batchId: batchId,
-        startMonth: choice?.startFor(draft.admissionDate, startCutoff),
+        startMonth: (choice == null || join == null) ? null : choice.startFor(join, startCutoff),
         feeOverride: fee.amount,
+        joinDate: join,
       );
       if (!mounted) return;
       await _done(l10n.stuSaved(draft.name));

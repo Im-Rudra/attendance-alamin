@@ -26,6 +26,7 @@ import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
+import 'package:attendance_alamin/features/students/widgets/enrollment_edits.dart';
 import 'package:attendance_alamin/features/students/widgets/leave_dialog.dart';
 import 'package:attendance_alamin/features/students/widgets/student_fields.dart';
 
@@ -68,7 +69,9 @@ class EnrollmentCard extends ConsumerWidget {
     final bool active = student.status == StudentStatus.active;
 
     String? feeText;
+    int? special;
     if (dues != null) {
+      special = specialFeeAt(dues.terms.overrides, today.yearMonth);
       final ({int fee, bool missing}) f =
           DuesEngine.feeFor(dues.terms, today.yearMonth);
       feeText = f.missing ? l10n.stuFeeNotSet : l10n.stuMonthlyFee(fmt.money(f.fee));
@@ -87,8 +90,23 @@ class EnrollmentCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(batchTitle, style: b.type.heading),
-                    if (feeText != null)
+                    if (special != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: BhorSpace.s4),
+                        child: BhorTag(
+                          key: ValueKey<String>('stu-special-fee-${enrollment.id}'),
+                          label: l10n.stuSpecialFee(fmt.money(special)),
+                          tone: BhorTone.accent,
+                          icon: BhorIcons.takeMoney,
+                        ),
+                      )
+                    else if (feeText != null)
                       Text(feeText, style: b.type.label.copyWith(color: b.colors.text2)),
+                    Text(
+                      l10n.stuJoinedLine(fmt.date(enrollment.joinDate)),
+                      key: ValueKey<String>('stu-joined-${enrollment.id}'),
+                      style: b.type.label.copyWith(color: b.colors.text2),
+                    ),
                     Text(
                       l10n.stuBillingStartLine(fmt.monthYear(enrollment.startMonth)),
                       style: b.type.label.copyWith(color: b.colors.text2),
@@ -107,9 +125,20 @@ class EnrollmentCard extends ConsumerWidget {
                     items: <BhorMenuItem>[
                       BhorMenuItem(
                         icon: BhorIcons.calendar,
+                        label: l10n.stuChangeJoinDate,
+                        onTap: () => openChangeJoinDate(context, enrollment),
+                      ),
+                      BhorMenuItem(
+                        icon: BhorIcons.calendar,
                         label: l10n.stuChangeBillingStart,
                         onTap: () => _editStartMonth(context, ref, today),
                       ),
+                      if (!ended)
+                        BhorMenuItem(
+                          icon: BhorIcons.takeMoney,
+                          label: l10n.stuChangeFee,
+                          onTap: () => openChangeStudentFee(context, enrollment),
+                        ),
                       if (!ended && active)
                         BhorMenuItem(
                           icon: BhorIcons.leftStudents,
