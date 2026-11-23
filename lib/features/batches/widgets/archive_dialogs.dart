@@ -13,15 +13,18 @@ import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 
 Widget _footer(BuildContext context, {required String confirmLabel, required VoidCallback onConfirm}) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.end,
+  // A Wrap: the long "reopen and fix the schedule" label drops to its own line
+  // in a narrow dialog instead of overflowing.
+  return Wrap(
+    alignment: WrapAlignment.end,
+    spacing: BhorSpace.s8,
+    runSpacing: BhorSpace.s8,
     children: <Widget>[
       BhorButton(
         label: context.l10n.commonCancel,
         variant: BhorButtonVariant.ghost,
         onPressed: () => Navigator.of(context).pop(),
       ),
-      const SizedBox(width: BhorSpace.s8),
       BhorButton(label: confirmLabel, onPressed: onConfirm),
     ],
   );
