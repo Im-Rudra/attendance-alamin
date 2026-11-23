@@ -102,5 +102,22 @@
   "payGridTotal": "{count} selected · {amount}",
   "payChipWaived": "{month} · waived",
   "payChipFree": "{month} · free",
-  "payDisabledPickMonth": "Pick a month or type an amount"
+  "payDisabledPickMonth": "Pick a month or type an amount",
+  "payReceiptNoLabel": "Slip no.",
+  "payReceiptNoShort": "No. {no}",
+  "payGuardianPhone": "Guardian's phone",
+  "payPrintSave": "Print / Save PDF",
+  "payPrintTitle": "Print or save as PDF",
+  "payPrintPaperLabel": "Paper size",
+  "payPaperA4": "A4",
+  "payPaperA4Hint": "Slip on the top half of the page",
+  "payPaperThermal": "80 mm receipt printer",
+  "payPaperThermalHint": "Full roll width, as long as it needs",
+  "payPaperThermalShort": "80 mm",
+  "payPrintNow": "Print",
+  "payPdfSave": "Save PDF",
+  "payPrintMenu": "Print ({paper})",
+  "payPdfMenu": "Save PDF ({paper})",
+  "payPrintFailed": "Couldn't prepare the receipt for printing",
+  "payPdfSaved": "PDF saved"
 }

@@ -21,10 +21,14 @@ class ReceiptFacts {
     required this.partialMonths,
     required this.remaining,
     this.roll,
+    this.guardianPhone,
   });
 
   final String studentName;
   final String? roll;
+
+  /// The guardian's phone, printed on the slip; null / blank when unknown.
+  final String? guardianPhone;
   final String batchName;
 
   /// The receipt's allocation rows, one per month.
@@ -63,7 +67,8 @@ Set<YearMonth> partialMonthsOf(List<Payment> rows, EnrollmentDues? dues) {
 /// center, student, id, batch, months, amount, method, date, remaining_line,
 /// receipt_no (schema v2 slip number, digits in the app language).
 /// An empty center, id or receipt number removes its surrounding
-/// " — {center}" / " ({id})" / " ({receipt_no})" / " #{receipt_no}" so the
+/// " — {center}" / " ({id})" / " ({receipt_no})" / " #{receipt_no}" /
+/// " নং {receipt_no}" so the
 /// message never shows empty brackets.
 String renderReceiptText({
   required ReceiptFacts facts,
@@ -82,7 +87,10 @@ String renderReceiptText({
   if (centerName.isEmpty) text = text.replaceAll(' — {center}', '');
   final String receiptNo = facts.receiptNo;
   if (receiptNo.isEmpty) {
-    text = text.replaceAll(' ({receipt_no})', '').replaceAll(' #{receipt_no}', '');
+    text = text
+        .replaceAll(' ({receipt_no})', '')
+        .replaceAll(' #{receipt_no}', '')
+        .replaceAll(' নং {receipt_no}', '');
   }
   final String remainingLine =
       facts.remaining > 0 ? l10n.payReceiptRemaining(fmt.money(facts.remaining)) : l10n.payReceiptAllPaid;

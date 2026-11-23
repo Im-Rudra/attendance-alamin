@@ -7,7 +7,8 @@ import 'package:attendance_alamin/core/format/lang.dart';
 /// `{center}` `{teacher_phone}`.
 /// Receipt placeholders: `{center}` `{student}` `{id}` `{batch}` `{months}`
 /// `{amount}` `{method}` `{date}` `{remaining_line}` `{receipt_no}` (slip
-/// number, schema v2; not in the defaults yet).
+/// number, schema v2; in the default titles: "রসিদ নং 2026-0007 — centre").
+/// A receipt without a number drops it (see `renderReceiptText`).
 abstract final class DefaultTemplates {
   static const reminderBn = 'সম্মানিত অভিভাবক,\n'
       '{student}-এর {batch} ব্যাচের {months} মাসের বেতন মোট ৳{amount} এখনো বাকি আছে। '
@@ -19,7 +20,7 @@ abstract final class DefaultTemplates {
       '(total ৳{amount}) is still due. Please pay at your earliest. '
       'Thank you — {center} ({teacher_phone})';
 
-  static const receiptBn = 'রসিদ — {center}\n'
+  static const receiptBn = 'রসিদ নং {receipt_no} — {center}\n'
       'শিক্ষার্থী: {student} ({id})\n'
       'ব্যাচ: {batch}\n'
       'মাস: {months}\n'
@@ -27,7 +28,7 @@ abstract final class DefaultTemplates {
       '{remaining_line}\n'
       'ধন্যবাদ।';
 
-  static const receiptEn = 'Receipt — {center}\n'
+  static const receiptEn = 'Receipt #{receipt_no} — {center}\n'
       'Student: {student} ({id})\n'
       'Batch: {batch}\n'
       'Months: {months}\n'

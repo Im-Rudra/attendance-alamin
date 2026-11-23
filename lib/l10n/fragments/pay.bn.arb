@@ -573,5 +573,91 @@
   "payDisabledPickMonth": "মাস বেছে নিন বা পরিমাণ লিখুন",
   "@payDisabledPickMonth": {
     "description": "Why the save button is off: every month chip was unticked."
+  },
+  "payReceiptNoLabel": "রসিদ নং",
+  "@payReceiptNoLabel": {
+    "description": "Receipt card row label: the slip number (2026-0007)."
+  },
+  "payReceiptNoShort": "নং {no}",
+  "@payReceiptNoShort": {
+    "description": "Slip number in a payment-history or collected-list row.",
+    "placeholders": {
+      "no": {
+        "type": "String",
+        "example": "২০২৬-০০০৭"
+      }
+    }
+  },
+  "payGuardianPhone": "অভিভাবকের ফোন",
+  "@payGuardianPhone": {
+    "description": "Receipt card row label: the guardian's phone number."
+  },
+  "payPrintSave": "প্রিন্ট / PDF সেভ",
+  "@payPrintSave": {
+    "description": "Button on the receipt: opens the print and save-as-PDF choices."
+  },
+  "payPrintTitle": "প্রিন্ট বা PDF সেভ",
+  "@payPrintTitle": {
+    "description": "Title of the panel that asks for the paper size."
+  },
+  "payPrintPaperLabel": "কাগজের মাপ",
+  "@payPrintPaperLabel": {
+    "description": "Label above the paper size choices."
+  },
+  "payPaperA4": "A4",
+  "@payPaperA4": {
+    "description": "Paper size choice: an A4 sheet."
+  },
+  "payPaperA4Hint": "পাতার উপরের অর্ধেকে রসিদ",
+  "@payPaperA4Hint": {
+    "description": "Explains the A4 choice: the slip is printed on the top half."
+  },
+  "payPaperThermal": "৮০ মিমি রসিদ প্রিন্টার",
+  "@payPaperThermal": {
+    "description": "Paper size choice: an 80 mm receipt printer roll."
+  },
+  "payPaperThermalHint": "রোলের পুরো প্রস্থে, যতটুকু লম্বা লাগে",
+  "@payPaperThermalHint": {
+    "description": "Explains the 80 mm choice: full roll width, as long as the slip needs."
+  },
+  "payPaperThermalShort": "৮০ মিমি",
+  "@payPaperThermalShort": {
+    "description": "Short name of the 80 mm paper, shown in the receipt menu."
+  },
+  "payPrintNow": "প্রিন্ট করুন",
+  "@payPrintNow": {
+    "description": "Button: send the slip to the printer."
+  },
+  "payPdfSave": "PDF সেভ করুন",
+  "@payPdfSave": {
+    "description": "Button: keep the slip as a PDF file."
+  },
+  "payPrintMenu": "প্রিন্ট ({paper})",
+  "@payPrintMenu": {
+    "description": "Receipt menu item: print on the last used paper.",
+    "placeholders": {
+      "paper": {
+        "type": "String",
+        "example": "A4"
+      }
+    }
+  },
+  "payPdfMenu": "PDF সেভ ({paper})",
+  "@payPdfMenu": {
+    "description": "Receipt menu item: save a PDF on the last used paper.",
+    "placeholders": {
+      "paper": {
+        "type": "String",
+        "example": "A4"
+      }
+    }
+  },
+  "payPrintFailed": "প্রিন্টের জন্য রসিদ তৈরি করা যায়নি",
+  "@payPrintFailed": {
+    "description": "Toast: the slip could not be drawn or sent to the printer."
+  },
+  "payPdfSaved": "PDF সেভ হয়েছে",
+  "@payPdfSaved": {
+    "description": "Toast: the PDF file was saved."
   }
 }

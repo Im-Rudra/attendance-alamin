@@ -10,10 +10,12 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/features/payments/receipt_text.dart';
@@ -118,10 +120,18 @@ final payDuesProvider = Provider.autoDispose
 
 /// Everything a receipt needs; null while the receipt does not exist.
 class ReceiptModel {
-  const ReceiptModel({required this.receiptId, required this.facts, required this.first});
+  const ReceiptModel({
+    required this.receiptId,
+    required this.facts,
+    required this.first,
+    this.placeId = kDefaultPlaceId,
+  });
 
   final String receiptId;
   final ReceiptFacts facts;
+
+  /// The place of the receipt's batch (its name / phone / address go on the slip).
+  final String placeId;
 
   /// A row of the receipt (date, method, note, ids are the same on all rows).
   final Payment first;
@@ -196,9 +206,11 @@ ReceiptModel? assembleReceipt({
   return ReceiptModel(
     receiptId: receiptId,
     first: first,
+    placeId: mine?.placeId ?? kDefaultPlaceId,
     facts: ReceiptFacts(
       studentName: student?.name ?? mine?.studentName ?? '',
       roll: student?.roll,
+      guardianPhone: student?.guardianPhone,
       batchName: mine?.batchName ?? '',
       rows: rows,
       partialMonths: partialMonthsOf(rows, dues),
@@ -235,12 +247,64 @@ final payReceiptProvider =
   ));
 });
 
-/// The receipt template text (default or the teacher's own) and the center name
-/// for [lang].
+/// The receipt template text (default or the teacher's own) and the centre
+/// details of the settings for [lang]. The centre is only the fallback of the
+/// batch's place (see [resolveReceiptCentre]).
 final payReceiptSettingsProvider = FutureProvider.autoDispose
-    .family<({String template, String center}), Lang>((ref, lang) async {
+    .family<({String template, String center, String phone, String address}), Lang>((ref, lang) async {
   final settings = ref.watch(settingsRepositoryProvider);
   final String stored = await settings.get(templateKey(TemplateKind.receipt, lang));
   final String center = await settings.get(SettingKeys.centerName);
-  return (template: editorTextFor(TemplateKind.receipt, lang, stored), center: center);
+  final String phone = await settings.get(SettingKeys.centerPhone);
+  final String address = await settings.get(SettingKeys.centerAddress);
+  return (
+    template: editorTextFor(TemplateKind.receipt, lang, stored),
+    center: center,
+    phone: phone,
+    address: address,
+  );
+});
+
+/// Who issued the slip: the name, phone and address printed in its header.
+class ReceiptCentre {
+  const ReceiptCentre({required this.name, this.phone = '', this.address = ''});
+
+  final String name;
+  final String phone;
+  final String address;
+}
+
+/// The centre of a slip: the batch's [place], and for whatever it leaves
+/// blank the current centre settings (always for the default place, which
+/// follows them; for any other place only the name falls back).
+ReceiptCentre resolveReceiptCentre({
+  required Place? place,
+  required String centerName,
+  required String centerPhone,
+  required String centerAddress,
+}) {
+  String pick(String? own, String fallback, {required bool allowFallback}) {
+    final String v = (own ?? '').trim();
+    if (v.isNotEmpty) return v;
+    return allowFallback ? fallback.trim() : '';
+  }
+
+  final bool settingsToo = place == null || place.isDefault;
+  return ReceiptCentre(
+    name: pick(place?.name, centerName, allowFallback: true),
+    phone: pick(place?.phone, centerPhone, allowFallback: settingsToo),
+    address: pick(place?.address, centerAddress, allowFallback: settingsToo),
+  );
+}
+
+/// The centre printed on a slip of the place [placeId], in [lang]; loading
+/// until the settings are read.
+final payReceiptCentreProvider = Provider.autoDispose
+    .family<AsyncValue<ReceiptCentre>, ({String placeId, Lang lang})>((ref, key) {
+  final AsyncValue<({String template, String center, String phone, String address})> s =
+      ref.watch(payReceiptSettingsProvider(key.lang));
+  final Place? place = ref.watch(placeByIdProvider(key.placeId));
+  return s.whenData(
+    (v) => resolveReceiptCentre(place: place, centerName: v.center, centerPhone: v.phone, centerAddress: v.address),
+  );
 });

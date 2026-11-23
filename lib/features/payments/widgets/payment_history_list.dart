@@ -29,6 +29,9 @@ class HistoryEntry {
   String get receiptId => first.receiptId;
   LocalDate get paidOn => first.paidOn;
   int get total => rows.fold(0, (int s, Payment p) => s + p.amount);
+
+  /// Slip number of the receipt, '' when it has none (waivers, old data).
+  String get receiptNo => waived ? '' : (first.receiptNo ?? '').trim();
   List<YearMonth> get months => <YearMonth>[for (final Payment p in rows) p.billingMonth];
 }
 
@@ -195,7 +198,19 @@ class _HistoryTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: BhorSpace.s8),
-            Text(amount, style: b.type.bodyStrong),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(amount, style: b.type.bodyStrong),
+                if (entry.receiptNo.isNotEmpty)
+                  Text(
+                    l10n.payReceiptNoShort(fmt.digits(entry.receiptNo)),
+                    key: ValueKey<String>('pay-history-no-${p.id}'),
+                    style: b.type.meta,
+                  ),
+              ],
+            ),
             Icon(BhorIcons.chevronRight, color: b.colors.text2),
           ],
         ),
