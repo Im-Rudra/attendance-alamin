@@ -667,5 +667,33 @@
   "setSavedTick": "সেভ হয়েছে",
   "@setSavedTick": {
     "description": "Tiny confirmation shown inside a settings text field for a moment after it saved by itself."
+  },
+  "setTextSize": "লেখার আকার",
+  "@setTextSize": {
+    "description": "Appearance setting: how big the text is across the whole app."
+  },
+  "setTextSizeSmall": "ছোট",
+  "@setTextSizeSmall": {
+    "description": "Text size choice: small (90 percent)."
+  },
+  "setTextSizeNormal": "স্বাভাবিক",
+  "@setTextSizeNormal": {
+    "description": "Text size choice: normal (100 percent)."
+  },
+  "setTextSizeLarge": "বড়",
+  "@setTextSizeLarge": {
+    "description": "Text size choice: large (115 percent)."
+  },
+  "setTextSizeXLarge": "আরও বড়",
+  "@setTextSizeXLarge": {
+    "description": "Text size choice: extra large (130 percent)."
+  },
+  "setTextSizePreview": "আজ ১২ জন শিক্ষার্থী উপস্থিত, ৩ জন অনুপস্থিত।",
+  "@setTextSizePreview": {
+    "description": "Sample sentence under the text size choices, shown at the chosen size."
+  },
+  "setTextSizeKeys": "কিবোর্ডে বড় করতে Ctrl + =, ছোট করতে Ctrl + −, স্বাভাবিক করতে Ctrl + 0।",
+  "@setTextSizeKeys": {
+    "description": "Hint under the text size preview about the desktop shortcuts."
   }
 }

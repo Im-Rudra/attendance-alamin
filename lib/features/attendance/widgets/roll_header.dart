@@ -31,7 +31,11 @@ class RollDateHeader extends StatelessWidget {
     required this.onPick,
     this.start = false,
     this.showChips = true,
+    this.onPickDate,
   });
+
+  /// Makes the date a button; gets the context to anchor the calendar to.
+  final ValueChanged<BuildContext>? onPickDate;
 
   final LocalDate date;
   final int startMin;
@@ -52,29 +56,76 @@ class RollDateHeader extends StatelessWidget {
     final BhorThemeData b = context.bhor;
     final String dateText = fmt.weekdayDate(date);
     final String timeText = fmt.timeRange(startMin, endMin);
-    final Widget label = Semantics(
-      container: true,
-      label: l10n.rollA11yDate(dateText, timeText),
-      excludeSemantics: true,
-      child: start
-          ? Text.rich(
-              TextSpan(
-                children: <InlineSpan>[
-                  TextSpan(text: dateText, style: b.type.bodyStrong),
-                  TextSpan(text: '  ·  $timeText', style: b.type.meta),
-                ],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(dateText, textAlign: TextAlign.center, style: b.type.heading),
-                Text(timeText, textAlign: TextAlign.center, style: b.type.meta),
-              ],
-            ),
+    // The date is a button (calendar glyph at its end) that opens the date
+    // picker under it; without [onPickDate] it is plain text.
+    final Widget dateLine = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Flexible(
+          child: start
+              ? Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      TextSpan(text: dateText, style: b.type.bodyStrong),
+                      TextSpan(text: '  ·  $timeText', style: b.type.meta),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : Text(
+                  dateText,
+                  textAlign: TextAlign.center,
+                  style: b.type.heading,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+        ),
+        if (onPickDate != null) ...<Widget>[
+          const SizedBox(width: BhorSpace.s8),
+          Icon(BhorIcons.calendar, size: 18, color: b.colors.text2),
+        ],
+      ],
     );
+    final Widget labelBody = start
+        ? dateLine
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              dateLine,
+              Text(timeText, textAlign: TextAlign.center, style: b.type.meta),
+            ],
+          );
+    final Widget label = onPickDate == null
+        ? Semantics(
+            container: true,
+            label: l10n.rollA11yDate(dateText, timeText),
+            excludeSemantics: true,
+            child: labelBody,
+          )
+        : Builder(
+            builder: (BuildContext anchor) => BhorPressable(
+              semanticLabel: l10n.rollA11yDate(dateText, timeText),
+              semanticHint: l10n.rollPickDate,
+              excludeChildSemantics: true,
+              radius: BhorRadius.control,
+              scaleOnPress: false,
+              onTap: () => onPickDate!(anchor),
+              builder: (BuildContext _, BhorStates s) => DecoratedBox(
+                decoration: BoxDecoration(
+                  color: s.hovered || s.pressed ? b.colors.surface2 : null,
+                  borderRadius: BorderRadius.circular(BhorRadius.control),
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: BhorSize.compact),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s8, vertical: BhorSpace.s4),
+                    child: Center(widthFactor: 1, child: labelBody),
+                  ),
+                ),
+              ),
+            ),
+          );
     return Column(
       crossAxisAlignment: start ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,

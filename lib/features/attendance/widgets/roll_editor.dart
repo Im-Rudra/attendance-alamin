@@ -34,8 +34,11 @@ import 'package:attendance_alamin/domain/models/attendance.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/domain/models/enrollment.dart';
+import 'package:attendance_alamin/features/attendance/controllers/late_joiners.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_call_controller.dart';
 import 'package:attendance_alamin/features/attendance/controllers/roll_models.dart';
+import 'package:attendance_alamin/features/attendance/widgets/late_joiners_ui.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_header.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_parts.dart';
 import 'package:attendance_alamin/features/attendance/widgets/roll_row.dart';
@@ -79,6 +82,9 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
   RollTarget? _target;
   List<BatchSchedule> _schedules = const <BatchSchedule>[];
   Map<String, int> _rollOf = const <String, int>{};
+
+  /// Students who joined after this date (footer line; see late_joiners.dart).
+  List<LateJoiner> _late = const <LateJoiner>[];
   bool _notFound = false;
   Object? _loadError;
 
@@ -227,6 +233,9 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       for (var i = 0; i < roster.length; i++) {
         rolls[roster[i].id] = int.tryParse(AppFormat.toAsciiDigits(roster[i].roll ?? '')) ?? (i + 1);
       }
+      final List<LateJoiner> lateJoiners =
+          (bs.batch.archived || date.isAfter(today)) ? const <LateJoiner>[] : await _loadLateJoiners(date);
+      if (!mounted) return;
 
       final RollCallController controller = RollCallController(
         students: roster,
@@ -243,6 +252,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
         _schedules = schedules;
         _target = target;
         _rollOf = rolls;
+        _late = lateJoiners;
         _c = controller;
         _showHint = saved == null && !readOnly && roster.isNotEmpty;
       });
@@ -250,6 +260,63 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
     } on Object catch (e) {
       if (mounted) setState(() => _loadError = e);
     }
+  }
+
+  /// Open enrolments of this batch that start after [date]. A failure here
+  /// only hides the footer line; it never stops the roll call from loading.
+  Future<List<LateJoiner>> _loadLateJoiners(LocalDate date) async {
+    try {
+      final List<Enrollment> all =
+          await ref.read(enrollmentsRepositoryProvider).watchForBatch(widget.batchId).first;
+      final Map<String, Student> byId = <String, Student>{};
+      for (final Enrollment e in all) {
+        if (e.endDate != null || !e.joinDate.isAfter(date)) continue;
+        final Student? s = await ref.read(studentsRepositoryProvider).getById(e.studentId);
+        if (s != null) byId[s.id] = s;
+      }
+      return lateJoinersOf(date: date, enrollments: all, studentsById: byId);
+    } on Object {
+      return const <LateJoiner>[];
+    }
+  }
+
+  /// "Show" of the late-joiners footer: who joined after this date.
+  Future<void> _showLateJoiners(BuildContext anchor) {
+    final LocalDate date = _target?.date ?? widget.date;
+    final List<LateJoiner> shown = _late;
+    return showBhorPanel<void>(
+      context,
+      kind: BhorPanelKind.list,
+      anchor: anchor,
+      title: context.l10n.rollLateTitle(context.fmt.number(shown.length)),
+      width: 400,
+      builder: (BuildContext ctx) => LateJoinersList(joiners: shown, date: date),
+    );
+  }
+
+  /// Date button of the header: the calendar hangs from it, 2 years back to
+  /// today (same range as "Another date"). Goes through the same day change
+  /// as the arrows, so drafts and the unsaved-marks handling are unchanged.
+  Future<void> _pickDate(BuildContext anchor) async {
+    final LocalDate today = ref.read(todayProvider);
+    final int weekStart = ref.read(weekStartProvider).value ?? DateTime.saturday;
+    final DateTime first = DateTime(today.year - 2, today.month, today.day);
+    final DateTime last = DateTime(today.year, today.month, today.day);
+    DateTime initial = DateTime(widget.date.year, widget.date.month, widget.date.day);
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
+    final DateTime? picked = await showBhorDatePicker(
+      context,
+      anchor: anchor,
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
+      weekStart: weekStart,
+      today: last,
+    );
+    if (picked == null || !mounted) return;
+    final LocalDate d = LocalDate(picked.year, picked.month, picked.day);
+    if (d != widget.date) widget.onDate(d);
   }
 
   Future<void> _persist(Map<String, AttendanceStatus> statuses, String? note) async {
@@ -778,6 +845,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
           canGoNext: past,
           onPrev: () => widget.onDate(widget.date.addDays(-1)),
           onNext: () => widget.onDate(widget.date.addDays(1)),
+          onPickDate: _pickDate,
           choices: widget.choices,
           selectedOcc: widget.occ,
           onPick: widget.onPick,
@@ -852,6 +920,21 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
       );
     }
 
+    // Students who joined after this date are not on its roster: one quiet
+    // line says so, "Show" lists them.
+    if (_late.isNotEmpty) {
+      roster = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          roster,
+          LateJoinersFooter(
+            count: _late.length,
+            onShow: (BuildContext bc) => unawaited(_showLateJoiners(bc)),
+          ),
+        ],
+      );
+    }
+
     final bool canDelete = !c.readOnly && c.saved && !t.adHoc;
     final Widget content;
     if (wide) {
@@ -913,6 +996,7 @@ class _RollEditorState extends ConsumerState<RollEditor> with SingleTickerProvid
               canGoNext: past,
               onPrev: () => widget.onDate(widget.date.addDays(-1)),
               onNext: () => widget.onDate(widget.date.addDays(1)),
+              onPickDate: _pickDate,
               choices: widget.choices,
               selectedOcc: widget.occ,
               onPick: widget.onPick,

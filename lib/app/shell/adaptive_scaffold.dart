@@ -25,6 +25,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+import 'package:attendance_alamin/app/providers/app_prefs_providers.dart';
 import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
@@ -163,7 +164,18 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
         ),
       );
     }
-    return _ShellKeys(onSelect: _select, child: scaffold);
+    return _ShellKeys(
+      onSelect: _select,
+      onTextSize: (int delta) {
+        final TextSizeController c = ref.read(textSizeProvider.notifier);
+        if (delta == 0) {
+          c.reset();
+        } else {
+          c.step(delta);
+        }
+      },
+      child: scaffold,
+    );
   }
 
   static List<BhorNavItem> _items(BuildContext context, AppLocalizations l10n, int overdue) {
@@ -246,9 +258,12 @@ class _SidebarSearch extends StatelessWidget {
 /// Window-wide shortcuts, active while the shell is the top route. Character
 /// keys are ignored while a text field has focus.
 class _ShellKeys extends StatefulWidget {
-  const _ShellKeys({required this.onSelect, required this.child});
+  const _ShellKeys({required this.onSelect, required this.onTextSize, required this.child});
 
   final ValueChanged<int> onSelect;
+
+  /// Ctrl + = (+1), Ctrl + - (-1), Ctrl + 0 (0 = back to Normal).
+  final ValueChanged<int> onTextSize;
   final Widget child;
 
   @override
@@ -297,6 +312,19 @@ class _ShellKeysState extends State<_ShellKeys> {
         GoRouter.of(context).push(Routes.search);
         return true;
       }
+      final LogicalKeyboardKey key = event.logicalKey;
+      if (key == LogicalKeyboardKey.equal || key == LogicalKeyboardKey.add || key == LogicalKeyboardKey.numpadAdd) {
+        widget.onTextSize(1);
+        return true;
+      }
+      if (key == LogicalKeyboardKey.minus || key == LogicalKeyboardKey.numpadSubtract) {
+        widget.onTextSize(-1);
+        return true;
+      }
+      if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+        widget.onTextSize(0);
+        return true;
+      }
       return false;
     }
     if (event.character == '?' && !_typing()) {
@@ -317,6 +345,7 @@ Future<void> showShortcutHelp(BuildContext context) {
     (l10n.shellKeysDestinations, l10n.shellShortcutDestinations),
     (l10n.shellKeysSearch, l10n.shellShortcutSearch),
     (l10n.shellKeysHelp, l10n.shellShortcutHelp),
+    (l10n.shellKeysTextSize, l10n.shellShortcutTextSize),
   ];
   return showBhorDialog<void>(
     context,

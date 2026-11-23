@@ -253,5 +253,13 @@
   "shellSettingsGroup": "সেটিংস",
   "@shellSettingsGroup": {
     "description": "More tab group: other settings pages."
+  },
+  "shellShortcutTextSize": "লেখা বড় · ছোট · স্বাভাবিক",
+  "@shellShortcutTextSize": {
+    "description": "Shortcut list: what Ctrl plus, minus and zero do to the text size."
+  },
+  "shellKeysTextSize": "Ctrl + = · Ctrl + − · Ctrl + 0",
+  "@shellKeysTextSize": {
+    "description": "Key names for the text size shortcuts (keyboard labels)."
   }
 }

@@ -77,5 +77,11 @@
   "rollSummaryNone": "No attendance yet",
   "rollSummaryLast": "Latest classes",
   "rollStatusSheetTitle": "{name}",
-  "rollRowMenu": "More options"
+  "rollRowMenu": "More options",
+  "rollPickDate": "Tap to change the date",
+  "rollLateLine": "{count} joined after this date",
+  "rollLateShow": "Show",
+  "rollLateTitle": "Joined later ({count})",
+  "rollLateNote": "They were not in this batch on {date}. Change their join date in Students to mark them.",
+  "rollLateJoined": "Joined {date}"
 }

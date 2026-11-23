@@ -78,6 +78,7 @@ void main() {
       await expectDefault(SettingKeys.themeMode);
       await expectDefault(SettingKeys.remindersEnabled);
       await expectDefault(SettingKeys.reducedEffects);
+      await expectDefault(SettingKeys.textSize);
       await expectDefault(SettingKeys.backupReminderDays);
       await expectDefault(SettingKeys.deviceName);
       await expectDefault(SettingKeys.lastExportAt);
@@ -86,7 +87,7 @@ void main() {
       await expectDefault(SettingKeys.notifPromptedVersion);
       await expectDefault(SettingKeys.exactPromptedVersion);
       await expectDefault(SettingKeys.remindersPlannedUntil);
-      expect(SettingKeys.all, hasLength(26));
+      expect(SettingKeys.all, hasLength(27));
     });
 
     test('malformed or out-of-range stored values read as the default', () async {
