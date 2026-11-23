@@ -12,6 +12,7 @@ import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
@@ -20,6 +21,7 @@ import 'package:attendance_alamin/features/students/controllers/student_selectio
 import 'package:attendance_alamin/features/students/students_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_table.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 import 'package:attendance_alamin/features/students/widgets/student_bulk_actions.dart';
 import 'package:attendance_alamin/features/students/widgets/student_keys.dart';
 import 'package:attendance_alamin/features/students/widgets/student_row_tile.dart';
@@ -131,9 +133,13 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
     final l10n = context.l10n;
     final bool wide = WindowClass.of(context).isWide;
     final AsyncValue<List<StudentRow>> async = ref.watch(stuRowsProvider);
+    // 2+ places: the header's place filter narrows the rows and the batch chip.
+    final bool many = ref.watch(hasManyPlacesProvider);
+    final String? place = ref.watch(placeFilterProvider);
+    List<StudentRow> filtered(List<StudentRow> all) => applyStudentFilter(rowsAtPlace(all, place), _filter);
     final List<Batch> batches = <Batch>[
       for (final Batch b in ref.watch(stuBatchesProvider).value ?? const <Batch>[])
-        if (!b.archived) b,
+        if (!b.archived && (place == null || b.placeId == place)) b,
     ];
 
     final Widget search = BhorTextField(
@@ -168,6 +174,11 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
     final Widget chips = Wrap(
       spacing: BhorSpace.s8,
       children: <Widget>[
+        if (many)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 3),
+            child: PlaceFilterChip(maxWidth: 180),
+          ),
         Builder(
           builder: (BuildContext chip) => BhorChip(
             key: const ValueKey<String>('stu-filter-batch'),
@@ -196,7 +207,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
     // Only listed rows count: a filter hides the others from the bar too.
     final List<StudentRow>? loaded = async.value;
     final List<StudentRow> listed =
-        loaded == null ? const <StudentRow>[] : applyStudentFilter(loaded, _filter);
+        loaded == null ? const <StudentRow>[] : filtered(loaded);
     final List<Student> picked = <Student>[
       for (final StudentRow r in listed)
         if (selection.contains(r.id)) r.student,
@@ -215,7 +226,7 @@ class _StudentsListPaneState extends ConsumerState<StudentsListPane> {
             action: BhorButton(label: l10n.stuNewStudent, onPressed: _new),
           );
         }
-        final List<StudentRow> rows = applyStudentFilter(all, _filter);
+        final List<StudentRow> rows = filtered(all);
         _order = <String>[for (final StudentRow r in rows) r.id];
         if (rows.isEmpty) {
           final String q = _filter.query.trim();

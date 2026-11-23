@@ -15,6 +15,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
@@ -23,6 +24,7 @@ import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_card.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_overview.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 class BatchesScreen extends StatelessWidget {
   const BatchesScreen({super.key, this.selectedId});
@@ -136,6 +138,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
     final AsyncValue<List<SubjectGroup>> async = ref.watch(batchGroupsProvider);
     final List<SubjectGroup>? groups = async.value;
     final bool empty = groups != null && groups.isEmpty;
+    final bool many = ref.watch(hasManyPlacesProvider);
 
     final Widget body = async.when(
       loading: () => const Center(child: BhorSpinner()),
@@ -262,7 +265,21 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
                     ),
                   ),
                 ),
-          body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
+          body: Padding(
+            padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0),
+            // 2+ places: the place filter leads the list (the list pane is
+            // too narrow on desktop for it beside the title and New).
+            child: many
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      const Align(alignment: AlignmentDirectional.centerStart, child: PlaceFilterChip()),
+                      const SizedBox(height: BhorSpace.s8),
+                      Expanded(child: body),
+                    ],
+                  )
+                : body,
+          ),
         ),
       ),
     );

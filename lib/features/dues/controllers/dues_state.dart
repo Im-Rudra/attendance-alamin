@@ -25,6 +25,7 @@ import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 // ---- dues list ---------------------------------------------------------------
 
@@ -55,12 +56,19 @@ class DuesFilterController extends Notifier<DuesFilter> {
 final duesFilterProvider =
     NotifierProvider<DuesFilterController, DuesFilter>(DuesFilterController.new);
 
-/// The filtered, sorted, grouped list.
+/// The filtered, sorted, grouped list (of the filtered place, if any; a
+/// batch filter from another place is ignored).
 final duesViewProvider = Provider<AsyncValue<DuesView>>((ref) {
   final LocalDate today = ref.watch(todayProvider);
-  final DuesFilter filter = ref.watch(duesFilterProvider);
+  DuesFilter filter = ref.watch(duesFilterProvider);
+  final String? place = ref.watch(placeFilterProvider);
+  final String? batch = filter.batchId;
+  if (place != null && batch != null) {
+    final String? at = ref.watch(placeOfBatchProvider)[batch];
+    if (at != null && at != place) filter = filter.copyWith(clearBatch: true);
+  }
   return ref
-      .watch(duesReportProvider)
+      .watch(placeDuesReportProvider)
       .whenData((DuesReport r) => buildDuesView(r, filter, today));
 });
 
@@ -77,6 +85,17 @@ final duesStudentMapProvider = Provider<Map<String, Student>>((ref) {
 /// Live (not archived) batches for the batch filter.
 final duesBatchesProvider = StreamProvider<List<Batch>>(
     (ref) => ref.watch(batchesRepositoryProvider).watchAll());
+
+/// The batch filter's choices: the live batches of the filtered place.
+final duesPlaceBatchesProvider = Provider<List<Batch>>((ref) {
+  final List<Batch> all = ref.watch(duesBatchesProvider).value ?? const <Batch>[];
+  final String? place = ref.watch(placeFilterProvider);
+  if (place == null) return all;
+  return <Batch>[
+    for (final Batch b in all)
+      if (b.placeId == place) b,
+  ];
+});
 
 // ---- "reminded today" --------------------------------------------------------
 
@@ -175,6 +194,7 @@ final collectionSummaryProvider =
 final placesMonthBreakdownProvider =
     Provider.family<AsyncValue<PlacesMonthBreakdown>, YearMonth>((ref, month) {
   final LocalDate today = ref.watch(todayProvider);
+  final Map<String, String> batchPlaces = ref.watch(placeOfBatchProvider);
   final AsyncValue<_Money> money = combine3(
     ref.watch(enrollmentTermsProvider),
     ref.watch(paymentFactsProvider),
@@ -195,6 +215,7 @@ final placesMonthBreakdownProvider =
       facts: m.facts,
       payments: m.payments,
       otherIncome: o,
+      batchPlaces: batchPlaces,
     ),
   );
 });
@@ -204,6 +225,7 @@ final placeCollectionSummaryProvider = Provider.family<
     AsyncValue<CollectionSummary>,
     ({String placeId, YearMonth month})>((ref, key) {
   final LocalDate today = ref.watch(todayProvider);
+  final Map<String, String> batchPlaces = ref.watch(placeOfBatchProvider);
   final AsyncValue<_Money> money = combine3(
     ref.watch(enrollmentTermsProvider),
     ref.watch(paymentFactsProvider),
@@ -222,8 +244,18 @@ final placeCollectionSummaryProvider = Provider.family<
       facts: m.facts,
       payments: m.payments,
       otherIncome: o,
+      batchPlaces: batchPlaces,
     ),
   );
+});
+
+/// The Collected segment's summary of [month]: the filtered place's, or the
+/// whole month with no place picked.
+final feesCollectionSummaryProvider =
+    Provider.family<AsyncValue<CollectionSummary>, YearMonth>((ref, month) {
+  final String? place = ref.watch(placeFilterProvider);
+  if (place == null) return ref.watch(collectionSummaryProvider(month));
+  return ref.watch(placeCollectionSummaryProvider((placeId: place, month: month)));
 });
 
 /// First billable month of any enrollment (lower bound of the month picker).

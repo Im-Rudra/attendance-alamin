@@ -18,13 +18,14 @@ class DuesFilters extends ConsumerWidget {
     final l10n = context.l10n;
     final DuesFilter filter = ref.watch(duesFilterProvider);
     final DuesFilterController ctl = ref.read(duesFilterProvider.notifier);
-    final List<Batch> batches = ref.watch(duesBatchesProvider).value ?? const <Batch>[];
+    final List<Batch> batches = ref.watch(duesPlaceBatchesProvider);
     final bool monthSet = filter.month != null;
 
     final Widget batchSelect = BhorSelect<String>(
       key: const ValueKey<String>('dues-filter-batch'),
       semanticLabel: l10n.duesFilterBatch,
       hint: l10n.duesFilterBatch,
+      searchable: true,
       value: filter.batchId ?? '',
       options: <BhorOption<String>>[
         BhorOption<String>('', l10n.commonAll, icon: BhorIcons.batches),

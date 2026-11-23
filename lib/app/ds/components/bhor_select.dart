@@ -9,10 +9,11 @@
 // BhorPickerField is the same soft field as a plain tap target (date, time
 // or any value chosen in a picker), so no feature draws its own white,
 // outlined or borderless "field".
-// More than six options (or `searchable: true`) put a filter field at the top
-// of the popover / sheet: typing narrows the list (the label and the option's
-// `searchText`, Bangla or ASCII digits alike), Enter picks the first match,
-// arrow-down moves into the list.
+// `searchable: true` (opt-in, for entity lists: students, batches, tuitions,
+// places) puts a filter field at the top of the popover / sheet: typing
+// narrows the list (the label and the option's `searchText`, Bangla or ASCII
+// digits alike), Enter picks the first match, arrow-down moves into the list.
+// Short fixed lists (months, times) never get one.
 // Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`,
 // `BhorPickerField(label: 'শুরু', value: fmt.time(m), icon: BhorIcons.clock, onTap: pick)`.
 
@@ -29,7 +30,9 @@ import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 
-/// A [BhorSelect] with more options than this gets a filter field.
+/// Lists longer than this are worth a filter field: callers with a list of
+/// people / batches use it to decide on `searchable` (the select itself never
+/// turns search on by itself).
 const int kBhorSelectSearchAbove = 6;
 
 /// One choice of a [BhorSelect].
@@ -65,16 +68,16 @@ class BhorSelect<T> extends StatefulWidget {
     this.hint,
     this.error,
     this.semanticLabel,
-    this.searchable,
+    this.searchable = false,
     this.searchHint,
   });
 
   final List<BhorOption<T>> options;
   final T? value;
 
-  /// Filter field at the top of the list. Null (default): only with more
-  /// than [kBhorSelectSearchAbove] options.
-  final bool? searchable;
+  /// Filter field at the top of the list (opt-in: entity lists such as
+  /// students, batches / tuitions and places; never months or times).
+  final bool searchable;
 
   /// Placeholder of the filter field (default "খুঁজুন…").
   final String? searchHint;
@@ -94,7 +97,7 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
   final GlobalKey _boxKey = GlobalKey();
   bool _open = false;
 
-  bool get _searchable => widget.searchable ?? widget.options.length > kBhorSelectSearchAbove;
+  bool get _searchable => widget.searchable;
 
   BhorOption<T>? get _current {
     for (final BhorOption<T> o in widget.options) {

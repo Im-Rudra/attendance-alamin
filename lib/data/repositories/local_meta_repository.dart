@@ -36,6 +36,14 @@ abstract final class LocalMetaKeys {
   /// (Arch 3.3, used by future Drive sync). Written by the backup repository.
   static String lastImport(String sourceDeviceId) => 'last_import:$sourceDeviceId';
 
+  /// The place the "All places" filter of Today, Batches, Fees and Students
+  /// is set to on this device; value = place id (absent = all places).
+  static const placeFilter = 'place_filter';
+
+  /// The place the last new batch / tuition was made at on this device (the
+  /// default of the next one); value = place id.
+  static const lastPlace = 'last_place';
+
   /// Keys no feature may write through [LocalMetaRepository.setRaw].
   static const reserved = <String>{'device_id'};
 }

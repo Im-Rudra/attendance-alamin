@@ -22,6 +22,7 @@ import 'package:attendance_alamin/features/backup/backup_entry.dart';
 import 'package:attendance_alamin/features/reminders/reminders_entry.dart';
 import 'package:attendance_alamin/features/settings/controllers/settings_providers.dart';
 import 'package:attendance_alamin/features/settings/data/template_logic.dart';
+import 'package:attendance_alamin/features/settings/places/places_section.dart';
 import 'package:attendance_alamin/features/extras/ui/holiday_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/diagnostics_screen.dart';
 import 'package:attendance_alamin/features/settings/ui/help_screen.dart';
@@ -129,7 +130,7 @@ class SettingsGroupBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final List<Widget> cards = switch (group) {
       SettingsGroup.general => _general(context, ref),
-      SettingsGroup.center => _center(context),
+      SettingsGroup.center => <Widget>[PlacesSection(fields: _centerFields(context))],
       SettingsGroup.reminders => _reminders(context, ref),
       SettingsGroup.fees => _fees(context, ref),
       SettingsGroup.backup => const <Widget>[BackupSection()],
@@ -302,13 +303,14 @@ class SettingsGroupBody extends ConsumerWidget {
   }
 
   // ---- center ----
-  List<Widget> _center(BuildContext context) {
+  /// The single-centre card (one active place): the centre settings, which
+  /// are the main place's name, phone and address.
+  Widget _centerFields(BuildContext context) {
     final l10n = context.l10n;
     final BhorThemeData b = context.bhor;
     Widget pad(Widget child) =>
         Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: child);
-    return <Widget>[
-      SettingsCard(dividers: false, children: <Widget>[
+    return SettingsCard(dividers: false, children: <Widget>[
         pad(SettingTextField(
           key: const Key('more-center-name'),
           settingKey: SettingKeys.centerName,
@@ -342,8 +344,7 @@ class SettingsGroupBody extends ConsumerWidget {
             ],
           ),
         ),
-      ]),
-    ];
+      ]);
   }
 
   // ---- reminders ----

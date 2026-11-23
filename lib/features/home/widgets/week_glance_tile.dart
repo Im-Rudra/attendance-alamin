@@ -26,7 +26,7 @@ class WeekGlanceTile extends ConsumerWidget {
     final LocalDate today = ref.watch(todayProvider);
     final int weekStart = ref.watch(weekStartProvider).value ?? 6;
     final LocalDate first = weekStartFor(today, weekStart);
-    final List<DayPlan>? plans = ref.watch(weekPlanProvider(first)).value;
+    final List<DayPlan>? plans = ref.watch(todayWeekPlanProvider(first)).value;
 
     final Widget header = TileHeader(
       icon: BhorIcons.calendar,

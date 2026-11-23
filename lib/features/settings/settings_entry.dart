@@ -8,6 +8,18 @@ export 'package:attendance_alamin/features/settings/controllers/settings_provide
     show paymentMethodsConfigProvider;
 export 'package:attendance_alamin/features/settings/data/payment_methods_config.dart'
     show CustomLabelCheck, PaymentMethodsConfig;
+export 'package:attendance_alamin/features/settings/places/place_filter.dart'
+    show
+        PlaceFilterChip,
+        PlacePill,
+        pickPlaceFilter,
+        placeDuesReportProvider,
+        placeFilterProvider,
+        placeFilterStoredProvider,
+        placeOfBatchProvider,
+        setPlaceFilter,
+        termsAtPlace;
+export 'package:attendance_alamin/features/settings/places/place_form.dart' show showPlaceFormPanel;
 export 'package:attendance_alamin/features/settings/data/template_logic.dart'
     show TemplateKind, defaultTemplate, editorTextFor, templateKey;
 export 'package:attendance_alamin/features/settings/ui/payment_methods_screen.dart'

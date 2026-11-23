@@ -24,7 +24,10 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
+import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
+import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
@@ -33,6 +36,7 @@ import 'package:attendance_alamin/domain/models/batch_names.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
@@ -42,6 +46,7 @@ import 'package:attendance_alamin/features/batches/widgets/fee_change_sheet.dart
 import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
 import 'package:attendance_alamin/features/batches/widgets/tuition_students_field.dart';
 import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
 import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -125,6 +130,11 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   String _seedNotes = '';
   String _seedFee = '';
   BillingType _seedBilling = BillingType.prepaid;
+
+  /// Where the batch meets (only picked with 2+ places; null = the main
+  /// place until the seed arrives).
+  String? _placeId;
+  String? _seedPlace;
   late final ValueNotifier<bool> _dirty = widget.dirty ?? ValueNotifier<bool>(false);
 
   bool get _editing => widget.batchId != null;
@@ -137,6 +147,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     if (!_loaded) return false;
     if (_name.text != _seedName || _notes.text != _seedNotes || _fee.text != _seedFee) return true;
     if (_billing != _seedBilling) return true;
+    if (_placeId != _seedPlace) return true;
     if (!_editing && (_subject.text.trim().isNotEmpty || _slots.isNotEmpty)) return true;
     if (!_editing && !_students.isEmpty) return true;
     return false;
@@ -207,8 +218,11 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
       _fee.text = fee == null ? '' : context.fmt.digits(fee.toString());
       _subject.text = seed.subjectName;
     }
+    final String place = b?.placeId ?? _newBatchPlace();
     setState(() {
       _batch = b;
+      _placeId = place;
+      _seedPlace = place;
       _notFound = seed.notFound;
       _billing = seed.billing;
       _oldFee = seed.fee;
@@ -218,6 +232,19 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
       _seedBilling = seed.billing;
       _loaded = true;
     });
+  }
+
+  /// Where a new batch starts: the place the lists are filtered to, else the
+  /// place used last on this device, else the main place (only active
+  /// places count).
+  String _newBatchPlace() {
+    final List<Place> active = ref.read(placesProvider).value ?? const <Place>[];
+    bool ok(String? id) => id != null && active.any((Place p) => p.id == id);
+    final String? filtered = ref.read(placeFilterProvider);
+    if (ok(filtered)) return filtered!;
+    final String? last = ref.read(batchLastPlaceProvider).value;
+    if (ok(last)) return last!;
+    return kDefaultPlaceId;
   }
 
   /// Blank means "no fee yet" = 0; null when the text is not an amount.
@@ -308,6 +335,10 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
         }
       } else {
         final String id = await _saveCreate();
+        final String? place = _placeId;
+        if (place != null) {
+          await ref.read(localMetaRepositoryProvider).setRaw(LocalMetaKeys.lastPlace, place);
+        }
         // The tuition exists now; a student that fails to save is reported,
         // never a reason to keep the form open (a second save would make a
         // second tuition).
@@ -361,6 +392,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           slotsFrom: today,
           notes: notes.isEmpty ? null : notes,
           kind: _kind,
+          placeId: _placeId,
         ));
   }
 
@@ -428,6 +460,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     final String notes = _notes.text.trim();
     final String? newNotes = notes.isEmpty ? null : notes;
     if (newNotes != batch.notes) await repo.setNotes(batch.id, newNotes);
+    final String? place = _placeId;
+    if (place != null && place != batch.placeId) await repo.setPlace(batch.id, place);
     if (from != null) await repo.setFee(batch.id, newFee, from);
     return true;
   }
@@ -452,7 +486,12 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   Widget _body(BuildContext context) {
     final l10n = context.l10n;
     final AsyncValue<BatchFormSeed> seed = ref.watch(batchFormSeedProvider(widget.batchId));
-    if (!_seeded && seed.hasValue) {
+    // A new batch starts at the filtered / last used place: wait for both.
+    ref.watch(placeFilterProvider);
+    final bool placesReady = !ref.watch(placesProvider).isLoading &&
+        !ref.watch(batchLastPlaceProvider).isLoading &&
+        !ref.watch(placeFilterStoredProvider).isLoading;
+    if (!_seeded && seed.hasValue && placesReady) {
       _seeded = true;
       final BatchFormSeed value = seed.requireValue;
       WidgetsBinding.instance.addPostFrameCallback((_) => _applySeed(value));
@@ -476,6 +515,41 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     return const Padding(padding: EdgeInsets.all(BhorSpace.s32), child: Center(child: BhorSpinner()));
   }
 
+  /// The place picker: active places, plus the batch's own place if it was
+  /// archived since (so the field still shows it).
+  Widget _placeSelect(BuildContext context) {
+    final l10n = context.l10n;
+    final BhorThemeData th = context.bhor;
+    final List<Place> active = ref.watch(placesProvider).value ?? const <Place>[];
+    final String? value = _placeId;
+    final Place? own = value == null ? null : ref.watch(placeByIdProvider(value));
+    final List<Place> options = <Place>[
+      ...active,
+      if (own != null && !active.any((Place p) => p.id == own.id)) own,
+    ];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorSelect<String>(
+          key: const Key('batch-form-place'),
+          label: l10n.placeField,
+          value: value,
+          searchable: true,
+          options: <BhorOption<String>>[
+            for (final Place p in options) BhorOption<String>(p.id, p.name, icon: BhorIcons.explore),
+          ],
+          onChanged: (String id) => setState(() => _placeId = id),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(l10n.placeFieldHelp, style: th.type.meta),
+        ),
+      ],
+    );
+  }
+
   Widget _form(BuildContext context) {
     final l10n = context.l10n;
     final BhorThemeData th = context.bhor;
@@ -492,6 +566,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
         typed.isNotEmpty &&
         !subjects.any((Subject s) => s.name.trim().toLowerCase() == typed.toLowerCase());
     final SlotEditorBuilder buildSlots = ref.watch(batchSlotEditorBuilderProvider);
+    final bool manyPlaces = ref.watch(hasManyPlacesProvider);
     _syncDirty();
 
     final List<String> suggestions = <String>[
@@ -571,6 +646,12 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                   ],
                   if (showSubject) const SizedBox(height: 16),
                   if (!tuition) ...<Widget>[nameField, const SizedBox(height: 16)],
+                  // Several places: where it meets (slips and reminders use
+                  // that place's name, phone and address).
+                  if (manyPlaces) ...<Widget>[
+                    _placeSelect(context),
+                    const SizedBox(height: 16),
+                  ],
                   if (_editing)
                     BhorCard(
                       padding: EdgeInsets.zero,

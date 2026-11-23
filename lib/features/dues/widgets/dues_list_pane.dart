@@ -8,7 +8,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
-import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 
 import 'package:attendance_alamin/app/ds/ds.dart';
@@ -21,6 +20,7 @@ import 'package:attendance_alamin/features/dues/widgets/dues_group_header.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_overview.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 import 'package:attendance_alamin/features/dues/widgets/reminder_walkthrough.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 class DuesListPane extends ConsumerStatefulWidget {
   const DuesListPane({
@@ -65,7 +65,7 @@ class _DuesListPaneState extends ConsumerState<DuesListPane> {
     final l10n = context.l10n;
     final double g = WindowClass.of(context).gutter;
     final AsyncValue<DuesView> async = ref.watch(duesViewProvider);
-    final DuesReport? report = ref.watch(duesReportProvider).value;
+    final DuesReport? report = ref.watch(placeDuesReportProvider).value;
     return async.when(
       loading: () => const _DuesSkeleton(),
       error: (Object e, StackTrace s) =>

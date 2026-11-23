@@ -23,9 +23,11 @@ import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/validation/validators.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/other_income.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/extras/controllers/other_income_text.dart';
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
@@ -88,7 +90,14 @@ Future<bool> openOtherIncomeSheet(BuildContext context, {String? studentId}) asy
 Future<String> _receiptText(BuildContext context, ProviderContainer container, OtherIncome income) async {
   final l10n = context.l10n;
   final fmt = context.fmt;
-  final String center = (await container.read(settingsRepositoryProvider).get(SettingKeys.centerName));
+  String center = await container.read(settingsRepositoryProvider).get(SettingKeys.centerName);
+  // Income of another place carries that place's name (the main place is
+  // the centre settings).
+  final String? placeId = income.placeId;
+  if (placeId != null && placeId != kDefaultPlaceId) {
+    final Place? place = await container.read(placesRepositoryProvider).getById(placeId);
+    if (place != null && place.name.trim().isNotEmpty) center = place.name;
+  }
   String? student;
   if (income.studentId != null) {
     student = (await container.read(studentsRepositoryProvider).getById(income.studentId!))?.name;
@@ -134,6 +143,10 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
   final TextEditingController _note = TextEditingController();
   PaymentMethod? _method;
   LocalDate? _date;
+
+  /// The place it belongs to; null = general. Starts at the place the lists
+  /// are filtered to (only asked with 2+ places).
+  late String? _placeId = ref.read(placeFilterProvider);
   bool _busy = false;
   bool _touched = false;
   String? _error;
@@ -226,6 +239,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
         paidOn: _date ?? today,
         method: method,
         note: note.isEmpty ? null : note,
+        placeId: _placeId,
       );
       final String id = await ref.read(otherIncomeRepositoryProvider).add(draft);
       if (!mounted) return;
@@ -240,6 +254,7 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
           paidOn: draft.paidOn,
           method: draft.method,
           note: draft.note,
+          placeId: draft.placeId,
         ),
       ));
     } on Object catch (e) {
@@ -249,6 +264,36 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
         _error = errorText(l10n, e);
       });
     }
+  }
+
+  /// "Place": General (no place) or one of the active places.
+  Widget _placeSelect(AppLocalizations l10n, BhorThemeData b) {
+    final List<Place> places = ref.watch(placesProvider).value ?? const <Place>[];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        BhorSelect<String>(
+          key: const ValueKey<String>('income-place'),
+          label: l10n.placeField,
+          value: _placeId ?? '',
+          searchable: true,
+          options: <BhorOption<String>>[
+            BhorOption<String>('', l10n.placeGeneral),
+            for (final Place p in places) BhorOption<String>(p.id, p.name, icon: BhorIcons.explore),
+          ],
+          onChanged: (String id) => setState(() {
+            _touched = true;
+            _placeId = id.isEmpty ? null : id;
+          }),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(l10n.placeIncomeHelp, style: b.type.meta),
+        ),
+      ],
+    );
   }
 
   @override
@@ -348,6 +393,10 @@ class _OtherIncomeFormState extends ConsumerState<OtherIncomeForm> {
                 ),
             ],
           ),
+          if (ref.watch(hasManyPlacesProvider)) ...<Widget>[
+            const SizedBox(height: BhorSpace.s16),
+            _placeSelect(l10n, b),
+          ],
           const SizedBox(height: BhorSpace.s16),
           BhorPickerField(
             key: const ValueKey<String>('income-date'),

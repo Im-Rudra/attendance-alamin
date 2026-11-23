@@ -14,6 +14,7 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
@@ -31,6 +32,7 @@ import 'package:attendance_alamin/features/home/widgets/recent_payments_tile.dar
 import 'package:attendance_alamin/features/home/widgets/reminder_hint.dart';
 import 'package:attendance_alamin/features/home/widgets/timeline.dart';
 import 'package:attendance_alamin/features/home/widgets/week_glance_tile.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// Height of a hero + dues row on medium windows (two equal tiles).
 const double _kMediumTopRow = 280;
@@ -51,6 +53,8 @@ class TodayScreen extends ConsumerWidget {
     final WindowClass wc = WindowClass.of(context);
     final LocalDate today = ref.watch(todayProvider);
     final TodayView view = ref.watch(todayViewProvider);
+    // 2+ places: "All places ▾" narrows the day to one place.
+    final bool many = ref.watch(hasManyPlacesProvider);
 
     // "শুভ সকাল / বিকাল / সন্ধ্যা" over the weekday-date line.
     final int nowMin = ref.watch(nowMinutesProvider);
@@ -65,6 +69,7 @@ class TodayScreen extends ConsumerWidget {
         overline: context.fmt.weekdayDate(today),
         title: greeting,
         actions: <Widget>[
+          if (many) const PlaceFilterChip(maxWidth: 180),
           SizedBox(
             width: 190,
             child: Semantics(
@@ -92,6 +97,9 @@ class TodayScreen extends ConsumerWidget {
         title: greeting,
         large: true,
         showBack: false,
+        actions: <Widget>[
+          if (many) const PlaceFilterChip(maxWidth: 160),
+        ],
       ),
       body: _StackedBody(wc: wc, today: today),
     );

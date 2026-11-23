@@ -16,6 +16,7 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/time/date_range.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
@@ -166,6 +167,7 @@ List<Override> engineOverrides(SeededFakes f) => <Override>[
       otherIncomeRepositoryProvider.overrideWithValue(f.otherIncome),
       settingsRepositoryProvider.overrideWithValue(f.settings),
       localMetaRepositoryProvider.overrideWithValue(f.localMeta),
+      placesRepositoryProvider.overrideWithValue(f.places),
     ];
 
 ScheduleException cancelOf(String slotId, String batchId, LocalDate date) => ScheduleException(

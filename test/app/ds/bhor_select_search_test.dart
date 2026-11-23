@@ -1,6 +1,7 @@
-// BhorSelect search (W3-Tuition): more than six options put a filter field at
-// the top of the list; it narrows by label and searchText (Bangla or ASCII
-// digits), Enter picks the first match, and short lists stay as they were.
+// BhorSelect search (W3-Tuition, opt-in since W3-Places): `searchable: true`
+// puts a filter field at the top of the list; it narrows by label and
+// searchText (Bangla or ASCII digits), Enter picks the first match. Without the
+// flag no list gets one, however long (months, times).
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -24,7 +25,7 @@ const List<BhorOption<int>> _eight = <BhorOption<int>>[
   BhorOption<int>(8, 'Joy Saha'),
 ];
 
-Widget _select(List<BhorOption<int>> options, ValueChanged<int> onChanged, {bool? searchable}) =>
+Widget _select(List<BhorOption<int>> options, ValueChanged<int> onChanged, {bool searchable = true}) =>
     BhorSelect<int>(
       label: 'শিক্ষার্থী',
       value: null,
@@ -43,7 +44,7 @@ void main() {
   });
 
   for (final Lang lang in Lang.values) {
-    testWidgets('more than six options: a filter field narrows the popover [${lang.code}]',
+    testWidgets('searchable: a filter field narrows the popover [${lang.code}]',
         (WidgetTester tester) async {
       int? picked;
       await pumpDs(tester, _select(_eight, (int v) => picked = v), size: _desktop, lang: lang);
@@ -93,15 +94,27 @@ void main() {
     expect(picked, isNull);
   });
 
-  testWidgets('six or fewer options: no filter field (unchanged)', (WidgetTester tester) async {
-    await pumpDs(tester, _select(_eight.take(6).toList(), (_) {}), size: _desktop);
+  testWidgets('not searchable (default): no filter field even on a long list', (WidgetTester tester) async {
+    await pumpDs(tester, _select(_eight, (_) {}, searchable: false), size: _desktop);
     await tester.tap(find.byType(BhorSelect<int>));
     await tester.pumpAndSettle();
     expect(_search, findsNothing);
-    expect(find.text('Mitu Das'), findsOneWidget);
+    expect(find.text('Rafi Ahmed'), findsOneWidget);
   });
 
-  testWidgets('searchable: true forces the field on a short list', (WidgetTester tester) async {
+  testWidgets('not searchable on a phone: the sheet has no filter field either', (WidgetTester tester) async {
+    await pumpDs(tester, _select(_eight, (_) {}, searchable: false));
+    await tester.tap(find.byType(BhorSelect<int>));
+    await tester.pumpAndSettle();
+    expect(_search, findsNothing);
+  });
+
+  test('the flag defaults to false', () {
+    final BhorSelect<int> s = BhorSelect<int>(options: _eight, value: null, onChanged: (_) {});
+    expect(s.searchable, isFalse);
+  });
+
+  testWidgets('searchable: true shows the field on a short list too', (WidgetTester tester) async {
     await pumpDs(tester, _select(_eight.take(2).toList(), (_) {}, searchable: true), size: _desktop);
     await tester.tap(find.byType(BhorSelect<int>));
     await tester.pumpAndSettle();

@@ -16,9 +16,11 @@ import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/fee_period.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/features/attendance/attendance_entry.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
@@ -217,6 +219,8 @@ class _BatchHeader extends ConsumerWidget {
     ].length;
     final int? pct = BatchCard.todayPercent(ref.watch(dayPlanProvider(today)).value, batch.id);
     final BatchDuesSummary? dues = ref.watch(batchDuesProvider(batch.id)).value;
+    // Several places: where this batch meets (one place: nothing new).
+    final Place? place = ref.watch(hasManyPlacesProvider) ? ref.watch(placeByIdProvider(batch.placeId)) : null;
 
     final List<String> facts = <String>[
       if (fee != null) fee == 0 ? l10n.batchNoFeeYet : l10n.batchFeePerMonth(fmt.money(fee)),
@@ -250,6 +254,22 @@ class _BatchHeader extends ConsumerWidget {
                   BillingPill(type: batch.billingType),
                 ],
               ),
+              if (place != null) ...<Widget>[
+                const SizedBox(height: BhorSpace.s4),
+                Row(
+                  key: const ValueKey<String>('batch-detail-place'),
+                  children: <Widget>[
+                    Icon(BhorIcons.explore, size: BhorIconSize.inline, color: th.colors.text2),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        place.name,
+                        style: th.type.body.copyWith(color: th.colors.text2),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: BhorSpace.s4),
               if (!tiles)
                 Text(facts.join(' · '), style: th.type.body)

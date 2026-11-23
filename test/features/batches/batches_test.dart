@@ -16,6 +16,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
@@ -98,6 +99,7 @@ List<Override> withBatches(SeededFakes f, BatchesRepository batches, {bool stubS
       otherIncomeRepositoryProvider.overrideWithValue(f.otherIncome),
       settingsRepositoryProvider.overrideWithValue(f.settings),
       localMetaRepositoryProvider.overrideWithValue(f.localMeta),
+      placesRepositoryProvider.overrideWithValue(f.places),
       if (stubSlots) batchSlotEditorBuilderProvider.overrideWithValue(slotStub),
     ];
 

@@ -1,0 +1,233 @@
+{
+  "@@locale": "bn",
+  "placeFilterAll": "সব জায়গা",
+  "@placeFilterAll": {
+    "description": "Place filter chip: no place picked (lists and totals of every place)."
+  },
+  "placeFilterTitle": "কোন জায়গার হিসাব দেখবেন?",
+  "@placeFilterTitle": {
+    "description": "Title of the place filter's choice list."
+  },
+  "placeFilterLabel": "জায়গা: {name}",
+  "@placeFilterLabel": {
+    "description": "Screen-reader label of the place filter chip with the current choice.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeField": "জায়গা",
+  "@placeField": {
+    "description": "Batch / tuition / other income form: label of the place picker."
+  },
+  "placeFieldHelp": "রসিদ ও রিমাইন্ডারে এই জায়গার নাম, ফোন ও ঠিকানা যাবে",
+  "@placeFieldHelp": {
+    "description": "Batch / tuition form: helper under the place picker."
+  },
+  "placeGeneral": "সাধারণ (কোনো জায়গার নয়)",
+  "@placeGeneral": {
+    "description": "Other income form: place option for income that belongs to no place."
+  },
+  "placeIncomeHelp": "যে জায়গার আয়, সেটা বেছে নিন; সেই জায়গার হিসাবে যোগ হবে",
+  "@placeIncomeHelp": {
+    "description": "Other income form: helper under the place picker."
+  },
+  "placeMainTag": "প্রধান",
+  "@placeMainTag": {
+    "description": "Settings › Coaching centres: tag of the main (first) centre."
+  },
+  "placeBatchCount": "{count}টি চালু ব্যাচ",
+  "@placeBatchCount": {
+    "description": "Settings › Coaching centres: open batches and tuitions at a place (plural).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeBatchCountOne": "{count}টি চালু ব্যাচ",
+  "@placeBatchCountOne": {
+    "description": "Settings › Coaching centres: open batches at a place (one).",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeNoBatches": "কোনো চালু ব্যাচ নেই",
+  "@placeNoBatches": {
+    "description": "Settings › Coaching centres: a place without open batches."
+  },
+  "placeAdd": "আরেকটি সেন্টার যোগ করুন",
+  "@placeAdd": {
+    "description": "Settings › Coaching centres: row that adds a place."
+  },
+  "placeAddHint": "একাধিক জায়গায় পড়ালে প্রতিটির হিসাব আলাদা থাকবে",
+  "@placeAddHint": {
+    "description": "Settings › Coaching centres: helper of the add row."
+  },
+  "placeSectionHelp": "প্রতিটি সেন্টারের নাম, ফোন ও ঠিকানা সেই জায়গার রসিদ ও রিমাইন্ডারে যায়",
+  "@placeSectionHelp": {
+    "description": "Settings › Coaching centres: helper above the list of places."
+  },
+  "placeNewTitle": "নতুন সেন্টার",
+  "@placeNewTitle": {
+    "description": "Title of the panel that adds a place."
+  },
+  "placeEditTitle": "সেন্টারের তথ্য",
+  "@placeEditTitle": {
+    "description": "Title of the panel that edits a place."
+  },
+  "placeNameLabel": "সেন্টার বা জায়গার নাম",
+  "@placeNameLabel": {
+    "description": "Place form: name field label."
+  },
+  "placeNameHint": "যেমন: আলামিন কোচিং, শিক্ষার্থীর বাসা",
+  "@placeNameHint": {
+    "description": "Place form: name field hint."
+  },
+  "placeNameTaken": "এই নামে আরেকটি সেন্টার আছে",
+  "@placeNameTaken": {
+    "description": "Place form: inline error when the name is used by another place."
+  },
+  "placeReasonName": "নাম লিখুন",
+  "@placeReasonName": {
+    "description": "Place form: why Save is disabled (no name)."
+  },
+  "placeReasonNoChange": "কিছু বদলানো হয়নি",
+  "@placeReasonNoChange": {
+    "description": "Place form: why Save is disabled (editing, nothing changed)."
+  },
+  "placePhoneLabel": "ফোন নম্বর",
+  "@placePhoneLabel": {
+    "description": "Place form: phone field label."
+  },
+  "placePhoneHint": "যেমন 01712345678",
+  "@placePhoneHint": {
+    "description": "Place form: phone field hint."
+  },
+  "placeAddressLabel": "ঠিকানা",
+  "@placeAddressLabel": {
+    "description": "Place form: address field label."
+  },
+  "placeFormHelp": "এই নাম, ফোন ও ঠিকানা এই জায়গার রসিদ ও রিমাইন্ডারে দেখা যাবে",
+  "@placeFormHelp": {
+    "description": "Place form: helper at the top."
+  },
+  "placeSaved": "সেন্টারের তথ্য সেভ হয়েছে",
+  "@placeSaved": {
+    "description": "Toast after a place was edited."
+  },
+  "placeAdded": "{name} যোগ হয়েছে",
+  "@placeAdded": {
+    "description": "Toast after a place was added.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeMenuLabel": "{name}-এর অপশন",
+  "@placeMenuLabel": {
+    "description": "Screen-reader label of a place row's menu button.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeMoveUp": "উপরে নিন",
+  "@placeMoveUp": {
+    "description": "Place row menu: move the place up in the list."
+  },
+  "placeMoveDown": "নিচে নিন",
+  "@placeMoveDown": {
+    "description": "Place row menu: move the place down in the list."
+  },
+  "placeArchive": "আর্কাইভ করুন",
+  "@placeArchive": {
+    "description": "Place row menu: archive the place."
+  },
+  "placeArchiveTitle": "{name} আর্কাইভ করবেন?",
+  "@placeArchiveTitle": {
+    "description": "Confirm title before archiving a place.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeArchiveBody": "বাছাই ও ফিল্টারের তালিকায় আর দেখাবে না। পুরনো পেমেন্ট ও হিসাব যেমন আছে থাকবে।",
+  "@placeArchiveBody": {
+    "description": "Confirm message before archiving a place."
+  },
+  "placeArchiveBlocked": "{name}-এ এখনো চালু ব্যাচ বা টিউশন আছে। আগে সেগুলো অন্য জায়গায় সরান বা শেষ করুন।",
+  "@placeArchiveBlocked": {
+    "description": "Toast when a place with open batches can't be archived.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeArchived": "{name} আর্কাইভ হয়েছে",
+  "@placeArchived": {
+    "description": "Toast after a place was archived.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeArchivedGroup": "আর্কাইভ করা সেন্টার",
+  "@placeArchivedGroup": {
+    "description": "Settings › Coaching centres: heading of the archived places."
+  },
+  "placeRestore": "ফিরিয়ে আনুন",
+  "@placeRestore": {
+    "description": "Settings › Coaching centres: button that unarchives a place."
+  },
+  "placeRestored": "{name} আবার চালু হয়েছে",
+  "@placeRestored": {
+    "description": "Toast after a place was unarchived.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "1"
+      }
+    }
+  },
+  "placeByPlace": "জায়গা অনুযায়ী",
+  "@placeByPlace": {
+    "description": "Fees › Collected: title of the per-place totals card."
+  },
+  "placeByPlaceHint": "কোনো জায়গায় চাপ দিলে শুধু সেটার হিসাব দেখাবে",
+  "@placeByPlaceHint": {
+    "description": "Fees › Collected: helper of the per-place totals card."
+  },
+  "placeCollected": "আদায়",
+  "@placeCollected": {
+    "description": "Per-place totals: fee money received this month."
+  },
+  "placeDues": "বকেয়া",
+  "@placeDues": {
+    "description": "Per-place totals: still owed for the month."
+  },
+  "placeOtherIncome": "অন্যান্য আয়",
+  "@placeOtherIncome": {
+    "description": "Per-place totals: other income of the place."
+  },
+  "placeGeneralIncome": "সাধারণ অন্যান্য আয় (কোনো জায়গার নয়)",
+  "@placeGeneralIncome": {
+    "description": "Per-place totals: other income that belongs to no place."
+  }
+}
