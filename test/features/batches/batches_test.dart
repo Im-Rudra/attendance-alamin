@@ -68,18 +68,22 @@ class SpyBatches extends FakeBatchesRepository {
   YearMonth? lastBillable;
   bool? acceptedClashes;
   bool? waivedGap;
+  LocalDate? finishedOn;
+  LocalDate? reopenedOn;
 
   @override
   Future<void> archive(String id, {required LocalDate on, required YearMonth lastBillableMonth}) {
     lastBillable = lastBillableMonth;
+    finishedOn = on;
     return super.archive(id, on: on, lastBillableMonth: lastBillableMonth);
   }
 
   @override
-  Future<int> unarchive(String id, {bool acceptClashes = false, bool waiveGap = true}) {
+  Future<int> unarchive(String id, {bool acceptClashes = false, bool waiveGap = true, LocalDate? on}) {
     acceptedClashes = acceptClashes;
     waivedGap = waiveGap;
-    return super.unarchive(id, acceptClashes: acceptClashes, waiveGap: waiveGap);
+    reopenedOn = on;
+    return super.unarchive(id, acceptClashes: acceptClashes, waiveGap: waiveGap, on: on);
   }
 }
 
@@ -218,8 +222,10 @@ void main() {
       await tester.enterText(find.byKey(const Key('batch-form-subject')), 'জীববিজ্ঞান');
       await tester.pump();
       expect(find.text(bn.batchSubjectNew('জীববিজ্ঞান')), findsOneWidget);
-      // Save stays disabled with its reason until fee and time are given.
-      expect(find.text(bn.batchReasonFee), findsOneWidget);
+      // Save stays disabled with its reason until the time is given (a blank
+      // fee is fine: "no fee yet").
+      expect(find.text(bn.batchReasonFee), findsNothing);
+      expect(find.text(bn.batchReasonSlots), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('batch-form-fee')), '৫০০');
       await tester.pump();
@@ -242,6 +248,47 @@ void main() {
       expect(fakes.store.fees[created.id]!.single.amount, 500);
       expect(fakes.store.slots.where((Slot s) => s.batchId == created.id).single.weekday, 4);
 
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a blank fee saves as 0 ("No fee yet")', (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchFormScreen(), overrides: withBatches(fakes, fakes.batches));
+      await tallWindow(tester);
+      await settleSome(tester);
+      final int batchesBefore = fakes.store.batches.length;
+
+      await tester.enterText(find.byKey(const Key('batch-form-subject')), '  রসায়ন ');
+      await tester.pump();
+      expect(find.text(bn.batchFeeBlankHelp), findsOneWidget);
+      await tester.tap(find.byKey(const Key('slot-stub')));
+      await tester.pump();
+      // Nothing blocks Save: the fee field is empty.
+      expect(find.text(bn.batchReasonFee), findsNothing);
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
+      await settleSome(tester);
+
+      expect(fakes.store.batches.length, batchesBefore + 1);
+      expect(fakes.store.fees[fakes.store.batches.last.id]!.single.amount, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('an explicit 0 is also accepted', (WidgetTester tester) async {
+      fakes = seedFakes();
+      await pumpApp(tester, const BatchFormScreen(), overrides: withBatches(fakes, fakes.batches));
+      await tallWindow(tester);
+      await settleSome(tester);
+      final int batchesBefore = fakes.store.batches.length;
+
+      await tester.enterText(find.byKey(const Key('batch-form-subject')), 'রসায়ন');
+      await tester.enterText(find.byKey(const Key('batch-form-fee')), '0');
+      await tester.tap(find.byKey(const Key('slot-stub')));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(BhorButton, bn.commonSave));
+      await settleSome(tester);
+
+      expect(fakes.store.batches.length, batchesBefore + 1);
+      expect(fakes.store.fees[fakes.store.batches.last.id]!.single.amount, 0);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -393,6 +440,9 @@ void main() {
 
       await openMenu(tester, bn.batchMenuArchive);
       expect(find.text(bn.batchArchiveTitle(kBatches[0].name)), findsOneWidget);
+      // "Finished on" defaults to today.
+      expect(find.text(bn.batchFinishedOnLabel), findsOneWidget);
+      expect(find.text(fmtBn.date(kToday)), findsWidgets);
       // Archive day 21 >= 11: November is the default last billable month.
       expect(
         find.text(bn.batchArchiveLbmHelp(fmtBn.monthYear(const YearMonth(2026, 11)))),
@@ -408,6 +458,7 @@ void main() {
       await settleSome(tester, 8);
 
       expect(spy.lastBillable, const YearMonth(2026, 10));
+      expect(spy.finishedOn, kToday);
       expect(fakes.store.batches.firstWhere((Batch b) => b.id == kBatPhysA).archivedOn, kToday);
       // The detail now says so and offers the way back.
       expect(find.text(bn.batchArchivedBanner(fmtBn.date(kToday))), findsOneWidget);
@@ -438,11 +489,15 @@ void main() {
       await settleSome(tester, 8);
       expect(find.text(bn.batchUnarchiveTitle(kBatches[0].name)), findsOneWidget);
       expect(find.text(bn.batchUnarchiveClash), findsNothing);
+      // "Classes started again on" defaults to today.
+      expect(find.text(bn.batchReopenOnLabel), findsOneWidget);
+      expect(find.text(fmtBn.date(kToday)), findsWidgets);
       // The banner's own button has the same label; the confirm is the last.
       await tester.tap(find.text(bn.batchUnarchiveConfirm).last);
       await settleSome(tester, 8);
 
       expect(spy.acceptedClashes, isFalse);
+      expect(spy.reopenedOn, kToday);
       expect(fakes.store.batches.firstWhere((Batch b) => b.id == kBatPhysA).archived, isFalse);
       await tester.pumpWidget(const SizedBox.shrink());
     });

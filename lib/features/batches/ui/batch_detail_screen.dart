@@ -219,7 +219,7 @@ class _BatchHeader extends ConsumerWidget {
     final BatchDuesSummary? dues = ref.watch(batchDuesProvider(batch.id)).value;
 
     final List<String> facts = <String>[
-      if (fee != null) l10n.batchFeePerMonth(fmt.money(fee)),
+      if (fee != null) fee == 0 ? l10n.batchNoFeeYet : l10n.batchFeePerMonth(fmt.money(fee)),
       l10n.studentCountText(students, fmt.number(students)),
       if (pct != null) l10n.batchTodayPercent(fmt.percent(pct)),
     ];
@@ -250,7 +250,11 @@ class _BatchHeader extends ConsumerWidget {
               if (!tiles)
                 Text(facts.join(' · '), style: th.type.body)
               else ...<Widget>[
-                if (fee != null) Text(l10n.batchFeePerMonth(fmt.money(fee)), style: th.type.heading),
+                if (fee != null)
+                  Text(
+                    fee == 0 ? l10n.batchNoFeeYet : l10n.batchFeePerMonth(fmt.money(fee)),
+                    style: th.type.heading,
+                  ),
                 const SizedBox(height: BhorSpace.s8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -13,10 +13,8 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
-import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
-import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
@@ -27,23 +25,29 @@ void _toast(BuildContext context, String message) {
   BhorToast.show(context, message: message);
 }
 
-/// Archive dialog (asks the last billable month); true when archived.
+/// Finish-batch dialog (asks the finish day and the last billable month);
+/// true when finished.
 Future<bool> showArchiveBatchDialog(BuildContext context, {required String batchId}) async {
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
   final BatchesRepository repo = container.read(batchesRepositoryProvider);
   final Batch? batch = await repo.getById(batchId);
   if (batch == null || batch.archived || !context.mounted) return false;
   final LocalDate today = container.read(todayProvider);
-  final YearMonth? lbm = await showArchiveBatchPanel(
+  // Up to two years back, but never before the batch existed.
+  LocalDate earliest = today.addDays(-730);
+  if (batch.createdOn.isAfter(earliest)) earliest = batch.createdOn;
+  if (earliest.isAfter(today)) earliest = today;
+  final FinishChoice? choice = await showArchiveBatchPanel(
     context,
     batchName: batch.name,
-    initial: DuesEngine.defaultLastBillableMonth(today),
-    thisMonth: today.yearMonth,
+    today: today,
+    earliest: earliest,
+    weekStart: container.read(weekStartProvider).value ?? DateTime.saturday,
   );
-  if (lbm == null || !context.mounted) return false;
+  if (choice == null || !context.mounted) return false;
   final l10n = context.l10n;
   try {
-    await repo.archive(batchId, on: today, lastBillableMonth: lbm);
+    await repo.archive(batchId, on: choice.on, lastBillableMonth: choice.lastBillableMonth);
   } on Object catch (e) {
     if (context.mounted) _toast(context, errorText(l10n, e));
     return false;
@@ -80,7 +84,7 @@ Future<List<String>> _clashLines(
   return lines;
 }
 
-/// Unarchive flow (clash check, gap-waive prompt); true when unarchived.
+/// Reopen flow (restart day, clash check, gap-waive prompt); true when reopened.
 Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batchId}) async {
   final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
   final BatchesRepository repo = container.read(batchesRepositoryProvider);
@@ -103,11 +107,17 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
   }
   if (!context.mounted) return false;
 
+  // From the day after it was finished (a batch finished today reopens today).
+  LocalDate earliest = (batch.archivedOn ?? today).addDays(1);
+  if (earliest.isAfter(today)) earliest = today;
   final UnarchiveChoice? choice = await showUnarchiveBatchPanel(
     context,
     batchName: batch.name,
     clashLines: clashLines,
-    gapMonths: gapMonthsOnUnarchive(enrollments, today.yearMonth),
+    gapFor: (LocalDate on) => gapMonthsOnUnarchive(enrollments, on.yearMonth),
+    today: today,
+    earliest: earliest,
+    weekStart: container.read(weekStartProvider).value ?? DateTime.saturday,
   );
   if (choice == null || !context.mounted) return false;
 
@@ -118,6 +128,7 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
       batchId,
       acceptClashes: choice.acceptClashes,
       waiveGap: choice.waiveGap,
+      on: choice.on,
     );
   } on Object catch (e) {
     if (context.mounted) _toast(context, errorText(l10n, e));

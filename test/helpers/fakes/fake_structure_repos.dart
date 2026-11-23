@@ -267,7 +267,7 @@ class FakeBatchesRepository implements BatchesRepository {
 
   @override
   Future<int> unarchive(String id,
-      {bool acceptClashes = false, bool waiveGap = true}) async {
+      {bool acceptClashes = false, bool waiveGap = true, LocalDate? on}) async {
     if (!acceptClashes) store.throwIfClash();
     await _edit(id, (b) => _copy(b, archivedOn: () => null));
     return store.unarchiveGapMonths;

@@ -11,8 +11,10 @@ import 'package:attendance_alamin/app/providers/dues_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/widgets/theme_mapping.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
+import 'package:attendance_alamin/core/time/year_month.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
+import 'package:attendance_alamin/domain/models/fee_period.dart';
 import 'package:attendance_alamin/domain/models/schedule.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
@@ -145,6 +147,22 @@ class BillingPill extends StatelessWidget {
     final l10n = context.l10n;
     final String label = type == BillingType.prepaid ? l10n.batchPillAdvance : l10n.batchPillAfter;
     return BhorTag(label: label, tone: BhorTone.accent);
+  }
+}
+
+/// "ফি এখনো ঠিক হয়নি" while the batch's fee is 0 (blank at setup); nothing
+/// otherwise. The dues engine bills such months as free.
+class NoFeeTag extends ConsumerWidget {
+  const NoFeeTag({super.key, required this.batchId, required this.month});
+
+  final String batchId;
+  final YearMonth month;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<FeePeriod>? fees = ref.watch(batchFeesProvider(batchId)).value;
+    if (fees == null || feeIn(fees, month) != 0) return const SizedBox.shrink();
+    return BhorTag(label: context.l10n.batchNoFeeYet, tone: BhorTone.warn);
   }
 }
 
