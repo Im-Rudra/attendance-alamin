@@ -582,6 +582,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey<String>('coll-receipt-open-rcp-4')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
+      // The card waits for the receipt and its place; give them a few frames.
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey<String>('pay-receipt-text')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('pay-receipt-edit')), findsOneWidget);
       // Delete is quiet: it sits in the ⋮ menu, not next to Edit.
