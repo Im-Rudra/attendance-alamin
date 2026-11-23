@@ -113,7 +113,7 @@ class RollDateHeader extends StatelessWidget {
               onTap: () => onPickDate!(anchor),
               builder: (BuildContext _, BhorStates s) => DecoratedBox(
                 decoration: BoxDecoration(
-                  color: s.hovered || s.pressed ? b.colors.surface2 : const Color(0x00000000),
+                  color: s.hovered || s.pressed ? b.colors.surface2 : null,
                   borderRadius: BorderRadius.circular(BhorRadius.control),
                 ),
                 child: ConstrainedBox(
