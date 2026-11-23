@@ -191,8 +191,10 @@ void main() {
 
       // A batch's name is a different kind: no clash.
       await tester.enterText(find.byKey(const Key('batch-form-name')), kBatches[0].name);
-      await tester.pump();
+      // The old error fades out first.
+      await _settle(tester, 10);
       expect(find.text(bn.batchTuitionNameTaken), findsNothing);
+      expect(find.text(bn.batchReasonNameTaken), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
