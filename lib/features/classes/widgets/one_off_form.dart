@@ -21,6 +21,7 @@ import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/schedule_repository.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
 import 'package:attendance_alamin/features/classes/widgets/clash_panel.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
@@ -395,7 +396,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
         });
       }
       batchId = _batchId;
-      classLabel = l10n.clsClassLabel(i.subjectName, i.batch.name);
+      classLabel = batchLabel(l10n, i.subjectName, i.batch.name);
     }
 
     // Other classes of the chosen batch on that date (extra sheet note).
@@ -490,7 +491,7 @@ class _OneOffFormState extends ConsumerState<OneOffForm> {
                 children: <Widget>[
                   for (final BatchSchedule s in live)
                     BhorChip(
-                      label: l10n.clsClassLabel(s.subjectName, s.batch.name),
+                      label: batchLabel(l10n, s.subjectName, s.batch.name),
                       selected: s.batch.id == batchId,
                       onSelected: (_) => _chooseBatch(s),
                     ),

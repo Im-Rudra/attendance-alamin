@@ -14,5 +14,7 @@
   "dsPrevMonth": "Previous month",
   "dsNextMonth": "Next month",
   "dsGalleryTitle": "Design system",
-  "dsDone": "Done"
+  "dsDone": "Done",
+  "dsSearchHint": "Search…",
+  "dsNoMatch": "Nothing matches"
 }

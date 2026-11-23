@@ -136,17 +136,21 @@ class _ArchivedCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(b.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: th.type.heading),
-          Text(
-            row.subjectName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: th.type.body.copyWith(color: th.colors.text2),
-          ),
+          // A tuition without a subject has no subject line (never a blank).
+          if (row.subjectName.trim().isNotEmpty)
+            Text(
+              row.subjectName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: th.type.body.copyWith(color: th.colors.text2),
+            ),
           const SizedBox(height: BhorSpace.s8),
           Wrap(
             spacing: BhorSpace.s12,
             runSpacing: BhorSpace.s4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
+              if (b.isTuition) const PrivateTag(),
               Text(l10n.studentCountText(row.students, fmt.number(row.students)), style: th.type.label),
               if (b.archivedOn != null)
                 Text(

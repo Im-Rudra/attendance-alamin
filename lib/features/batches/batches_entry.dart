@@ -17,12 +17,22 @@ import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
+import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
+import 'package:attendance_alamin/features/batches/ui/batch_form_screen.dart';
 import 'package:attendance_alamin/features/batches/widgets/archive_dialogs.dart';
 
 void _toast(BuildContext context, String message) {
   BhorToast.show(context, message: message);
+}
+
+/// The new batch / private tuition form (side panel on desktop, sheet on
+/// phones); after a save the new one opens. Used by Today's "New…" menu.
+Future<void> showNewBatchFlow(BuildContext context, {BatchKind kind = BatchKind.batch}) async {
+  final GoRouter? router = GoRouter.maybeOf(context);
+  final Object? id = await showBatchFormPanel(context, kind: kind);
+  if (id is String) router?.go(Routes.batch(id));
 }
 
 /// Finish-batch dialog (asks the finish day and the last billable month);
@@ -40,6 +50,7 @@ Future<bool> showArchiveBatchDialog(BuildContext context, {required String batch
   final FinishChoice? choice = await showArchiveBatchPanel(
     context,
     batchName: batch.name,
+    tuition: batch.isTuition,
     today: today,
     earliest: earliest,
     weekStart: container.read(weekStartProvider).value ?? DateTime.saturday,
@@ -52,7 +63,9 @@ Future<bool> showArchiveBatchDialog(BuildContext context, {required String batch
     if (context.mounted) _toast(context, errorText(l10n, e));
     return false;
   }
-  if (context.mounted) _toast(context, l10n.batchArchivedToast);
+  if (context.mounted) {
+    _toast(context, batch.isTuition ? l10n.batchArchivedToastTuition : l10n.batchArchivedToast);
+  }
   return true;
 }
 
@@ -74,12 +87,12 @@ Future<List<String>> _clashLines(
     final String when = g.everyWeek
         ? l10n.batchClashEvery(fmt.weekdayName(g.weekday))
         : (g.date == null ? '' : fmt.dateShort(g.date!));
-    lines.add(l10n.batchClashLine(
-      subjectNames[other?.subjectId] ?? '',
-      other?.name ?? '',
-      when,
-      fmt.timeRange(g.startMin, g.endMin),
-    ));
+    final String subject = subjectNames[other?.subjectId] ?? '';
+    final String range = fmt.timeRange(g.startMin, g.endMin);
+    // A tuition without a subject: no empty "· " in front.
+    lines.add(subject.trim().isEmpty
+        ? l10n.batchClashLineNoSubject(other?.name ?? '', when, range)
+        : l10n.batchClashLine(subject, other?.name ?? '', when, range));
   }
   return lines;
 }
@@ -113,6 +126,7 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
   final UnarchiveChoice? choice = await showUnarchiveBatchPanel(
     context,
     batchName: batch.name,
+    tuition: batch.isTuition,
     clashLines: clashLines,
     gapFor: (LocalDate on) => gapMonthsOnUnarchive(enrollments, on.yearMonth),
     today: today,
@@ -134,7 +148,9 @@ Future<bool> showUnarchiveBatchFlow(BuildContext context, {required String batch
     if (context.mounted) _toast(context, errorText(l10n, e));
     return false;
   }
-  if (context.mounted) _toast(context, l10n.batchUnarchivedToast);
+  if (context.mounted) {
+    _toast(context, batch.isTuition ? l10n.batchUnarchivedToastTuition : l10n.batchUnarchivedToast);
+  }
   // Scenario 21: unarchiving with clashes goes straight to fixing the slots.
   if (choice.acceptClashes) router?.push(Routes.batchSlots(batchId));
   return true;

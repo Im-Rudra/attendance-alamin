@@ -383,5 +383,50 @@
   "clsAddExtraButton": "অতিরিক্ত ক্লাস",
   "@clsAddExtraButton": {
     "description": "Button that opens the extra class sheet."
+  },
+  "clsBlockLabelNoSubject": "{batch}, {time}",
+  "@clsBlockLabelNoSubject": {
+    "description": "Accessible label of a week-grid block for a class without a subject.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "clsCancelMessageNoSubject": "সম্মানিত অভিভাবক, {when} {batch}-এর {time}-এর ক্লাসটি হচ্ছে না।{next} ধন্যবাদ",
+  "@clsCancelMessageNoSubject": {
+    "description": "Class-cancelled message for a class without a subject (a private tuition).",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "batch": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "clsClashLineNoSubject": "{batch} · {when} · {time}",
+  "@clsClashLineNoSubject": {
+    "description": "A clash line for a class without a subject (private tuition).",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

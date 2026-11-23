@@ -11,6 +11,7 @@ import 'package:attendance_alamin/app/providers/schedule_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
 
 /// One recurring (or one-off) overlap, with how often it shows up.
@@ -56,7 +57,7 @@ class ConflictBanner extends ConsumerWidget {
 
     String label(String batchId) {
       for (final BatchSchedule s in schedules) {
-        if (s.batch.id == batchId) return l10n.clsClassLabel(s.subjectName, s.batch.name);
+        if (s.batch.id == batchId) return batchLabel(l10n, s.subjectName, s.batch.name);
       }
       return '';
     }

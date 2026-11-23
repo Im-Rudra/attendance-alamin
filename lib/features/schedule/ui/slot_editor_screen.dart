@@ -218,7 +218,9 @@ class _SlotEditorScreenState extends ConsumerState<SlotEditorScreen> {
         final Widget title = Padding(
           padding: const EdgeInsets.only(bottom: BhorSpace.s12),
           child: Text(
-            '${found.subjectName} · ${found.batch.name}',
+            found.subjectName.trim().isEmpty
+                ? found.batch.name
+                : l10n.clsClassLabel(found.subjectName, found.batch.name),
             style: context.bhor.type.heading,
           ),
         );

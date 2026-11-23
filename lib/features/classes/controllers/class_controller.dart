@@ -86,13 +86,11 @@ String buildCancelMessage({
   final String nextText = next == null
       ? ''
       : l10n.clsCancelNext('${fmt.weekdayDate(next.date)} ${fmt.time(next.startMin)}');
-  final String base = l10n.clsCancelMessage(
-    when,
-    info.subjectName,
-    info.batch.name,
-    fmt.timeRange(o.startMin, o.endMin),
-    nextText,
-  );
+  final String range = fmt.timeRange(o.startMin, o.endMin);
+  // A private tuition without a subject: its name alone.
+  final String base = info.subjectName.trim().isEmpty
+      ? l10n.clsCancelMessageNoSubject(when, info.batch.name, range, nextText)
+      : l10n.clsCancelMessage(when, info.subjectName, info.batch.name, range, nextText);
   final String c = center.trim();
   return c.isEmpty ? base : '$base — $c';
 }
@@ -109,12 +107,11 @@ String clashLine({
   final String when = (group.everyWeek || date == null)
       ? l10n.clsEveryWeekday(fmt.weekdayName(group.weekday))
       : fmt.dateShort(date);
-  return l10n.clsClashLine(
-    bs?.subjectName ?? '',
-    bs?.batch.name ?? '',
-    when,
-    fmt.timeRange(group.startMin, group.endMin),
-  );
+  final String subject = bs?.subjectName ?? '';
+  final String range = fmt.timeRange(group.startMin, group.endMin);
+  return subject.trim().isEmpty
+      ? l10n.clsClashLineNoSubject(bs?.batch.name ?? '', when, range)
+      : l10n.clsClashLine(subject, bs?.batch.name ?? '', when, range);
 }
 
 /// Duration chip text: 45 min, 1 h, 1 h 30 min.

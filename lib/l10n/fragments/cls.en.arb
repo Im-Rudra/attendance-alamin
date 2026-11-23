@@ -51,5 +51,8 @@
   "clsEmptyCellAction": "Extra class at this time",
   "clsBlockLabel": "{subject}, {batch}, {time}",
   "clsNoBatches": "No batches yet — create a batch first",
-  "clsAddExtraButton": "Extra class"
+  "clsAddExtraButton": "Extra class",
+  "clsBlockLabelNoSubject": "{batch}, {time}",
+  "clsCancelMessageNoSubject": "Dear Guardian, the {batch} class at {time} {when} will not be held.{next} Thank you",
+  "clsClashLineNoSubject": "{batch} · {when} · {time}"
 }

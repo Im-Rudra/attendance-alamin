@@ -22,6 +22,7 @@ import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/classes/controllers/class_controller.dart';
 import 'package:attendance_alamin/features/classes/widgets/reschedule_sheet.dart';
 import 'package:attendance_alamin/features/classes/widgets/sheet_frame.dart';
@@ -285,7 +286,7 @@ class _ClassActionsSheetState extends ConsumerState<ClassActionsSheet> {
 
     return SheetFrame(
       title: title,
-      subtitle: l10n.clsClassLabel(info.subjectName, info.batch.name),
+      subtitle: batchLabel(l10n, info.subjectName, info.batch.name),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

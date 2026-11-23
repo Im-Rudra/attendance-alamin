@@ -160,17 +160,31 @@ class BatchCardData {
   final int studentCount;
 }
 
-/// A subject header with its batches.
+/// A subject header with its batches, or ([tuitions]) the "Private tuitions"
+/// group after the subjects.
 class SubjectGroup {
-  const SubjectGroup({required this.subjectId, required this.name, required this.batches});
+  const SubjectGroup({
+    required this.subjectId,
+    required this.name,
+    required this.batches,
+    this.tuitions = false,
+  });
 
+  /// The subject, or [kTuitionGroupId] for the private tuitions.
   final String subjectId;
+
+  /// The subject's name; empty for the tuitions group (the UI names it).
   final String name;
   final List<BatchCardData> batches;
+  final bool tuitions;
 }
 
+/// Group id of the "Private tuitions" group (never a subject id).
+const String kTuitionGroupId = '_tuitions';
+
 /// Live batches grouped by subject (subjects without a live batch are
-/// dropped); batches keep their sort order.
+/// dropped), then the private tuitions (any subject) as one last group;
+/// batches keep their sort order.
 final batchGroupsProvider = Provider<AsyncValue<List<SubjectGroup>>>((ref) {
   final today = ref.watch(todayProvider);
   final AsyncValue<(List<Subject>, List<Batch>, List<BatchSchedule>)> base = combine3(
@@ -194,7 +208,7 @@ final batchGroupsProvider = Provider<AsyncValue<List<SubjectGroup>>>((ref) {
       for (final subject in subjects) {
         final cards = <BatchCardData>[
           for (final b in batches)
-            if (b.subjectId == subject.id)
+            if (!b.isTuition && b.subjectId == subject.id)
               BatchCardData(
                 batch: b,
                 subjectName: subject.name,
@@ -205,6 +219,21 @@ final batchGroupsProvider = Provider<AsyncValue<List<SubjectGroup>>>((ref) {
         if (cards.isNotEmpty) {
           groups.add(SubjectGroup(subjectId: subject.id, name: subject.name, batches: cards));
         }
+      }
+      final subjectName = {for (final s in subjects) s.id: s.name};
+      final tuitions = <BatchCardData>[
+        for (final b in batches)
+          if (b.isTuition)
+            BatchCardData(
+              batch: b,
+              // The hidden "no subject" row is not among the subjects: ''.
+              subjectName: subjectName[b.subjectId] ?? '',
+              slots: activeSlots(schedules[b.id]?.slots ?? const <Slot>[], today),
+              studentCount: counts[b.id] ?? 0,
+            ),
+      ];
+      if (tuitions.isNotEmpty) {
+        groups.add(SubjectGroup(subjectId: kTuitionGroupId, name: '', batches: tuitions, tuitions: true));
       }
       return groups;
     },

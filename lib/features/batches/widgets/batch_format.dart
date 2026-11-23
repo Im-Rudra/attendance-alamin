@@ -46,6 +46,16 @@ String scheduleSummary(AppFormat fmt, List<Slot> slots) {
 String batchLabel(AppLocalizations l10n, String subjectName, String batchName) =>
     subjectName.trim().isEmpty ? batchName : l10n.clsClassLabel(subjectName, batchName);
 
+/// "Private" on a private tuition: a small accent tag (batch cards, Today,
+/// roll call).
+class PrivateTag extends StatelessWidget {
+  const PrivateTag({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      BhorTag(label: context.l10n.batchPrivateTag, tone: BhorTone.accent);
+}
+
 /// Opens [path] as the selection on wide windows, as a pushed page otherwise.
 void openPath(BuildContext context, String path) {
   if (WindowClass.of(context).isWide) {

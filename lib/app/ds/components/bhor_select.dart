@@ -9,27 +9,50 @@
 // BhorPickerField is the same soft field as a plain tap target (date, time
 // or any value chosen in a picker), so no feature draws its own white,
 // outlined or borderless "field".
+// More than six options (or `searchable: true`) put a filter field at the top
+// of the popover / sheet: typing narrows the list (the label and the option's
+// `searchText`, Bangla or ASCII digits alike), Enter picks the first match,
+// arrow-down moves into the list.
 // Usage: `BhorSelect<String>(label: 'ব্যাচ', value: id, options: [...], onChanged: f)`,
 // `BhorPickerField(label: 'শুরু', value: fmt.time(m), icon: BhorIcons.clock, onTap: pick)`.
 
 import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:attendance_alamin/app/ds/components/bhor_overlays.dart';
+import 'package:attendance_alamin/app/ds/components/bhor_text_field.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_icons.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_interaction.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_theme.dart';
 import 'package:attendance_alamin/app/ds/foundation/bhor_tokens.dart';
+import 'package:attendance_alamin/app/l10n/l10n_x.dart';
+
+/// A [BhorSelect] with more options than this gets a filter field.
+const int kBhorSelectSearchAbove = 6;
 
 /// One choice of a [BhorSelect].
 class BhorOption<T> {
-  const BhorOption(this.value, this.label, {this.icon, this.enabled = true});
+  const BhorOption(this.value, this.label, {this.icon, this.enabled = true, this.searchText});
 
   final T value;
   final String label;
   final IconData? icon;
   final bool enabled;
+
+  /// Extra words the filter field also matches (a phone number, a roll).
+  final String? searchText;
+}
+
+/// Lower case, Bangla digits as ASCII, runs of spaces as one: what the
+/// filter field compares.
+String bhorSearchNorm(String s) {
+  final StringBuffer out = StringBuffer();
+  for (final int r in s.toLowerCase().runes) {
+    out.writeCharCode(r >= 0x09E6 && r <= 0x09EF ? r - 0x09E6 + 0x30 : r);
+  }
+  return out.toString().trim().replaceAll(RegExp(r'\s+'), ' ');
 }
 
 class BhorSelect<T> extends StatefulWidget {
@@ -42,10 +65,19 @@ class BhorSelect<T> extends StatefulWidget {
     this.hint,
     this.error,
     this.semanticLabel,
+    this.searchable,
+    this.searchHint,
   });
 
   final List<BhorOption<T>> options;
   final T? value;
+
+  /// Filter field at the top of the list. Null (default): only with more
+  /// than [kBhorSelectSearchAbove] options.
+  final bool? searchable;
+
+  /// Placeholder of the filter field (default "খুঁজুন…").
+  final String? searchHint;
 
   /// Null disables the field.
   final ValueChanged<T>? onChanged;
@@ -61,6 +93,8 @@ class BhorSelect<T> extends StatefulWidget {
 class _BhorSelectState<T> extends State<BhorSelect<T>> {
   final GlobalKey _boxKey = GlobalKey();
   bool _open = false;
+
+  bool get _searchable => widget.searchable ?? widget.options.length > kBhorSelectSearchAbove;
 
   BhorOption<T>? get _current {
     for (final BhorOption<T> o in widget.options) {
@@ -90,6 +124,8 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
       theme: context.bhor,
       reduced: BhorMotion.reduced(context),
       barrierLabel: widget.label ?? widget.semanticLabel ?? '',
+      searchable: _searchable,
+      searchHint: widget.searchHint,
     ));
   }
 
@@ -97,13 +133,23 @@ class _BhorSelectState<T> extends State<BhorSelect<T>> {
         context,
         title: widget.label ?? widget.semanticLabel,
         builder: (BuildContext ctx) => SingleChildScrollView(
-          child: _OptionList<T>(
-            options: widget.options,
-            selected: widget.value,
-            rowHeight: BhorSize.field - 4,
-            autofocusSelected: false,
-            onPick: (T v) => Navigator.of(ctx).pop(_Pick<T>(v)),
-          ),
+          child: _searchable
+              ? _SearchableOptions<T>(
+                  options: widget.options,
+                  selected: widget.value,
+                  rowHeight: BhorSize.field - 4,
+                  bounded: false,
+                  autofocus: false,
+                  hint: widget.searchHint,
+                  onPick: (T v) => Navigator.of(ctx).pop(_Pick<T>(v)),
+                )
+              : _OptionList<T>(
+                  options: widget.options,
+                  selected: widget.value,
+                  rowHeight: BhorSize.field - 4,
+                  autofocusSelected: false,
+                  onPick: (T v) => Navigator.of(ctx).pop(_Pick<T>(v)),
+                ),
         ),
       );
 
@@ -391,6 +437,119 @@ class _OptionList<T> extends StatelessWidget {
   }
 }
 
+/// The filter field over the option rows. [bounded]: the list scrolls under
+/// the field (popover, height capped); otherwise the caller scrolls both.
+class _SearchableOptions<T> extends StatefulWidget {
+  const _SearchableOptions({
+    required this.options,
+    required this.selected,
+    required this.onPick,
+    this.rowHeight = BhorSize.control,
+    this.bounded = true,
+    this.autofocus = true,
+    this.hint,
+  });
+
+  final List<BhorOption<T>> options;
+  final T? selected;
+  final ValueChanged<T> onPick;
+  final double rowHeight;
+  final bool bounded;
+  final bool autofocus;
+  final String? hint;
+
+  @override
+  State<_SearchableOptions<T>> createState() => _SearchableOptionsState<T>();
+}
+
+class _SearchableOptionsState<T> extends State<_SearchableOptions<T>> {
+  final TextEditingController _query = TextEditingController();
+  final FocusNode _field = FocusNode(debugLabel: 'bhor-select-search');
+
+  @override
+  void dispose() {
+    _query.dispose();
+    _field.dispose();
+    super.dispose();
+  }
+
+  List<BhorOption<T>> get _shown {
+    final String q = bhorSearchNorm(_query.text);
+    if (q.isEmpty) return widget.options;
+    return <BhorOption<T>>[
+      for (final BhorOption<T> o in widget.options)
+        if (bhorSearchNorm('${o.label} ${o.searchText ?? ''}').contains(q)) o,
+    ];
+  }
+
+  void _pickFirst() {
+    for (final BhorOption<T> o in _shown) {
+      if (o.enabled) {
+        widget.onPick(o.value);
+        return;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final BhorThemeData b = context.bhor;
+    final List<BhorOption<T>> shown = _shown;
+    final Widget list = shown.isEmpty
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: BhorSpace.s16, vertical: BhorSpace.s12),
+            child: Text(
+              context.l10n.dsNoMatch,
+              key: const ValueKey<String>('bhor-select-no-match'),
+              style: b.type.body.copyWith(color: b.colors.text2),
+            ),
+          )
+        : _OptionList<T>(
+            options: shown,
+            selected: widget.selected,
+            rowHeight: widget.rowHeight,
+            autofocusSelected: false,
+            onPick: widget.onPick,
+          );
+    final Widget field = Padding(
+      padding: const EdgeInsets.fromLTRB(BhorSpace.s8, BhorSpace.s8, BhorSpace.s8, BhorSpace.s4),
+      child: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          // Arrow-down leaves the field for the first option row.
+          const SingleActivator(LogicalKeyboardKey.arrowDown): () => _field.nextFocus(),
+        },
+        child: BhorTextField(
+          key: const ValueKey<String>('bhor-select-search'),
+          controller: _query,
+          focusNode: _field,
+          autofocus: widget.autofocus,
+          hint: widget.hint ?? context.l10n.dsSearchHint,
+          prefix: const Icon(BhorIcons.search),
+          textInputAction: TextInputAction.search,
+          onChanged: (_) => setState(() {}),
+          onSubmitted: (_) => _pickFirst(),
+        ),
+      ),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        field,
+        if (widget.bounded)
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: list,
+            ),
+          )
+        else
+          list,
+      ],
+    );
+  }
+}
+
 /// Scrolls [child] to the middle of its scroll view once, after the first
 /// frame (the chosen option of a long list).
 class _ScrollIntoView extends StatefulWidget {
@@ -426,6 +585,8 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
     required this.theme,
     required this.reduced,
     required this.barrierLabel,
+    this.searchable = false,
+    this.searchHint,
   });
 
   final Rect anchor;
@@ -433,6 +594,8 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   final T? selected;
   final BhorThemeData theme;
   final bool reduced;
+  final bool searchable;
+  final String? searchHint;
 
   @override
   final String barrierLabel;
@@ -455,7 +618,12 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
     return BhorTheme(
       data: theme,
       child: CustomSingleChildLayout(
-        delegate: _MenuLayout(anchor: anchor, padding: MediaQuery.paddingOf(context)),
+        // The filter field adds its own height, so the list keeps its room.
+        delegate: _MenuLayout(
+          anchor: anchor,
+          padding: MediaQuery.paddingOf(context),
+          extra: searchable ? _kSearchFieldHeight : 0,
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: c.surface,
@@ -465,14 +633,21 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(BhorRadius.control),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: _OptionList<T>(
-                options: options,
-                selected: selected,
-                onPick: (T v) => Navigator.of(context).pop(_Pick<T>(v)),
-              ),
-            ),
+            child: searchable
+                ? _SearchableOptions<T>(
+                    options: options,
+                    selected: selected,
+                    hint: searchHint,
+                    onPick: (T v) => Navigator.of(context).pop(_Pick<T>(v)),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: _OptionList<T>(
+                      options: options,
+                      selected: selected,
+                      onPick: (T v) => Navigator.of(context).pop(_Pick<T>(v)),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -498,11 +673,17 @@ class _BhorMenuRoute<T> extends PopupRoute<_Pick<T>> {
   }
 }
 
+/// Height of the filter field row (field + its padding) in the popover.
+const double _kSearchFieldHeight = BhorSize.field + BhorSpace.s12;
+
 class _MenuLayout extends SingleChildLayoutDelegate {
-  _MenuLayout({required this.anchor, required this.padding});
+  _MenuLayout({required this.anchor, required this.padding, this.extra = 0});
 
   final Rect anchor;
   final EdgeInsets padding;
+
+  /// Added to the height cap (the filter field).
+  final double extra;
 
   static const double _gap = 6;
   static const double _maxHeight = 320;
@@ -515,7 +696,11 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     final Size size = constraints.biggest;
     final double room = math.max(_below(size), _above());
     final double width = math.min(math.max(anchor.width, 200), size.width - 16);
-    return BoxConstraints(minWidth: width, maxWidth: width, maxHeight: math.max(88, math.min(_maxHeight, room)));
+    return BoxConstraints(
+      minWidth: width,
+      maxWidth: width,
+      maxHeight: math.max(88 + extra, math.min(_maxHeight + extra, room)),
+    );
   }
 
   @override
@@ -527,5 +712,5 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_MenuLayout old) => old.anchor != anchor || old.padding != padding;
+  bool shouldRelayout(_MenuLayout old) => old.anchor != anchor || old.padding != padding || old.extra != extra;
 }

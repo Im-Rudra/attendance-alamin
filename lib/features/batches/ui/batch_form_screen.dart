@@ -2,6 +2,9 @@
 // full-screen route stays for deep links). Subject is picked or
 // created inline (never a destination of its own); billing is two radio cards
 // in plain words, default = last used; a fee change asks "কোন মাস থেকে?".
+// The same form makes a private tuition (item 1): a unique name / ID
+// (inline error), an optional subject, weekly slots, and students picked or
+// typed right here.
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -24,7 +27,9 @@ import 'package:attendance_alamin/data/repositories/batches_repository.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
 import 'package:attendance_alamin/data/repositories/subjects_repository.dart';
+import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
+import 'package:attendance_alamin/domain/models/batch_names.dart';
 import 'package:attendance_alamin/domain/models/drafts.dart';
 import 'package:attendance_alamin/domain/models/enrollment.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
@@ -35,32 +40,53 @@ import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/batches/widgets/billing_cards.dart';
 import 'package:attendance_alamin/features/batches/widgets/fee_change_sheet.dart';
 import 'package:attendance_alamin/features/batches/widgets/panel_footer.dart';
+import 'package:attendance_alamin/features/batches/widgets/tuition_students_field.dart';
 import 'package:attendance_alamin/features/schedule/ui/slot_editor_screen.dart';
+import 'package:attendance_alamin/features/students/controllers/student_actions.dart';
+import 'package:attendance_alamin/features/students/controllers/student_providers.dart';
+import 'package:attendance_alamin/l10n/generated/app_localizations.dart';
+
+/// Title of the batch / tuition form.
+String batchFormTitle(AppLocalizations l10n, {required bool editing, required BatchKind kind}) {
+  if (kind == BatchKind.tuition) return editing ? l10n.batchEditTuitionTitle : l10n.batchNewTuition;
+  return editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew;
+}
 
 /// Opens the batch form in the adaptive panel (bottom sheet on phones, floating
 /// side panel on desktop). Returns the new batch id (String) after a create,
-/// true after an edit, null when dismissed.
-Future<Object?> showBatchFormPanel(BuildContext context, {String? batchId}) {
+/// true after an edit, null when dismissed. [kind] picks a batch or a private
+/// tuition (for an edit, pass the batch's own kind for the title).
+Future<Object?> showBatchFormPanel(BuildContext context, {String? batchId, BatchKind kind = BatchKind.batch}) {
   final PanelFooterSlot slot = PanelFooterSlot();
   final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
   final l10n = context.l10n;
   return showBhorPanel<Object>(
     context,
-    title: batchId == null ? l10n.shellTitleBatchNew : l10n.shellTitleBatchEdit,
+    title: batchFormTitle(l10n, editing: batchId != null, kind: kind),
     kind: BhorPanelKind.form,
     expand: true,
     footer: slot.build,
     dirty: dirty,
     builder: (BuildContext c) =>
-        BatchFormScreen(batchId: batchId, embedded: true, footerSlot: slot, dirty: dirty),
+        BatchFormScreen(batchId: batchId, kind: kind, embedded: true, footerSlot: slot, dirty: dirty),
   );
 }
 
 class BatchFormScreen extends ConsumerStatefulWidget {
-  const BatchFormScreen({super.key, this.batchId, this.embedded = false, this.footerSlot, this.dirty});
+  const BatchFormScreen({
+    super.key,
+    this.batchId,
+    this.kind = BatchKind.batch,
+    this.embedded = false,
+    this.footerSlot,
+    this.dirty,
+  });
 
   /// null = create a new batch.
   final String? batchId;
+
+  /// What a create makes (an edit follows the loaded batch's own kind).
+  final BatchKind kind;
 
   /// Hosted inside [showBhorPanel]: no scaffold; the save bar goes to [footerSlot].
   final bool embedded;
@@ -79,6 +105,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   final TextEditingController _name = TextEditingController();
   final TextEditingController _fee = TextEditingController();
   final TextEditingController _notes = TextEditingController();
+
+  final TuitionStudentsDraft _students = TuitionStudentsDraft();
 
   BillingType _billing = BillingType.prepaid;
   List<SlotDraft> _slots = const <SlotDraft>[];
@@ -101,14 +129,23 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
 
   bool get _editing => widget.batchId != null;
 
+  BatchKind get _kind => _batch?.kind ?? widget.kind;
+  bool get _tuition => _kind == BatchKind.tuition;
+
   /// True once anything differs from where the form started.
   bool get _isDirty {
     if (!_loaded) return false;
     if (_name.text != _seedName || _notes.text != _seedNotes || _fee.text != _seedFee) return true;
     if (_billing != _seedBilling) return true;
     if (!_editing && (_subject.text.trim().isNotEmpty || _slots.isNotEmpty)) return true;
+    if (!_editing && !_students.isEmpty) return true;
     return false;
   }
+
+  /// Another tuition already has the typed name (live list; the save checks
+  /// the repository again).
+  bool _nameTaken(List<Batch> every) =>
+      _tuition && isBatchNameTaken(every, _name.text, kind: BatchKind.tuition, excludeId: widget.batchId);
 
   void _syncDirty() {
     final bool d = _isDirty;
@@ -124,6 +161,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     for (final TextEditingController c in <TextEditingController>[_subject, _name, _fee, _notes]) {
       c.addListener(_changed);
     }
+    _students.addListener(_changed);
   }
 
   @override
@@ -132,6 +170,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     _name.dispose();
     _fee.dispose();
     _notes.dispose();
+    _students.dispose();
     if (widget.dirty == null) _dirty.dispose();
     super.dispose();
   }
@@ -157,7 +196,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     if (!mounted) return;
     final Batch? b = seed.batch;
     if (b == null) {
-      if (!seed.notFound) {
+      // A tuition has no default name: the teacher gives it its own.
+      if (!seed.notFound && widget.kind != BatchKind.tuition) {
         _name.text = context.l10n.batchDefaultName(context.fmt.number(seed.batchCount + 1));
       }
     } else {
@@ -201,17 +241,22 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   }
 
   /// Why save is disabled, or null when it is allowed.
-  String? _reason() {
+  String? _reason(List<Batch> every) {
     final l10n = context.l10n;
     // Editing: Save stays off until something changed (review B9).
     if (_editing && !_isDirty) return l10n.schedReasonNoChange;
-    if (!_editing && _subject.text.trim().isEmpty) return l10n.batchReasonSubject;
-    if (_name.text.trim().isEmpty) return l10n.batchReasonName;
+    // A tuition's subject is optional.
+    if (!_editing && !_tuition && _subject.text.trim().isEmpty) return l10n.batchReasonSubject;
+    if (_name.text.trim().isEmpty) return _tuition ? l10n.batchReasonTuitionName : l10n.batchReasonName;
+    if (_nameTaken(every)) return l10n.batchReasonNameTaken;
     if (_parsedFee() == null) return l10n.batchReasonFee;
     if (!_editing && _slots.isEmpty) return l10n.batchReasonSlots;
     if (!_editing && !_check.ok) return l10n.batchReasonClash;
+    if (!_editing && _tuition) return _students.reason(l10n);
     return null;
   }
+
+  List<Batch> get _every => ref.read(batchEveryBatchProvider).value ?? const <Batch>[];
 
   void _close() {
     if (widget.embedded) {
@@ -229,7 +274,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
   }
 
   Future<void> _save() async {
-    if (_saving || _reason() != null) return;
+    if (_saving || _reason(_every) != null) return;
     setState(() {
       _saving = true;
       _error = null;
@@ -237,6 +282,15 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     final l10n = context.l10n;
     final GoRouter? router = GoRouter.maybeOf(context);
     try {
+      // The live list can lag a moment: ask the repository before writing.
+      if (_tuition &&
+          await ref
+              .read(batchesRepositoryProvider)
+              .isNameTaken(_name.text, kind: BatchKind.tuition, excludeId: widget.batchId)) {
+        if (mounted) setState(() => _error = l10n.batchTuitionNameTaken);
+        return;
+      }
+      if (!mounted) return;
       if (_editing) {
         final bool done = await _saveEdit();
         if (!done) {
@@ -244,21 +298,33 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           return;
         }
         if (mounted) {
+          final String saved = _tuition ? l10n.batchTuitionSavedToast : l10n.batchSavedToast;
           if (widget.embedded) {
-            await showBhorSuccess<Object>(context, result: true, toast: l10n.batchSavedToast);
+            await showBhorSuccess<Object>(context, result: true, toast: saved);
             return;
           }
-          BhorToast.show(context, message: l10n.batchSavedToast);
+          BhorToast.show(context, message: saved);
           _close();
         }
       } else {
         final String id = await _saveCreate();
+        // The tuition exists now; a student that fails to save is reported,
+        // never a reason to keep the form open (a second save would make a
+        // second tuition).
+        String created = _tuition ? l10n.batchTuitionCreatedToast : l10n.batchCreatedToast;
+        if (_tuition && !_students.isEmpty) {
+          try {
+            await _enrollStudents(id);
+          } on Object catch (e) {
+            created = errorText(l10n, e);
+          }
+        }
         if (!mounted) return;
         if (widget.embedded) {
-          await showBhorSuccess<Object>(context, result: id, toast: l10n.batchCreatedToast);
+          await showBhorSuccess<Object>(context, result: id, toast: created);
           return;
         }
-        BhorToast.show(context, message: l10n.batchCreatedToast);
+        BhorToast.show(context, message: created);
         if (router != null) {
           router.go(Routes.batch(id));
         } else {
@@ -274,9 +340,15 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
 
   Future<String> _saveCreate() async {
     final SubjectsRepository subjects = ref.read(subjectsRepositoryProvider);
-    final String subjectText = Validators.name(_subject.text);
-    final Subject? existing = await subjects.findByName(subjectText);
-    final String subjectId = existing?.id ?? await subjects.create(name: subjectText);
+    final String subjectId;
+    if (_tuition && _subject.text.trim().isEmpty) {
+      // A tuition without a subject uses the hidden "no subject" row.
+      subjectId = kNoSubjectId;
+    } else {
+      final String subjectText = Validators.name(_subject.text);
+      final Subject? existing = await subjects.findByName(subjectText);
+      subjectId = existing?.id ?? await subjects.create(name: subjectText);
+    }
     final LocalDate today = ref.read(todayProvider);
     final String notes = _notes.text.trim();
     return ref.read(batchesRepositoryProvider).create(BatchDraft(
@@ -288,7 +360,37 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           slots: _slots,
           slotsFrom: today,
           notes: notes.isEmpty ? null : notes,
+          kind: _kind,
         ));
+  }
+
+  /// Enrols the picked students and creates + enrols the typed ones, all
+  /// joining today (billing from the cutoff default).
+  Future<void> _enrollStudents(String batchId) async {
+    final LocalDate today = ref.read(todayProvider);
+    final int cutoff = await ref.read(stuCutoffProvider.future);
+    final YearMonth start = DuesEngine.defaultFirstBillableMonth(today, cutoff);
+    final enrollments = ref.read(enrollmentsRepositoryProvider);
+    final students = ref.read(studentsRepositoryProvider);
+    for (final String id in List<String>.of(_students.picked)) {
+      await enrollments.enroll(studentId: id, batchId: batchId, joinDate: today, startMonth: start);
+    }
+    for (final NewTuitionStudent row in List<NewTuitionStudent>.of(_students.added)) {
+      final String phone = row.phone.text.trim();
+      await createStudentAndEnroll(
+        students: students,
+        enrollments: enrollments,
+        draft: StudentDraft(
+          name: Validators.name(row.name.text),
+          admissionDate: today,
+          roll: await students.nextRoll(),
+          guardianPhone: phone.isEmpty ? null : Validators.phone(phone),
+        ),
+        batchId: batchId,
+        startMonth: start,
+        joinDate: today,
+      );
+    }
   }
 
   /// False when the teacher backed out of the fee-month sheet.
@@ -339,7 +441,7 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
       closeOnEscape: true,
       child: BhorScaffold(
         header: BhorHeader(
-          title: _editing ? l10n.shellTitleBatchEdit : l10n.shellTitleBatchNew,
+          title: batchFormTitle(l10n, editing: _editing, kind: _kind),
           onBack: _close,
         ),
         body: _body(context),
@@ -378,7 +480,12 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
     final l10n = context.l10n;
     final BhorThemeData th = context.bhor;
     final double g = WindowClass.of(context).gutter;
-    final String? reason = _reason();
+    final List<Batch> every = ref.watch(batchEveryBatchProvider).value ?? const <Batch>[];
+    final String? reason = _reason(every);
+    final bool taken = _nameTaken(every);
+    final bool tuition = _tuition;
+    // A tuition without a subject shows no subject field when edited.
+    final bool showSubject = !_editing || !tuition || (_batch?.hasSubject ?? true);
     final List<Subject> subjects = ref.watch(batchSubjectsProvider).value ?? const <Subject>[];
     final String typed = _subject.text.trim();
     final bool isNewSubject = !_editing &&
@@ -409,14 +516,29 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
           ],
         );
 
+    final Widget nameField = BhorTextField(
+      key: const Key('batch-form-name'),
+      controller: _name,
+      textInputAction: TextInputAction.next,
+      autofocus: tuition && !_editing,
+      label: tuition ? l10n.batchTuitionNameLabel : l10n.batchNameLabel,
+      hint: tuition ? l10n.batchTuitionNameHint : null,
+      error: taken ? l10n.batchTuitionNameTaken : null,
+      helper: tuition && !taken ? l10n.batchTuitionNameHelp : null,
+    );
+
     final List<Widget> items = <Widget>[
+                  // A tuition is named first: its name is what the teacher
+                  // knows it by; the subject is optional.
+                  if (tuition) ...<Widget>[nameField, const SizedBox(height: 16)],
+                  if (showSubject)
                   BhorTextField(
                     key: const Key('batch-form-subject'),
                     controller: _subject,
                     readOnly: _editing,
                     textInputAction: TextInputAction.next,
-                    label: l10n.batchSubjectLabel,
-                    hint: l10n.batchSubjectHint,
+                    label: tuition ? l10n.batchSubjectOptional : l10n.batchSubjectLabel,
+                    hint: tuition ? l10n.batchSubjectOptionalHint : l10n.batchSubjectHint,
                     helper: _editing ? l10n.batchSubjectLocked : null,
                   ),
                   if (!_editing) ...<Widget>[
@@ -447,14 +569,8 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                       chips(suggestions),
                     ],
                   ],
-                  const SizedBox(height: 16),
-                  BhorTextField(
-                    key: const Key('batch-form-name'),
-                    controller: _name,
-                    textInputAction: TextInputAction.next,
-                    label: l10n.batchNameLabel,
-                  ),
-                  const SizedBox(height: 16),
+                  if (showSubject) const SizedBox(height: 16),
+                  if (!tuition) ...<Widget>[nameField, const SizedBox(height: 16)],
                   if (_editing)
                     BhorCard(
                       padding: EdgeInsets.zero,
@@ -503,6 +619,10 @@ class _BatchFormScreenState extends ConsumerState<BatchFormScreen> {
                   const SizedBox(height: 8),
                   BillingCards(value: _billing, onChanged: (BillingType t) => setState(() => _billing = t)),
                   const SizedBox(height: 16),
+                  if (tuition && !_editing) ...<Widget>[
+                    TuitionStudentsField(draft: _students),
+                    const SizedBox(height: 16),
+                  ],
                   BhorTextField(
                     controller: _notes,
                     minLines: 1,

@@ -629,10 +629,15 @@ class _ClassBlock extends StatelessWidget {
         _mark(BhorIcons.refresh, fg, iconSize, const Key('week-block-moved')),
       if (!cancelled && dc.taken) _mark(BhorIcons.check, fg, iconSize, const Key('week-block-taken')),
     ];
-    final String time = fmt.timeRange(dc.startMin, dc.endMin);
+    final String range = fmt.timeRange(dc.startMin, dc.endMin);
+    // A private tuition carries a small "Private" word after its time.
+    final String time = dc.batch.isTuition ? '$range · ${l10n.batchPrivateTag}' : range;
     final int titleLines = height >= 64 ? 2 : 1;
-    final String name = '${dc.subjectName} — ${dc.batch.name}';
-    final String label = l10n.clsBlockLabel(dc.subjectName, dc.batch.name, time);
+    // A tuition without a subject: its name alone (never "— name").
+    final bool noSubject = dc.subjectName.trim().isEmpty;
+    final String name = noSubject ? dc.batch.name : '${dc.subjectName} — ${dc.batch.name}';
+    final String label =
+        noSubject ? l10n.clsBlockLabelNoSubject(dc.batch.name, time) : l10n.clsBlockLabel(dc.subjectName, dc.batch.name, time);
     final ClassState? st = dc.state;
     final String stateLabel = st == null || st == ClassState.now
         ? ''

@@ -156,5 +156,15 @@
   "stuBulkRemindNone": "None of them has fees due",
   "stuBulkRemindNoPhone": "No phone number. The message will be copied.",
   "stuBulkPhonesCopied": "Numbers copied: {count}",
-  "stuBulkNoPhones": "None of them has a phone number"
+  "stuBulkNoPhones": "None of them has a phone number",
+  "stuEnrollIn": "Enrol in",
+  "stuEnrollKindNone": "Not yet",
+  "stuEnrollKindBatch": "Batch",
+  "stuEnrollKindTuition": "Private tuition",
+  "stuPickTuition": "Private tuition",
+  "stuPickHint": "Choose",
+  "stuNoTuitionsYet": "No private tuitions yet",
+  "stuNoBatchesYet": "No batches yet",
+  "stuEnrollSearch": "Search by name",
+  "stuPickTuitionFirst": "Pick a tuition first"
 }

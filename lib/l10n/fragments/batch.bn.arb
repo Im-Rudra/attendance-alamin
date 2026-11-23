@@ -661,5 +661,166 @@
   "batchFeeBlankHelp": "ফি এখনো ঠিক না হলে ফাঁকা বা ০ রাখুন।",
   "@batchFeeBlankHelp": {
     "description": "Helper text under the monthly fee field."
+  },
+  "batchNewMenu": "নতুন…",
+  "@batchNewMenu": {
+    "description": "Batches page header / FAB button that opens the menu: new batch or new private tuition."
+  },
+  "batchNewTuition": "নতুন প্রাইভেট টিউশন",
+  "@batchNewTuition": {
+    "description": "Menu item / button that opens the new private tuition form; also the form's title."
+  },
+  "batchEditTuitionTitle": "প্রাইভেট টিউশন সম্পাদনা",
+  "@batchEditTuitionTitle": {
+    "description": "Title of the edit form of a private tuition."
+  },
+  "batchGroupTuitions": "প্রাইভেট টিউশন",
+  "@batchGroupTuitions": {
+    "description": "Group header on the Batches page above the private tuition cards."
+  },
+  "batchPrivateTag": "প্রাইভেট",
+  "@batchPrivateTag": {
+    "description": "Small tag on a private tuition (batch cards, Today, week view, roll call)."
+  },
+  "batchTuitionKind": "প্রাইভেট টিউশন",
+  "@batchTuitionKind": {
+    "description": "Shown in the tuition detail header in place of the subject when it has none."
+  },
+  "batchTuitionNameLabel": "টিউশনের নাম / আইডি",
+  "@batchTuitionNameLabel": {
+    "description": "Name field of the private tuition form."
+  },
+  "batchTuitionNameHint": "যেমন: রাফি – ৮ম শ্রেণি",
+  "@batchTuitionNameHint": {
+    "description": "Placeholder of the private tuition name field."
+  },
+  "batchTuitionNameHelp": "প্রতিটি টিউশনের নাম আলাদা হতে হবে।",
+  "@batchTuitionNameHelp": {
+    "description": "Helper under the private tuition name field."
+  },
+  "batchTuitionNameTaken": "এই নামে আরেকটি টিউশন আছে। অন্য নাম দিন।",
+  "@batchTuitionNameTaken": {
+    "description": "Inline error when the private tuition name is already used."
+  },
+  "batchReasonTuitionName": "টিউশনের নাম লিখুন",
+  "@batchReasonTuitionName": {
+    "description": "Why Save is disabled: the tuition name is empty."
+  },
+  "batchReasonNameTaken": "টিউশনের নাম আলাদা করুন",
+  "@batchReasonNameTaken": {
+    "description": "Why Save is disabled: the tuition name is already used."
+  },
+  "batchSubjectOptional": "বিষয় (ঐচ্ছিক)",
+  "@batchSubjectOptional": {
+    "description": "Subject field of the private tuition form."
+  },
+  "batchSubjectOptionalHint": "যেমন: গণিত",
+  "@batchSubjectOptionalHint": {
+    "description": "Placeholder of the optional subject field of the tuition form."
+  },
+  "batchTuitionCreatedToast": "প্রাইভেট টিউশন তৈরি হয়েছে",
+  "@batchTuitionCreatedToast": {
+    "description": "Toast after creating a private tuition."
+  },
+  "batchTuitionSavedToast": "টিউশন সেভ হয়েছে",
+  "@batchTuitionSavedToast": {
+    "description": "Toast after editing a private tuition."
+  },
+  "batchTuitionStudents": "শিক্ষার্থী",
+  "@batchTuitionStudents": {
+    "description": "Section heading for the students of a new private tuition."
+  },
+  "batchTuitionStudentsHelp": "আগের শিক্ষার্থী বেছে নিন অথবা নতুন যোগ করুন। পরেও যোগ করা যাবে।",
+  "@batchTuitionStudentsHelp": {
+    "description": "Helper under the students heading of the new private tuition form."
+  },
+  "batchTuitionPickStudent": "আগের শিক্ষার্থী যোগ করুন",
+  "@batchTuitionPickStudent": {
+    "description": "Searchable select that adds an existing student to the new tuition."
+  },
+  "batchTuitionPickHint": "নাম বা ফোন দিয়ে খুঁজুন",
+  "@batchTuitionPickHint": {
+    "description": "Filter placeholder of the existing-student picker."
+  },
+  "batchTuitionAddNew": "নতুন শিক্ষার্থী যোগ করুন",
+  "@batchTuitionAddNew": {
+    "description": "Button that adds a name + guardian phone row to the new tuition form."
+  },
+  "batchTuitionNewName": "শিক্ষার্থীর নাম",
+  "@batchTuitionNewName": {
+    "description": "Name field of a new student row in the tuition form."
+  },
+  "batchTuitionNewPhone": "অভিভাবকের ফোন",
+  "@batchTuitionNewPhone": {
+    "description": "Guardian phone field of a new student row in the tuition form."
+  },
+  "batchTuitionRemoveStudent": "{name} বাদ দিন",
+  "@batchTuitionRemoveStudent": {
+    "description": "Accessible label of the remove button on a student of the new tuition.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "batchTuitionNewBadge": "নতুন",
+  "@batchTuitionNewBadge": {
+    "description": "Tag on a student row that will be created with the tuition."
+  },
+  "batchReasonStudentName": "নতুন শিক্ষার্থীর নাম লিখুন",
+  "@batchReasonStudentName": {
+    "description": "Why Save is disabled: a new student row has no name."
+  },
+  "batchReasonStudentPhone": "অভিভাবকের ফোন নম্বর ঠিক করুন",
+  "@batchReasonStudentPhone": {
+    "description": "Why Save is disabled: a new student's guardian phone is not valid."
+  },
+  "batchMenuArchiveTuition": "টিউশন শেষ করুন",
+  "@batchMenuArchiveTuition": {
+    "description": "Menu item and confirm button that finish a private tuition."
+  },
+  "batchMenuDeleteTuition": "টিউশন মুছুন",
+  "@batchMenuDeleteTuition": {
+    "description": "Menu item that deletes a private tuition."
+  },
+  "batchArchiveBodyTuition": "সব তথ্য যেমন আছে তেমনই থাকবে। টিউশনটি তালিকা, রুটিন ও হাজিরা থেকে সরে যাবে; চাইলে যেকোনো সময় আবার চালু করতে পারবেন।",
+  "@batchArchiveBodyTuition": {
+    "description": "Body of the finish-tuition dialog."
+  },
+  "batchArchivedToastTuition": "টিউশন শেষ করা হয়েছে",
+  "@batchArchivedToastTuition": {
+    "description": "Toast after finishing a private tuition."
+  },
+  "batchUnarchiveBodyTuition": "টিউশনটি আবার রুটিন, হাজিরা ও বেতনের হিসাবে ফিরে আসবে।",
+  "@batchUnarchiveBodyTuition": {
+    "description": "Body of the reopen-tuition dialog."
+  },
+  "batchUnarchivedToastTuition": "টিউশন আবার চালু হয়েছে",
+  "@batchUnarchivedToastTuition": {
+    "description": "Toast after reopening a private tuition."
+  },
+  "batchArchivedBannerTuition": "এই টিউশন {date} তারিখে শেষ হয়েছে",
+  "@batchArchivedBannerTuition": {
+    "description": "Banner on a finished private tuition.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "batchClashLineNoSubject": "{batch} · {when} · {time}",
+  "@batchClashLineNoSubject": {
+    "description": "A clash line for a class without a subject (private tuition).",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

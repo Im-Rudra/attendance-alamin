@@ -59,5 +59,13 @@
   "dsDone": "হয়েছে",
   "@dsDone": {
     "description": "Success state of a button or sheet after a save (the check mark label)."
+  },
+  "dsSearchHint": "খুঁজুন…",
+  "@dsSearchHint": {
+    "description": "Placeholder of the filter field at the top of a long select list."
+  },
+  "dsNoMatch": "কিছু মেলেনি",
+  "@dsNoMatch": {
+    "description": "Shown in a select list when the filter text matches no option."
   }
 }

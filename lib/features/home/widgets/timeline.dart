@@ -16,6 +16,7 @@ import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/domain/attendance_stats/attendance_stats.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/app/routes.dart';
+import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
@@ -227,6 +228,7 @@ class _ClassRow extends ConsumerWidget {
     final AttendanceTally? tally = dc.tally;
     final List<Widget> meta = <Widget>[
       Text(fmt.timeRange(dc.startMin, dc.endMin), style: timeStyle),
+      if (dc.batch.isTuition) const PrivateTag(),
       if (dc.state != null) _classStateTag(context, dc.state!),
       if (dc.state == ClassState.moved && dc.originalStartMin != null)
         Text(l10n.todayMovedFrom(fmt.time(dc.originalStartMin!)), style: timeStyle),
@@ -264,7 +266,7 @@ class _ClassRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    l10n.clsClassLabel(dc.subjectName, dc.batch.name),
+                    batchLabel(l10n, dc.subjectName, dc.batch.name),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: titleStyle,
@@ -308,7 +310,7 @@ class _ClassRow extends ConsumerWidget {
           openRollCall(context, dc.occ);
         }
       },
-      semanticLabel: l10n.clsClassLabel(dc.subjectName, dc.batch.name),
+      semanticLabel: batchLabel(l10n, dc.subjectName, dc.batch.name),
       radius: BhorRadius.card,
       scaleOnPress: false,
       builder: (BuildContext context, BhorStates s) => Container(
@@ -354,7 +356,7 @@ class _MovedAwayRow extends StatelessWidget {
     String label = '';
     for (final BatchSchedule s in schedules) {
       if (s.batch.id == moved.batchId) {
-        label = l10n.clsClassLabel(s.subjectName, s.batch.name);
+        label = batchLabel(l10n, s.subjectName, s.batch.name);
         break;
       }
     }

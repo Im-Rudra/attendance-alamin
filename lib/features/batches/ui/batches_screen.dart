@@ -1,4 +1,5 @@
-// Batches tab: batch cards grouped by subject (collapsible headers). Wide
+// Batches tab: batch cards grouped by subject (collapsible headers), then the
+// private tuitions as one group (item 1); "New…" makes a batch or a tuition. Wide
 // windows use BhorMasterDetailPage (list 360 | detail, the context rail only
 // as a 4th column >= 1600); with no selection the detail pane is a compact
 // overview, never a blank area. The global search lives in the shell (no
@@ -14,6 +15,7 @@ import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/pane_split.dart';
 import 'package:attendance_alamin/app/shell/templates/templates.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
+import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/features/batches/batches_entry.dart';
 import 'package:attendance_alamin/features/batches/controllers/batch_providers.dart';
 import 'package:attendance_alamin/features/batches/ui/batch_detail_screen.dart';
@@ -72,10 +74,33 @@ class _BatchesList extends ConsumerStatefulWidget {
 class _BatchesListState extends ConsumerState<_BatchesList> {
   final Set<String> _collapsed = <String>{};
 
-  Future<void> _new() async {
-    final Object? r = await showBatchFormPanel(context);
+  Future<void> _new([BatchKind kind = BatchKind.batch]) async {
+    final Object? r = await showBatchFormPanel(context, kind: kind);
     if (!mounted || r is! String) return;
     openPath(context, Routes.batch(r));
+  }
+
+  /// "New…": a batch or a private tuition.
+  void _newMenu(BuildContext anchor) {
+    final l10n = context.l10n;
+    showBhorMenu(
+      anchor,
+      anchor: anchor,
+      items: <BhorMenuItem>[
+        BhorMenuItem(
+          key: const ValueKey<String>('menu-new-batch'),
+          icon: BhorIcons.batches,
+          label: l10n.batchNew,
+          onTap: () => _new(),
+        ),
+        BhorMenuItem(
+          key: const ValueKey<String>('menu-new-tuition'),
+          icon: BhorIcons.students,
+          label: l10n.batchNewTuition,
+          onTap: () => _new(BatchKind.tuition),
+        ),
+      ],
+    );
   }
 
   Future<void> _menu(BatchCardData d, Offset at, BuildContext anchor) async {
@@ -92,11 +117,11 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
         BhorMenuItem(
           icon: BhorIcons.edit,
           label: l10n.commonEdit,
-          onTap: () => showBatchFormPanel(context, batchId: d.batch.id),
+          onTap: () => showBatchFormPanel(context, batchId: d.batch.id, kind: d.batch.kind),
         ),
         BhorMenuItem(
           icon: BhorIcons.archive,
-          label: l10n.batchMenuArchive,
+          label: d.batch.isTuition ? l10n.batchMenuArchiveTuition : l10n.batchMenuArchive,
           onTap: () => showArchiveBatchDialog(context, batchId: d.batch.id),
         ),
       ],
@@ -130,7 +155,20 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
             child: BhorEmptyState(
               icon: BhorIcons.batches,
               title: l10n.batchEmptyList,
-              action: BhorButton(label: l10n.batchNew, onPressed: _new),
+              action: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: BhorSpace.s8,
+                runSpacing: BhorSpace.s8,
+                children: <Widget>[
+                  BhorButton(label: l10n.batchNew, onPressed: _new),
+                  BhorButton(
+                    key: const ValueKey<String>('batches-new-tuition'),
+                    label: l10n.batchNewTuition,
+                    variant: BhorButtonVariant.secondary,
+                    onPressed: () => _new(BatchKind.tuition),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -146,7 +184,7 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
               children: <Widget>[
                 for (final SubjectGroup grp in loaded) ...<Widget>[
                   _GroupHeader(
-                    name: grp.name,
+                    name: grp.tuitions ? l10n.batchGroupTuitions : grp.name,
                     count: grp.batches.length,
                     collapsed: _collapsed.contains(grp.subjectId),
                     onToggle: () => setState(() {
@@ -200,11 +238,14 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
             showBack: false,
             actions: <Widget>[
               if (wc.usesRail && !empty)
-                BhorButton(
-                  icon: BhorIcons.add,
-                  label: l10n.batchNew,
-                  size: BhorButtonSize.sm,
-                  onPressed: _new,
+                Builder(
+                  builder: (BuildContext bc) => BhorButton(
+                    key: const ValueKey<String>('batches-new-menu'),
+                    icon: BhorIcons.add,
+                    label: l10n.batchNewMenu,
+                    size: BhorButtonSize.sm,
+                    onPressed: () => _newMenu(bc),
+                  ),
                 ),
             ],
           ),
@@ -212,7 +253,14 @@ class _BatchesListState extends ConsumerState<_BatchesList> {
               ? null
               : Padding(
                   padding: EdgeInsets.only(bottom: wc.usesRail ? 0 : 84),
-                  child: BhorButton(icon: BhorIcons.add, label: l10n.batchNew, onPressed: _new),
+                  child: Builder(
+                    builder: (BuildContext bc) => BhorButton(
+                      key: const ValueKey<String>('batches-new-menu'),
+                      icon: BhorIcons.add,
+                      label: l10n.batchNewMenu,
+                      onPressed: () => _newMenu(bc),
+                    ),
+                  ),
                 ),
           body: Padding(padding: EdgeInsets.fromLTRB(g, BhorSpace.s4, g, 0), child: body),
         ),
