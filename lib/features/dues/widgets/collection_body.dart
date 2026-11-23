@@ -12,10 +12,13 @@ import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/features/dues/controllers/collection_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/widgets/collection_blocks.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
+import 'package:attendance_alamin/features/dues/widgets/places_breakdown.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 class CollectionBody extends ConsumerWidget {
   const CollectionBody({super.key, required this.onSeeDues});
@@ -32,7 +35,10 @@ class CollectionBody extends ConsumerWidget {
     final double g = WindowClass.of(context).gutter;
     final YearMonth current = ref.watch(todayProvider).yearMonth;
     final YearMonth month = ref.watch(collMonthProvider) ?? current;
-    final AsyncValue<CollectionSummary> async = ref.watch(collectionSummaryProvider(month));
+    final AsyncValue<CollectionSummary> async = ref.watch(feesCollectionSummaryProvider(month));
+    // 2+ places and "All places": each place's totals lead the page.
+    final bool byPlace = ref.watch(hasManyPlacesProvider) && ref.watch(placeFilterProvider) == null;
+    final Widget? places = byPlace ? PlacesBreakdownCard(month: month) : null;
 
     void seeDues() {
       ref.read(duesFilterProvider.notifier).setMonth(month);
@@ -67,7 +73,7 @@ class CollectionBody extends ConsumerWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Expanded(child: _Column(children: <Widget>[billing])),
+                          Expanded(child: _Column(children: <Widget>[?places, billing])),
                           SizedBox(width: g),
                           Expanded(child: _Column(children: <Widget>[cash, log])),
                         ],
@@ -76,7 +82,7 @@ class CollectionBody extends ConsumerWidget {
                   }
                   return _Column(
                     padding: EdgeInsets.fromLTRB(g, 0, g, 112),
-                    children: <Widget>[billing, cash, log],
+                    children: <Widget>[?places, billing, cash, log],
                   );
                 },
               ),

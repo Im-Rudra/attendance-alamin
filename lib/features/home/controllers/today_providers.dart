@@ -15,11 +15,15 @@ import 'package:attendance_alamin/data/infra_providers.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
+import 'package:attendance_alamin/domain/dues/dues_models.dart';
 import 'package:attendance_alamin/domain/models/batch.dart';
 import 'package:attendance_alamin/domain/models/enums.dart';
 import 'package:attendance_alamin/domain/models/payment.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
+import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/features/home/controllers/today_model.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// The date picked on the day strip; `null` follows today (so the screen rolls
 /// over at midnight by itself).
@@ -78,6 +82,55 @@ final todayNowMsProvider = Provider<int>((ref) {
   return ref.watch(clockProvider).nowUtc().millisecondsSinceEpoch;
 });
 
+// ---- place filter (2+ places) -------------------------------------------------
+
+/// [plan] with only the classes of batches at [placeId] ([batchPlaces]: batch
+/// id -> place id, for the classes moved away).
+DayPlan planAtPlace(DayPlan plan, String placeId, Map<String, String> batchPlaces) => DayPlan(
+      date: plan.date,
+      classes: <DayClass>[
+        for (final DayClass c in plan.classes)
+          if (c.batch.placeId == placeId) c,
+      ],
+      movedAway: <MovedAway>[
+        for (final MovedAway m in plan.movedAway)
+          if ((batchPlaces[m.batchId] ?? kDefaultPlaceId) == placeId) m,
+      ],
+    );
+
+/// The day plan of [date] narrowed to the place filter (as is with no
+/// place picked).
+final todayDayPlanProvider = Provider.family<AsyncValue<DayPlan>, LocalDate>((ref, date) {
+  final AsyncValue<DayPlan> plan = ref.watch(dayPlanProvider(date));
+  final String? place = ref.watch(placeFilterProvider);
+  if (place == null) return plan;
+  final Map<String, String> batchPlaces = ref.watch(placeOfBatchProvider);
+  return plan.whenData((DayPlan p) => planAtPlace(p, place, batchPlaces));
+});
+
+/// The week of [weekStart] narrowed to the place filter.
+final todayWeekPlanProvider = Provider.family<AsyncValue<List<DayPlan>>, LocalDate>((ref, weekStart) {
+  final AsyncValue<List<DayPlan>> plans = ref.watch(weekPlanProvider(weekStart));
+  final String? place = ref.watch(placeFilterProvider);
+  if (place == null) return plans;
+  final Map<String, String> batchPlaces = ref.watch(placeOfBatchProvider);
+  return plans.whenData((List<DayPlan> ps) => <DayPlan>[
+        for (final DayPlan p in ps) planAtPlace(p, place, batchPlaces),
+      ]);
+});
+
+/// Payments of batches at the place filter (all with no place picked).
+final todayPlacePaymentsProvider = Provider<AsyncValue<List<Payment>>>((ref) {
+  final AsyncValue<List<Payment>> all = ref.watch(todayPaymentsProvider);
+  final String? place = ref.watch(placeFilterProvider);
+  if (place == null) return all;
+  final Map<String, String> batchPlaces = ref.watch(placeOfBatchProvider);
+  return all.whenData((List<Payment> ps) => <Payment>[
+        for (final Payment p in ps)
+          if ((batchPlaces[p.batchId] ?? kDefaultPlaceId) == place) p,
+      ]);
+});
+
 // ---- derived -----------------------------------------------------------------
 
 /// The hero card of [date].
@@ -87,7 +140,7 @@ final todayHeroProvider =
   final int nowMin = ref.watch(nowMinutesProvider);
   return combine2(
     ref.watch(todayBatchesProvider),
-    ref.watch(dayPlanProvider(date)),
+    ref.watch(todayDayPlanProvider(date)),
     (List<Batch> batches, DayPlan plan) => buildHero(
       hasBatches: batches.isNotEmpty,
       date: date,
@@ -102,29 +155,30 @@ final todayHeroProvider =
 final todayAttendanceProvider =
     Provider.family<AsyncValue<DayAttendance>, LocalDate>((ref, date) =>
         ref
-            .watch(dayPlanProvider(date))
+            .watch(todayDayPlanProvider(date))
             .whenData((DayPlan p) => buildDayAttendance(p.classes)));
 
-/// This month's collection.
+/// This month's collection (of the filtered place, if any).
 final todayCollectionProvider = Provider<AsyncValue<MonthCollection>>((ref) {
   final LocalDate today = ref.watch(todayProvider);
+  final String? place = ref.watch(placeFilterProvider);
   return combine3(
     ref.watch(enrollmentTermsProvider),
     ref.watch(paymentFactsProvider),
-    ref.watch(todayPaymentsProvider),
-    (terms, facts, payments) => buildMonthCollection(
+    ref.watch(todayPlacePaymentsProvider),
+    (List<EnrollmentTerms> terms, List<PaymentFact> facts, List<Payment> payments) => buildMonthCollection(
       today: today,
-      terms: terms,
+      terms: termsAtPlace(terms, place),
       facts: facts,
       payments: payments,
     ),
   );
 });
 
-/// The last five receipts.
+/// The last five receipts (of the filtered place, if any).
 final todayRecentReceiptsProvider =
     Provider<AsyncValue<List<RecentReceipt>>>((ref) => ref
-        .watch(todayPaymentsProvider)
+        .watch(todayPlacePaymentsProvider)
         .whenData((List<Payment> p) => recentReceipts(p)));
 
 /// Backup nudge status (F18).

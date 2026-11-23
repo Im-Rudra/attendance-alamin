@@ -252,6 +252,15 @@ bool studentMatchesQuery(Student s, String rawQuery) {
   return false;
 }
 
+/// Students with a batch at [placeId] (everyone when null): the place filter
+/// of the header (2+ places).
+List<StudentRow> rowsAtPlace(List<StudentRow> rows, String? placeId) => placeId == null
+    ? rows
+    : <StudentRow>[
+        for (final StudentRow r in rows)
+          if (r.batches.any((Batch b) => b.placeId == placeId)) r,
+      ];
+
 List<StudentRow> applyStudentFilter(List<StudentRow> rows, StudentFilter f) {
   return <StudentRow>[
     for (final StudentRow r in rows)

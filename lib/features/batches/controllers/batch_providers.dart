@@ -10,6 +10,7 @@ import 'package:attendance_alamin/core/format/app_format.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
+import 'package:attendance_alamin/data/repositories/local_meta_repository.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/structure_providers.dart';
@@ -24,6 +25,7 @@ import 'package:attendance_alamin/domain/models/subject.dart';
 import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
 import 'package:attendance_alamin/features/schedule/schedule_entry.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// All live subjects (never a destination: they only group batches).
 final batchSubjectsProvider = StreamProvider<List<Subject>>(
@@ -59,6 +61,10 @@ final batchLastBillingProvider = FutureProvider<BillingType>((ref) async {
     return BillingType.prepaid;
   }
 });
+
+/// The place the last new batch / tuition was made at on this device.
+final batchLastPlaceProvider = StreamProvider<String?>(
+    (ref) => ref.watch(localMetaRepositoryProvider).watchRaw(LocalMetaKeys.lastPlace));
 
 /// Builds the weekly slot editor of the batch form. Defaults to M6-A's
 /// `SlotEditorField`; tests override it with a lightweight stand-in.
@@ -184,9 +190,11 @@ const String kTuitionGroupId = '_tuitions';
 
 /// Live batches grouped by subject (subjects without a live batch are
 /// dropped), then the private tuitions (any subject) as one last group;
-/// batches keep their sort order.
+/// batches keep their sort order. Only the batches of the place filter when
+/// one is picked (2+ places).
 final batchGroupsProvider = Provider<AsyncValue<List<SubjectGroup>>>((ref) {
   final today = ref.watch(todayProvider);
+  final String? place = ref.watch(placeFilterProvider);
   final AsyncValue<(List<Subject>, List<Batch>, List<BatchSchedule>)> base = combine3(
     ref.watch(batchSubjectsProvider),
     ref.watch(batchLiveBatchesProvider),
@@ -198,7 +206,10 @@ final batchGroupsProvider = Provider<AsyncValue<List<SubjectGroup>>>((ref) {
     ref.watch(allEnrollmentsProvider),
     ((List<Subject>, List<Batch>, List<BatchSchedule>) d, List<Enrollment> enrollments) {
       final subjects = d.$1;
-      final batches = d.$2;
+      final batches = <Batch>[
+        for (final Batch b in d.$2)
+          if (place == null || b.placeId == place) b,
+      ];
       final schedules = {for (final s in d.$3) s.batch.id: s};
       final counts = <String, int>{};
       for (final e in enrollments) {

@@ -15,39 +15,74 @@ import 'package:attendance_alamin/core/format/lang.dart';
 import 'package:attendance_alamin/core/settings/setting_keys.dart';
 import 'package:attendance_alamin/core/time/local_date.dart';
 import 'package:attendance_alamin/data/repositories/people_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_providers.dart';
 import 'package:attendance_alamin/data/repositories/settings_repository.dart';
 import 'package:attendance_alamin/domain/dues/dues_engine.dart';
 import 'package:attendance_alamin/domain/dues/dues_models.dart';
+import 'package:attendance_alamin/domain/models/place.dart';
 import 'package:attendance_alamin/domain/models/student.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/reminder_text.dart';
+import 'package:attendance_alamin/features/payments/controllers/pay_providers.dart' show ReceiptCentre, resolveReceiptCentre;
 import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 void _toast(BuildContext context, String message) {
   if (context.mounted) BhorToast.show(context, message: message);
 }
 
+/// The place a reminder speaks for: the one place of all the owed
+/// enrollments, else null (several places: the main centre settings).
+String? reminderPlaceOf(StudentDues dues) {
+  String? place;
+  for (final EnrollmentDues e in dues.enrollments) {
+    if (e.openDue.isEmpty) continue;
+    if (place == null) {
+      place = e.terms.placeId;
+    } else if (place != e.terms.placeId) {
+      return null;
+    }
+  }
+  return place;
+}
+
 /// The reminder text for [studentId] in [lang], or `null` when the student has
 /// no open due month. Reads the dues straight from the repositories so it also
-/// works when no screen is watching them.
+/// works when no screen is watching them. [placeId] (the Fees place filter)
+/// keeps only that place's dues. `{center}` and the phone are the place's
+/// (see [resolveReceiptCentre]) when the owed batches are all at one place.
 Future<String?> composeReminder(
   ProviderContainer container, {
   required Lang lang,
   required String studentId,
   required String centerFallback,
+  String? placeId,
 }) async {
   final LocalDate today = container.read(todayProvider);
   final List<EnrollmentTerms> terms = await container.read(enrollmentsRepositoryProvider).watchTerms().first;
   final List<PaymentFact> facts = await container.read(paymentsRepositoryProvider).watchFacts().first;
-  final DuesReport report = DuesEngine.report(today: today, terms: terms, payments: facts);
+  final DuesReport report = DuesEngine.report(today: today, terms: termsAtPlace(terms, placeId), payments: facts);
   final StudentDues? dues = duesOfStudent(report, studentId);
   if (dues == null || dues.openMonths.isEmpty) return null;
   final SettingsRepository settings = container.read(settingsRepositoryProvider);
   final String stored = await settings.get(templateKey(TemplateKind.reminder, lang));
-  final String center = (await settings.get(SettingKeys.centerName)).trim();
-  final String phone = await settings.get(SettingKeys.centerPhone);
+  // The main place follows the centre settings, so only another place needs
+  // reading.
+  final String? placeOfDues = reminderPlaceOf(dues);
+  final Place? place = (placeOfDues == null || placeOfDues == kDefaultPlaceId)
+      ? null
+      : await container.read(placesRepositoryProvider).getById(placeOfDues);
+  final String teacherPhone = await settings.get(SettingKeys.centerPhone);
+  final ReceiptCentre centre = resolveReceiptCentre(
+    place: place,
+    centerName: await settings.get(SettingKeys.centerName),
+    centerPhone: teacherPhone,
+    centerAddress: '',
+  );
+  final String center = centre.name;
+  // A place without its own number still gives the teacher's.
+  final String phone = centre.phone.isEmpty ? teacherPhone : centre.phone;
   final List<String> batches = <String>[];
   for (final EnrollmentDues e in dues.enrollments) {
     if (e.openDue.isEmpty) continue;
@@ -83,6 +118,7 @@ Future<bool> remindStudent(
       lang: lang,
       studentId: studentId,
       centerFallback: l10n.duesCenterFallback,
+      placeId: container.read(placeFilterProvider),
     );
   } on Object {
     failed = true;

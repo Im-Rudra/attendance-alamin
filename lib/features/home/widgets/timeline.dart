@@ -18,6 +18,7 @@ import 'package:attendance_alamin/domain/schedule/schedule_models.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/features/batches/widgets/batch_format.dart';
 import 'package:attendance_alamin/features/classes/classes_entry.dart';
+import 'package:attendance_alamin/features/home/controllers/today_providers.dart';
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
 
@@ -38,7 +39,7 @@ class TodayTimeline extends ConsumerWidget {
     final AppFormat fmt = context.fmt;
     final BhorThemeData b = context.bhor;
     final LocalDate today = ref.watch(todayProvider);
-    final DayPlan? plan = ref.watch(dayPlanProvider(date)).value;
+    final DayPlan? plan = ref.watch(todayDayPlanProvider(date)).value;
     final List<BatchSchedule> schedules =
         ref.watch(schedulesProvider).value ?? const <BatchSchedule>[];
 

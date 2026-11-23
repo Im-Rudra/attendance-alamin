@@ -14,6 +14,7 @@ import 'package:attendance_alamin/features/dues/controllers/dues_model.dart';
 import 'package:attendance_alamin/features/dues/controllers/dues_state.dart';
 import 'package:attendance_alamin/features/dues/controllers/reminder_actions.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 /// Opens the walk-through for [rows] (the students still to remind today).
 Future<void> showReminderWalkthrough(BuildContext context, List<DuesRow> rows) {
@@ -43,11 +44,13 @@ class _ReminderWalkthroughState extends ConsumerState<ReminderWalkthrough> {
 
   Future<String?> _compose() {
     final DuesRow row = widget.rows[_index];
+    final ProviderContainer container = ProviderScope.containerOf(context, listen: false);
     return composeReminder(
-      ProviderScope.containerOf(context, listen: false),
+      container,
       lang: context.lang,
       studentId: row.studentId,
       centerFallback: context.l10n.duesCenterFallback,
+      placeId: container.read(placeFilterProvider),
     );
   }
 

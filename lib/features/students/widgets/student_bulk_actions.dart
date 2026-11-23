@@ -504,6 +504,7 @@ class _BulkEnrollPanelState extends ConsumerState<BulkEnrollPanel> {
                 label: l10n.stuBatchOptional,
                 value: batchId,
                 hint: l10n.stuPickBatchFirst,
+                searchable: true,
                 options: <BhorOption<String>>[
                   for (final Batch bt in batches) BhorOption<String>(bt.id, labelOf(bt)),
                 ],

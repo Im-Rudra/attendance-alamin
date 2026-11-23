@@ -19,13 +19,14 @@ import 'package:attendance_alamin/features/home/controllers/today_providers.dart
 import 'package:attendance_alamin/features/home/widgets/tile_frame.dart';
 import 'package:attendance_alamin/features/home/widgets/today_actions.dart';
 import 'package:attendance_alamin/features/payments/payments_entry.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 class DuesCard extends ConsumerWidget {
   const DuesCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final DuesReport? report = ref.watch(duesReportProvider).value;
+    final DuesReport? report = ref.watch(placeDuesReportProvider).value;
     final LocalDate today = ref.watch(todayProvider);
     final l10n = context.l10n;
     if (report == null) {

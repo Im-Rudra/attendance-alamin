@@ -379,6 +379,7 @@ class _StudentFormScreenState extends ConsumerState<StudentFormScreen> {
                         key: const ValueKey<String>('stu-form-batch'),
                         label: kind == EnrollKindChoice.tuition ? l10n.stuPickTuition : l10n.stuBatchOptional,
                         hint: l10n.stuPickHint,
+                        searchable: true,
                         value: chosen,
                         options: <BhorOption<String>>[
                           for (final Batch b in ofKind)

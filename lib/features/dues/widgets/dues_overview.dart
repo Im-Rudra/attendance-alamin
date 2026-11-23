@@ -115,7 +115,7 @@ class FeesSummaryTiles extends ConsumerWidget {
     final BhorThemeData b = context.bhor;
     final l10n = context.l10n;
     final YearMonth month = ref.watch(todayProvider).yearMonth;
-    final CollectionSummary? s = ref.watch(collectionSummaryProvider(month)).value;
+    final CollectionSummary? s = ref.watch(feesCollectionSummaryProvider(month)).value;
     if (s == null) {
       return const Row(
         children: <Widget>[

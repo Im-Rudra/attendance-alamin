@@ -17,7 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:attendance_alamin/app/ds/ds.dart';
 import 'package:attendance_alamin/app/l10n/l10n_x.dart';
 import 'package:attendance_alamin/app/providers/core_providers.dart';
-import 'package:attendance_alamin/app/providers/dues_providers.dart';
+import 'package:attendance_alamin/data/repositories/place_providers.dart';
 import 'package:attendance_alamin/app/routes.dart';
 import 'package:attendance_alamin/app/shell/window_class.dart';
 import 'package:attendance_alamin/core/time/year_month.dart';
@@ -30,6 +30,7 @@ import 'package:attendance_alamin/features/dues/widgets/dues_list_pane.dart';
 import 'package:attendance_alamin/features/dues/widgets/dues_row.dart';
 import 'package:attendance_alamin/features/dues/widgets/fees_segments.dart';
 import 'package:attendance_alamin/features/dues/widgets/take_money_picker.dart';
+import 'package:attendance_alamin/features/settings/settings_entry.dart';
 
 class FeesScreen extends ConsumerStatefulWidget {
   const FeesScreen({super.key, this.selectedStudentId, this.initialSegment = FeesSegment.dues});
@@ -91,7 +92,8 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
     final l10n = context.l10n;
     final fmt = context.fmt;
     final WindowClass wc = WindowClass.of(context);
-    final DuesReport? report = ref.watch(duesReportProvider).value;
+    final DuesReport? report = ref.watch(placeDuesReportProvider).value;
+    final bool many = ref.watch(hasManyPlacesProvider);
     final bool dues = _segment == FeesSegment.dues;
     final String? subtitle = !dues || report == null || report.studentsWithDues == 0
         ? null
@@ -108,6 +110,11 @@ class _FeesListScaffoldState extends ConsumerState<_FeesListScaffold> {
         // The same actions on both segments (F2): "Collect fee" and a ⋮ with
         // "Other income" and "Export CSV". Global search lives in the sidebar.
         actions: <Widget>[
+          // 2+ places: "All places ▾" narrows both segments to one place.
+          if (many) ...<Widget>[
+            PlaceFilterChip(maxWidth: wc.usesRail ? 200 : 150),
+            const SizedBox(width: BhorSpace.s8),
+          ],
           if (wc.usesRail) ...<Widget>[
             Builder(
               builder: (BuildContext bc) => BhorButton(
