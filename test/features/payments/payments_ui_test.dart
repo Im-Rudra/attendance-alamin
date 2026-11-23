@@ -321,7 +321,7 @@ void main() {
       await tester.tap(_key('pay-month-202701'));
       await _frames(tester);
       expect(_amountText(tester), '2000');
-      expect(_label(tester), 'Record ৳ 2,000 for November, January 2027');
+      expect(_label(tester), 'Record ${AppFormat(Lang.en).money(2000)} for November, January 2027');
       await _save(tester);
       final Map<YearMonth, int> byMonth = <YearMonth, int>{
         for (final Payment p in _receipts(f))
